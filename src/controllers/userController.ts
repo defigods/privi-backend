@@ -26,7 +26,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
         // send query result
         (resDB.length > 0) ? res.status(200).json(resDB) : res.status(204).json('KO');
         */
-       console.log('signIn');
+        console.log('signIn');
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }

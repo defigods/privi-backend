@@ -3,7 +3,11 @@ import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
 
-const userRouter = require('../routes/user.ts');
+const userRoutes = require('../routes/userRoutes.ts');
+const podRoutes = require('../routes/podRoutes.ts');
+const stakeRoutes = require('../routes/stakeRoutes.ts');
+const lendingRoutes = require('../routes/lendingRoutes.ts');
+const walletRoutes = require('../routes/walletRoutes.ts');
 
 export const startServer = () => {
     // initialize configuration
@@ -22,7 +26,12 @@ export const startServer = () => {
     app.set("views", path.join(__dirname, "views"));
 
     // Routes definition
-    app.use('/user', userRouter);
+    app.use('/user', userRoutes);
+    app.use('/pod', podRoutes);
+    app.use('/stake', stakeRoutes);
+    app.use('/lendings', lendingRoutes);
+    app.use('/wallet', walletRoutes);
+
 
     // start the express server
     app.listen(port, () => {
