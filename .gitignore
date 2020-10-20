@@ -4,4 +4,7 @@ node_modules/
 
 
 
-
+# bitacoras
+/localhost.crt
+/localhost.csr
+/localhost.key
