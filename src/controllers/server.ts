@@ -32,6 +32,9 @@ export const startServer = () => {
     app.use('/lendings', lendingRoutes);
     app.use('/wallet', walletRoutes);
 
+    app.get("/", (req, res) => {
+        res.send("hello");
+    })
 
     // start the express server
     app.listen(port, () => {
