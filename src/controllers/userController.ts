@@ -34,6 +34,120 @@ const signIn = async (req: express.Request, res: express.Response) => {
     }
 };
 
+// MY WALL FUNCTIONS
+
+const getFollowPodsInfo = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getFollowUserInfo = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getFollowMyInfo = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+// CONNECTIONS FUNCTIONS
+
+const getFollowers = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getFollowing = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const followUser = async (req: express.Request, res: express.Response) => {
+
+
+};
+
+const unFollowUser = async (req: express.Request, res: express.Response) => {
+
+
+};
+
+// INVESTMENTS
+
+const getMyPods = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getPodsInvestments = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getPodsFollowed = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getReceivables = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+const getLiabilities = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
+
+
+const editUser = async (req: express.Request, res: express.Response) => {
+
+
+};
+
+
+const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
+    if(req.file) {
+        console.log(req.file);
+        let newImage = {
+            filename:  req.file.filename,
+            originalName: req.file.originalname
+            // url: req.protocol + '://' + req.get('host') + '/images/' + image._id
+        };
+        newImage.filename = req.file.filename;
+        newImage.originalName = req.file.originalname;
+
+    } else {
+        res.status(400).json({error: 'No file'});
+    }
+};
+
+
 module.exports = {
     signIn,
+    getFollowPodsInfo,
+    getFollowUserInfo,
+    getFollowMyInfo,
+    getFollowers,
+    getFollowing,
+    followUser,
+    unFollowUser,
+    getMyPods,
+    getPodsInvestments,
+    getPodsFollowed,
+    getReceivables,
+    getLiabilities,
+    editUser,
+    changeUserProfilePhoto
 };
