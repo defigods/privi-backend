@@ -9,6 +9,8 @@ const stakeRoutes = require('../routes/stakeRoutes.ts');
 const lendingRoutes = require('../routes/lendingRoutes.ts');
 const walletRoutes = require('../routes/walletRoutes.ts');
 
+const cors = require('cors')
+
 export const startServer = () => {
     // initialize configuration
     //dotenv.config();
@@ -16,6 +18,7 @@ export const startServer = () => {
     const port = 3001;
     const app = express();
 
+    app.use(cors());
     // Set HTTP headers for security
     app.use(helmet());
 
