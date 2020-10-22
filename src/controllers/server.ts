@@ -9,6 +9,8 @@ const podRoutes = require('../routes/podRoutes.ts');
 const stakeRoutes = require('../routes/stakeRoutes.ts');
 const lendingRoutes = require('../routes/lendingRoutes.ts');
 const walletRoutes = require('../routes/walletRoutes.ts');
+const profileRoutes = require('../routes/profileRoutes.ts');
+
 
 
 export const startServer = () => {
@@ -34,10 +36,8 @@ export const startServer = () => {
     app.use('/stake', stakeRoutes);
     app.use('/lendings', lendingRoutes);
     app.use('/wallet', walletRoutes);
+    app.use('/profile', profileRoutes);
 
-    app.get("/", (req, res) => {
-        res.send("hello");
-    })
 
     // start the express server
     app.listen(port, () => {
