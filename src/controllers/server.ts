@@ -2,6 +2,7 @@
 import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
+const cors = require('cors')
 
 const userRoutes = require('../routes/userRoutes.ts');
 const podRoutes = require('../routes/podRoutes.ts');
@@ -9,7 +10,6 @@ const stakeRoutes = require('../routes/stakeRoutes.ts');
 const lendingRoutes = require('../routes/lendingRoutes.ts');
 const walletRoutes = require('../routes/walletRoutes.ts');
 
-const cors = require('cors')
 
 export const startServer = () => {
     // initialize configuration
