@@ -54,4 +54,9 @@ router.post('/connections/unFollowUser', userController.unFollowUser);
 router.post('/editUser', userController.editUser);
 router.post('/changeProfilePhoto', upload.single('image'), userController.changeUserProfilePhoto);
 
+router.post('/addToWaitlist', userController.addToWaitlist);
+router.post('/register', userController.register);
+router.get('/getPrivacy', userController.getPrivacy);
+router.post('/setPrivacy', userController.setPrivacy);
+
 module.exports = router;

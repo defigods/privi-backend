@@ -2,12 +2,16 @@
 import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
+const cors = require('cors')
 
 const userRoutes = require('../routes/userRoutes.ts');
 const podRoutes = require('../routes/podRoutes.ts');
 const stakeRoutes = require('../routes/stakeRoutes.ts');
 const lendingRoutes = require('../routes/lendingRoutes.ts');
 const walletRoutes = require('../routes/walletRoutes.ts');
+const profileRoutes = require('../routes/profileRoutes.ts');
+
+
 
 export const startServer = () => {
     // initialize configuration
@@ -16,6 +20,7 @@ export const startServer = () => {
     const port = 3001;
     const app = express();
 
+    app.use(cors());
     // Set HTTP headers for security
     app.use(helmet());
 
@@ -31,6 +36,7 @@ export const startServer = () => {
     app.use('/stake', stakeRoutes);
     app.use('/lendings', lendingRoutes);
     app.use('/wallet', walletRoutes);
+    app.use('/profile', profileRoutes);
 
 
     // start the express server
