@@ -10,8 +10,7 @@ const stakeRoutes = require('../routes/stakeRoutes.ts');
 const lendingRoutes = require('../routes/lendingRoutes.ts');
 const walletRoutes = require('../routes/walletRoutes.ts');
 const profileRoutes = require('../routes/profileRoutes.ts');
-
-
+const priviScanRoutes = require('../routes/priviScanRoutes');
 
 export const startServer = () => {
     // initialize configuration
@@ -37,7 +36,7 @@ export const startServer = () => {
     app.use('/lendings', lendingRoutes);
     app.use('/wallet', walletRoutes);
     app.use('/profile', profileRoutes);
-
+    app.use('/privi-scan', priviScanRoutes);
 
     // start the express server
     app.listen(port, () => {

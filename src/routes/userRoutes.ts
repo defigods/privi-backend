@@ -5,6 +5,7 @@ import path from 'path';
 const router = express.Router();
 
 const userController = require('../controllers/userController');
+const userControllerJS = require('../controllers/userControllerJS');
 
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
@@ -54,9 +55,9 @@ router.post('/connections/unFollowUser', userController.unFollowUser);
 router.post('/editUser', userController.editUser);
 router.post('/changeProfilePhoto', upload.single('image'), userController.changeUserProfilePhoto);
 
-router.post('/addToWaitlist', userController.addToWaitlist);
-router.post('/register', userController.register);
-router.get('/getPrivacy', userController.getPrivacy);
-router.post('/setPrivacy', userController.setPrivacy);
+router.post('/addToWaitlist', userControllerJS.addToWaitlist);
+router.post('/register', userControllerJS.register);
+router.get('/getPrivacy', userControllerJS.getPrivacy);
+router.post('/setPrivacy', userControllerJS.setPrivacy);
 
 module.exports = router;
