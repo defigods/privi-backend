@@ -21,7 +21,7 @@ exports.addToWaitlist = async (req, res) => {
         });
         res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/user.ts -> addToWaitlist(): ', err);
+        console.log('Error in controllers/user -> addToWaitlist(): ', err);
         res.send({ success: false });
     }
 }
@@ -57,7 +57,7 @@ exports.register = async (req, res) => {
             await db.runTransaction(async (transaction) => {
                 // userData
                 transaction.set(db.collection(collections.user).doc(uid), {
-                    type: role,
+                    role: role,
                     gender: gender,
                     age: age,
                     country: country,
@@ -103,11 +103,65 @@ exports.register = async (req, res) => {
             res.send({ success: true });
         }
         else {
-            console.log('Error in blockchain call at controllers/user.ts -> register(): ');
+            console.log('Error in blockchain call at controllers/user -> register(): ');
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/user.ts -> register(): ', err);
+        console.log('Error in controllers/user -> register(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.getPrivacy = async (req, res) => {
+    try {
+        const body = req.body;
+        const publicId = body.publicId;
+        const blockchainRes = await dataProtocol.getPrivacy(publicId);
+        if (blockchainRes && blockchainRes.success) {
+            const output = blockchainRes.output;
+            const retData = [];
+            for (const [companyId, enabled] of Object.entries(output)) {
+                resData.push({ name: companyId, id: companyId, enabled: enabled });
+            }
+            const companySnapshot = await db.collection(collections.user).where("role", "==", "COMPANY").get();
+            // to be improved (efficiency): now O(n^2)
+            for (let i = 0; i < retData.length; i++) {
+                let obj = retData[i];
+                companySnapshot.docs.forEach((doc) => {
+                    if (doc.id == obj.id) {
+                        const data = doc.data();
+                        obj.name = data.name;   // company name
+                    }
+                })
+            }
+            res.send({ success: true, data: retData });
+        } else {
+            console.log('Error in controllers/user -> getPrivacy(): ', err);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/user -> getPrivacy(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.setPrivacy = async (req, res) => {
+    try {
+        const body = req.body;
+        const publicId = body.publicId;
+        const businessId = body.businessId;
+        const enabled = body.enabled;
+        const blockchainRes = await dataProtocol.modifyPrivacy(publicId, businessId, enabled);
+        if (blockchainRes && blockchainRes.success) {
+            const output = blockchainRes.output;
+            // ....
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/user -> setPrivacy(): ', err);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/user -> setPrivacy(): ', err);
         res.send({ success: false });
     }
 }
@@ -137,6 +191,6 @@ exports.signIn = async (req, res) => {
         console.log('signIn');
         res.send({ signIn: true })
     } catch (err) {
-        console.log('Error in controllers/user.ts -> signIn(): ', err);
+        console.log('Error in controllers/user -> signIn(): ', err);
     }
 };

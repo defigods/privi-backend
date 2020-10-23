@@ -11,5 +11,6 @@ module.exports = {
     liquidityPools: "LiquidityPools",
     insurancePools: "InsurancePools",
     notificaction: "Notification",
+    privacy: "EnabledPrivacy"
 
 }
