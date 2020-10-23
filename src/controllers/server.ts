@@ -46,8 +46,8 @@ export const startServer = () => {
         key: fs.readFileSync('server.key'),
         cert: fs.readFileSync('server.cert')
       }, app)
-      .listen(3000, function () {
-        console.log(`server started at http://localhost:${port}`)
+      .listen(port, function () {
+        console.log(`server started at https://localhost:${port}`)
       })
 
     // start the express server
