@@ -3,6 +3,8 @@ import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
 const cors = require('cors')
+const https = require('https')
+const fs = require('fs')
 
 const userRoutes = require('../routes/userRoutes.ts');
 const podRoutes = require('../routes/podRoutes.ts');
@@ -38,10 +40,20 @@ export const startServer = () => {
     app.use('/profile', profileRoutes);
     app.use('/privi-scan', priviScanRoutes);
 
+    // cron job for generating 
+
+    https.createServer({
+        key: fs.readFileSync('server.key'),
+        cert: fs.readFileSync('server.cert')
+      }, app)
+      .listen(3000, function () {
+        console.log(`server started at http://localhost:${port}`)
+      })
+
     // start the express server
-    app.listen(port, () => {
+    /*app.listen(port, () => {
         // tslint:disable-next-line:no-console
         console.log(`server started at http://localhost:${port}`);
-    });
+    });*/
 };
 
