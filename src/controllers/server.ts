@@ -13,7 +13,7 @@ const lendingRoutes = require('../routes/lendingRoutes.ts');
 const walletRoutes = require('../routes/walletRoutes.ts');
 const profileRoutes = require('../routes/profileRoutes.ts');
 const priviScanRoutes = require('../routes/priviScanRoutes');
-type Env = 'dev' | 'prod';
+type Env = 'dev' | 'prod' | 'devssl';
 
 export const startServer = (env: Env) => {
   // initialize configuration
@@ -46,28 +46,42 @@ export const startServer = (env: Env) => {
 
   // Start server
   switch (env) {
+    // Run in local (development) environment without SSL
     case 'dev':
       app.listen(port);
-      console.log(`Back-end (Non-SSL) running on port ${port}`);
+      console.log(`Back-end DEV (Non-SSL) running on port ${port}`);
       break;
+    // Run in local (development) environment with SSL
+    case 'devssl':
+      const credentials = {
+        key: fs.readFileSync('server.key'),
+        cert: fs.readFileSync('server.cert'),
+      };
+      const httpsServer = https.createServer(credentials, app);
+      httpsServer.listen(port, () => {
+        console.log(`Back-end DEV (SSL) running on port ${port}`);
+      });
+      break;
+    // Run in production environment with SSL
     case 'prod':
-        try {
-            const privateKey = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/privkey.pem', 'utf8');
-            const certificate = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/cert.pem', 'utf8');
-            const ca = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/chain.pem', 'utf8');
-            const credentials = {
-                key: privateKey,
-                cert: certificate,
-                ca: ca
-            };
-            const httpsServer = https.createServer(credentials, app);
-            httpsServer.listen(port, () => {
-                console.log(`Back-end (SSL) running on port ${port}`);
-            });
-        } catch (err) {
-            console.log('Certificate not found!', err);
-        }
+      try {
+        const privateKey = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/privkey.pem', 'utf8');
+        const certificate = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/cert.pem', 'utf8');
+        const ca = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/chain.pem', 'utf8');
+        const credentials = {
+          key: privateKey,
+          cert: certificate,
+          ca: ca
+        };
+        const httpsServer = https.createServer(credentials, app);
+        httpsServer.listen(port, () => {
+          console.log(`Back-end PROD (SSL) running on port ${port}`);
+        });
+      } catch (err) {
+        console.log('Certificate not found!', err);
+      }
       break;
+
     default:
       console.log(`Invalid environment ('dev' or 'prod' not found)`);
       break;
@@ -89,4 +103,5 @@ export const startServer = (env: Env) => {
       console.log(`server started at http://localhost:${port}`);
   });*/
 };
+
 
