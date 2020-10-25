@@ -18,9 +18,11 @@ const send = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             console.log(output);
-            /*
             await db.runTransaction(async (transaction) => {
-                for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                let uid: string = '';
+                let walletObj: any = null;
+                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                // for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
@@ -34,7 +36,6 @@ const send = async (req: express.Request, res: express.Response) => {
                     }
                 }
             });
-            */
             // notification
             let senderName = fromUid;
             let receiverName = toUid;
@@ -77,9 +78,10 @@ const withdraw = async (req: express.Request, res: express.Response) => {
             const output = blockchainRes.output;
             console.log(output);
             console.log("withdraw ok");
-            /*
             await db.runTransaction(async (transaction) => {
-                for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                let uid: string = '';
+                let walletObj: any = null;
+                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
@@ -93,7 +95,6 @@ const withdraw = async (req: express.Request, res: express.Response) => {
                     }
                 }
             });
-            */
             await notification.createNotificaction(publicId, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
@@ -120,9 +121,10 @@ const swap = async (req: express.Request, res: express.Response) => {
             const output = blockchainRes.output;
             console.log(output);
             console.log("swap ok");
-            /*
             await db.runTransaction(async (transaction) => {
-                for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                let uid: string = '';
+                let walletObj: any = null;
+                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
@@ -136,7 +138,6 @@ const swap = async (req: express.Request, res: express.Response) => {
                     }
                 }
             });
-            */
             await notification.createNotificaction(publicId, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
