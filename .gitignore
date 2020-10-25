@@ -2,9 +2,11 @@
 build/
 node_modules/
 
-
+/server.cert
+/server.key
 
 # bitacoras
 /localhost.crt
 /localhost.csr
 /localhost.key
+

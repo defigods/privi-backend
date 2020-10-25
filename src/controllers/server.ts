@@ -2,17 +2,20 @@
 import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
+const logger = require('morgan');
 const cors = require('cors')
 const https = require('https')
-const fs = require('fs')
+const fs = require('fs');
+const os = require('os');
 
-const userRoutes = require('../routes/userRoutes.ts');
-const podRoutes = require('../routes/podRoutes.ts');
-const stakeRoutes = require('../routes/stakeRoutes.ts');
-const lendingRoutes = require('../routes/lendingRoutes.ts');
-const walletRoutes = require('../routes/walletRoutes.ts');
-const profileRoutes = require('../routes/profileRoutes.ts');
+const userRoutes = require('../routes/userRoutes');
+const podRoutes = require('../routes/podRoutes');
+const stakeRoutes = require('../routes/stakeRoutes');
+const lendingRoutes = require('../routes/lendingRoutes');
+const walletRoutes = require('../routes/walletRoutes');
+const profileRoutes = require('../routes/profileRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
+
 type Env = 'dev' | 'prod' | 'devssl';
 
 export const startServer = (env: Env) => {
@@ -22,7 +25,13 @@ export const startServer = (env: Env) => {
   const port = 3000;
   const app = express();
 
+  // Show API calls in console
+  app.use(logger('dev'));
+
+  // CORS policy 
+  // *** TODO: filter by priviweb.tech origin if Env='prod' ***
   app.use(cors());
+
   // Set HTTP headers for security
   app.use(helmet());
 
@@ -45,6 +54,7 @@ export const startServer = (env: Env) => {
 
 
   // Start server
+  
   switch (env) {
     // Run in local (development) environment without SSL
     case 'dev':
@@ -85,23 +95,49 @@ export const startServer = (env: Env) => {
     default:
       console.log(`Invalid environment ('dev' or 'prod' not found)`);
       break;
-  }
+  };
 
-  /*
-  https.createServer({
-    key: fs.readFileSync('server.key'),
-    cert: fs.readFileSync('server.cert')
-  }, app)
-    .listen(3000, function () {
-      console.log(`server started at http://localhost:${port}`)
+
+  // Show IP address in console
+  const ifaces = os.networkInterfaces();
+  const IPs = [];
+  Object.keys(ifaces).forEach(function (ifname) {
+    var alias = 0;
+    ifaces[ifname].forEach(function (iface: any) {
+      if ('IPv4' !== iface.family || iface.internal !== false) {
+        // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
+        return;
+      }
+      if (alias >= 1) {
+        // this single interface has multiple ipv4 addresses
+        console.log(ifname + ':' + alias, iface.address);
+      } else {
+        // this interface has only one ipv4 adress
+        console.log(ifname, iface.address);
+      };
+      ++alias;
     });
-*/
+  });
+
+  // Start Express server on https
+  // app.get('/', function (req, res) {
+  //   console.log('Hello!!!')
+  // });
+
+  // https.createServer({
+  //   key: fs.readFileSync('server.key'),
+  //   cert: fs.readFileSync('server.cert')
+  // }, app)
+  //   .listen(3000, function () {
+  //     console.log(`server started at http://localhost:${port}`)
+  //   });
 
   // start the express server
-  /*app.listen(port, () => {
-      // tslint:disable-next-line:no-console
-      console.log(`server started at http://localhost:${port}`);
-  });*/
+  // app.listen(port, () => {
+  //     // tslint:disable-next-line:no-console
+  //     console.log(`server started at http://localhost:${port}`);
+  // });
+
 };
 
 

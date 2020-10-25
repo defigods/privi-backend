@@ -4,9 +4,9 @@ const collections = require("../firebase/collections");
 const coinBalance = require("../blockchain/coinBalance");
 const notification = require("./notifications");
 const notificationTypes = require("../constants/notificationType");
+import express from 'express';
 
-
-exports.send = async (req, res) => {
+const send = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const fromUid = body.fromUid;
@@ -18,6 +18,7 @@ exports.send = async (req, res) => {
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             console.log(output);
+            /*
             await db.runTransaction(async (transaction) => {
                 for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
@@ -33,11 +34,14 @@ exports.send = async (req, res) => {
                     }
                 }
             });
+            */
             // notification
             let senderName = fromUid;
             let receiverName = toUid;
-            const senderSnap = await db.colletion(collection.user).doc(fromUid).get();
-            const receiverSnap = await db.colletion(collection.user).doc(toUid).get();
+            // const senderSnap = await db.colletion(collection.user).doc(fromUid).get();
+            // const receiverSnap = await db.colletion(collection.user).doc(toUid).get();
+            const senderSnap = await db.colletion(collections.user).doc(fromUid).get();
+            const receiverSnap = await db.colletion(collections.user).doc(toUid).get();
             senderName = senderSnap.data().firstName;
             receiverName = receiverSnap.data().firstName;
             // notification to sender 
@@ -62,7 +66,7 @@ exports.send = async (req, res) => {
 }
 
 
-exports.withdraw = async (req, res) => {
+const withdraw = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const publicId = body.publicId;
@@ -73,6 +77,7 @@ exports.withdraw = async (req, res) => {
             const output = blockchainRes.output;
             console.log(output);
             console.log("withdraw ok");
+            /*
             await db.runTransaction(async (transaction) => {
                 for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
@@ -88,6 +93,7 @@ exports.withdraw = async (req, res) => {
                     }
                 }
             });
+            */
             await notification.createNotificaction(publicId, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
@@ -103,7 +109,7 @@ exports.withdraw = async (req, res) => {
     }
 }
 
-exports.swap = async (req, res) => {
+const swap = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const publicId = body.publicId;
@@ -114,6 +120,7 @@ exports.swap = async (req, res) => {
             const output = blockchainRes.output;
             console.log(output);
             console.log("swap ok");
+            /*
             await db.runTransaction(async (transaction) => {
                 for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
@@ -129,6 +136,7 @@ exports.swap = async (req, res) => {
                     }
                 }
             });
+            */
             await notification.createNotificaction(publicId, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
@@ -142,4 +150,10 @@ exports.swap = async (req, res) => {
         console.log('Error in controllers/walletController -> swap()', err);
         res.send({ success: false });
     }
+}
+
+module.exports = {
+    send,
+    withdraw,
+    swap
 }
