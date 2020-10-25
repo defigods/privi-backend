@@ -22,7 +22,7 @@ const send = async (req: express.Request, res: express.Response) => {
                 let uid: string = '';
                 let walletObj: any = null;
                 for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
-                // for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                    // for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
@@ -31,7 +31,7 @@ const send = async (req: express.Request, res: express.Response) => {
                     if (history != null) {
                         history.forEach(obj => {
                             transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
+                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
                         });
                     }
                 }
@@ -90,7 +90,7 @@ const withdraw = async (req: express.Request, res: express.Response) => {
                     if (history != null) {
                         history.forEach(obj => {
                             transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
+                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
                         });
                     }
                 }
@@ -133,7 +133,7 @@ const swap = async (req: express.Request, res: express.Response) => {
                     if (history != null) {
                         history.forEach(obj => {
                             transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
+                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
                         });
                     }
                 }
