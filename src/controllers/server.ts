@@ -17,6 +17,8 @@ const profileRoutes = require('../routes/profileRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
 const priviCreditRoutes = require('../routes/priviCreditRoutes');
 
+const crons = require('../controllers/crons');
+
 type Env = 'dev' | 'prod' | 'devssl';
 
 export const startServer = (env: Env) => {
@@ -52,7 +54,12 @@ export const startServer = (env: Env) => {
   app.use('/privi-scan', priviScanRoutes);
   app.use('/priviCredit', priviCreditRoutes);
 
-  // cron job for generating 
+  // start all cron jobs
+  let name: string;
+  let cronJob: any;
+  for ([name, cronJob] of Object.entries(crons)) {
+    cronJob.start()
+  }
 
 
   // Start server

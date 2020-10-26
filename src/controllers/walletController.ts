@@ -2,6 +2,7 @@ const firebase = require("../firebase/firebase");
 const db = firebase.getDb();
 const collections = require("../firebase/collections");
 const coinBalance = require("../blockchain/coinBalance");
+const functions = require("../constants/functions");
 const notification = require("./notifications");
 const notificationTypes = require("../constants/notificationType");
 import express from 'express';
@@ -16,26 +17,7 @@ const send = async (req: express.Request, res: express.Response) => {
         const type = body.type;
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            console.log(output);
-            await db.runTransaction(async (transaction) => {
-                let uid: string = '';
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
-                    // for (const [uid, walletObj] of Object.entries(output.UpdateWallets)) {
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
+            await functions.UpdateWallets(blockchainRes);
             // notification
             let senderName = fromUid;
             let receiverName = toUid;
@@ -46,12 +28,12 @@ const send = async (req: express.Request, res: express.Response) => {
             senderName = senderSnap.data().firstName;
             receiverName = receiverSnap.data().firstName;
             // notification to sender 
-            await notification.createNotificaction(fromUid, "Transfer - Sent",
+            notification.createNotificaction(fromUid, "Transfer - Sent",
                 `You have succesfully send ${amount} ${token} to ${receiverName}!`,
                 notificationTypes.transferSend
             );
             // notification to receiver
-            await notification.createNotificaction(fromUid, "Transfer - Received",
+            notification.createNotificaction(fromUid, "Transfer - Received",
                 `You have succesfully received ${amount} ${token} from ${senderName}!`,
                 notificationTypes.transferReceive
             );
@@ -75,27 +57,8 @@ const withdraw = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const blockchainRes = await coinBalance.withdraw(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            console.log(output);
-            console.log("withdraw ok");
-            await db.runTransaction(async (transaction) => {
-                let uid: string = '';
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(publicId, "Withdraw - Complete",
+            await functions.UpdateWallets(blockchainRes);
+            notification.createNotificaction(publicId, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
@@ -118,27 +81,8 @@ const swap = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const blockchainRes = await coinBalance.swap(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            console.log(output);
-            console.log("swap ok");
-            await db.runTransaction(async (transaction) => {
-                let uid: string = '';
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(publicId, "Swap - Complete",
+            await functions.UpdateWallets(blockchainRes);
+            notification.createNotificaction(publicId, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );

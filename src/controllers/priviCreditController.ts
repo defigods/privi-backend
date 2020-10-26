@@ -1,15 +1,9 @@
 import express from 'express';
-//const jwt = require("jsonwebtoken");
-//const Cons = require('../shared/Config');
-//const { query } = require('../shared/query');
-const firebase = require("../firebase/firebase");
-const admin = firebase.getAdmin();
-const db = firebase.getDb();
-const collections = require("../firebase/collections");
 const priviCredit = require("../blockchain/priviLending");
 const notification = require("./notifications");
+const functions = require("../constants/functions");
 const notificationTypes = require("../constants/notificationType");
-
+const cron = require('node-cron');
 
 exports.initiateCredit = async (req: express.Request, res: express.Response) => {
     try {
@@ -27,37 +21,8 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
         const endorsementScore = body.endorsementScore;
         const blockchainRes = await priviCredit.initiatePRIVIcredit(creator, amount, token, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            console.log(output);
-            await db.runTransaction(async (transaction) => {
-                const updateWallets = output.UpdateWallets;
-                const updateLoans = output.UpdateLoans;
-                // update loan
-                let loanId: string = "";
-                let loanObj: any = {};
-                for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
-                }
-                // update wallet
-                let uid: string = '';
-                let walletObj: any = {};
-                for ([uid, walletObj] of Object.entries(updateWallets)) {
-                    // balances
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    // transactions
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(creator, "Privi Credit - Loan Offer Created",
+            await functions.updateFirebase(blockchainRes);
+            notification.createNotificaction(creator, "Privi Credit - Loan Offer Created",
                 `You have succesfully created a Privi Credit loan offer of ${amount} ${token}`,
                 notificationTypes.priviCreditCreated
             );
@@ -86,38 +51,10 @@ exports.modifyParameters = async (req: express.Request, res: express.Response) =
         const p_premium = body.p_premium;
         const trustScore = body.trustScore;
         const endorsementScore = body.endorsementScore;
-        const blockchainRes = await priviCredit.modifyPRIVIparameters(loanId, creator, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore);
+        const blockchainRes = await priviCredit.modifyPRIVIparameters(creator, loanId, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            await db.runTransaction(async (transaction) => {
-                const updateWallets = output.UpdateWallets;
-                const updateLoans = output.UpdateLoans;
-                // update loan
-                let loanId: string = "";
-                let loanObj: any = {};
-                for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
-                }
-                // update wallet
-                let uid: string = '';
-                let walletObj: any = {};
-                for ([uid, walletObj] of Object.entries(updateWallets)) {
-                    // balances
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    // transactions
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(creator, "Privi Credit - Loan Offer Modified",
+            await functions.updateFirebase(blockchainRes);
+            notification.createNotificaction(creator, "Privi Credit - Loan Offer Modified",
                 `The modifications of your loan has been performed successfully`,
                 notificationTypes.priviCreditCreated
             );
@@ -139,52 +76,22 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         const loanId = body.loanId;
         const borrowerId = body.borrowerId;
         const amount = body.amount;
-        const trustScore = body.trustScore;
-        const endorsementScore = body.endorsementScore;
         const collaterals = body.collaterals;
-        const blockchainRes = await priviCredit.borrowFunds(loanId, borrowerId, amount, trustScore, endorsementScore, collaterals);
+        const blockchainRes = await priviCredit.borrowFunds(loanId, borrowerId, amount, collaterals);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            await db.runTransaction(async (transaction) => {
-                const updateWallets = output.UpdateWallets;
-                const updateLoans = output.UpdateLoans;
-                // update loan
-                let loanId: string = "";
-                let loanObj: any = {};
-                for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
-                }
-                // update wallet
-                let uid: string = '';
-                let walletObj: any = {};
-                for ([uid, walletObj] of Object.entries(updateWallets)) {
-                    // balances
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    // transactions
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(borrowerId, "Privi Credit - Loan Borrowed",
+            await functions.updateFirebase(blockchainRes);
+            notification.createNotificaction(borrowerId, "Privi Credit - Loan Borrowed",
                 `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
                 notificationTypes.priviCreditBorrowed
             );
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
+            console.log('Error in controllers/priviCredit -> borrowFunds(): success = false');
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/priviCredit -> initiateCredit(): ', err);
+        console.log('Error in controllers/priviCredit -> borrowFunds(): ', err);
         res.send({ success: false });
     }
 };
@@ -197,36 +104,8 @@ exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const blockchainRes = await priviCredit.withdrawFunds(loanId, lenderId, amount);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            await db.runTransaction(async (transaction) => {
-                const updateWallets = output.UpdateWallets;
-                const updateLoans = output.UpdateLoans;
-                // update loan
-                let loanId: string = "";
-                let loanObj: any = {};
-                for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
-                }
-                // update wallet
-                let uid: string = '';
-                let walletObj: any = {};
-                for ([uid, walletObj] of Object.entries(updateWallets)) {
-                    // balances
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    // transactions
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(lenderId, "Privi Credit - Credit Withdrawn",
+            await functions.updateFirebase(blockchainRes);
+            notification.createNotificaction(lenderId, "Privi Credit - Credit Withdrawn",
                 `You have succesfully withdrawn ${amount} Coins of your Privi Credit loan`,
                 notificationTypes.priviCreditWithdrawn
             );
@@ -250,36 +129,8 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const blockchainRes = await priviCredit.depositFunds(loanId, lenderId, amount);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            await db.runTransaction(async (transaction) => {
-                const updateWallets = output.UpdateWallets;
-                const updateLoans = output.UpdateLoans;
-                // update loan
-                let loanId: string = "";
-                let loanObj: any = {};
-                for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
-                }
-                // update wallet
-                let uid: string = '';
-                let walletObj: any = {};
-                for ([uid, walletObj] of Object.entries(updateWallets)) {
-                    // balances
-                    const balances = walletObj.Balances;
-                    for (const [token, value] of Object.entries(balances)) {
-                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
-                    }
-                    // transactions
-                    const history = walletObj.Transaction;
-                    if (history != null) {
-                        history.forEach(obj => {
-                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
-                        });
-                    }
-                }
-            });
-            await notification.createNotificaction(lenderId, "Privi Credit - Credit Deposited",
+            await functions.updateFirebase(blockchainRes);
+            notification.createNotificaction(lenderId, "Privi Credit - Credit Deposited",
                 `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
                 notificationTypes.priviCreditDeposited
             );
@@ -294,3 +145,43 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
+
+
+exports.assumeRisk = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const loanId = body.loanId;
+        const provierId = body.provierId;
+        const premiumId = body.premiumId;
+        const riskPct = body.riskPct;
+        const blockchainRes = await priviCredit.assumePRIVIrisk(loanId, provierId, premiumId, riskPct);
+        if (blockchainRes && blockchainRes.success) {
+            await functions.updateFirebase(blockchainRes);
+            notification.createNotificaction(provierId, "Privi Credit - Credit Risk Assumed",
+                `You have assumed ${riskPct * 100}% risk of the loan`,
+                notificationTypes.priviCreditRiskAssumed
+            );
+            res.send({ success: true });
+        }
+        else {
+            console.log('Error in controllers/priviCredit -> assumeRisk(): success = false');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> assumeRisk(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// scheduled every day at 00:00 
+exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {
+    console.log("calling managePRIVIcredits");
+    const blockchainRes = await priviCredit.managePRIVIcredits();
+    if (blockchainRes && blockchainRes.success) {
+        console.log("PRIVI credits updated");
+        await functions.updateFirebase(blockchainRes);
+    }
+    else {
+        console.log('Error in controllers/priviCredit -> managePRIVIcredits(): success = false');
+    }
+});
