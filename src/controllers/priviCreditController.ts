@@ -89,7 +89,34 @@ exports.modifyParameters = async (req: express.Request, res: express.Response) =
         const blockchainRes = await priviCredit.modifyPRIVIparameters(loanId, creator, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-
+            await db.runTransaction(async (transaction) => {
+                const updateWallets = output.UpdateWallets;
+                const updateLoans = output.UpdateLoans;
+                // update loan
+                let loanId: string = "";
+                let loanObj: any = {};
+                for ([loanId, loanObj] of Object.entries(updateLoans)) {
+                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
+                }
+                // update wallet
+                let uid: string = '';
+                let walletObj: any = {};
+                for ([uid, walletObj] of Object.entries(updateWallets)) {
+                    // balances
+                    const balances = walletObj.Balances;
+                    for (const [token, value] of Object.entries(balances)) {
+                        transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    }
+                    // transactions
+                    const history = walletObj.Transaction;
+                    if (history != null) {
+                        history.forEach(obj => {
+                            transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
+                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
+                        });
+                    }
+                }
+            });
             await notification.createNotificaction(creator, "Privi Credit - Loan Offer Modified",
                 `The modifications of your loan has been performed successfully`,
                 notificationTypes.priviCreditCreated
@@ -119,18 +146,29 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             await db.runTransaction(async (transaction) => {
+                const updateWallets = output.UpdateWallets;
+                const updateLoans = output.UpdateLoans;
+                // update loan
+                let loanId: string = "";
+                let loanObj: any = {};
+                for ([loanId, loanObj] of Object.entries(updateLoans)) {
+                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
+                }
+                // update wallet
                 let uid: string = '';
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                let walletObj: any = {};
+                for ([uid, walletObj] of Object.entries(updateWallets)) {
+                    // balances
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
                     }
+                    // transactions
                     const history = walletObj.Transaction;
                     if (history != null) {
                         history.forEach(obj => {
                             transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
+                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
                         });
                     }
                 }
@@ -161,18 +199,29 @@ exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             await db.runTransaction(async (transaction) => {
+                const updateWallets = output.UpdateWallets;
+                const updateLoans = output.UpdateLoans;
+                // update loan
+                let loanId: string = "";
+                let loanObj: any = {};
+                for ([loanId, loanObj] of Object.entries(updateLoans)) {
+                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
+                }
+                // update wallet
                 let uid: string = '';
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                let walletObj: any = {};
+                for ([uid, walletObj] of Object.entries(updateWallets)) {
+                    // balances
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
                     }
+                    // transactions
                     const history = walletObj.Transaction;
                     if (history != null) {
                         history.forEach(obj => {
                             transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
+                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
                         });
                     }
                 }
@@ -203,18 +252,29 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             await db.runTransaction(async (transaction) => {
+                const updateWallets = output.UpdateWallets;
+                const updateLoans = output.UpdateLoans;
+                // update loan
+                let loanId: string = "";
+                let loanObj: any = {};
+                for ([loanId, loanObj] of Object.entries(updateLoans)) {
+                    transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
+                }
+                // update wallet
                 let uid: string = '';
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(output.UpdateWallets)) {
+                let walletObj: any = {};
+                for ([uid, walletObj] of Object.entries(updateWallets)) {
+                    // balances
                     const balances = walletObj.Balances;
                     for (const [token, value] of Object.entries(balances)) {
                         transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
                     }
+                    // transactions
                     const history = walletObj.Transaction;
                     if (history != null) {
                         history.forEach(obj => {
                             transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                            transaction.set(db.collection(collections.allTransactions).doc(), obj); // to be deleted later
+                            transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
                         });
                     }
                 }
