@@ -41,8 +41,8 @@ const send = async (req: express.Request, res: express.Response) => {
             let receiverName = toUid;
             // const senderSnap = await db.colletion(collection.user).doc(fromUid).get();
             // const receiverSnap = await db.colletion(collection.user).doc(toUid).get();
-            const senderSnap = await db.colletion(collections.user).doc(fromUid).get();
-            const receiverSnap = await db.colletion(collections.user).doc(toUid).get();
+            const senderSnap = await db.collection(collections.user).doc(fromUid).get();
+            const receiverSnap = await db.collection(collections.user).doc(toUid).get();
             senderName = senderSnap.data().firstName;
             receiverName = receiverSnap.data().firstName;
             // notification to sender 
