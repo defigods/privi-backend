@@ -3,7 +3,7 @@ module.exports = {
     transferSend: "transfer_send",
     swap: "swap_ethereum",
     withdraw: "withdraw_ethereum",
-    priviCreditCreated: "privi_credit_created",
+    priviCreditCreated: "PRIVI_credit_creation",
     priviCreditModified: "privi_credit_modified",
     priviCreditBorrowed: "privi_credit_borrowed",
     priviCreditWithdrawn: "privi_credit_withdrawn",

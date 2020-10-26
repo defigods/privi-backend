@@ -5,7 +5,6 @@ import { stringify } from 'querystring';
 const jwt = require("jsonwebtoken");
 //const Cons = require('../shared/Config');
 //const { query } = require('../shared/query');
-const dataProtocol = require("../blockchain/dataProtocol");
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
@@ -35,77 +34,6 @@ const signIn = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
 };
-
-// ADD TO WAITLIST
-const addToWaitlist = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const mail = body.mail;
-        const underConstructionFunctionality = body.underConstructionFunctionality;
-        db.collection(collections.waitlist).doc(underConstructionFunctionality).collection("users").add({
-            email: mail,
-        });
-        res.send({ success: true });
-    } catch (err) {
-        console.log('Error in controllers/user -> addToWaitlist(): ', err);
-        res.send({ success: false });
-    }
-};
-
-// PRIVACY
-const getPrivacy = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const publicId = body.publicId;
-        const blockchainRes = await dataProtocol.getPrivacy(publicId);
-        if (blockchainRes && blockchainRes.success) {
-            const output: { [key: string]: boolean } = blockchainRes.output;
-            const retData: { name: string, id: string, enabled: boolean }[] = [];
-            for (const [companyId, enabled] of Object.entries(output)) {
-                retData.push({ name: companyId, id: companyId, enabled: enabled });
-            }
-            const companySnapshot = await db.collection(collections.user).where("role", "==", "COMPANY").get();
-            // to be improved (efficiency): now O(n^2)
-            for (let i = 0; i < retData.length; i++) {
-                let obj = retData[i];
-                companySnapshot.docs.forEach((doc) => {
-                    if (doc.id == obj.id) {
-                        const data = doc.data();
-                        obj.name = data.name;   // company name
-                    }
-                })
-            }
-            res.send({ success: true, data: retData });
-        } else {
-            console.log('Error in controllers/user -> getPrivacy(): blockchain success = false');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/user -> getPrivacy(): ', err);
-        res.send({ success: false });
-    }
-};
-
-exports.setPrivacy = async (req, res) => {
-    try {
-        const body = req.body;
-        const publicId = body.publicId;
-        const businessId = body.businessId;
-        const enabled = body.enabled;
-        const blockchainRes = await dataProtocol.modifyPrivacy(publicId, businessId, enabled);
-        if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            // ....
-            res.send({ success: true });
-        } else {
-            console.log('Error in controllers/user -> setPrivacy(): blockchain success = false');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/user -> setPrivacy(): ', err);
-        res.send({ success: false });
-    }
-}
 
 // MY WALL FUNCTIONS
 

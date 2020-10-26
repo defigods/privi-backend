@@ -28,6 +28,7 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
         const blockchainRes = await priviCredit.initiatePRIVIcredit(creator, amount, token, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
+            console.log(output);
             await db.runTransaction(async (transaction) => {
                 const updateWallets = output.UpdateWallets;
                 const updateLoans = output.UpdateLoans;
