@@ -1,8 +1,7 @@
-const firebase = require("../firebase/firebase");
-const db = firebase.getDb();
-const collections = require("../firebase/collections");
+import { db } from "../firebase/firebase";
+import collections from "../firebase/collections";
 
-exports.createNotificaction = async (userId, title, text, type) => {
+const createNotificaction = async (userId, title, text, type) => {
     if (userId && title && text && type) {
         const dbNotificationRef = db.collection(collections.user).doc(userId).collection(collections.notificaction);
         await dbNotificationRef.add({
@@ -16,3 +15,5 @@ exports.createNotificaction = async (userId, title, text, type) => {
         return false;
     }
 }
+
+export default createNotificaction;

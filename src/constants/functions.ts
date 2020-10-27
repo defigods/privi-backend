@@ -1,10 +1,8 @@
-export { };
-const firebase = require("../firebase/firebase");
-const admin = firebase.getAdmin();
-const db = firebase.getDb();
+import { db, firebase } from "../firebase/firebase";
+import coinBalance from "../blockchain/coinBalance";
 const collections = require("../firebase/collections");
 
-exports.updateFirebase = async (blockchainRes) => {
+export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
     await db.runTransaction(async (transaction) => {
         const updateWallets = output.UpdateWallets;
@@ -40,7 +38,7 @@ exports.updateFirebase = async (blockchainRes) => {
     });
 }
 
-exports.getRateOfChange = async () => {
+export async function getRateOfChange() {
     let res = {};
     const ratesQuery = await db.collection("ratesOfChange").get();
     for (let i = 0; i < ratesQuery.docs.length; i++) {
@@ -54,9 +52,65 @@ exports.getRateOfChange = async () => {
         }
         res[ratesQuery.docs[i].id] = _lastRate;
     }
+    // still don't have these Token conversion rates in firebase, so we add them manually
     res["BC"] = 1;
-    res["PC"] = 0.01;
     res["DC"] = 0.01;
     res["PDT"] = 0.01;
     return res;
+};
+
+// traditional lending interest harcoded in firebase
+export async function getLendingInterest() {
+    const res = {};
+    const blockchainRes = await coinBalance.getTokenList();
+    if (blockchainRes && blockchainRes.success) {
+        const tokenList: string[] = blockchainRes.output;
+        tokenList.forEach((token) => {
+            res[token] = 0.02 // case firebase doesnt contain these
+        })
+        const interestSnap = await db.collection("manualConstants").doc("TraditionalLendingConstants").get();
+        const interestData = interestSnap.data();
+        if (interestData !== undefined) {
+            const interest = interestData["interest"];
+            tokenList.forEach((token) => {
+                res[token] = interest;
+            })
+        }
+        else {
+            console.log("constants/functions.ts: firebase traditional lending constants not found, using predefined values for interest...");
+        }
+        return res;
+    }
+    else {
+        console.log("constants/functions.ts: error calling blockchain get tokenList");
+        return null;
+    }
+};
+
+// traditional staking interest harcoded in firebase
+export async function getStakingInterest() {
+    const res = {};
+    const blockchainRes = await coinBalance.getTokenList();
+    if (blockchainRes && blockchainRes.success) {
+        const tokenList: string[] = blockchainRes.output;
+        tokenList.forEach((token) => {
+            res[token] = 0.02 // case firebase doesnt contain these
+        })
+        const interestSnap = await db.collection("manualConstants").doc("StakingConstants").get();
+        const interestData = interestSnap.data();
+        if (interestData !== undefined) {
+            const interest = interestData["interest"];
+            tokenList.forEach((token) => {
+                res[token] = interest;
+            })
+        }
+        else {
+            console.log("constants/functions.ts: firebase traditional lending constants not found, using predefined values for interest...");
+        }
+        return res;
+    }
+    else {
+        console.log("constants/functions.ts: error calling blockchain get tokenList");
+        return null;
+    }
 };

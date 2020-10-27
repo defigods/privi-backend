@@ -4,9 +4,7 @@ import * as path from 'path';
 const jwt = require("jsonwebtoken");
 //const Cons = require('../shared/Config');
 //const { query } = require('../shared/query');
-const firebase = require("../firebase/firebase");
-const admin = firebase.getAdmin();
-const db = firebase.getDb();
+import { db, admin } from "../firebase/firebase";
 const collections = require("../firebase/collections");
 const dataProtocol = require("../blockchain/dataProtocol");
 

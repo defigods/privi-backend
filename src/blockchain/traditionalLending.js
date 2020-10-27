@@ -49,7 +49,7 @@ module.exports.payInterests = async (lendingInterest, stakingInterest, rateOfCha
     return blockchainRes.data;
 };
 
-module.exports.liquidationCCR = async (publicId, rateOfChange) => {
+module.exports.checkLiquidation = async (publicId, rateOfChange) => {
     let blockchainRes = await axios.post(api.blockchainTraditionalLendingAPI + "/checkLiquidation", {
         PublicId: publicId,
         RateChange: rateOfChange
@@ -57,24 +57,20 @@ module.exports.liquidationCCR = async (publicId, rateOfChange) => {
     return blockchainRes.data;
 };
 
-module.exports.stake = async (publicId, tokenName, amount) => {
-    console.log('from blockchain call: ', publicId, tokenName, amount);
+module.exports.stakeToken = async (publicId, tokenName, amount) => {
     let blockchainRes = await axios.post(api.blockchainTraditionalLendingAPI + "/stakeToken", {
         PublicId: publicId,
         Token: tokenName,
         Amount: amount
     });
-    console.log(blockchainRes.data.success);
     return blockchainRes.data;
 };
 
-module.exports.unStake = async (publicId, tokenName, amount) => {
-    console.log('from blockchain call: ', publicId, tokenName, amount);
+module.exports.unstakeToken = async (publicId, tokenName, amount) => {
     let blockchainRes = await axios.post(api.blockchainTraditionalLendingAPI + "/unStakeToken", {
         PublicId: publicId,
         Token: tokenName,
         Amount: amount
     });
-    console.log(blockchainRes.data.success);
     return blockchainRes.data;
 };

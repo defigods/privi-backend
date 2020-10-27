@@ -14,4 +14,6 @@ module.exports = {
     traditionalRepay: "repay_traditional",
     traditionalDepositCollateral: "traditional_collateral_deposit",
     traditionalWithdrawCollateral: "traditional_collateral_withdraw",
+    staking: "staking",
+    unstaking: "unstaking",
 }

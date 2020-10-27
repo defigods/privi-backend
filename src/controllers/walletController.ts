@@ -1,10 +1,9 @@
-const firebase = require("../firebase/firebase");
-const db = firebase.getDb();
-const collections = require("../firebase/collections");
-const coinBalance = require("../blockchain/coinBalance");
-const functions = require("../constants/functions");
-const notification = require("./notifications");
-const notificationTypes = require("../constants/notificationType");
+import createNotificaction from "./notifications";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest } from "../constants/functions";
+import notificationTypes from "../constants/notificationType";
+import collections from "../firebase/collections";
+import { db } from "../firebase/firebase";
+import coinBalance from "../blockchain/coinBalance";
 import express from 'express';
 
 const send = async (req: express.Request, res: express.Response) => {
@@ -17,7 +16,7 @@ const send = async (req: express.Request, res: express.Response) => {
         const type = body.type;
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
-            await functions.UpdateWallets(blockchainRes);
+            updateFirebase(blockchainRes);
             // notification
             let senderName = fromUid;
             let receiverName = toUid;
@@ -25,18 +24,22 @@ const send = async (req: express.Request, res: express.Response) => {
             // const receiverSnap = await db.colletion(collection.user).doc(toUid).get();
             const senderSnap = await db.collection(collections.user).doc(fromUid).get();
             const receiverSnap = await db.collection(collections.user).doc(toUid).get();
-            senderName = senderSnap.data().firstName;
-            receiverName = receiverSnap.data().firstName;
-            // notification to sender 
-            notification.createNotificaction(fromUid, "Transfer - Sent",
-                `You have succesfully send ${amount} ${token} to ${receiverName}!`,
-                notificationTypes.transferSend
-            );
-            // notification to receiver
-            notification.createNotificaction(fromUid, "Transfer - Received",
-                `You have succesfully received ${amount} ${token} from ${senderName}!`,
-                notificationTypes.transferReceive
-            );
+            const senderData = senderSnap.data();
+            const receriverData = receiverSnap.data();
+            if (senderData !== undefined && receriverData !== undefined) {
+                senderName = senderData.firstName;
+                receiverName = receriverData.firstName;
+                // notification to sender 
+                createNotificaction(fromUid, "Transfer - Sent",
+                    `You have succesfully send ${amount} ${token} to ${receiverName}!`,
+                    notificationTypes.transferSend
+                );
+                // notification to receiver
+                createNotificaction(fromUid, "Transfer - Received",
+                    `You have succesfully received ${amount} ${token} from ${senderName}!`,
+                    notificationTypes.transferReceive
+                );
+            }
             res.send({ success: true });
         } else {
             console.log('Error in controllers/walletController -> send()');
@@ -57,8 +60,8 @@ const withdraw = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const blockchainRes = await coinBalance.withdraw(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
-            await functions.UpdateWallets(blockchainRes);
-            notification.createNotificaction(publicId, "Withdraw - Complete",
+            updateFirebase(blockchainRes);
+            createNotificaction(publicId, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
@@ -81,8 +84,8 @@ const swap = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const blockchainRes = await coinBalance.swap(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
-            await functions.UpdateWallets(blockchainRes);
-            notification.createNotificaction(publicId, "Swap - Complete",
+            updateFirebase(blockchainRes);
+            createNotificaction(publicId, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );

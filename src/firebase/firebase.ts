@@ -1,7 +1,7 @@
-const admin = require("firebase-admin");
+import admin from 'firebase-admin';
 const serviceAccount = require("./ServiceAccountKey.json");
 
-module.exports.getDb = () => {
+function getDb() {
     if (admin.apps.length == 0) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
@@ -10,7 +10,7 @@ module.exports.getDb = () => {
     return admin.firestore();
 }
 
-module.exports.getAdmin = () => {
+function getAdmin() {
     if (admin.apps.length == 0) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount)
@@ -18,3 +18,7 @@ module.exports.getAdmin = () => {
     }
     return admin;
 }
+
+export const db = getDb();
+export const firebase = getAdmin();
+
