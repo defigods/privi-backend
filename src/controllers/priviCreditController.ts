@@ -23,7 +23,7 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
         if (blockchainRes && blockchainRes.success) {
             await functions.updateFirebase(blockchainRes);
             notification.createNotificaction(creator, "Privi Credit - Loan Offer Created",
-                `You have succesfully created a Privi Credit loan offer of ${amount} ${token}`,
+                `You have successfully created a new PRIVI Credit. ${amount} ${token} has been added to the PRIVI Credit Pool!`,
                 notificationTypes.priviCreditCreated
             );
             res.send({ success: true });

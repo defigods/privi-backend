@@ -3,6 +3,6 @@ const router = express.Router();
 
 const lendingController = require('../controllers/lendingController');
 
-// router.get('/signIn', lendingController.signIn);
+router.post('/initiateCredit', lendingController.initiateCredit);
 
 module.exports = router;

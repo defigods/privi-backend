@@ -39,3 +39,24 @@ exports.updateFirebase = async (blockchainRes) => {
         }
     });
 }
+
+exports.getRateOfChange = async () => {
+    let res = {};
+    const ratesQuery = await db.collection("ratesOfChange").get();
+    for (let i = 0; i < ratesQuery.docs.length; i++) {
+        const lastRateQuery = await ratesQuery.docs[i].ref.collection("rateHistory").orderBy("timestamp", "desc").limit(1).get();
+        let _lastRate = 0;
+        if (!lastRateQuery.empty) {
+            lastRateQuery.forEach((doc) => {
+                let docData = doc.data();
+                _lastRate = docData["rateUSD"];
+            });
+        }
+        res[ratesQuery.docs[i].id] = _lastRate;
+    }
+    res["BC"] = 1;
+    res["PC"] = 0.01;
+    res["DC"] = 0.01;
+    res["PDT"] = 0.01;
+    return res;
+};
