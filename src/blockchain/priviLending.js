@@ -19,11 +19,11 @@ module.exports.initiatePRIVIcredit = async (creator, amount, token, duration, pa
         InitialDeposit: String(amount),
     }
     );
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 module.exports.modifyPRIVIparameters = async (creator, loanId, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/modifyPRIVIparameters", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/modifyPRIVIparameters", {
         loanId: loanId,
         Creator: creator,
         Duration: duration,
@@ -35,12 +35,12 @@ module.exports.modifyPRIVIparameters = async (creator, loanId, duration, payment
         TrustScore: trustScore,
         EndorsementScore: endorsementScore,
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 
 module.exports.updateRiskParameters = async (token, interest_min, interest_max, p_incentive_min, p_incentive_max, p_premium_min, p_premium_max) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/updateRiskParameters", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/updateRiskParameters", {
         Token: token,
         RiskParameters: {
             Interest_min: interest_min,
@@ -51,66 +51,64 @@ module.exports.updateRiskParameters = async (token, interest_min, interest_max, 
             P_premium_max: p_premium_max,
         }
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 module.exports.getPRIVIcreditList = async () => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/getPRIVIcreditList", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/getPRIVIcreditList", {
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 module.exports.getPRIVIcredit = async (loanId) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/getPRIVIcredit", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/getPRIVIcredit", {
         LoanId: loanId
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 module.exports.depositFunds = async (loanId, lenderId, amount) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/depositFunds", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/depositFunds", {
         LoanId: loanId,
         LenderId: lenderId,
         Amount: amount
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 module.exports.withdrawFunds = async (loanId, userId, amount) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/withdrawFunds", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/withdrawFunds", {
         LoanId: loanId,
         UserId: userId,
         Amount: amount
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
-module.exports.borrowFunds = async (loanId, borrowerId, amount, trustScore, endorsementScore, collaterals) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/borrowFunds", {
+module.exports.borrowFunds = async (loanId, borrowerId, amount, collaterals) => {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/borrowFunds", {
         LoanId: loanId,
         BorrowerId: borrowerId,
         Amount: amount,
-        TrustScore: trustScore,
-        EndorsementScore: endorsementScore,
         Collaterals: collaterals
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 module.exports.assumePRIVIrisk = async (loanId, provider, premiumId, riskPct) => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/assumePRIVIrisk", {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/assumePRIVIrisk", {
         LoanId: loanId,
         ProviderId: provider,
         PremiumId: premiumId,
         Pct_Risk: riskPct,
     });
-	return blockchainRes.data;
+    return blockchainRes.data;
 };
 
 
 module.exports.managePRIVIcredits = async () => {
-	let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/managePRIVIcredits", {});
-	return blockchainRes.data;
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/managePRIVIcredits", {});
+    return blockchainRes.data;
 };
 
 

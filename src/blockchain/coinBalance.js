@@ -63,5 +63,11 @@ module.exports.spendFunds = async (publicId, amount, coin, providerId) => {
 	return blockchainRes.data;
 }
 
+module.exports.getTokenList = async () => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/getTokenList", {
+	});
+	return blockchainRes.data;
+}
+
 
 

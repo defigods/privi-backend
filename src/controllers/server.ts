@@ -15,6 +15,9 @@ const lendingRoutes = require('../routes/lendingRoutes');
 const walletRoutes = require('../routes/walletRoutes');
 const profileRoutes = require('../routes/profileRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
+const priviCreditRoutes = require('../routes/priviCreditRoutes');
+
+const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
 
@@ -49,12 +52,18 @@ export const startServer = (env: Env) => {
   app.use('/wallet', walletRoutes);
   app.use('/profile', profileRoutes);
   app.use('/privi-scan', priviScanRoutes);
+  app.use('/priviCredit', priviCreditRoutes);
 
-  // cron job for generating 
+  // start all cron jobs
+  let name: string;
+  let cronJob: any;
+  for ([name, cronJob] of Object.entries(crons)) {
+    cronJob.start()
+  }
 
 
   // Start server
-  
+
   switch (env) {
     // Run in local (development) environment without SSL
     case 'dev':

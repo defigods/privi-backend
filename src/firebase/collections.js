@@ -12,5 +12,4 @@ module.exports = {
     insurancePools: "InsurancePools",
     notificaction: "Notification",
     privacy: "EnabledPrivacy"
-
 }

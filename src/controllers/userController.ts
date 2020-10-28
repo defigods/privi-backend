@@ -1,6 +1,7 @@
 import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { stringify } from 'querystring';
 const jwt = require("jsonwebtoken");
 //const Cons = require('../shared/Config');
 //const { query } = require('../shared/query');
@@ -28,7 +29,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
         */
         console.log('signIn');
 
-        res.send({signIn: true})
+        res.send({ signIn: true })
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
@@ -118,10 +119,10 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
 
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
-    if(req.file) {
+    if (req.file) {
         console.log(req.file);
         let newImage = {
-            filename:  req.file.filename,
+            filename: req.file.filename,
             originalName: req.file.originalname
             // url: req.protocol + '://' + req.get('host') + '/images/' + image._id
         };
@@ -129,7 +130,7 @@ const changeUserProfilePhoto = async (req: express.Request, res: express.Respons
         newImage.originalName = req.file.originalname;
 
     } else {
-        res.status(400).json({error: 'No file'});
+        res.status(400).json({ error: 'No file' });
     }
 };
 
