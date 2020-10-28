@@ -1,7 +1,6 @@
 import express from 'express';
 import priviCredit from "../blockchain/priviLending";
-import createNotificaction from "./notifications";
-import { updateFirebase } from "../constants/functions";
+import { updateFirebase, createNotificaction } from "../constants/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 
@@ -176,11 +175,22 @@ exports.assumeRisk = async (req: express.Request, res: express.Response) => {
 // scheduled every day at 00:00 
 exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {
     try {
-        console.log("calling managePRIVIcredits");
+        console.log("******** Privi Credit managePRIVIcredits ********");
         const blockchainRes = await priviCredit.managePRIVIcredits();
         if (blockchainRes && blockchainRes.success) {
-            console.log("PRIVI credits updated");
+            console.log("******** Privi Credit managePRIVIcredits finished ********");
             updateFirebase(blockchainRes);
+            const updateWallets = blockchainRes.output.UpdateWallets;
+            let uid: string = "";
+            let walletObj: any = null;
+            for ([uid, walletObj] of Object.entries(updateWallets)) {
+                if (walletObj["Transaction"].length > 0) {
+                    createNotificaction(uid, "Privi Credit - Interest Payment",
+                        ` `,
+                        notificationTypes.priviCreditInterest
+                    );
+                }
+            }
         }
         else {
             console.log('Error in controllers/priviCredit -> managePRIVIcredits(): success = false');

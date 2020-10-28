@@ -1,5 +1,4 @@
 const axios = require("axios");
-const { user } = require("firebase-functions/lib/providers/auth");
 const api = require("./blockchainApi");
 
 // register new user or business to blockchain

@@ -49,9 +49,10 @@ module.exports.payInterests = async (lendingInterest, stakingInterest, rateOfCha
     return blockchainRes.data;
 };
 
-module.exports.checkLiquidation = async (publicId, rateOfChange) => {
+module.exports.checkLiquidation = async (publicId, token, rateOfChange) => {
     let blockchainRes = await axios.post(api.blockchainTraditionalLendingAPI + "/checkLiquidation", {
         PublicId: publicId,
+        Token: token,
         RateChange: rateOfChange
     });
     return blockchainRes.data;

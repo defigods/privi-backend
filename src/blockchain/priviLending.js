@@ -1,6 +1,5 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
-const functions = require("firebase-functions");
 
 module.exports.initiatePRIVIcredit = async (creator, amount, token, duration, payments, maxFunds, interest, p_incentive, p_premium, trustScore, endorsementScore) => {
     let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/initiatePRIVIcredit", {
