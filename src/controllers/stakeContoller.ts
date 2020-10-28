@@ -1,7 +1,6 @@
 import express from 'express';
 const tradinionalLending = require("../blockchain/traditionalLending");
-const notification = require("./notifications");
-const functions = require("../constants/functions");
+import { updateFirebase, createNotificaction } from "../constants/functions";
 const notificationTypes = require("../constants/notificationType");
 
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
@@ -12,8 +11,8 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const blockchainRes = await tradinionalLending.stakeToken(publicId, token, amount)
         if (blockchainRes && blockchainRes.success) {
-            functions.updateFirebase(blockchainRes);
-            notification.createNotificaction(publicId, "Loans 1.0 - Token Staked",
+            updateFirebase(blockchainRes);
+            createNotificaction(publicId, "Loans 1.0 - Token Staked",
                 ` `,
                 notificationTypes.staking
             );
@@ -37,8 +36,8 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, amount)
         if (blockchainRes && blockchainRes.success) {
-            functions.updateFirebase(blockchainRes);
-            notification.createNotificaction(publicId, "Loans 1.0 - Token Unstaked",
+            updateFirebase(blockchainRes);
+            createNotificaction(publicId, "Loans 1.0 - Token Unstaked",
                 ` `,
                 notificationTypes.unstaking
             );

@@ -11,5 +11,12 @@ module.exports = {
     liquidityPools: "LiquidityPools",
     insurancePools: "InsurancePools",
     notificaction: "Notification",
-    privacy: "EnabledPrivacy"
+    privacy: "EnabledPrivacy",
+    rates: "ratesOfChange",
+    rateHistory: "rateHistory",
+    constants: "manualConstants",
+    traditionalLendingConstants: "TraditionalLendingConstants",
+    podFTConstants: "FTPodConstants",
+    podNFTConstants: "NFTPodConstants",
+
 }

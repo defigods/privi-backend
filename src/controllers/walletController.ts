@@ -1,5 +1,4 @@
-import createNotificaction from "./notifications";
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest } from "../constants/functions";
+import { updateFirebase, createNotificaction } from "../constants/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
