@@ -1,6 +1,7 @@
 import { db, firebase } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance";
 import collections from "../firebase/collections";
+import axios from "axios";
 
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
@@ -81,16 +82,9 @@ export async function updateFirebase(blockchainRes) {
 export async function getRateOfChange() {
     let res = {};
     const ratesQuery = await db.collection("ratesOfChange").get();
-    for (let i = 0; i < ratesQuery.docs.length; i++) {
-        const lastRateQuery = await ratesQuery.docs[i].ref.collection("rateHistory").orderBy("timestamp", "desc").limit(1).get();
-        let _lastRate = 0;
-        if (!lastRateQuery.empty) {
-            lastRateQuery.forEach((doc) => {
-                let docData = doc.data();
-                _lastRate = docData["rateUSD"];
-            });
-        }
-        res[ratesQuery.docs[i].id] = _lastRate;
+    for (const doc of ratesQuery.docs) {
+        const rate = doc.data().rate;
+        res[doc.id] = rate;
     }
     // still don't have these Token conversion rates in firebase, so we add them manually
     res["BC"] = 1;
@@ -168,4 +162,12 @@ export async function createNotificaction(userId, title, text, type) {
     } else {
         return false;
     }
+}
+
+
+export async function getCurrencyRatesUsdBase() {
+    const resp = await axios.get("https://api.exchangeratesapi.io/latest?base=USD");
+    const rates = resp.data.rates;
+    rates.USD = 1;
+    return rates;
 }

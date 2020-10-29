@@ -153,7 +153,7 @@ async function getTokenUserList() {
 // scheduled every 5 min
 exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
     try {
-        console.log("********* Traditional lending checkLiquidation cron job started *********");
+        console.log("********* Traditional lending checkLiquidation() cron job started *********");
         const rateOfChange = await getRateOfChange();
         const candidates = await getTokenUserList();
         for (const [token, uidList] of Object.entries(candidates)) {
@@ -170,7 +170,7 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
                 }
             });
         }
-        console.log("--------- Traditional lending checkLiquidation finished ---------");
+        console.log("--------- Traditional lending checkLiquidation() finished ---------");
     } catch (err) {
         console.log('Error in controllers/lendingController -> checkLiquidation()', err);
     }
