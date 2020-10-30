@@ -1,38 +1,135 @@
 import express from 'express';
-import * as fs from 'fs';
-import * as path from 'path';
-import { stringify } from 'querystring';
-const jwt = require("jsonwebtoken");
-//const Cons = require('../shared/Config');
-//const { query } = require('../shared/query');
+// import * as fs from 'fs';
+// import * as path from 'path';
+// import { stringify } from 'querystring';
+//const jwt = require("jsonwebtoken");
+import collections from '../firebase/collections';
+import dataProtocol from '../blockchain/dataProtocol';
+import { db } from '../firebase/firebase';
+
+// AUTHENTICATION
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
-        /*
-        const args = req.query;
+        const { email, password } = req.query;
 
-        // check user & pwd in DB
-        const q = fs.readFileSync(path.join(__dirname, `/../queries/select/select_user.sql`), 'utf8');
-        const resDB = await query(q, 'select', [args.login, args.password]);
+        if (email && password) {
 
-        // Create session token
-        const token = jwt.sign({ id: args.login }, Cons.SEED.secret, {
-            expiresIn: 86400 // 24 hours
-            //expiresIn: 1
-        });
+            // Compare user & pwd between login input and DB
+            const user = await db.collection(collections.user)
+                .where('email', '==', email)
+                .where('password', '==', password)
+                .get();
 
-        // Add session token to User data
-        if (resDB.length > 0) resDB[0].token = token;
+            // Return result
+            if (user.empty) {
+                res.send({ isSignedIn: false, userData: {} });
+            } else {
+                const data = user.docs[0].data();
+                data.id = user.docs[0].id;
+                console.log('Login successful');
+                res.send({ isSignedIn: true, userData: data });
+            };
 
-        // send query result
-        (resDB.length > 0) ? res.status(200).json(resDB) : res.status(204).json('KO');
-        */
-        console.log('signIn');
-
-        res.send({ signIn: true })
+            // TODO: Create session token
+            // TODO: Compare password using encryption
+        };
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
-    }
+    };
+};
+
+const signUp = async (req: express.Request, res: express.Response) => {
+    try {
+        const {
+              role
+            , firstName
+            , lastName
+            , gender
+            , age
+            , country
+            , location
+            , address
+            , postalCode
+            , dialCode
+            , phone
+            , currency
+            , email
+            , password } = req.query;        
+        let uid: string = '';
+        const lastUpdate = Date.now();
+        const blockchainRes = await dataProtocol.register(role);
+
+        if (blockchainRes && blockchainRes.success) {
+
+            // Get IDs from blockchain response
+            const output = blockchainRes.output;
+            uid = output.ID;
+            const did = output.DID;
+
+            // Creates User in DB
+            await db.runTransaction(async (transaction) => {
+
+                // userData
+                transaction.set(db.collection(collections.user).doc(uid), {
+                    role: role,
+                    gender: gender,
+                    age: age,
+                    country: country,
+                    location: location,
+                    address: address,
+                    postalCode: postalCode,
+                    password: password,     //TODO: encrypt password
+                    firstName: firstName,
+                    lastName: lastName,
+                    dialCode: dialCode,
+                    phone: phone,
+                    email: email,
+                    currency: currency,
+                    lastUpdate: lastUpdate,
+                    endorsementScore: output.UpdateWallets[uid].EndorsementScore,
+                    trustScore: output.UpdateWallets[uid].TrustScore,
+                    followings: [],
+                    followers: [],
+                    followingNFTPods: [],
+                    followingFTPods: [],
+                });
+
+                // cloudDatabase
+                transaction.set(db.collection(collections.cloudDatabase).doc(did), {
+                    gender: gender,
+                    age: age,
+                    country: country,
+                    location: location
+                });
+
+                // wallet
+                const balances = output.UpdateWallets[uid].Balances;
+                for (const [key, value] of Object.entries(balances)) {  // for each token obj
+                    transaction.set(db.collection(collections.wallet).doc(key).collection(collections.user).doc(uid), value);
+                };
+
+                // transaction
+                const history = output.UpdateWallets[uid].Transaction;
+                if (history != null) {
+                    history.forEach(obj => {
+                        transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
+                        //transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
+                        transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
+                    });
+                };
+
+            });
+            res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
+        } else {
+            console.log(
+                'Warning in controllers/user.ts -> signUp():', blockchainRes);
+            res.send({ success: false });
+        };
+    } catch (err) {
+        console.log('Error in controllers/user.ts -> signUp(): ', err);
+        res.send({ success: false });
+    };
 };
 
 // MY WALL FUNCTIONS
@@ -137,6 +234,7 @@ const changeUserProfilePhoto = async (req: express.Request, res: express.Respons
 
 module.exports = {
     signIn,
+    signUp,
     getFollowPodsInfo,
     getFollowUserInfo,
     getFollowMyInfo,

@@ -21,10 +21,10 @@ let upload = multer({
     storage: storage
 });
 
-// GET
-
+// AUTHENTICATION
 router.get('/signIn', userController.signIn);
-router.get('/:userId', userController.signIn);
+router.get('/signUp', userController.signUp);
+//router.get('/:userId', userController.signIn);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', userController.getFollowPodsInfo);

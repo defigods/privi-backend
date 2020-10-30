@@ -1,4 +1,4 @@
-import { startServer } from './controllers/server';
+import { startServer } from './controllers/serverController';
 
 // 'dev' => Development environment without SSL
 // 'devssl' => Development environment with SSL
