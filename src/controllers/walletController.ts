@@ -180,6 +180,7 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
     }
 }
 
+/* duplicate getTransfers see below
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -198,7 +199,7 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         res.send({ success: false });
     }
 }
-
+*/
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
