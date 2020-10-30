@@ -7,11 +7,11 @@ router.post('/send', walletController.send);
 router.post('/withdraw', walletController.withdraw);
 router.post('/swap', walletController.swap);
 
-router.get('/getTokensRate', walletController.getTokensRate);
-router.get('/getTotalBalance', walletController.getTotalBalance);
-router.get('/getTokenBalances', walletController.getTokenBalances);
-router.get('/getTransfers', walletController.getTransfers);
-router.get('/getTotalWithdraw', walletController.getTotalWithdraw);
-router.get('/getTotalSwap', walletController.getTotalSwap);
+router.post('/getTokensRate', walletController.getTokensRate);
+router.post('/getTotalBalance', walletController.getTotalBalance);
+router.post('/getTokenBalances', walletController.getTokenBalances);
+router.post('/getTransfers', walletController.getTransfers);
+router.post('/getTotalWithdraw', walletController.getTotalWithdraw);
+router.post('/getTotalSwap', walletController.getTotalSwap);
 
 module.exports = router;

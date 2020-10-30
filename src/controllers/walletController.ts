@@ -1,4 +1,4 @@
-import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase } from "../constants/functions";
+import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getEmailUidMap } from "../constants/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -10,18 +10,20 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const fromUid = body.fromUid;
-        const toUid = body.toUid;
+        let toUid = body.toUid;
+        const toEmail = body.toEmail; // in case recipient email is passed instead of uid
         const amount = body.amount;
         const token = body.token;
         const type = body.type;
+        if (toEmail) {
+            const emailUidMap = await getEmailUidMap();
+            toUid = emailUidMap[toEmail];
+        }
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // notification
             let senderName = fromUid;
             let receiverName = toUid;
-            // const senderSnap = await db.colletion(collection.user).doc(fromUid).get();
-            // const receiverSnap = await db.colletion(collection.user).doc(toUid).get();
             const senderSnap = await db.collection(collections.user).doc(fromUid).get();
             const receiverSnap = await db.collection(collections.user).doc(toUid).get();
             const senderData = senderSnap.data();

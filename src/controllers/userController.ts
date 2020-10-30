@@ -42,7 +42,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
 const signUp = async (req: express.Request, res: express.Response) => {
     try {
         const {
-              role
+            role
             , firstName
             , lastName
             , gender
@@ -55,7 +55,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
             , phone
             , currency
             , email
-            , password } = req.query;        
+            , password } = req.query;
         let uid: string = '';
         const lastUpdate = Date.now();
         const blockchainRes = await dataProtocol.register(role);
