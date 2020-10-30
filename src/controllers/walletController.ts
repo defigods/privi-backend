@@ -4,7 +4,7 @@ import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance";
 import express from 'express';
-
+const currencySymbol = require("currency-symbol");
 
 module.exports.send = async (req: express.Request, res: express.Response) => {
     try {
@@ -113,12 +113,16 @@ const getTotalBalance = async (req: express.Request, res: express.Response) => {
         const rateOfChange = await getRateOfChange();
         // get user currency in usd
         let sum = 0;
+        let sumTokens = 0;
         let token: string = "";
         let rate: any = 1;
         for ([token, rate] of Object.entries(rateOfChange)) {
             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
-            if (data) sum += data.Amount * rate;
+            if (data) {
+                sum += data.Amount * rate;
+                sumTokens = sumTokens + data.Amount;
+            }
         }
         // get user currency
         let amountInUserCurrency = sum;
@@ -133,7 +137,9 @@ const getTotalBalance = async (req: express.Request, res: express.Response) => {
 
         const data = {
             amount: amountInUserCurrency,
-            currency: currency
+            tokens: sumTokens,
+            currency: currency,
+            currency_symbol: currencySymbol.symbol(currency)
         }
         res.send({ success: true, data: data });
     } catch (err) {
