@@ -37,7 +37,7 @@ router.get('/connections/getFollowing/:userId', userController.getFollowing);
 
 // INVESTMENTS - GETS
 router.get('/investments/getMyPods/:userId', userController.getMyPods);
-router.get('/investments/getPodsInvestments/:userId', userController.getPodsInvestments);
+router.get('/investments/getPodsInvestment/:userId', userController.getPodsInvestments);
 router.get('/investments/getPodsFollowed/:userId', userController.getPodsFollowed);
 router.get('/investments/getReceivables/:userId', userController.getReceivables);
 router.get('/investments/getLiabilities/:userId', userController.getLiabilities);
@@ -57,6 +57,7 @@ router.post('/changeProfilePhoto', upload.single('image'), userController.change
 
 router.post('/addToWaitlist', userControllerJS.addToWaitlist);
 router.post('/register', userControllerJS.register);
+
 router.get('/getPrivacy', userControllerJS.getPrivacy);
 router.post('/setPrivacy', userControllerJS.setPrivacy);
 
