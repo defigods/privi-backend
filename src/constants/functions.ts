@@ -81,7 +81,7 @@ export async function updateFirebase(blockchainRes) {
 
 export async function getRateOfChange() {
     let res = {};
-    const ratesQuery = await db.collection("ratesOfChange").get();
+    const ratesQuery = await db.collection(collections.rates).get();
     for (const doc of ratesQuery.docs) {
         const rate = doc.data().rate;
         res[doc.id] = rate;
@@ -102,7 +102,7 @@ export async function getLendingInterest() {
         tokenList.forEach((token) => {
             res[token] = 0.02 // case firebase doesnt contain these
         })
-        const interestSnap = await db.collection("manualConstants").doc("TraditionalLendingConstants").get();
+        const interestSnap = await db.collection(collections.constants).doc("TraditionalLendingConstants").get();
         const interestData = interestSnap.data();
         if (interestData !== undefined) {
             const interest = interestData["interest"];
@@ -130,7 +130,7 @@ export async function getStakingInterest() {
         tokenList.forEach((token) => {
             res[token] = 0.02 // case firebase doesnt contain these
         })
-        const interestSnap = await db.collection("manualConstants").doc("StakingConstants").get();
+        const interestSnap = await db.collection(collections.constants).doc("StakingConstants").get();
         const interestData = interestSnap.data();
         if (interestData !== undefined) {
             const interest = interestData["interest"];
@@ -171,3 +171,15 @@ export async function getCurrencyRatesUsdBase() {
     rates.USD = 1;
     return rates;
 }
+
+// return object that maps uid to email and viceversa
+export async function getEmailUidMap() {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).get();
+    for (const doc of usersQuery.docs) {
+        const email = doc.data().email;
+        res[doc.id] = email;
+        res[email] = doc.id;
+    }
+    return res;
+};
