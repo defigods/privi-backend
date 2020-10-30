@@ -29,9 +29,10 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
             );
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
             // Create Pod Rate Doc
-            db.collection(collections.rates).doc(podId).set({ type: "FTPod" });
+            const newPodRate = 0.01;
+            db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
             db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
-                rateUSD: 0.01,
+                rateUSD: newPodRate,
                 timestamp: Date.now()
             });
             res.send({ success: true });
