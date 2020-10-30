@@ -208,6 +208,11 @@ const getLiabilities = async (req: express.Request, res: express.Response) => {
 
 };
 
+const getSocialTokens = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+
+};
 
 const editUser = async (req: express.Request, res: express.Response) => {
 
@@ -248,5 +253,6 @@ module.exports = {
     getReceivables,
     getLiabilities,
     editUser,
-    changeUserProfilePhoto
+    changeUserProfilePhoto,
+    getSocialTokens
 };

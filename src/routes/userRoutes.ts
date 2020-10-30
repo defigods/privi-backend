@@ -41,7 +41,7 @@ router.get('/investments/getPodsInvestments/:userId', userController.getPodsInve
 router.get('/investments/getPodsFollowed/:userId', userController.getPodsFollowed);
 router.get('/investments/getReceivables/:userId', userController.getReceivables);
 router.get('/investments/getLiabilities/:userId', userController.getLiabilities);
-
+router.get('/investments/getSocialTokens/:userId', userController.getSocialTokens);
 
 // POST
 
