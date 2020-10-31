@@ -106,7 +106,7 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
 
 ///////////////////////////// gets //////////////////////////////
 
-module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
+const getTotalBalance = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const userId = body.userId;
@@ -120,8 +120,8 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
             if (data) {
-				sum += data.Amount * rate;
-				sumTokens = sumTokens + data.Amount;
+                sum += data.Amount * rate;
+                sumTokens = sumTokens + data.Amount;
             }
         }
         // get user currency
@@ -144,6 +144,31 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
         res.send({ success: true, data: data });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTotalBalance()', err);
+        res.send({ success: false });
+    }
+}
+module.exports.getTotalBalance = getTotalBalance;
+
+module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userId = body.userId;
+        const rateOfChange = await getRateOfChange();
+        // get user currency in usd
+        let sum = 0;
+        let token: string = "";
+        let rate: any = 1;
+        for ([token, rate] of Object.entries(rateOfChange)) {
+            const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
+            const data = walletTokenSnap.data();
+            if (data) {
+                const convRate = rateOfChange[token] / rateOfChange["PC"];
+                sum += data.Amount * convRate;
+            }
+        }
+        res.send({ success: true, data: sum });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTotalBalancePC()', err);
         res.send({ success: false });
     }
 }
@@ -188,7 +213,6 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
     }
 }
 
-/* duplicate getTransfers see below
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -207,14 +231,13 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         res.send({ success: false });
     }
 }
-*/
-module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
+
+module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const userId = body.userId;
         const retData: {}[] = [];
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive]).get();
+        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).get();
         historySnap.forEach((doc) => {
 			// console.log(doc.data());
 			let date = new Date(doc.data().Date);
@@ -223,19 +246,19 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         })
         res.send({ success: true, data: retData });
     } catch (err) {
-        console.log('Error in controllers/walletController -> getTransfers()', err);
+        console.log('Error in controllers/walletController -> getTransactions()', err);
         res.send({ success: false });
     }
 }
 
-module.exports.getTotalWithdraw = async (req: express.Request, res: express.Response) => {
+module.exports.getTotalIncome = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const userId = body.userId;
         let sum = 0;    // in usd
         const rateOfChange = await getRateOfChange();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("Type", "==", notificationTypes.withdraw).get();
+            .where("To", "==", userId).get();
         historySnap.forEach((doc) => {
             const token = doc.data().Token;
             const amount = doc.data().Amount;
@@ -260,14 +283,14 @@ module.exports.getTotalWithdraw = async (req: express.Request, res: express.Resp
     }
 }
 
-module.exports.getTotalSwap = async (req: express.Request, res: express.Response) => {
+module.exports.getTotalExpense = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const userId = body.userId;
         let sum = 0;    // in usd
         const rateOfChange = await getRateOfChange();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("Type", "==", notificationTypes.swap).get();
+            .where("From", "==", userId).get();
         historySnap.forEach((doc) => {
             const token = doc.data().Token;
             const amount = doc.data().Amount;
