@@ -219,7 +219,9 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         const userId = body.userId;
         const retData: {}[] = [];
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive]).get();
+            .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive])
+            .orderBy("Date", "desc")
+            .get();
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
@@ -239,7 +241,7 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
         const body = req.body;
         const userId = body.userId;
         const retData: {}[] = [];
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).get();
+        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).orderBy("Date", "desc").get();
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
