@@ -30,14 +30,14 @@ const signIn = async (req: express.Request, res: express.Response) => {
                 data.id = user.docs[0].id;
                 console.log('Login successful');
                 res.send({ isSignedIn: true, userData: data });
-            };
+            }
 
             // TODO: Create session token
             // TODO: Compare password using encryption
-        };
+        }
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
-    };
+    }
 };
 
 const signUp = async (req: express.Request, res: express.Response) => {
@@ -94,6 +94,10 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     followers: [],
                     followingNFTPods: [],
                     followingFTPods: [],
+                    myNFTPods: [],
+                    myFTPods: [],
+                    investedNFTPods: [],
+                    investedFTPods: [],
                 });
 
                 // cloudDatabase
@@ -108,7 +112,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                 const balances = output.UpdateWallets[uid].Balances;
                 for (const [key, value] of Object.entries(balances)) {  // for each token obj
                     transaction.set(db.collection(collections.wallet).doc(key).collection(collections.user).doc(uid), value);
-                };
+                }
 
                 // transaction
                 const history = output.UpdateWallets[uid].Transaction;
@@ -118,7 +122,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                         //transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
                         transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
                     });
-                };
+                }
 
             });
             res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
@@ -126,11 +130,11 @@ const signUp = async (req: express.Request, res: express.Response) => {
             console.log(
                 'Warning in controllers/user.ts -> signUp():', blockchainRes);
             res.send({ success: false });
-        };
+        }
     } catch (err) {
         console.log('Error in controllers/user.ts -> signUp(): ', err);
         res.send({ success: false });
-    };
+    }
 };
 
 // MY WALL FUNCTIONS
