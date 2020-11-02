@@ -181,7 +181,7 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
             const name = doc.data().name;
             const token = doc.id;
             const rate = doc.data().rate;
-            data.push({ token: token, name: name, rate: rate });
+            if (name) data.push({ token: token, name: name, rate: rate });
         }
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
         data.push({ token: "DC", name: "Data Coin", rate: 0.01 });

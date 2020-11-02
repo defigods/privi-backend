@@ -3,6 +3,8 @@ import priviCredit from "../blockchain/priviLending";
 import { updateFirebase, createNotificaction } from "../constants/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
+import { db } from '../firebase/firebase';
+import collections from '../firebase/collections';
 
 exports.initiateCredit = async (req: express.Request, res: express.Response) => {
     try {
@@ -171,6 +173,28 @@ exports.assumeRisk = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
+
+
+///////////////////////////// GETS //////////////////////////////
+
+exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
+    try {
+        const resData: {}[] = [];
+        const creditsSnap = await db.collection(collections.priviCredits).get();
+        creditsSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                resData.push(data);
+            }
+        });
+        res.send({ success: true, data: resData });
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> getPriviCredits(): ', err);
+        res.send({ success: false });
+    }
+};
+
+/////////////////////////// CRON JOBS //////////////////////////////
 
 // scheduled every day at 00:00 
 exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {
