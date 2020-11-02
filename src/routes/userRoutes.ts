@@ -1,7 +1,6 @@
 import express from 'express';
 import multer from 'multer';
 import path from 'path';
-
 const router = express.Router();
 
 const userController = require('../controllers/userController');
@@ -26,10 +25,12 @@ router.get('/signIn', userController.signIn);
 router.get('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
 
+router.post('/getBasicInfo', userController.getBasicInfo);
+
 // MY WALL - GETS
-router.get('/wall/getFollowPodsInfo/:userId', profileController.getFollowPodsInfo);
-router.get('/wall/getFollowUserInfo/:userId', profileController.getFollowingUserInfo);
-router.get('/wall/getFollowMyInfo/:userId', profileController.getOwnInfo);
+router.get('/wall/getFollowPodsInfo/:userId', userController.getFollowPodsInfo);
+router.get('/wall/getFollowUserInfo/:userId', userController.getFollowingUserInfo);
+router.get('/wall/getFollowMyInfo/:userId', userController.getOwnInfo);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', userController.getFollowers);
@@ -61,7 +62,5 @@ router.post('/register', userControllerJS.register);
 router.get('/getPrivacy', userControllerJS.getPrivacy);
 router.post('/setPrivacy', userControllerJS.setPrivacy);
 
-
-router.post('/getBasicInfo', profileController.getBasicInfo);
 
 module.exports = router;

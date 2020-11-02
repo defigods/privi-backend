@@ -146,7 +146,7 @@ interface BasicInfo {
     followings: number
 }
 
-exports.getBasicInfo = async (req: express.Request, res: express.Response) => {
+const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const publicId = body.publicId;
@@ -192,11 +192,11 @@ interface Action {
 
 const getFollowPodsInfo = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-        const publicId = body.publicId;
+        let userId = req.params.userId;
+        console.log(userId);
         const actions = [];
         let action: Action = { name: "", profilePhoto: "", description: "", date: Date.now() };
-        const userSnap = await db.collection(collections.user).doc(publicId).get();
+        const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
             const followingFTPods = userData.followingFTPods;
@@ -218,11 +218,11 @@ const getFollowPodsInfo = async (req: express.Request, res: express.Response) =>
 
 const getFollowingUserInfo = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-        const publicId = body.publicId;
+        let userId = req.params.userId;
+        console.log(userId);
         const actions = [];
         let action: Action = { name: "", profilePhoto: "", description: "", date: Date.now() };
-        const userSnap = await db.collection(collections.user).doc(publicId).get();
+        const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
             const followings = userData.followings;
@@ -244,11 +244,11 @@ const getFollowingUserInfo = async (req: express.Request, res: express.Response)
 
 const getOwnInfo = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-        const publicId = body.publicId;
+        let userId = req.params.userId;
+        console.log(userId);
         const actions = [];
         let action: Action = { name: "", profilePhoto: "", description: "", date: Date.now() };
-        const userSnap = await db.collection(collections.user).doc(publicId).get();
+        const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         // create action and fill actions (to be specified)
         res.send({ success: true, data: actions });
@@ -262,44 +262,115 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
 
 const getFollowers = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
-    console.log(userId);
-
+    try {
+        const userRef = await db.collection(collections.user)
+            .doc(userId).get();
+        const user : any = userRef.data();
+        res.send({
+            success: true,
+            data: {
+                followers: user.followers
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getFollowers()', err);
+        res.send({ success: false });
+    }
 };
 
 const getFollowing = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
-    console.log(userId);
-
+    try {
+        const userRef = await db.collection(collections.user)
+            .doc(userId).get();
+        const user : any = userRef.data();
+        res.send({
+            success: true,
+            data: {
+                followings: user.followings
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getFollowing()', err);
+        res.send({ success: false });
+    }
 };
 
 const followUser = async (req: express.Request, res: express.Response) => {
+    try {
 
-
+    } catch (err) {
+        console.log('Error in controllers/profile -> followUser()', err);
+        res.send({ success: false });
+    }
 };
 
 const unFollowUser = async (req: express.Request, res: express.Response) => {
+    try {
 
-
+    } catch (err) {
+        console.log('Error in controllers/profile -> unFollowUser()', err);
+        res.send({ success: false });
+    }
 };
 
 // INVESTMENTS
 
 const getMyPods = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
-    console.log(userId);
-
+    try {
+        const userRef = await db.collection(collections.user)
+            .doc(userId).get();
+        const user : any = userRef.data();
+        res.send({
+            success: true,
+            data: {
+                NFT: user.myNFTPods,
+                FT: user.myFTPods
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getMyPods()', err);
+        res.send({ success: false });
+    }
 };
 
 const getPodsInvestments = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
-    console.log(userId);
-
+    try {
+        const userRef = await db.collection(collections.user)
+            .doc(userId).get();
+        const user : any = userRef.data();
+        res.send({
+            success: true,
+            data: {
+                NFT: user.investedNFTPods,
+                FT: user.investedFTPods
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getPodsInvestments()', err);
+        res.send({ success: false });
+    }
 };
 
 const getPodsFollowed = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
-    console.log(userId);
-
+    try {
+        const userRef = await db.collection(collections.user)
+            .doc(userId).get();
+        const user : any = userRef.data();
+        res.send({
+            success: true,
+            data: {
+                NFT: user.followingNFTPods,
+                FT: user.followingFTPods
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getPodsFollowed()', err);
+        res.send({ success: false });
+    }
 };
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
@@ -360,5 +431,6 @@ module.exports = {
     getLiabilities,
     editUser,
     changeUserProfilePhoto,
-    getSocialTokens
+    getSocialTokens,
+    getBasicInfo
 };
