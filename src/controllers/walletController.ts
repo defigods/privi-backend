@@ -221,8 +221,10 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
             .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive]).get();
         historySnap.forEach((doc) => {
-            console.log(doc.id);
-            const data = { token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type };
+
+			let date = new Date(doc.data().Date);
+            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
+
             retData.push(data);
         })
         res.send({ success: true, data: retData });
@@ -239,7 +241,10 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
         const retData: {}[] = [];
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).get();
         historySnap.forEach((doc) => {
-            const data = { token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type };
+
+			let date = new Date(doc.data().Date);
+            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
+
             retData.push(data);
         })
         res.send({ success: true, data: retData });

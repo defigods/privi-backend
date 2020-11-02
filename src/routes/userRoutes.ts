@@ -27,9 +27,9 @@ router.get('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
 
 // MY WALL - GETS
-router.get('/wall/getFollowPodsInfo/:userId', userController.getFollowPodsInfo);
-router.get('/wall/getFollowUserInfo/:userId', userController.getFollowUserInfo);
-router.get('/wall/getFollowMyInfo/:userId', userController.getFollowMyInfo);
+router.get('/wall/getFollowPodsInfo/:userId', profileController.getFollowPodsInfo);
+router.get('/wall/getFollowUserInfo/:userId', profileController.getFollowingUserInfo);
+router.get('/wall/getFollowMyInfo/:userId', profileController.getOwnInfo);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', userController.getFollowers);
@@ -37,7 +37,7 @@ router.get('/connections/getFollowing/:userId', userController.getFollowing);
 
 // INVESTMENTS - GETS
 router.get('/investments/getMyPods/:userId', userController.getMyPods);
-router.get('/investments/getPodsInvestments/:userId', userController.getPodsInvestments);
+router.get('/investments/getPodsInvestment/:userId', userController.getPodsInvestments);
 router.get('/investments/getPodsFollowed/:userId', userController.getPodsFollowed);
 router.get('/investments/getReceivables/:userId', userController.getReceivables);
 router.get('/investments/getLiabilities/:userId', userController.getLiabilities);
@@ -57,7 +57,11 @@ router.post('/changeProfilePhoto', upload.single('image'), userController.change
 
 router.post('/addToWaitlist', userControllerJS.addToWaitlist);
 router.post('/register', userControllerJS.register);
+
 router.get('/getPrivacy', userControllerJS.getPrivacy);
 router.post('/setPrivacy', userControllerJS.setPrivacy);
+
+
+router.post('/getBasicInfo', profileController.getBasicInfo);
 
 module.exports = router;

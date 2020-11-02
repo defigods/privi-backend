@@ -13,7 +13,6 @@ const podRoutes = require('../routes/podRoutes');
 const stakeRoutes = require('../routes/stakeRoutes');
 const lendingRoutes = require('../routes/lendingRoutes');
 const walletRoutes = require('../routes/walletRoutes');
-const profileRoutes = require('../routes/profileRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
 const priviCreditRoutes = require('../routes/priviCreditRoutes');
 const poolRoutes = require('../routes/poolRoutes');
@@ -51,7 +50,6 @@ export const startServer = (env: Env) => {
   app.use('/stake', stakeRoutes);
   app.use('/lendings', lendingRoutes);
   app.use('/wallet', walletRoutes);
-  app.use('/profile', profileRoutes);
   app.use('/privi-scan', priviScanRoutes);
   app.use('/priviCredit', priviCreditRoutes);
   app.use('/liquidityPool', poolRoutes);
