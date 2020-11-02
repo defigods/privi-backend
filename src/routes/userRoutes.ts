@@ -27,9 +27,9 @@ router.get('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
 
 // MY WALL - GETS
-router.get('/wall/getFollowPodsInfo/:userId', profileController.getFollowPodsInfo);
-router.get('/wall/getFollowUserInfo/:userId', profileController.getFollowingUserInfo);
-router.get('/wall/getFollowMyInfo/:userId', profileController.getOwnInfo);
+router.get('/wall/getFollowPodsInfo/:userId', userController.getFollowPodsInfo);
+router.get('/wall/getFollowUserInfo/:userId', userController.getFollowingUserInfo);
+router.get('/wall/getFollowMyInfo/:userId', userController.getOwnInfo);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', userController.getFollowers);
@@ -62,6 +62,6 @@ router.get('/getPrivacy', userControllerJS.getPrivacy);
 router.post('/setPrivacy', userControllerJS.setPrivacy);
 
 
-router.post('/getBasicInfo', profileController.getBasicInfo);
+//router.post('/getBasicInfo', userController.getBasicInfo);
 
 module.exports = router;
