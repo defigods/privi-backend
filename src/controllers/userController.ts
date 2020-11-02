@@ -146,24 +146,24 @@ interface BasicInfo {
     profilePhoto: string,
     trustScore: number,
     endorsementScore: number,
-    followers: number,
-    followings: number
+    numFollowers: number,
+    numFollowings: number
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-        const publicId = body.publicId;
-        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, followers: 0, followings: 0 };
-        const userSnap = await db.collection(collections.user).doc(publicId).get();
+        let userId = req.params.userId;
+        console.log(userId);
+        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0 };
+        const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
             // update return data
             basicInfo.name = userData.firstName + " " + userData.lastName;
             basicInfo.trustScore = userData.trustScore;
             basicInfo.endorsementScore = userData.endorsementScore;
-            basicInfo.followers = userData.followers.length;
-            basicInfo.followings = userData.followings.length;
+            basicInfo.numFollowers = userData.numFollowings || 0;
+            basicInfo.numFollowings = userData.numFollowings || 0;
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
@@ -270,12 +270,47 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
         const user : any = userRef.data();
-        res.send({
-            success: true,
-            data: {
-                followers: user.followers
+
+        if(user && user.followers) {
+            if(user.followers.length === 0) {
+                res.send({
+                    success: true,
+                    data: {
+                        followers: 0
+                    }
+                });
+            } else {
+                let followers : any[] = [];
+                user.followers.forEach(async (follower, id) => {
+                    const followerInfo = await db.collection(collections.user)
+                        .doc(follower).get();
+                    const followerData : any = followerInfo.data();
+
+                    let isFollowing = user.followings.find(following => following === follower);
+
+                    let followerObj = {
+                        id: followerData.id,
+                        name: followerData.firstName + followerData.lastName,
+                        endorsementScore: followerData.endorsementScore,
+                        trustScore: followerData.trustScore,
+                        numFollowers: followerData.numFollowers,
+                        numFollowings: followerData.numFollowings,
+                        isFollowing: !!isFollowing
+                    };
+
+                    followers.push(followerObj);
+
+                    if(user.followers.length === id + 1) {
+                        res.send({
+                            success: true,
+                            data: {
+                                followers: followers
+                            }
+                        });
+                    }
+                });
             }
-        });
+        }
     } catch (err) {
         console.log('Error in controllers/profile -> getFollowers()', err);
         res.send({ success: false });
@@ -288,6 +323,36 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
         const user : any = userRef.data();
+
+        let followings : any[] = [];
+        user.followings.forEach(async (following, id) => {
+            const followingInfo = await db.collection(collections.user)
+                .doc(following).get();
+            const followingData : any = followingInfo.data();
+
+            let followingObj = {
+                id: followingData.id,
+                name: followingData.firstName + followingData.lastName,
+                endorsementScore: followingData.endorsementScore,
+                trustScore: followingData.trustScore,
+                numFollowers: followingData.numFollowers,
+                numFollowings: followingData.numFollowings
+            };
+
+            followings.push(followingObj);
+
+            if(user.followings.length === id + 1) {
+                res.send({
+                    success: true,
+                    data: {
+                        followings: followings
+                    }
+                });
+            }
+        });
+
+
+
         res.send({
             success: true,
             data: {
@@ -302,18 +367,72 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
 
 const followUser = async (req: express.Request, res: express.Response) => {
     try {
+        let body = req.body;
+        let userToFollow = body.userToFollow;
 
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+        const userToFollowRef = db.collection(collections.user)
+            .doc(userToFollow.id);
+        const userToFollowGet = await userToFollowRef.get();
+        const userToFollowData : any = userToFollowGet.data();
+
+        let alreadyFollowing = user.followings.find((item) => item === userToFollow.id);
+        if(!alreadyFollowing){
+            user.followings.push(userToFollow.id);
+        }
+
+        let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
+        if(!alreadyFollower){
+            userToFollowData.followers.push(body.user.id);
+        }
+
+        await userToFollowRef.update({
+            followers: userToFollowData.followers
+        });
+        await userRef.update({
+            followings: user.followings
+        });
+        res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/profile -> followUser()', err);
+        console.log('Error in controllers/followUser -> followUser()', err);
         res.send({ success: false });
     }
 };
 
 const unFollowUser = async (req: express.Request, res: express.Response) => {
     try {
+        let body = req.body;
+        let userToUnFollow = body.userToUnFollow;
 
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+
+        const userToUnFollowRef = db.collection(collections.user)
+            .doc(userToUnFollow.id);
+        const userToUnFollowGet = await userToUnFollowRef.get();
+        const userToUnFollowData : any = userToUnFollowGet.data();
+
+        let newFollowings = user.followings.filter(item => item != userToUnFollow.id)
+
+        let newFollowers = userToUnFollowData.followers.filter((item) => item !== body.user.id);
+
+        await userToUnFollowRef.update({
+            followers: newFollowers
+        });
+        await userRef.update({
+            followings: newFollowings
+        });
+
+        res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/profile -> unFollowUser()', err);
+        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
         res.send({ success: false });
     }
 };
@@ -329,8 +448,8 @@ const getMyPods = async (req: express.Request, res: express.Response) => {
         res.send({
             success: true,
             data: {
-                NFT: user.myNFTPods,
-                FT: user.myFTPods
+                NFT: user.myNFTPods || [],
+                FT: user.myFTPods || []
             }
         });
     } catch (err) {
@@ -348,8 +467,8 @@ const getPodsInvestments = async (req: express.Request, res: express.Response) =
         res.send({
             success: true,
             data: {
-                NFT: user.investedNFTPods,
-                FT: user.investedFTPods
+                NFT: user.investedNFTPods || [],
+                FT: user.investedFTPods || []
             }
         });
     } catch (err) {
@@ -367,8 +486,8 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
         res.send({
             success: true,
             data: {
-                NFT: user.followingNFTPods,
-                FT: user.followingFTPods
+                NFT: user.followingNFTPods || [],
+                FT: user.followingFTPods || []
             }
         });
     } catch (err) {

@@ -25,7 +25,7 @@ router.get('/signIn', userController.signIn);
 router.get('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
 
-router.post('/getBasicInfo', userController.getBasicInfo);
+router.get('/getBasicInfo/:userId', userController.getBasicInfo);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', userController.getFollowPodsInfo);
