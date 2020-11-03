@@ -7,6 +7,7 @@ import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import { db } from '../firebase/firebase';
 import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction } from "../constants/functions";
+import {addListener} from "cluster";
 
 // AUTHENTICATION
 
@@ -91,7 +92,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     endorsementScore: output.UpdateWallets[uid].EndorsementScore,
                     trustScore: output.UpdateWallets[uid].TrustScore,
                     followings: [],
+                    numFollowings: 0,
                     followers: [],
+                    numFollowers: 0,
                     followingNFTPods: [],
                     followingFTPods: [],
                     myNFTPods: [],
@@ -153,7 +156,6 @@ interface BasicInfo {
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        console.log(userId);
         let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0 };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
@@ -162,7 +164,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.name = userData.firstName + " " + userData.lastName;
             basicInfo.trustScore = userData.trustScore;
             basicInfo.endorsementScore = userData.endorsementScore;
-            basicInfo.numFollowers = userData.numFollowings || 0;
+            basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             res.send({ success: true, data: basicInfo });
         }
@@ -289,8 +291,8 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
                     let isFollowing = user.followings.find(following => following === follower);
 
                     let followerObj = {
-                        id: followerData.id,
-                        name: followerData.firstName + followerData.lastName,
+                        id: follower,
+                        name: followerData.firstName + ' ' + followerData.lastName,
                         endorsementScore: followerData.endorsementScore,
                         trustScore: followerData.trustScore,
                         numFollowers: followerData.numFollowers,
@@ -325,40 +327,43 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
         const user : any = userRef.data();
 
         let followings : any[] = [];
-        user.followings.forEach(async (following, id) => {
-            const followingInfo = await db.collection(collections.user)
-                .doc(following).get();
-            const followingData : any = followingInfo.data();
-
-            let followingObj = {
-                id: followingData.id,
-                name: followingData.firstName + followingData.lastName,
-                endorsementScore: followingData.endorsementScore,
-                trustScore: followingData.trustScore,
-                numFollowers: followingData.numFollowers,
-                numFollowings: followingData.numFollowings
-            };
-
-            followings.push(followingObj);
-
-            if(user.followings.length === id + 1) {
+        if(user && user.followings) {
+            if (user.followings.length === 0) {
                 res.send({
                     success: true,
                     data: {
-                        followings: followings
+                        followers: 0
+                    }
+                });
+            } else {
+                user.followings.forEach(async (following, id) => {
+                    const followingInfo = await db.collection(collections.user)
+                        .doc(following).get();
+                    const followingData: any = followingInfo.data();
+
+                    let followingObj = {
+                        id: following,
+                        name: followingData.firstName + ' ' + followingData.lastName,
+                        endorsementScore: followingData.endorsementScore,
+                        trustScore: followingData.trustScore,
+                        numFollowers: followingData.numFollowers,
+                        numFollowings: followingData.numFollowings,
+                        isFollowing: true
+                    };
+
+                    followings.push(followingObj);
+
+                    if (user.followings.length === id + 1) {
+                        res.send({
+                            success: true,
+                            data: {
+                                followings: followings
+                            }
+                        });
                     }
                 });
             }
-        });
-
-
-
-        res.send({
-            success: true,
-            data: {
-                followings: user.followings
-            }
-        });
+        }
     } catch (err) {
         console.log('Error in controllers/profile -> getFollowing()', err);
         res.send({ success: false });
@@ -389,16 +394,17 @@ const followUser = async (req: express.Request, res: express.Response) => {
         if(!alreadyFollower){
             userToFollowData.followers.push(body.user.id);
         }
+        userToFollowData.numFollowers = userToFollowData.followers.length;
 
         await userToFollowRef.update({
             followers: userToFollowData.followers,
-            numFollowers: userToFollowData.followers.length
+            numFollowers: userToFollowData.numFollowers
         });
         await userRef.update({
             followings: user.followings,
             numFollowings: user.followings.length
         });
-        res.send({ success: true });
+        res.send({ success: true, data: userToFollowData });
     } catch (err) {
         console.log('Error in controllers/followUser -> followUser()', err);
         res.send({ success: false });
@@ -410,11 +416,12 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
         let body = req.body;
         let userToUnFollow = body.userToUnFollow;
 
+        console.log(body.user.id, userToUnFollow)
+
         const userRef = db.collection(collections.user)
             .doc(body.user.id);
         const userGet = await userRef.get();
         const user : any = userGet.data();
-
 
         const userToUnFollowRef = db.collection(collections.user)
             .doc(userToUnFollow.id);
@@ -425,6 +432,10 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
 
         let newFollowers = userToUnFollowData.followers.filter((item) => item !== body.user.id);
 
+        console.log(userToUnFollowData.followers);
+        console.log(newFollowers);
+        userToUnFollowData.numFollowers = newFollowers.length;
+
         await userToUnFollowRef.update({
             followers: newFollowers,
             numFollowers: newFollowers.length
@@ -434,7 +445,7 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
             numFollowings: newFollowings.length
         });
 
-        res.send({ success: true });
+        res.send({ success: true, data: userToUnFollowData });
     } catch (err) {
         console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
         res.send({ success: false });

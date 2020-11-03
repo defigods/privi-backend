@@ -34,7 +34,7 @@ router.get('/wall/getFollowMyInfo/:userId', userController.getOwnInfo);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', userController.getFollowers);
-router.get('/connections/getFollowing/:userId', userController.getFollowing);
+router.get('/connections/getFollowings/:userId', userController.getFollowing);
 
 // INVESTMENTS - GETS
 router.get('/investments/getMyPods/:userId', userController.getMyPods);
