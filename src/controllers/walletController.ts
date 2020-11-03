@@ -1,4 +1,4 @@
-import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getEmailUidMap } from "../constants/functions";
+import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../constants/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -16,8 +16,12 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const type = body.type;
         if (toEmail) {
-            const emailUidMap = await getEmailUidMap();
+            const emailUidMap = await getUidFromEmail(toEmail);
             toUid = emailUidMap[toEmail];
+        }
+        if (!toUid) {
+            res.send({ success: true, message: "toUid is required" });
+            return;
         }
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {

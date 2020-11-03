@@ -6,7 +6,7 @@ import express from 'express';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import { db } from '../firebase/firebase';
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction } from "../constants/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../constants/functions";
 
 // AUTHENTICATION
 
@@ -59,6 +59,16 @@ const signUp = async (req: express.Request, res: express.Response) => {
             , password } = req.query;
         let uid: string = '';
         const lastUpdate = Date.now();
+        
+        // check if email is in database
+		const emailUidMap = await getUidFromEmail(email);
+		let toUid = emailUidMap[email!.toString()];
+		console.log(email);
+        if (toUid) {
+            res.send({ success: false, message: "email is already in database" });
+            return;
+        }
+        
         const blockchainRes = await dataProtocol.register(role);
 
         if (blockchainRes && blockchainRes.success) {

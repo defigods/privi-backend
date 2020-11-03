@@ -164,7 +164,6 @@ export async function createNotificaction(userId, title, text, type) {
     }
 }
 
-
 export async function getCurrencyRatesUsdBase() {
     const resp = await axios.get("https://api.exchangeratesapi.io/latest?base=USD");
     const rates = resp.data.rates;
@@ -172,10 +171,21 @@ export async function getCurrencyRatesUsdBase() {
     return rates;
 }
 
-// return object that maps uid to email and viceversa
+// return object that maps uid to email and viceversa - this would be very big soon avoid when you can
 export async function getEmailUidMap() {
     let res = {};
     const usersQuery = await db.collection(collections.user).get();
+    for (const doc of usersQuery.docs) {
+        const email = doc.data().email;
+        res[doc.id] = email;
+        res[email] = doc.id;
+    }
+    return res;
+};
+
+export async function getUidFromEmail(email) {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).where("email", "==", email.toLowerCase()).get();        
     for (const doc of usersQuery.docs) {
         const email = doc.data().email;
         res[doc.id] = email;
