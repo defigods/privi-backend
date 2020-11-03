@@ -581,7 +581,41 @@ const getSocialTokens = async (req: express.Request, res: express.Response) => {
 };
 
 const editUser = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
+        const userRef = db.collection(collections.user)
+            .doc(body.id);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+        await userRef.update({
+            firstName: body.firstName,
+            lastName: body.lastName,
+            dob: body.dob,
+            country: body.country,
+            postalCode: body.postalCode,
+            location: body.location,
+            address: body.address,
+            bio: body.bio
+        });
+
+        res.send({ success: true, data: {
+                id: body.id,
+                firstName: body.firstName,
+                lastName: body.lastName,
+                dob: body.dob,
+                country: body.country,
+                postalCode: body.postalCode,
+                location: body.location,
+                address: body.address,
+                bio: body.bio
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/followUser -> followUser()', err);
+        res.send({ success: false });
+    }
 
 };
 
