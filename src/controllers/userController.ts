@@ -6,7 +6,7 @@ import express from 'express';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import { db } from '../firebase/firebase';
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../constants/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
 
 // AUTHENTICATION
 

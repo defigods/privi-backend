@@ -1,4 +1,4 @@
-import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../constants/functions";
+import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -113,7 +113,10 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
 const getTotalBalance = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const rateOfChange = await getRateOfChange();
         // get user currency in usd
         let sum = 0;
@@ -156,7 +159,10 @@ module.exports.getTotalBalance = getTotalBalance;
 module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+        
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const rateOfChange = await getRateOfChange();
         // get user currency in usd
         let sum = 0;
@@ -200,7 +206,10 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const retData: {}[] = [];
         const rateOfChange = await getRateOfChange();
         for (const [token, _] of Object.entries(rateOfChange)) {
@@ -220,7 +229,10 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const retData: {}[] = [];
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
             .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive])
@@ -243,7 +255,10 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const retData: {}[] = [];
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).orderBy("Date", "desc").get();
         historySnap.forEach((doc) => {
@@ -263,7 +278,10 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
 module.exports.getTotalIncome = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         let sum = 0;    // in usd
         const rateOfChange = await getRateOfChange();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
@@ -295,7 +313,10 @@ module.exports.getTotalIncome = async (req: express.Request, res: express.Respon
 module.exports.getTotalExpense = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         let sum = 0;    // in usd
         const rateOfChange = await getRateOfChange();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
