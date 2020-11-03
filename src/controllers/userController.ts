@@ -391,10 +391,12 @@ const followUser = async (req: express.Request, res: express.Response) => {
         }
 
         await userToFollowRef.update({
-            followers: userToFollowData.followers
+            followers: userToFollowData.followers,
+            numFollowers: userToFollowData.followers.length
         });
         await userRef.update({
-            followings: user.followings
+            followings: user.followings,
+            numFollowings: user.followings.length
         });
         res.send({ success: true });
     } catch (err) {
@@ -424,10 +426,12 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
         let newFollowers = userToUnFollowData.followers.filter((item) => item !== body.user.id);
 
         await userToUnFollowRef.update({
-            followers: newFollowers
+            followers: newFollowers,
+            numFollowers: newFollowers.length
         });
         await userRef.update({
-            followings: newFollowings
+            followings: newFollowings,
+            numFollowings: newFollowings.length
         });
 
         res.send({ success: true });
