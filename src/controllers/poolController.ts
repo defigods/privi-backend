@@ -1,6 +1,6 @@
 import express from 'express';
 import podProtocol from "../blockchain/podProtocol";
-import { updateFirebase, getRateOfChange, createNotificaction } from "../constants/functions";
+import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {

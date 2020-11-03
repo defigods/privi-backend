@@ -185,7 +185,7 @@ export async function getEmailUidMap() {
 
 export async function getUidFromEmail(email) {
     let res = {};
-    const usersQuery = await db.collection(collections.user).where("email", "==", email.toLowerCase()).get();        
+    const usersQuery = await db.collection(collections.user).where("email", "==", email).get();        
     for (const doc of usersQuery.docs) {
         const email = doc.data().email;
         res[doc.id] = email;

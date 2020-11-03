@@ -1,6 +1,6 @@
 import express from 'express';
 const tradinionalLending = require("../blockchain/traditionalLending");
-import { updateFirebase, createNotificaction } from "../constants/functions";
+import { updateFirebase, createNotificaction } from "../functions/functions";
 const notificationTypes = require("../constants/notificationType");
 
 exports.stakeToken = async (req: express.Request, res: express.Response) => {

@@ -1,6 +1,6 @@
 import express from 'express';
 import priviCredit from "../blockchain/priviLending";
-import { updateFirebase, createNotificaction } from "../constants/functions";
+import { updateFirebase, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
