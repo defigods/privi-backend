@@ -12,8 +12,11 @@ import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
-        const { email, password } = req.query;
+        const body = req.body;
 
+        const email = body.email;
+        const password = body.password;
+        
         if (email && password) {
 
             // Compare user & pwd between login input and DB
@@ -41,7 +44,8 @@ const signIn = async (req: express.Request, res: express.Response) => {
 };
 
 const signUp = async (req: express.Request, res: express.Response) => {
-    try {
+    try {        
+/*
         const {
             role
             , firstName
@@ -57,6 +61,28 @@ const signUp = async (req: express.Request, res: express.Response) => {
             , currency
             , email
             , password } = req.query;
+*/        
+        
+        const body = req.body;
+
+        const firstName = body.firstName;
+        const country = body.country;        
+        const currency = body.currency;
+        const email = body.email;
+        const password = body.password;        
+        const role = body.role; // role should not be coming from user input?
+        
+/*
+        const lastName = body.lastName;
+        const gender = body.gender;
+        const age = body.age;
+        const location = body.location;
+        const address = body.address;
+        const postalCode = body.postalCode;
+        const dialCode = body.dialCode;
+        const phone = body.phone;
+*/  
+
         let uid: string = '';
         const lastUpdate = Date.now();
         
@@ -83,20 +109,24 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
                 // userData
                 transaction.set(db.collection(collections.user).doc(uid), {
+                    firstName: firstName,
+                    country: country,
+                    currency: currency,                    
+                    email: email,
+                    password: password,     //TODO: encrypt password                    
                     role: role,
+                    
+/*
                     gender: gender,
                     age: age,
-                    country: country,
                     location: location,
                     address: address,
                     postalCode: postalCode,
-                    password: password,     //TODO: encrypt password
-                    firstName: firstName,
                     lastName: lastName,
                     dialCode: dialCode,
                     phone: phone,
-                    email: email,
-                    currency: currency,
+*/
+
                     lastUpdate: lastUpdate,
                     endorsementScore: output.UpdateWallets[uid].EndorsementScore,
                     trustScore: output.UpdateWallets[uid].TrustScore,
@@ -106,6 +136,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     followingFTPods: [],
                 });
 
+/* // since we do not have any data for this- remove for now according to Marta
                 // cloudDatabase
                 transaction.set(db.collection(collections.cloudDatabase).doc(did), {
                     gender: gender,
@@ -113,6 +144,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     country: country,
                     location: location
                 });
+*/
 
                 // wallet
                 const balances = output.UpdateWallets[uid].Balances;

@@ -22,8 +22,8 @@ let upload = multer({
 });
 
 // AUTHENTICATION
-router.get('/signIn', userController.signIn);
-router.get('/signUp', userController.signUp);
+router.post('/signIn', userController.signIn);
+router.post('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
 
 // MY WALL - GETS
