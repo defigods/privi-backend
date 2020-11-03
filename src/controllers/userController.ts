@@ -449,11 +449,22 @@ const getMyPods = async (req: express.Request, res: express.Response) => {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
         const user : any = userRef.data();
+        let myNFTPods : any = [];
+        let myFTPods : any = [];
+
+        if(user.myNFTPods && user.myNFTPods.length > 0) {
+            myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT);
+        }
+
+        if(user.myFTPods && user.myFTPods.length > 0) {
+            myFTPods = await getPodsArray(user.myFTPods, collections.podsFT);
+        }
+
         res.send({
             success: true,
             data: {
-                NFT: user.myNFTPods || [],
-                FT: user.myFTPods || []
+                NFT: myNFTPods || [],
+                FT: myFTPods || []
             }
         });
     } catch (err) {
@@ -468,11 +479,23 @@ const getPodsInvestments = async (req: express.Request, res: express.Response) =
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
         const user : any = userRef.data();
+
+        let investedNFTPods : any = [];
+        let investedFTPods : any = [];
+
+        if(user.investedNFTPods && user.investedNFTPods.length > 0) {
+            investedNFTPods = await getPodsArray(user.investedNFTPods, collections.podsNFT);
+        }
+
+        if(user.investedFTPods && user.investedFTPods.length > 0) {
+            investedFTPods = await getPodsArray(user.investedFTPods, collections.podsFT);
+        }
+
         res.send({
             success: true,
             data: {
-                NFT: user.investedNFTPods || [],
-                FT: user.investedFTPods || []
+                NFT: investedNFTPods,
+                FT: investedFTPods
             }
         });
     } catch (err) {
@@ -487,11 +510,23 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
         const user : any = userRef.data();
+
+        let followingNFTPods : any = [];
+        let followingFTPods : any = [];
+
+        if(user.followingNFTPods && user.followingNFTPods.length > 0) {
+            followingNFTPods = await getPodsArray(user.followingNFTPods, collections.podsNFT);
+        }
+
+        if(user.followingFTPods && user.followingFTPods.length > 0) {
+            followingFTPods = await getPodsArray(user.followingFTPods, collections.podsFT);
+        }
+
         res.send({
             success: true,
             data: {
-                NFT: user.followingNFTPods || [],
-                FT: user.followingFTPods || []
+                NFT: followingNFTPods,
+                FT: followingFTPods
             }
         });
     } catch (err) {
@@ -499,6 +534,22 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
+
+const getPodsArray = (arrayPods : any[], collection: any) : Promise<any[]> => {
+    return new Promise((resolve, reject) => {
+        let podInfo : any[] = [];
+        arrayPods.forEach(async (item, i) => {
+            const podRef = await db.collection(collection)
+                .doc(item).get();
+
+            podInfo.push(podRef.data());
+
+            if(arrayPods.length === i + 1) {
+                resolve(podInfo);
+            }
+        });
+    })
+}
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
