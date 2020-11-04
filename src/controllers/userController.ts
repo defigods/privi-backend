@@ -5,6 +5,7 @@ import express from 'express';
 //const jwt = require("jsonwebtoken");
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
+import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction } from "../constants/functions";
 
@@ -12,8 +13,7 @@ import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
-        const { email, password } = req.query;
-
+        const { email, password } = req.body;
         if (email && password) {
 
             // Compare user & pwd between login input and DB
@@ -24,6 +24,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
 
             // Return result
             if (user.empty) {
+                console.log("Login failed");
                 res.send({ isSignedIn: false, userData: {} });
             } else {
                 const data = user.docs[0].data();
@@ -56,13 +57,12 @@ const signUp = async (req: express.Request, res: express.Response) => {
             , phone
             , currency
             , email
-            , password } = req.query;
+            , password } = req.body;
         let uid: string = '';
         const lastUpdate = Date.now();
         const blockchainRes = await dataProtocol.register(role);
 
         if (blockchainRes && blockchainRes.success) {
-
             // Get IDs from blockchain response
             const output = blockchainRes.output;
             uid = output.ID;
@@ -121,6 +121,36 @@ const signUp = async (req: express.Request, res: express.Response) => {
                 };
 
             });
+
+            // ------------------------- Provisional for TestNet ---------------------------------
+            // give user some balance in each tokens (50/tokenRate).
+            const coinsVal = 50; // value in USD to be sent
+            const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
+            const rateOfChange = await getRateOfChange();   // get rate of tokens
+            const arrayMultiTransfer: {}[] = [];  // build multitransfer array object
+            let token: string = "";
+            let rate: any = null;
+            for ([token, rate] of Object.entries(rateOfChange)) {
+                const amount = coinsVal / rateOfChange[token];
+                const transferObj = {
+                    Type: "transfer",
+                    Token: token,
+                    From: fromUid,
+                    To: uid,
+                    Amount: amount
+                };
+                arrayMultiTransfer.push(transferObj);
+            }
+            const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer);
+            if (blockchainRes2 && blockchainRes2.success) {
+                console.log('User initial gift sent: 50USD in each token');
+                updateFirebase(blockchainRes2);
+            }
+            else {
+                console.log('Error in sending intial 50USD, blockchain success = false.', blockchainRes2.message);
+            }
+            // ------------------------------------------------------------------------------------
+
             res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
         } else {
             console.log(

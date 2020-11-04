@@ -27,7 +27,11 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                 `You have successfully created a new PRIVI Credit. ${amount} ${token} has been added to the PRIVI Credit Pool!`,
                 notificationTypes.priviCreditCreated
             );
-            res.send({ success: true });
+            const updateLoans = blockchainRes.output.UpdateLoans;
+            const loanIds: string[] = Object.keys(updateLoans);
+            const id = loanIds[0];
+            const date = updateLoans[id].Date;
+            res.send({ success: true, data: { id: loanIds[0], date: date } });
         }
         else {
             console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
@@ -88,7 +92,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/priviCredit -> borrowFunds(): success = false');
+            console.log('Error in controllers/priviCredit -> borrowFunds(): success = false', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
