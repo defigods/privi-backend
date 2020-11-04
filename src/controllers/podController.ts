@@ -1,6 +1,6 @@
 import express from 'express';
 import podProtocol from "../blockchain/podProtocol";
-import { updateFirebase, getRateOfChange, createNotificaction } from "../constants/functions";
+import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -225,3 +225,122 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
         console.log('Error in controllers/podController -> payInterest()', err);
     }
 });
+
+exports.followPod = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+        const podToFollowRef = db.collection(collections[body.pod.type])
+            .doc(body.pod.id);
+        const podToFollowGet = await podToFollowRef.get();
+        const podToFollowData : any = podToFollowGet.data();
+
+        if(body.pod.type === 'podsFT') {
+            let alreadyFollowing = user.followingFTPods.find((item) => item === body.pod.id);
+            if(!alreadyFollowing){
+                user.followingFTPods.push(body.pod.id);
+            }
+            await userRef.update({
+                followingFTPods: user.followingFTPods,
+                numFollowingFTPods: user.followingFTPods.length
+            });
+            res.send({ success: true });
+        } else if(body.pod.type === 'podsNFT') {
+            let alreadyFollowing = user.followingNFTPods.find((item) => item === body.pod.id);
+            if(!alreadyFollowing){
+                user.followingNFTPods.push(body.pod.id);
+            }
+            await userRef.update({
+                followingNFTPods: user.followingNFTPods,
+                numFollowingNFTPods: user.followingNFTPods.length
+            });
+            res.send({ success: true });
+        } else {
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> followPod(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.unFollowPod = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+        const podToFollowRef = db.collection(collections[body.pod.type])
+            .doc(body.pod.id);
+        const podToFollowGet = await podToFollowRef.get();
+        const podToFollowData : any = podToFollowGet.data();
+
+        if(body.pod.type === 'podsFT') {
+            let newFollowings = user.followingFTPods.filter(item => item != body.pod.id)
+
+            await userRef.update({
+                followingFTPods: newFollowings,
+                numFollowingFTPods: newFollowings.length
+            });
+            res.send({ success: true });
+        } else if(body.pod.type === 'podsNFT') {
+            let newFollowings = user.followingNFTPods.filter(item => item != body.pod.id)
+
+            await userRef.update({
+                followingNFTPods: newFollowings,
+                numFollowingNFTPods: newFollowings.length
+            });
+            res.send({ success: true });
+        } else {
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> unFollowPod(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.getMyPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        // create action and fill actions (to be specified)
+        res.send({ success: true, data: {} });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getMyPods()', err);
+        res.send({ success: false });
+    }
+};
+exports.getTrendingPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        // create action and fill actions (to be specified)
+        res.send({ success: true, data: {} });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getTrendingPods()', err);
+        res.send({ success: false });
+    }
+};
+exports.getOtherPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        // create action and fill actions (to be specified)
+        res.send({ success: true, data: {} });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getOtherPods()', err);
+        res.send({ success: false });
+    }
+};

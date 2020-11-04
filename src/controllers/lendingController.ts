@@ -1,7 +1,7 @@
 import express from 'express';
 import tradinionalLending from "../blockchain/traditionalLending";
 import coinBalance from "../blockchain/coinBalance";
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction } from "../constants/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
