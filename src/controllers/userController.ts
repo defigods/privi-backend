@@ -27,8 +27,10 @@ const signIn = async (req: express.Request, res: express.Response) => {
 
             // Return result
             if (user.empty) {
+                console.log('not found')
                 res.send({ isSignedIn: false, userData: {} });
             } else {
+                console.log('found')
                 const data = user.docs[0].data();
                 data.id = user.docs[0].id;
                 console.log('Login successful');
