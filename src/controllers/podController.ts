@@ -268,6 +268,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
+
 exports.unFollowPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -303,6 +304,43 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/podController -> unFollowPod(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.getMyPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        // create action and fill actions (to be specified)
+        res.send({ success: true, data: {} });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getMyPods()', err);
+        res.send({ success: false });
+    }
+};
+exports.getTrendingPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        // create action and fill actions (to be specified)
+        res.send({ success: true, data: {} });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getTrendingPods()', err);
+        res.send({ success: false });
+    }
+};
+exports.getOtherPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        // create action and fill actions (to be specified)
+        res.send({ success: true, data: {} });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getOtherPods()', err);
         res.send({ success: false });
     }
 };
