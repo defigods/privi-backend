@@ -89,7 +89,6 @@ export async function getRateOfChange() {
     // still don't have these Token conversion rates in firebase, so we add them manually
     res["BC"] = 1;
     res["DC"] = 0.01;
-    res["PDT"] = 0.01;
     return res;
 };
 
@@ -185,7 +184,7 @@ export async function getEmailUidMap() {
 
 export async function getUidFromEmail(email) {
     let res = {};
-    const usersQuery = await db.collection(collections.user).where("email", "==", email).get();        
+    const usersQuery = await db.collection(collections.user).where("email", "==", email).get();
     for (const doc of usersQuery.docs) {
         const email = doc.data().email;
         res[doc.id] = email;

@@ -93,7 +93,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
         // check if email is in database
         const emailUidMap = await getUidFromEmail(email);
         let toUid = emailUidMap[email!.toString()];
-        console.log(email);
+
         if (toUid) {
             res.send({ success: false, message: "email is already in database" });
             return;
@@ -177,28 +177,31 @@ const signUp = async (req: express.Request, res: express.Response) => {
             // give user some balance in each tokens (50/tokenRate).
             const coinsVal = 50; // value in USD to be sent
             const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
-            const rateOfChange = await getRateOfChange();   // get rate of tokens
-            const arrayMultiTransfer: {}[] = [];  // build multitransfer array object
+            const rateOfChange: any = await getRateOfChange();   // get rate of tokens
+            const arrayMultiTransfer: {}[] = [];
             let token: string = "";
             let rate: any = null;
-            for ([token, rate] of Object.entries(rateOfChange)) {
-                const amount = coinsVal / rateOfChange[token];
-                const transferObj = {
-                    Type: "transfer",
-                    Token: token,
-                    From: fromUid,
-                    To: uid,
-                    Amount: amount
-                };
-                arrayMultiTransfer.push(transferObj);
+            for ([token, rate] of Object.entries(rateOfChange)) { // build multitransfer array object by looping in rateOfChange
+                // rateOfChange also cointains podTokens, we dont need them
+                if (token.length <= 8) {
+                    const amount = coinsVal / rateOfChange[token];
+                    const transferObj = {
+                        Type: "transfer",
+                        Token: token,
+                        From: fromUid,
+                        To: uid,
+                        Amount: amount
+                    };
+                    arrayMultiTransfer.push(transferObj);
+                }
             }
             const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer);
             if (blockchainRes2 && blockchainRes2.success) {
-                console.log('User initial gift sent: 50USD in each token');
+                console.log('User initial gift sent: 50 USD in each token');
                 updateFirebase(blockchainRes2);
             }
             else {
-                console.log('Error in sending intial 50USD, blockchain success = false.', blockchainRes2.message);
+                console.log('Error at sending initial 50 coins, blockchain success = false.', blockchainRes2.message);
             }
             // ------------------------------------------------------------------------------------
 
