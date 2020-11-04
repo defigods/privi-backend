@@ -8,21 +8,17 @@ import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
-import {addListener} from "cluster";
+import { addListener } from "cluster";
 
 // AUTHENTICATION
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
-<<<<<<< HEAD
-        const { email, password } = req.body;
-=======
         const body = req.body;
 
         const email = body.email;
         const password = body.password;
 
->>>>>>> 0b04f600bf24137fa1d544b21236d1c578e25126
         if (email && password) {
 
             // Compare user & pwd between login input and DB
@@ -33,11 +29,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
 
             // Return result
             if (user.empty) {
-<<<<<<< HEAD
-                console.log("Login failed");
-=======
                 console.log('not found')
->>>>>>> 0b04f600bf24137fa1d544b21236d1c578e25126
                 res.send({ isSignedIn: false, userData: {} });
             } else {
                 console.log('found')
@@ -57,26 +49,23 @@ const signIn = async (req: express.Request, res: express.Response) => {
 
 const signUp = async (req: express.Request, res: express.Response) => {
     try {
-/*
-        const {
-            role
-            , firstName
-            , lastName
-            , gender
-            , age
-            , country
-            , location
-            , address
-            , postalCode
-            , dialCode
-            , phone
-            , currency
-            , email
-<<<<<<< HEAD
-            , password } = req.body;
-=======
-            , password } = req.query;
-*/
+        /*
+                const {
+                    role
+                    , firstName
+                    , lastName
+                    , gender
+                    , age
+                    , country
+                    , location
+                    , address
+                    , postalCode
+                    , dialCode
+                    , phone
+                    , currency
+                    , email
+                    , password } = req.query;
+        */
 
         const body = req.body;
 
@@ -87,25 +76,24 @@ const signUp = async (req: express.Request, res: express.Response) => {
         const password = body.password;
         const role = body.role; // role should not be coming from user input?
 
-/*
-        const lastName = body.lastName;
-        const gender = body.gender;
-        const age = body.age;
-        const location = body.location;
-        const address = body.address;
-        const postalCode = body.postalCode;
-        const dialCode = body.dialCode;
-        const phone = body.phone;
-*/
+        /*
+                const lastName = body.lastName;
+                const gender = body.gender;
+                const age = body.age;
+                const location = body.location;
+                const address = body.address;
+                const postalCode = body.postalCode;
+                const dialCode = body.dialCode;
+                const phone = body.phone;
+        */
 
->>>>>>> 0b04f600bf24137fa1d544b21236d1c578e25126
         let uid: string = '';
         const lastUpdate = Date.now();
 
         // check if email is in database
-		const emailUidMap = await getUidFromEmail(email);
-		let toUid = emailUidMap[email!.toString()];
-		console.log(email);
+        const emailUidMap = await getUidFromEmail(email);
+        let toUid = emailUidMap[email!.toString()];
+        console.log(email);
         if (toUid) {
             res.send({ success: false, message: "email is already in database" });
             return;
@@ -131,16 +119,16 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     password: password,     //TODO: encrypt password
                     role: role,
 
-/*
-                    gender: gender,
-                    age: age,
-                    location: location,
-                    address: address,
-                    postalCode: postalCode,
-                    lastName: lastName,
-                    dialCode: dialCode,
-                    phone: phone,
-*/
+                    /*
+                                        gender: gender,
+                                        age: age,
+                                        location: location,
+                                        address: address,
+                                        postalCode: postalCode,
+                                        lastName: lastName,
+                                        dialCode: dialCode,
+                                        phone: phone,
+                    */
 
                     lastUpdate: lastUpdate,
                     endorsementScore: output.UpdateWallets[uid].EndorsementScore,
@@ -157,15 +145,15 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     investedFTPods: [],
                 });
 
-/* // since we do not have any data for this- remove for now according to Marta
-                // cloudDatabase
-                transaction.set(db.collection(collections.cloudDatabase).doc(did), {
-                    gender: gender,
-                    age: age,
-                    country: country,
-                    location: location
-                });
-*/
+                /* // since we do not have any data for this- remove for now according to Marta
+                                // cloudDatabase
+                                transaction.set(db.collection(collections.cloudDatabase).doc(did), {
+                                    gender: gender,
+                                    age: age,
+                                    country: country,
+                                    location: location
+                                });
+                */
 
                 // wallet
                 const balances = output.UpdateWallets[uid].Balances;
@@ -359,10 +347,10 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
     try {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
-        const user : any = userRef.data();
+        const user: any = userRef.data();
 
-        if(user && user.followers) {
-            if(user.followers.length === 0) {
+        if (user && user.followers) {
+            if (user.followers.length === 0) {
                 res.send({
                     success: true,
                     data: {
@@ -370,11 +358,11 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
                     }
                 });
             } else {
-                let followers : any[] = [];
+                let followers: any[] = [];
                 user.followers.forEach(async (follower, id) => {
                     const followerInfo = await db.collection(collections.user)
                         .doc(follower).get();
-                    const followerData : any = followerInfo.data();
+                    const followerData: any = followerInfo.data();
 
                     let isFollowing = user.followings.find(following => following === follower);
 
@@ -390,7 +378,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
 
                     followers.push(followerObj);
 
-                    if(user.followers.length === id + 1) {
+                    if (user.followers.length === id + 1) {
                         res.send({
                             success: true,
                             data: {
@@ -412,10 +400,10 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
     try {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
-        const user : any = userRef.data();
+        const user: any = userRef.data();
 
-        let followings : any[] = [];
-        if(user && user.followings) {
+        let followings: any[] = [];
+        if (user && user.followings) {
             if (user.followings.length === 0) {
                 res.send({
                     success: true,
@@ -466,20 +454,20 @@ const followUser = async (req: express.Request, res: express.Response) => {
         const userRef = db.collection(collections.user)
             .doc(body.user.id);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
         const userToFollowRef = db.collection(collections.user)
             .doc(userToFollow.id);
         const userToFollowGet = await userToFollowRef.get();
-        const userToFollowData : any = userToFollowGet.data();
+        const userToFollowData: any = userToFollowGet.data();
 
         let alreadyFollowing = user.followings.find((item) => item === userToFollow.id);
-        if(!alreadyFollowing){
+        if (!alreadyFollowing) {
             user.followings.push(userToFollow.id);
         }
 
         let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
-        if(!alreadyFollower){
+        if (!alreadyFollower) {
             userToFollowData.followers.push(body.user.id);
         }
         userToFollowData.numFollowers = userToFollowData.followers.length;
@@ -509,12 +497,12 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
         const userRef = db.collection(collections.user)
             .doc(body.user.id);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
         const userToUnFollowRef = db.collection(collections.user)
             .doc(userToUnFollow.id);
         const userToUnFollowGet = await userToUnFollowRef.get();
-        const userToUnFollowData : any = userToUnFollowGet.data();
+        const userToUnFollowData: any = userToUnFollowGet.data();
 
         let newFollowings = user.followings.filter(item => item != userToUnFollow.id)
 
@@ -547,15 +535,15 @@ const getMyPods = async (req: express.Request, res: express.Response) => {
     try {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
-        const user : any = userRef.data();
-        let myNFTPods : any[] = [];
-        let myFTPods : any[] = [];
+        const user: any = userRef.data();
+        let myNFTPods: any[] = [];
+        let myFTPods: any[] = [];
 
-        if(user.myNFTPods && user.myNFTPods.length > 0) {
+        if (user.myNFTPods && user.myNFTPods.length > 0) {
             myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT);
         }
 
-        if(user.myFTPods && user.myFTPods.length > 0) {
+        if (user.myFTPods && user.myFTPods.length > 0) {
             myFTPods = await getPodsArray(user.myFTPods, collections.podsFT);
         }
 
@@ -577,16 +565,16 @@ const getPodsInvestments = async (req: express.Request, res: express.Response) =
     try {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
-        const user : any = userRef.data();
+        const user: any = userRef.data();
 
-        let investedNFTPods : any[] = [];
-        let investedFTPods : any[] = [];
+        let investedNFTPods: any[] = [];
+        let investedFTPods: any[] = [];
 
-        if(user.investedNFTPods && user.investedNFTPods.length > 0) {
+        if (user.investedNFTPods && user.investedNFTPods.length > 0) {
             investedNFTPods = await getPodsArray(user.investedNFTPods, collections.podsNFT);
         }
 
-        if(user.investedFTPods && user.investedFTPods.length > 0) {
+        if (user.investedFTPods && user.investedFTPods.length > 0) {
             investedFTPods = await getPodsArray(user.investedFTPods, collections.podsFT);
         }
 
@@ -608,16 +596,16 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
     try {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
-        const user : any = userRef.data();
+        const user: any = userRef.data();
 
-        let followingNFTPods : any[] = [];
-        let followingFTPods : any[] = [];
+        let followingNFTPods: any[] = [];
+        let followingFTPods: any[] = [];
 
-        if(user.followingNFTPods && user.followingNFTPods.length > 0) {
+        if (user.followingNFTPods && user.followingNFTPods.length > 0) {
             followingNFTPods = await getPodsArray(user.followingNFTPods, collections.podsNFT);
         }
 
-        if(user.followingFTPods && user.followingFTPods.length > 0) {
+        if (user.followingFTPods && user.followingFTPods.length > 0) {
             followingFTPods = await getPodsArray(user.followingFTPods, collections.podsFT);
         }
 
@@ -634,16 +622,16 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
     }
 };
 
-const getPodsArray = (arrayPods : any[], collection: any) : Promise<any[]> => {
+const getPodsArray = (arrayPods: any[], collection: any): Promise<any[]> => {
     return new Promise((resolve, reject) => {
-        let podInfo : any[] = [];
+        let podInfo: any[] = [];
         arrayPods.forEach(async (item, i) => {
             const podRef = await db.collection(collection)
                 .doc(item).get();
 
             podInfo.push(podRef.data());
 
-            if(arrayPods.length === i + 1) {
+            if (arrayPods.length === i + 1) {
                 resolve(podInfo);
             }
         });
@@ -675,7 +663,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
         const userRef = db.collection(collections.user)
             .doc(body.id);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
         await userRef.update({
             firstName: body.firstName,
@@ -688,7 +676,8 @@ const editUser = async (req: express.Request, res: express.Response) => {
             bio: body.bio
         });
 
-        res.send({ success: true, data: {
+        res.send({
+            success: true, data: {
                 id: body.id,
                 firstName: body.firstName,
                 lastName: body.lastName,
