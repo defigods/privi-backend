@@ -462,8 +462,8 @@ const getMyPods = async (req: express.Request, res: express.Response) => {
         const userRef = await db.collection(collections.user)
             .doc(userId).get();
         const user : any = userRef.data();
-        let myNFTPods : any = [];
-        let myFTPods : any = [];
+        let myNFTPods : any[] = [];
+        let myFTPods : any[] = [];
 
         if(user.myNFTPods && user.myNFTPods.length > 0) {
             myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT);
@@ -493,8 +493,8 @@ const getPodsInvestments = async (req: express.Request, res: express.Response) =
             .doc(userId).get();
         const user : any = userRef.data();
 
-        let investedNFTPods : any = [];
-        let investedFTPods : any = [];
+        let investedNFTPods : any[] = [];
+        let investedFTPods : any[] = [];
 
         if(user.investedNFTPods && user.investedNFTPods.length > 0) {
             investedNFTPods = await getPodsArray(user.investedNFTPods, collections.podsNFT);
@@ -524,8 +524,8 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
             .doc(userId).get();
         const user : any = userRef.data();
 
-        let followingNFTPods : any = [];
-        let followingFTPods : any = [];
+        let followingNFTPods : any[] = [];
+        let followingFTPods : any[] = [];
 
         if(user.followingNFTPods && user.followingNFTPods.length > 0) {
             followingNFTPods = await getPodsArray(user.followingNFTPods, collections.podsNFT);
