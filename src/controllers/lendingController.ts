@@ -111,6 +111,45 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
     }
 };
 
+// get the staked reserve pool of each token from blockchain, adding the annualRate and dailyRate info stored in manualConstants
+exports.getTokenReserves = async (req: express.Request, res: express.Response) => {
+    try {
+        const blockchainRes = await tradinionalLending.getReserves();
+        if (blockchainRes && blockchainRes.success) {
+            const retData = {};
+            const reserves = blockchainRes.output; // object {token: reserves}
+            delete reserves.PDT // PDT already deleted from system, don't need it
+            const constants = await db.collection(collections.constants).doc(collections.reserveConstants).get();
+            const data = constants.data();
+            if (data) {
+                let token = "";
+                let reserve: any = null;
+                for ([token, reserve] of Object.entries(reserves)) {
+                    let annualRate = data.annualRates[token];   // annual rate stored in manualConstants
+                    let dailyRate = annualRate / 365;   // daily rate
+                    retData[token] = {
+                        annaulRate: annualRate,
+                        dailyRate: dailyRate,
+                        reserve: reserve
+                    }
+                }
+                res.send({ success: true, data: retData });
+            }
+            else {
+                console.log('Error in controllers/lendingController -> getTokenReserves(): error getting reserveConstants data in firestore');
+                res.send({ success: false });
+            }
+        }
+        else {
+            console.log('Error in controllers/lendingController -> getTokenReserves(): success = false');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/lendingController -> getTokenReserves(): ', err);
+        res.send({ success: false });
+    }
+};
+
 // helper function: calculate if deposited collateral is below required ccr level
 function isCollateralBellowLiquidation(amount: number, token: string, requiredLevel: number, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {
     if (!requiredLevel || !collaterals || !ratesOfChange) return false;

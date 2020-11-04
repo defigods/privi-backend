@@ -104,6 +104,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        console.log(body);
         const loanId = body.loanId;
         const lenderId = body.lenderId;
         const amount = body.amount;
@@ -117,7 +118,7 @@ exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/priviCredit -> withdrawFunds(): success = false');
+            console.log('Error in controllers/priviCredit -> withdrawFunds(): success = false.', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
