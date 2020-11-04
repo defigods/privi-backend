@@ -8,4 +8,7 @@ router.post('/deletePod', podController.deletePOD);
 router.post('/investPod', podController.investPOD);
 router.post('/swapPod', podController.swapPod);
 
+router.post('/followPod', podController.followPod);
+router.post('/unFollowPod', podController.unFollowPod);
+
 module.exports = router;
