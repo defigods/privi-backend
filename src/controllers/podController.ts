@@ -1,4 +1,4 @@
-import express from 'express';
+import express, {response} from 'express';
 import podProtocol from "../blockchain/podProtocol";
 import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
@@ -308,39 +308,171 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
     }
 };
 
-exports.getMyPods = async (req: express.Request, res: express.Response) => {
+
+exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        console.log(userId);
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
 
-        // create action and fill actions (to be specified)
-        res.send({ success: true, data: {} });
+        let allNFTPods : any[] = await getNFTPods();
+
+        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+
+        res.send({ success: true, data: myNFTPods});
     } catch (err) {
         console.log('Error in controllers/podController -> getMyPods()', err);
         res.send({ success: false });
     }
 };
-exports.getTrendingPods = async (req: express.Request, res: express.Response) => {
+
+exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        console.log(userId);
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
 
-        // create action and fill actions (to be specified)
-        res.send({ success: true, data: {} });
+        let allFTPods : any[] = await getFTPods();
+
+        let myFTPods : any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
+
+        res.send({ success: true, data: myFTPods});
+    } catch (err) {
+        console.log('Error in controllers/podController -> getMyPods()', err);
+        res.send({ success: false });
+    }
+};
+
+const getAllInfoMyPods = (allItemArray, myArray) : Promise<any[]> => {
+    return new Promise<any[]>((resolve, reject) => {
+        let array : any[] = [];
+        if(myArray && myArray.length > 0) {
+            myArray.forEach((item, i) => {
+                let foundItem = allItemArray.find(allItem => allItem.id === item);
+                if(foundItem)
+                    array.push(foundItem);
+
+                if(myArray.length === i + 1) {
+                    resolve(array);
+                }
+            });
+        } else {
+            resolve([]);
+        }
+    });
+};
+
+exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        let allNFTPods : any[] = await getNFTPods();
+
+        let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
+
+        res.send({ success: true, data: trendingNFTPods});
     } catch (err) {
         console.log('Error in controllers/podController -> getTrendingPods()', err);
         res.send({ success: false });
     }
 };
-exports.getOtherPods = async (req: express.Request, res: express.Response) => {
+
+exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        let allFTPods : any[] = await getFTPods();
+
+        let trendingFTPods : any[] = await countLastWeekPods(allFTPods);
+
+        res.send({ success: true, data: trendingFTPods});
+    } catch (err) {
+        console.log('Error in controllers/podController -> getTrendingPods()', err);
+        res.send({ success: false });
+    }
+};
+
+const countLastWeekPods = (allPodsArray) : Promise<any[]> => {
+    return new Promise<any[]>((resolve, reject) => {
+
+        let lastWeek = new Date();
+        let pastDate = lastWeek.getDate() - 7;
+        lastWeek.setDate(pastDate);
+
+        if(allPodsArray && allPodsArray.length > 0) {
+            allPodsArray.forEach((item, i) => {
+                let lastWeekFollowers = item.followers.filter(follower => follower.date.getTime() > lastWeek.getTime());
+                item.lastWeekFollowers = lastWeekFollowers.length;
+
+                if(allPodsArray.length === i + 1) {
+                    let sortedArray = allPodsArray.sort((a,b) => (a.lastWeekFollowers > b.lastWeekFollowers) ? 1 : ((b.lastWeekFollowers > a.lastWeekFollowers) ? -1 : 0));
+                    let trendingArray = sortedArray.slice(0, 10);
+                    resolve(trendingArray);
+                }
+            })
+        } else {
+            resolve([]);
+        }
+    })
+};
+
+exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
         console.log(userId);
 
-        // create action and fill actions (to be specified)
-        res.send({ success: true, data: {} });
+        let otherNFTPods = [];
+
+
+
+        res.send({ success: true, data: otherNFTPods});
     } catch (err) {
         console.log('Error in controllers/podController -> getOtherPods()', err);
         res.send({ success: false });
     }
 };
+exports.getOtherPodsFT = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+
+        let otherFTPods = [];
+
+
+
+        res.send({ success: true, data: otherFTPods });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getOtherPods()', err);
+        res.send({ success: false });
+    }
+};
+
+const getNFTPods = () : Promise<any[]> => {
+    return new Promise<any[]>(async (resolve, reject) => {
+        const podsNFT = await db.collection(collections.podsNFT).get();
+
+        let array : any[] = [];
+        podsNFT.docs.map((doc, i) => {
+            array.push(doc.data());
+            if (podsNFT.docs.length === i + 1) {
+                resolve(array)
+            }
+        });
+    });
+}
+
+const getFTPods = () : Promise<any[]> => {
+    return new Promise<any[]>(async (resolve, reject) => {
+        const podsFT = await db.collection(collections.podsFT).get();
+
+        let array : any[] = [];
+        podsFT.docs.map((doc, i) => {
+            array.push(doc.data());
+            if (podsFT.docs.length === i + 1) {
+                resolve(array)
+            }
+        });
+    });
+}
