@@ -150,13 +150,14 @@ interface BasicInfo {
     trustScore: number,
     endorsementScore: number,
     numFollowers: number,
-    numFollowings: number
+    numFollowings: number,
+    bio: string
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0 };
+        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0, bio: '' };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -166,6 +167,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.endorsementScore = userData.endorsementScore;
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
+            basicInfo.bio = userData.bio || '';
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
@@ -592,7 +594,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
         await userRef.update({
             firstName: body.firstName,
             lastName: body.lastName,
-            dob: body.dob,
+            // dob: body.dob,
             country: body.country,
             postalCode: body.postalCode,
             location: body.location,
@@ -604,7 +606,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
                 id: body.id,
                 firstName: body.firstName,
                 lastName: body.lastName,
-                dob: body.dob,
+                //dob: body.dob,
                 country: body.country,
                 postalCode: body.postalCode,
                 location: body.location,
@@ -613,7 +615,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
             }
         });
     } catch (err) {
-        console.log('Error in controllers/followUser -> followUser()', err);
+        console.log('Error in controllers/editUser -> editUser()', err);
         res.send({ success: false });
     }
 
