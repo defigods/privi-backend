@@ -577,9 +577,17 @@ const getLiabilities = async (req: express.Request, res: express.Response) => {
 };
 
 const getSocialTokens = async (req: express.Request, res: express.Response) => {
-    let userId = req.params.userId;
-    console.log(userId);
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
 
+        // GetSocialTokens
+
+        res.send({ success: true, data: [] });
+    } catch (err) {
+        console.log('Error in controllers/editUser -> editUser()', err);
+        res.send({ success: false });
+    }
 };
 
 const editUser = async (req: express.Request, res: express.Response) => {
