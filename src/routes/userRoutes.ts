@@ -45,7 +45,6 @@ router.get('/investments/getLiabilities/:userId', userController.getLiabilities)
 router.get('/investments/getSocialTokens/:userId', userController.getSocialTokens);
 
 // POST
-
 /*router.post('/addToWaitlist', userController.addToWaitlist);
 router.post('/register', userController.register);*/
 
