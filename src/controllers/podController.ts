@@ -421,11 +421,17 @@ const countLastWeekPods = (allPodsArray) : Promise<any[]> => {
 exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        console.log(userId);
 
-        let otherNFTPods = [];
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
 
+        let allNFTPods : any[] = await getNFTPods();
 
+        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+
+        let otherNFTPods : any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
 
         res.send({ success: true, data: otherNFTPods});
     } catch (err) {
@@ -436,11 +442,17 @@ exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) =>
 exports.getOtherPodsFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        console.log(userId);
 
-        let otherFTPods = [];
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
 
+        let allFTPods : any[] = await getFTPods();
 
+        let myFTPods : any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
+
+        let otherFTPods : any[] = await removeSomePodsFromArray(allFTPods, myFTPods);
 
         res.send({ success: true, data: otherFTPods });
     } catch (err) {
@@ -448,6 +460,82 @@ exports.getOtherPodsFT = async (req: express.Request, res: express.Response) => 
         res.send({ success: false });
     }
 };
+
+exports.getAllFTPodsInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+        let allFTPods : any[] = await getFTPods();
+
+        let trendingFTPods : any[] = await countLastWeekPods(allFTPods);
+
+        let myFTPods : any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
+
+        let otherFTPods : any[] = await removeSomePodsFromArray(allFTPods, myFTPods);
+
+        res.send({ success: true, data: {
+                myFTPods: myFTPods,
+                otherFTPods: otherFTPods,
+                trendingFTPods: trendingFTPods
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getOtherPods()', err);
+        res.send({ success: false });
+    }
+};
+
+exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
+        let allNFTPods : any[] = await getNFTPods();
+
+        let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
+
+        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+
+        let otherNFTPods : any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
+
+        res.send({ success: true, data: {
+                myNFTPods: myNFTPods,
+                otherNFTPods: otherNFTPods,
+                trendingNFTPods: trendingNFTPods
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getOtherPods()', err);
+        res.send({ success: false });
+    }
+};
+
+const removeSomePodsFromArray = (fullArray, arrayToRemove) : Promise<any[]> => {
+    return new Promise<any[]>(async (resolve, reject) => {
+
+        let array : any[] = [];
+        arrayToRemove.forEach((item, i) => {
+            let index = fullArray.findIndex(itemFullArray => itemFullArray.id === item.id)
+            if(index && index === -1) {
+                fullArray = fullArray.slice(index, 1);
+            }
+
+            if(arrayToRemove.length === i + 1) {
+                resolve(fullArray)
+            }
+        });
+    });
+}
+;
 
 const getNFTPods = () : Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {

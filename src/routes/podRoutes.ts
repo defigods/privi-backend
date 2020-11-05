@@ -10,6 +10,9 @@ router.get('/FT/getTrendingPods/:userId', podController.getTrendingPodsFT);
 router.get('/NFT/getOtherPods/:userId', podController.getOtherPodsNFT);
 router.get('/FT/getOtherPods/:userId', podController.getOtherPodsFT);
 
+router.get('/NFT/getAllPodsInfo/:userId', podController.getAllNFTPodsInfo);
+router.get('/FT/getAllPodsInfo/:userId', podController.getAllFTPodsInfo);
+
 router.post('/initiatePod', podController.initiatePOD);
 router.post('/deletePod', podController.deletePOD);
 router.post('/investPod', podController.investPOD);
