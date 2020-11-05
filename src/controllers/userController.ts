@@ -9,6 +9,8 @@ import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
 import { addListener } from "cluster";
+const bcrypt = require('bcrypt')
+
 
 // AUTHENTICATION
 
@@ -24,7 +26,6 @@ const signIn = async (req: express.Request, res: express.Response) => {
             // Compare user & pwd between login input and DB
             const user = await db.collection(collections.user)
                 .where('email', '==', email)
-                .where('password', '==', password)
                 .get();
 
             // Return result
@@ -32,11 +33,35 @@ const signIn = async (req: express.Request, res: express.Response) => {
                 console.log('not found')
                 res.send({ isSignedIn: false, userData: {} });
             } else {
-                console.log('found')
+                console.log('found from email')
+
                 const data = user.docs[0].data();
+				let success = false;
+				if (data.password == password) { // let's encrypt this password
+				    const salt = await bcrypt.genSalt(10)
+					const hash = await bcrypt.hash(password, salt);
+					data["password"] = hash;
+										
+					db.collection(collections.user).doc(user.docs[0].id).update(data);  
+
+					success = true;
+					console.log("password updated");
+
+				} else {
+					const isSame = await bcrypt.compare(password, data.password);
+					success = isSame;
+				}
+                
                 data.id = user.docs[0].id;
-                console.log('Login successful');
-                res.send({ isSignedIn: true, userData: data });
+                if (success) {
+					console.log('Login successful');
+					res.send({ isSignedIn: true, userData: data });
+
+                } else {
+					console.log('wrong password');
+					res.send({ isSignedIn: false, userData: {} });
+                }
+
             }
 
             // TODO: Create session token
@@ -107,6 +132,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
             uid = output.ID;
             const did = output.DID;
 
+			const salt = await bcrypt.genSalt(10)
+			const hash = await bcrypt.hash(password, salt);
+
             // Creates User in DB
             await db.runTransaction(async (transaction) => {
 
@@ -116,7 +144,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     country: country,
                     currency: currency,
                     email: email,
-                    password: password,     //TODO: encrypt password
+                    password: hash,
                     role: role,
 
                     /*
