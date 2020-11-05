@@ -184,8 +184,18 @@ module.exports.getTotalBalancePC = async (req: express.Request, res: express.Res
 }
 
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
+	const data = await getTokensRateHelper();
+	if (data.length > 0) {
+        res.send({ success: true, data: data });	
+	} else {
+        res.send({ success: false });
+	}
+}
+
+async function getTokensRateHelper() {
+    const data: {}[] = [];
+        
     try {
-        const data: {}[] = [];
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
             const name = doc.data().name;
@@ -196,11 +206,11 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
         data.push({ token: "DC", name: "Data Coin", rate: 0.01 });
 
-        res.send({ success: true, data: data });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
-        res.send({ success: false });
     }
+    
+    return data;
 }
 
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
@@ -227,6 +237,8 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 }
 
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
+	const rateData = await getTokensRateHelper();
+
     try {
         const body = req.body;
 
@@ -241,7 +253,14 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
-            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
+			let valueCurrency = doc.data().Amount;
+			rateData.forEach(r => {
+				if (r["token"] == doc.data().Token) {
+					valueCurrency = doc.data().Amount * r["rate"]; // do we need to convert to user currency?
+				}
+			});
+			
+            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, valueCurrency: valueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
 
             retData.push(data);
         })
@@ -253,6 +272,8 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
 }
 
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
+	const rateData = await getTokensRateHelper();
+
     try {
         const body = req.body;
 
@@ -264,8 +285,14 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
-            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
-
+			let valueCurrency = doc.data().Amount;
+			rateData.forEach(r => {
+				if (r["token"] == doc.data().Token) {
+					valueCurrency = doc.data().Amount * r["rate"]; // do we need to convert to user currency?
+				}
+			});
+			
+            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, valueCurrency: valueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
         res.send({ success: true, data: retData });
