@@ -21,6 +21,7 @@ let upload = multer({
 });
 
 // AUTHENTICATION
+router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
 router.post('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
