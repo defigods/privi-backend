@@ -150,6 +150,34 @@ exports.getTokenReserves = async (req: express.Request, res: express.Response) =
     }
 };
 
+// get the CCR levels info stored in manualConstants
+exports.getCCRlevels = async (req: express.Request, res: express.Response) => {
+    try {
+        const blockchainRes = await tradinionalLending.getReserves();
+        if (blockchainRes && blockchainRes.success) {
+            const retData = {};
+            const reserves = blockchainRes.output; // object {token: reserves}
+            delete reserves.PDT // PDT already deleted from system, don't need it
+            const constants = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
+            const data = constants.data();
+            if (data) {
+                res.send({ success: true, data: data });
+            }
+            else {
+                console.log('Error in controllers/lendingController -> getCCRlevels(): error getting getCCRlevels data in firestore');
+                res.send({ success: false });
+            }
+        }
+        else {
+            console.log('Error in controllers/lendingController -> getCCRlevels(): success = false');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/lendingController -> getCCRlevels(): ', err);
+        res.send({ success: false });
+    }
+};
+
 // helper function: calculate if deposited collateral is below required ccr level
 function isCollateralBellowLiquidation(amount: number, token: string, requiredLevel: number, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {
     if (!requiredLevel || !collaterals || !ratesOfChange) return false;

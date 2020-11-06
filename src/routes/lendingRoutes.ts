@@ -8,5 +8,6 @@ router.post('/depositCollateral', lendingController.depositCollateral);
 router.post('/withdrawCollateral', lendingController.withdrawCollateral);
 router.post('/repayFunds', lendingController.repayFunds);
 router.post('/getTokenReserves', lendingController.getTokenReserves);
+router.post('/getCCRlevels', lendingController.getCCRlevels);
 
 module.exports = router;
