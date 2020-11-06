@@ -254,15 +254,33 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
-			let valueCurrency = doc.data().Amount;
+
+			let tokenRate = 1;
+			let realValueCurrency = 0.0;
+			let realValue = doc.data().Amount
+
+			let value = ""; // fixed decimals
+			let valueCurrency = ""; // fixed decimals
+			let toFixed = 2;
+
 			rateData.forEach(r => {
 				if (r["token"] == doc.data().Token) {
-					valueCurrency = doc.data().Amount * r["rate"]; // do we need to convert to user currency?
+					tokenRate = r["rate"];
+					realValueCurrency = realValue * tokenRate; // do we need to convert to user currency?
+
+					toFixed = Math.max(2, tokenRate.toString().length); // minimum 2
+					value = realValue.toString()
+					if (countDecimals(value) > toFixed) {
+						value = realValue.toFixed(toFixed);
+					}
+					valueCurrency = realValueCurrency.toString();
+					if (countDecimals(valueCurrency) > toFixed) {
+						valueCurrency = realValueCurrency.toFixed(toFixed);
+					}
 				}
 			});
-			
-            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, valueCurrency: valueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
 
+            const data = { id: doc.data().Id, token: doc.data().Token, tokenRate: tokenRate, value: value, valueCurrency: valueCurrency, realValue: realValue, realValueCurrency: realValueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
         res.send({ success: true, data: retData });
@@ -270,6 +288,12 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         console.log('Error in controllers/walletController -> getTransfers()', err);
         res.send({ success: false });
     }
+}
+
+// thanks https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
+function countDecimals(value) {
+    if (Math.floor(value) === value) return 0;
+    return value.toString().split(".")[1].length || 0; 
 }
 
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
@@ -286,14 +310,33 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
-			let valueCurrency = doc.data().Amount;
+
+			let tokenRate = 1;
+			let realValueCurrency = 0.0;
+			let realValue = doc.data().Amount
+
+			let value = ""; // fixed decimals
+			let valueCurrency = ""; // fixed decimals
+			let toFixed = 2;
+
 			rateData.forEach(r => {
 				if (r["token"] == doc.data().Token) {
-					valueCurrency = doc.data().Amount * r["rate"]; // do we need to convert to user currency?
+					tokenRate = r["rate"];
+					realValueCurrency = realValue * tokenRate; // do we need to convert to user currency?
+
+					toFixed = Math.max(2, tokenRate.toString().length-1); // minimum 2
+					value = realValue.toString()
+					if (countDecimals(realValue) > toFixed) {
+						value = realValue.toFixed(toFixed);
+					}
+					valueCurrency = realValueCurrency.toString();
+					if (countDecimals(realValueCurrency) > toFixed) {
+						valueCurrency = realValueCurrency.toFixed(toFixed);
+					}
 				}
 			});
 			
-            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, valueCurrency: valueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
+            const data = { id: doc.data().Id, token: doc.data().Token, tokenRate: tokenRate, value: value, valueCurrency: valueCurrency, realValue: realValue, realValueCurrency: realValueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
         res.send({ success: true, data: retData });
