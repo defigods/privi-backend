@@ -205,7 +205,7 @@ async function getTokensRateHelper() {
             if (name) data.push({ token: token, name: name, rate: rate });
         }
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: 0.01 });
+        data.push({ token: "DC", name: "Data Coin", rate: 0.1 });
 
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
