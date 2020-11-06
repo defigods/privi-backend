@@ -23,6 +23,7 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
             res.send({ success: true, message: "toUid is required" });
             return;
         }
+        console.log("token", token);
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
