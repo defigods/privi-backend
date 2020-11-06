@@ -403,9 +403,12 @@ const countLastWeekPods = (allPodsArray) : Promise<any[]> => {
 
         if(allPodsArray && allPodsArray.length > 0) {
             allPodsArray.forEach((item, i) => {
-                let lastWeekFollowers = item.followers.filter(follower => follower.date.getTime() > lastWeek.getTime());
-                item.lastWeekFollowers = lastWeekFollowers.length;
-
+                if(item.Followers && item.Followers.length > 0) {
+                    let lastWeekFollowers = item.Followers.filter(follower => follower.date._seconds > lastWeek.getTime()/1000);
+                    item.lastWeekFollowers = lastWeekFollowers.length;
+                } else {
+                    item.lastWeekFollowers = 0;
+                }
                 if(allPodsArray.length === i + 1) {
                     let sortedArray = allPodsArray.sort((a,b) => (a.lastWeekFollowers > b.lastWeekFollowers) ? 1 : ((b.lastWeekFollowers > a.lastWeekFollowers) ? -1 : 0));
                     let trendingArray = sortedArray.slice(0, 10);
@@ -522,17 +525,21 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
 const removeSomePodsFromArray = (fullArray, arrayToRemove) : Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
 
-        let array : any[] = [];
-        arrayToRemove.forEach((item, i) => {
-            let index = fullArray.findIndex(itemFullArray => itemFullArray.id === item.id)
-            if(index && index === -1) {
-                fullArray = fullArray.slice(index, 1);
-            }
+        if(arrayToRemove && arrayToRemove.length !== 0) {
+            arrayToRemove.forEach((item, i) => {
+                let index = fullArray.findIndex(itemFullArray => itemFullArray.id === item.id)
 
-            if(arrayToRemove.length === i + 1) {
-                resolve(fullArray)
-            }
-        });
+                if(index && index === -1) {
+                    fullArray = fullArray.slice(index, 1);
+                }
+
+                if(arrayToRemove.length === i + 1) {
+                    resolve(fullArray)
+                }
+            });
+        } else {
+            resolve(fullArray)
+        }
     });
 }
 ;
