@@ -8,6 +8,54 @@ import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import { restart } from 'pm2';
 
+module.exports.getUserLoans = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userId = body.publicId;
+
+        // Get Loan CCR Levels //
+        const levels = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
+        const CCR_levels = levels.data();
+
+        // Get Interest Rates //
+        const constants = await db.collection(collections.constants).doc(collections.reserveConstants).get();
+        const interest_rate = constants.data();
+    
+        const retData: {}[] = [];
+        const rateOfChange = await getRateOfChange();
+        for (const [token, _] of Object.entries(rateOfChange)) {
+            const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
+            const data = walletTokenSnap.data();
+            if (!data) {continue;}
+            if (data.Borrowing_Amount == 0) { continue; }
+   
+            // It has a loan // 
+            const CCR = computeCCR(data.Borrowing_Amount, token, data.Collaterals, rateOfChange);
+            let state = "Overcollateralised"
+            if (CCR_levels) { 
+                if ( CCR < CCR_levels.requiredCCR ) {
+                    state = "Undercollateralised"
+                }
+                if ( CCR < CCR_levels.withdrawalCCR ) {
+                    state = "Collateralised"
+                }
+            }
+
+            let rate = 0.
+            if (interest_rate) {
+                rate = interest_rate.annualRates[token]
+            }
+            retData.push({ principal_token: token, principal: data.Borrowing_Amount,  
+                           collaterals: data.Collaterals, CCR: CCR, state: state, 
+                           daily_interest: rate });
+        }
+        res.send({ success: true, data: retData });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getUserLoans()', err);
+        res.send({ success: false });
+    }
+}
+
 exports.borrowFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -149,6 +197,47 @@ exports.getTokenReserves = async (req: express.Request, res: express.Response) =
         res.send({ success: false });
     }
 };
+
+// get the CCR levels info stored in manualConstants
+exports.getCCRlevels = async (req: express.Request, res: express.Response) => {
+    try {
+        const blockchainRes = await tradinionalLending.getReserves();
+        if (blockchainRes && blockchainRes.success) {
+            const retData = {};
+            const reserves = blockchainRes.output; // object {token: reserves}
+            delete reserves.PDT // PDT already deleted from system, don't need it
+            const constants = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
+            const data = constants.data();
+            if (data) {
+                res.send({ success: true, data: data });
+            }
+            else {
+                console.log('Error in controllers/lendingController -> getCCRlevels(): error getting getCCRlevels data in firestore');
+                res.send({ success: false });
+            }
+        }
+        else {
+            console.log('Error in controllers/lendingController -> getCCRlevels(): success = false');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/lendingController -> getCCRlevels(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// helper function: calculate the CRR of a loan
+function computeCCR(amount: number, token: string, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {
+    if (!collaterals || !ratesOfChange) return false;
+    let sum: number = 0; // collateral sum in USD
+    amount = amount * ratesOfChange[token];   // amount in USD
+    for (const [token, colValue] of Object.entries(collaterals)) {
+        let conversionRate = ratesOfChange[token];
+        if (!conversionRate) conversionRate = 1;
+        sum += colValue * conversionRate;
+    }
+    return sum / amount;
+}
 
 // helper function: calculate if deposited collateral is below required ccr level
 function isCollateralBellowLiquidation(amount: number, token: string, requiredLevel: number, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {

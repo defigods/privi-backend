@@ -88,7 +88,7 @@ export async function getRateOfChange() {
     }
     // still don't have these Token conversion rates in firebase, so we add them manually
     res["BC"] = 1;
-    res["DC"] = 0.01;
+    res["DC"] = 0.1;
     return res;
 };
 
