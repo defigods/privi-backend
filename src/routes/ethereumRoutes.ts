@@ -3,7 +3,7 @@ import express from 'express';
 const router = express.Router();
 const connectController = require('../controllers/connectController');
 
-router.get('/getFabricBalance', connectController.getFabricBalance);
+router.get('/getERC20Balance', connectController.getERC20Balance);
 //router.post('/transferEthWithdraw', connectController.transferEthWithdraw);
 //router.post('/balanceToken', connectController.balanceToken);
 //router.post('/transferTokenWithdraw', connectController.transferTokenWithdraw);
