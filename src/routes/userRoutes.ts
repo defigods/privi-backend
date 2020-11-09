@@ -10,7 +10,7 @@ const userControllerJS = require('../controllers/userControllerJS');
 // Multer Settings for file upload
 let storage = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads')
+        cb(null, 'uploads/users')
     },
     filename: function (req: any, file: any, cb: any) {
         cb(null, Date.now() + '.png')

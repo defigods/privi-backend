@@ -8,16 +8,17 @@ import cron from 'node-cron';
 
 exports.initiatePOD = async (req: express.Request, res: express.Response) => {
     try {
+        console.log(req.body);
         const body = req.body;
         const creator = body.creator;
-        const token = body.token;
-        const duration = body.duration;
-        const payments = body.payments;
-        const principal = body.principal;
-        const interest = body.interest;
-        const p_liquidation = body.p_liquidation;
-        const initialSupply = body.initialSupply;
-        const collaterals = body.collaterals;
+        const token = body.Token;
+        const duration = body.Duration;
+        const payments = body.Payments;
+        const principal = body.Principal;
+        const interest = body.Interest;
+        const p_liquidation = body.P_liquidation;
+        const initialSupply = body.InitialSupply;
+        const collaterals = body.Collaterals;
         const rateOfChange = await getRateOfChange();
         const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
         console.log(blockchainRes);
@@ -39,7 +40,7 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
         }
         else {
             console.log('Error in controllers/podController -> initiatePOD(): success = false.', blockchainRes.message);
-            res.send({ success: false });
+            res.send({ success: false, error: blockchainRes.message});
         }
     } catch (err) {
         console.log('Error in controllers/podController -> initiatePOD(): ', err);
@@ -562,4 +563,8 @@ const getFTPods = () : Promise<any[]> => {
             }
         });
     });
+}
+
+exports.changePodPhoto = async (req: express.Request, res: express.Response) => {
+
 }
