@@ -4,5 +4,6 @@ const stakeController = require('../controllers/stakeContoller');
 
 router.post('/stakeToken', stakeController.stakeToken);
 router.post('/unstakeToken', stakeController.unstakeToken);
+router.post('/getStakeReward', stakeController.getStakeReward);
 
 module.exports = router;
