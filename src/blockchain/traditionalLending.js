@@ -75,3 +75,9 @@ module.exports.unstakeToken = async (publicId, tokenName, amount) => {
     });
     return blockchainRes.data;
 };
+
+module.exports.getReserves = async () => {
+    let blockchainRes = await axios.post(api.blockchainTraditionalLendingAPI + "/getReserves", {
+    });
+    return blockchainRes.data;
+};

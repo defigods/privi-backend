@@ -69,5 +69,10 @@ module.exports.getTokenList = async () => {
 	return blockchainRes.data;
 }
 
-
+module.exports.multitransfer = async (arrayObj) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/multitransfer", {
+		Multitransfer: arrayObj
+	});
+	return blockchainRes.data;
+}
 

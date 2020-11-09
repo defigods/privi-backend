@@ -1,8 +1,10 @@
 import express from 'express';
 import priviCredit from "../blockchain/priviLending";
-import { updateFirebase, createNotificaction } from "../constants/functions";
+import { updateFirebase, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
+import { db } from '../firebase/firebase';
+import collections from '../firebase/collections';
 
 exports.initiateCredit = async (req: express.Request, res: express.Response) => {
     try {
@@ -25,7 +27,11 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                 `You have successfully created a new PRIVI Credit. ${amount} ${token} has been added to the PRIVI Credit Pool!`,
                 notificationTypes.priviCreditCreated
             );
-            res.send({ success: true });
+            const updateLoans = blockchainRes.output.UpdateLoans;
+            const loanIds: string[] = Object.keys(updateLoans);
+            const id = loanIds[0];
+            const date = updateLoans[id].Date;
+            res.send({ success: true, data: { id: loanIds[0], date: date } });
         }
         else {
             console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
@@ -86,7 +92,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/priviCredit -> borrowFunds(): success = false');
+            console.log('Error in controllers/priviCredit -> borrowFunds(): success = false', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
@@ -98,6 +104,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        console.log(body);
         const loanId = body.loanId;
         const lenderId = body.lenderId;
         const amount = body.amount;
@@ -111,7 +118,7 @@ exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/priviCredit -> withdrawFunds(): success = false');
+            console.log('Error in controllers/priviCredit -> withdrawFunds(): success = false.', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
@@ -171,6 +178,28 @@ exports.assumeRisk = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
+
+
+///////////////////////////// GETS //////////////////////////////
+
+exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
+    try {
+        const resData: {}[] = [];
+        const creditsSnap = await db.collection(collections.priviCredits).get();
+        creditsSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                resData.push(data);
+            }
+        });
+        res.send({ success: true, data: resData });
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> getPriviCredits(): ', err);
+        res.send({ success: false });
+    }
+};
+
+/////////////////////////// CRON JOBS //////////////////////////////
 
 // scheduled every day at 00:00 
 exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {

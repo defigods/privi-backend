@@ -21,8 +21,9 @@ let upload = multer({
 });
 
 // AUTHENTICATION
-router.get('/signIn', userController.signIn);
-router.get('/signUp', userController.signUp);
+router.post('/forgot_password', userController.forgotPassword);
+router.post('/signIn', userController.signIn);
+router.post('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
 
 router.get('/getBasicInfo/:userId', userController.getBasicInfo);
@@ -45,7 +46,6 @@ router.get('/investments/getLiabilities/:userId', userController.getLiabilities)
 router.get('/investments/getSocialTokens/:userId', userController.getSocialTokens);
 
 // POST
-
 /*router.post('/addToWaitlist', userController.addToWaitlist);
 router.post('/register', userController.register);*/
 
@@ -62,5 +62,7 @@ router.post('/register', userControllerJS.register);
 router.get('/getPrivacy', userControllerJS.getPrivacy);
 router.post('/setPrivacy', userControllerJS.setPrivacy);
 
+
+//router.post('/getBasicInfo', userController.getBasicInfo);
 
 module.exports = router;

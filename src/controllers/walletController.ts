@@ -1,4 +1,4 @@
-import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getEmailUidMap } from "../constants/functions";
+import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -16,9 +16,14 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
         const token = body.token;
         const type = body.type;
         if (toEmail) {
-            const emailUidMap = await getEmailUidMap();
+            const emailUidMap = await getUidFromEmail(toEmail);
             toUid = emailUidMap[toEmail];
         }
+        if (!toUid) {
+            res.send({ success: true, message: "toUid is required" });
+            return;
+        }
+        console.log("token", token);
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -109,7 +114,10 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
 const getTotalBalance = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const rateOfChange = await getRateOfChange();
         // get user currency in usd
         let sum = 0;
@@ -152,7 +160,10 @@ module.exports.getTotalBalance = getTotalBalance;
 module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+        
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const rateOfChange = await getRateOfChange();
         // get user currency in usd
         let sum = 0;
@@ -174,29 +185,42 @@ module.exports.getTotalBalancePC = async (req: express.Request, res: express.Res
 }
 
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
+	const data = await getTokensRateHelper();
+	if (data.length > 0) {
+        res.send({ success: true, data: data });	
+	} else {
+        res.send({ success: false });
+	}
+}
+
+async function getTokensRateHelper() {
+    const data: {}[] = [];
+        
     try {
-        const data: {}[] = [];
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
             const name = doc.data().name;
             const token = doc.id;
             const rate = doc.data().rate;
-            data.push({ token: token, name: name, rate: rate });
+            if (name) data.push({ token: token, name: name, rate: rate });
         }
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: 0.01 });
+        data.push({ token: "DC", name: "Data Coin", rate: 0.1 });
 
-        res.send({ success: true, data: data });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
-        res.send({ success: false });
     }
+    
+    return data;
 }
 
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const retData: {}[] = [];
         const rateOfChange = await getRateOfChange();
         for (const [token, _] of Object.entries(rateOfChange)) {
@@ -214,17 +238,49 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 }
 
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
+	const rateData = await getTokensRateHelper();
+
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const retData: {}[] = [];
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive]).get();
+            .where("Type", "in", [notificationTypes.transferSend, notificationTypes.transferReceive])
+            .orderBy("Date", "desc")
+            .get();
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
-            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
 
+			let tokenRate = 1;
+			let realValueCurrency = 0.0;
+			let realValue = doc.data().Amount
+
+			let value = ""; // fixed decimals
+			let valueCurrency = ""; // fixed decimals
+			let toFixed = 2;
+
+			rateData.forEach(r => {
+				if (r["token"] == doc.data().Token) {
+					tokenRate = r["rate"];
+					realValueCurrency = realValue * tokenRate; // do we need to convert to user currency?
+
+					toFixed = Math.max(2, tokenRate.toString().length); // minimum 2
+					value = realValue.toString()
+					if (countDecimals(value) > toFixed) {
+						value = realValue.toFixed(toFixed);
+					}
+					valueCurrency = realValueCurrency.toString();
+					if (countDecimals(valueCurrency) > toFixed) {
+						valueCurrency = realValueCurrency.toFixed(toFixed);
+					}
+				}
+			});
+
+            const data = { id: doc.data().Id, token: doc.data().Token, tokenRate: tokenRate, value: value, valueCurrency: valueCurrency, realValue: realValue, realValueCurrency: realValueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
         res.send({ success: true, data: retData });
@@ -234,17 +290,53 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
     }
 }
 
+// thanks https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
+function countDecimals(value) {
+    if (Math.floor(value) === value) return 0;
+    return value.toString().split(".")[1].length || 0; 
+}
+
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
+	const rateData = await getTokensRateHelper();
+
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         const retData: {}[] = [];
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).get();
+        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId).orderBy("Date", "desc").get();
         historySnap.forEach((doc) => {
 
 			let date = new Date(doc.data().Date);
-            const data = { id: doc.data().Id, token: doc.data().Token, value: doc.data().Amount, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
 
+			let tokenRate = 1;
+			let realValueCurrency = 0.0;
+			let realValue = doc.data().Amount
+
+			let value = ""; // fixed decimals
+			let valueCurrency = ""; // fixed decimals
+			let toFixed = 2;
+
+			rateData.forEach(r => {
+				if (r["token"] == doc.data().Token) {
+					tokenRate = r["rate"];
+					realValueCurrency = realValue * tokenRate; // do we need to convert to user currency?
+
+					toFixed = Math.max(2, tokenRate.toString().length-1); // minimum 2
+					value = realValue.toString()
+					if (countDecimals(realValue) > toFixed) {
+						value = realValue.toFixed(toFixed);
+					}
+					valueCurrency = realValueCurrency.toString();
+					if (countDecimals(realValueCurrency) > toFixed) {
+						valueCurrency = realValueCurrency.toFixed(toFixed);
+					}
+				}
+			});
+			
+            const data = { id: doc.data().Id, token: doc.data().Token, tokenRate: tokenRate, value: value, valueCurrency: valueCurrency, realValue: realValue, realValueCurrency: realValueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
         res.send({ success: true, data: retData });
@@ -257,7 +349,10 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
 module.exports.getTotalIncome = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         let sum = 0;    // in usd
         const rateOfChange = await getRateOfChange();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
@@ -289,7 +384,10 @@ module.exports.getTotalIncome = async (req: express.Request, res: express.Respon
 module.exports.getTotalExpense = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
+
+        let { userId } = req.query;
+		userId = userId!.toString()
+
         let sum = 0;    // in usd
         const rateOfChange = await getRateOfChange();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
