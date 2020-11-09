@@ -21,7 +21,7 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
         const collaterals = body.Collaterals;
         const rateOfChange = await getRateOfChange();
         const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
-        console.log(blockchainRes);
+        console.log(blockchainRes, blockchainRes.output.UpdatePods);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotificaction(creator, "FT Pod - Pod Created",
@@ -36,7 +36,7 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
                 rateUSD: newPodRate,
                 timestamp: Date.now()
             });
-            res.send({ success: true });
+            res.send({ success: true, data: podId });
         }
         else {
             console.log('Error in controllers/podController -> initiatePOD(): success = false.', blockchainRes.message);
@@ -574,5 +574,16 @@ const getFTPods = () : Promise<any[]> => {
 }
 
 exports.changePodPhoto = async (req: express.Request, res: express.Response) => {
-
+    try {
+        if(req.file) {
+            console.log(req.file.originalname);
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/podController -> changePodPhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
 }
