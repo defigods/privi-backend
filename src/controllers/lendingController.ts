@@ -178,7 +178,7 @@ exports.getTokenReserves = async (req: express.Request, res: express.Response) =
                     let annualRate = data.annualRates[token];   // annual rate stored in manualConstants
                     let dailyRate = annualRate / 365;   // daily rate
                     retData[token] = {
-                        annaulRate: annualRate,
+                        annualRate: annualRate,
                         dailyRate: dailyRate,
                         reserve: reserve
                     }

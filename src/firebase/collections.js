@@ -19,5 +19,7 @@ module.exports = {
     podFTConstants: "FTPodConstants",
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
+    reserveConstants: "StakingReserveContants",
+    stakingRates: "StakingRates", // constant
     stakingDeposit: "StakingDeposit"
 }

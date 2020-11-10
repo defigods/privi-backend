@@ -54,14 +54,17 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
 exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        console.log(body);
         const publicId = body.publicId;
-        const amount = body.amount;
+        const unstakeAmount = body.unstakeAmount;
+        const unstakeReward = body.unstakeReward;
         const token = body.token;
-        const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, amount)
+        const total = unstakeAmount + unstakeReward;
+        const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, total);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
-            let newTokenDepositVal = -Number(amount);
+            let newTokenDepositVal = -Number(unstakeAmount);
             const docSnap = await db.collection(collections.stakingDeposit).doc(publicId).get();
             if (docSnap.exists) {
                 const data = docSnap.data();
@@ -129,6 +132,62 @@ exports.getStakeReward = async (req: express.Request, res: express.Response) => 
         res.send({ success: true, data: rewarded });
     } catch (err) {
         console.log('Error in controllers/stakingController -> unstakeToken(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// get the staking information needed for the frontend 
+// output: object which key is the token and value another object with three fields: stakingDeposit, annualRate, stakingReward
+exports.getUserStakeInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const publicId = body.publicId;
+        const retData = {};
+        const ratesSnap = await db.collection(collections.rates).get();
+        // get list of token and initialize to 0
+        ratesSnap.forEach((doc) => {
+            if (doc.id.length <= 5) { // only crypto tokens
+                retData[doc.id] = {}
+                retData[doc.id]["stakingReward"] = 0;
+            }
+        });
+        // update with the total staked amount (deposited + rewarded)
+        let key: string = "";
+        let valObj: any = 0;
+        for ([key, valObj] of Object.entries(retData)) {
+            const walletSnap = await db.collection(collections.wallet).doc(key).collection(collections.user).doc(publicId).get();
+            const data = walletSnap.data();
+            if (data) {
+                retData[key]["stakingReward"] += data.Staking_Amount;
+            }
+        }
+        // substract the deposited amount, in order to leave the rewarded amount
+        const stakingDepositSnap = await db.collection(collections.stakingDeposit).doc(publicId).get();
+        const stakingData = stakingDepositSnap.data();
+        if (stakingData) {
+            for ([key, valObj] of Object.entries(retData)) {
+                const deposited = stakingData.deposited[key];
+                // if has some deposit
+                if (deposited) {
+                    retData[key]["stakingReward"] -= deposited;
+                    retData[key]["stakingDeposit"] = deposited;
+                    // else deposit is 0
+                } else {
+                    retData[key]["stakingDeposit"] = 0;
+                }
+            }
+        }
+        // add annualRates
+        const stakingRatesSnap = await db.collection(collections.constants).doc(collections.stakingRates).get();
+        const stakingRatesData = stakingRatesSnap.data();
+        if (stakingRatesData) {
+            for ([key, valObj] of Object.entries(retData)) {
+                retData[key]["annualRate"] = stakingRatesData.annualRates[key];
+            }
+        }
+        res.send({ success: true, data: retData });
+    } catch (err) {
+        console.log('Error in controllers/stakingController -> getUserStakeInfo(): ', err);
         res.send({ success: false });
     }
 };
