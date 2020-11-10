@@ -7,7 +7,7 @@ router.post('/send', walletController.send);
 router.post('/withdraw', walletController.withdraw);
 router.post('/swap', walletController.swap);
 
-router.post('/getTokensRate', walletController.getTokensRate);
+// router.post('/getTokensRate', walletController.getTokensRate);
 router.get('/getTokensRate', walletController.getTokensRate);
 router.get('/getTotalBalance', walletController.getTotalBalance);
 router.get('/getTotalBalancePC', walletController.getTotalBalancePC);
