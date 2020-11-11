@@ -3,7 +3,7 @@ import podProtocol from "../blockchain/podProtocol";
 import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
-import { db } from "../firebase/firebase";
+import { db, firebase } from "../firebase/firebase";
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
@@ -256,35 +256,35 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
 exports.followPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        const userId = body.userId;
+        const podId = body.podId;
+        const podType = body.podType; // FT or NFT
 
         const userRef = db.collection(collections.user)
-            .doc(body.user.id);
-        const userGet = await userRef.get();
-        const user : any = userGet.data();
+            .doc(userId);
 
-        const podToFollowRef = db.collection(collections[body.pod.type])
-            .doc(body.pod.id);
-        const podToFollowGet = await podToFollowRef.get();
-        const podToFollowData : any = podToFollowGet.data();
-
-        if(body.pod.type === 'podsFT') {
-            let alreadyFollowing = user.followingFTPods.find((item) => item === body.pod.id);
-            if(!alreadyFollowing){
-                user.followingFTPods.push(body.pod.id);
-            }
-            await userRef.update({
-                followingFTPods: user.followingFTPods,
-                numFollowingFTPods: user.followingFTPods.length
+        const followerObj = {
+            date: Date.now(),
+            id: userId
+        }
+        if(podType === 'FT') {
+            // update user
+            userRef.update({
+                followingFTPods: firebase.firestore.FieldValue.arrayUnion(podId),
+                numFollowingFTPods: firebase.firestore.FieldValue.increment(1)
+            });
+            // update pod
+            db.collection(collections.podsFT).doc(podId).update({
+                Followers: firebase.firestore.FieldValue.arrayUnion(followerObj)
             });
             res.send({ success: true });
-        } else if(body.pod.type === 'podsNFT') {
-            let alreadyFollowing = user.followingNFTPods.find((item) => item === body.pod.id);
-            if(!alreadyFollowing){
-                user.followingNFTPods.push(body.pod.id);
-            }
-            await userRef.update({
-                followingNFTPods: user.followingNFTPods,
-                numFollowingNFTPods: user.followingNFTPods.length
+        } else if(podType === 'NFT') {
+            userRef.update({
+                followingNFTPods: firebase.firestore.FieldValue.arrayUnion(podId),
+                numFollowingNFTPods: firebase.firestore.FieldValue.increment(1)
+            });
+            db.collection(collections.podsNFT).doc(podId).update({
+                Followers: firebase.firestore.FieldValue.arrayUnion(followerObj)
             });
             res.send({ success: true });
         } else {
@@ -299,38 +299,59 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
 exports.unFollowPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        const userId = body.userId;
+        const podId = body.podId;
+        const podType = body.podType; // FT or NFT
 
         const userRef = db.collection(collections.user)
-            .doc(body.user.id);
-        const userGet = await userRef.get();
-        const user : any = userGet.data();
-
-        const podToFollowRef = db.collection(collections[body.pod.type])
-            .doc(body.pod.id);
-        const podToFollowGet = await podToFollowRef.get();
-        const podToFollowData : any = podToFollowGet.data();
-
-        if(body.pod.type === 'podsFT') {
-            let newFollowings = user.followingFTPods.filter(item => item != body.pod.id)
-
-            await userRef.update({
-                followingFTPods: newFollowings,
-                numFollowingFTPods: newFollowings.length
+            .doc(userId);
+        if(podType === 'FT') {
+            // update user
+            userRef.update({
+                followingFTPods: firebase.firestore.FieldValue.arrayRemove(podId),
+                numFollowingFTPods: firebase.firestore.FieldValue.increment(-1)
+            });
+            // update pod
+            const mewFollowerField:any[] = [];
+            const podsSnap = await db.collection(collections.podsFT).get();
+            podsSnap.forEach((doc) => {
+                const data = doc.data();
+                const followers = data.Followers;
+                if (followers) {
+                    followers.forEach((follower) => {
+                        if (follower.id && follower.id != userId) mewFollowerField.push(follower);
+                    })
+                }
+            })
+            db.collection(collections.podsFT).doc(podId).update({
+                Followers: mewFollowerField
             });
             res.send({ success: true });
-        } else if(body.pod.type === 'podsNFT') {
-            let newFollowings = user.followingNFTPods.filter(item => item != body.pod.id)
-
-            await userRef.update({
-                followingNFTPods: newFollowings,
-                numFollowingNFTPods: newFollowings.length
+        } else if(podType === 'NFT') {
+            userRef.update({
+                followingNFTPods: firebase.firestore.FieldValue.arrayRemove(podId),
+                numFollowingNFTPods: firebase.firestore.FieldValue.increment(-1)
+            });
+            const mewFollowerField:any[] = [];
+            const podsSnap = await db.collection(collections.podsNFT).get();
+            podsSnap.forEach((doc) => {
+                const data = doc.data();
+                const followers = data.Followers;
+                if (followers) {
+                    followers.forEach((follower) => {
+                        if (follower.id && follower.id != userId) mewFollowerField.push(follower);
+                    })
+                }
+            })
+            db.collection(collections.podsNFT).doc(podId).update({
+                Followers: mewFollowerField
             });
             res.send({ success: true });
         } else {
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> unFollowPod(): ', err);
+        console.log('Error in controllers/podController -> unfollowPod(): ', err);
         res.send({ success: false });
     }
 };
