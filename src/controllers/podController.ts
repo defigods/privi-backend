@@ -5,12 +5,14 @@ import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
+import fs from 'fs';
+import path from 'path';
 
 exports.initiatePOD = async (req: express.Request, res: express.Response) => {
     try {
         console.log(req.body);
         const body = req.body;
-        const creator = body.creator;
+        const creator = body.Creator;
         const token = body.Token;
         const duration = body.Duration;
         const payments = body.Payments;
@@ -21,14 +23,22 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
         const collaterals = body.Collaterals;
         const rateOfChange = await getRateOfChange();
         const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
-        console.log(blockchainRes, blockchainRes.output.UpdatePods);
         if (blockchainRes && blockchainRes.success) {
+            const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
+            console.log(blockchainRes, blockchainRes.output.UpdatePods, blockchainRes.output.UpdatePods[podId]);
+
+            blockchainRes.output.UpdatePods[podId].Description = body.Description || '';
+            blockchainRes.output.UpdatePods[podId].Hashtags = body.Hashtags || [];
+            blockchainRes.output.UpdatePods[podId].Private = body.Private || false;
+            blockchainRes.output.UpdatePods[podId].HasPhoto = body.HasPhoto || false;
+            blockchainRes.output.UpdatePods[podId].EndorsementScore = 0.5;
+            blockchainRes.output.UpdatePods[podId].TrustScore = 0.5;
+
             updateFirebase(blockchainRes);
             createNotificaction(creator, "FT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
             );
-            const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
             // Create Pod Rate Doc
             const newPodRate = 0.01;
             db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
@@ -36,6 +46,22 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
                 rateUSD: newPodRate,
                 timestamp: Date.now()
             });
+
+            // Add Pod Id into user myFTPods array
+            if(blockchainRes.output.UpdatePods[0] && blockchainRes.output.UpdatePods[0].Creator) {
+                const userRef = db.collection(collections.user)
+                    .doc(blockchainRes.output.UpdatePods[0].Creator);
+                const userGet = await userRef.get();
+                const user : any = userGet.data();
+
+                let myFTPods : any[] = user.myNFTPods || [];
+                myFTPods.push(podId)
+
+                await userRef.update({
+                    myFTPods: myFTPods
+                });
+            }
+
             res.send({ success: true, data: podId });
         }
         else {
@@ -576,7 +602,6 @@ const getFTPods = () : Promise<any[]> => {
 exports.changePodPhoto = async (req: express.Request, res: express.Response) => {
     try {
         if(req.file) {
-            console.log(req.file.originalname);
             res.send({ success: true });
         } else {
             console.log('Error in controllers/podController -> changePodPhoto()', "There's no file...");
@@ -586,4 +611,83 @@ exports.changePodPhoto = async (req: express.Request, res: express.Response) => 
         console.log('Error in controllers/podController -> changePodPhoto()', err);
         res.send({ success: false });
     }
-}
+};
+
+exports.getPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let podId = req.params.podId;
+        console.log(podId);
+        if(podId) {
+            const directoryPath = path.join('uploads', 'pods');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'pods', podId + '.png'));
+            raw.on('error', function(err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
+};
+
+exports.getNFTPod = async (req: express.Request, res: express.Response) => {
+    try {
+        let podId = req.params.podId;
+        console.log(podId);
+        if(podId) {
+            const podRef = db.collection(collections.podsNFT)
+                .doc(podId);
+            const podGet = await podRef.get();
+            const pod : any = podGet.data();
+
+            res.send({ success: true, data: pod})
+        } else {
+            console.log('Error in controllers/podController -> getNFTPod()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> getNFTPod()', err);
+        res.send({ success: false });
+    }
+};
+
+exports.getFTPod = async (req: express.Request, res: express.Response) => {
+    try {
+        let podId = req.params.podId;
+        console.log(podId);
+        if(podId) {
+            const podRef = db.collection(collections.podsFT)
+                .doc(podId);
+            const podGet = await podRef.get();
+            const pod : any = podGet.data();
+
+            res.send({ success: true, data: pod})
+        } else {
+            console.log('Error in controllers/podController -> getNFTPod()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> getNFTPod()', err);
+        res.send({ success: false });
+    }
+};

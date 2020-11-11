@@ -9,6 +9,8 @@ import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
 import { addListener } from "cluster";
+import path from "path";
+import fs from "fs";
 const bcrypt = require('bcrypt')
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const nodemailer = require("nodemailer");
@@ -881,18 +883,63 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
 
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
-    if (req.file) {
-        console.log(req.file);
-        let newImage = {
-            filename: req.file.filename,
-            originalName: req.file.originalname
-            // url: req.protocol + '://' + req.get('host') + '/images/' + image._id
-        };
-        newImage.filename = req.file.filename;
-        newImage.originalName = req.file.originalname;
+    try {
+        if(req.file) {
+            const userRef = db.collection(collections.user)
+                .doc(req.file.originalname);
+            const userGet = await userRef.get();
+            const user : any = userGet.data();
+            if(user.HasPhoto) {
+                await userRef.update({
+                    HasPhoto: true
+                });
+            }
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/userController -> changeUserProfilePhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
+};
 
-    } else {
-        res.status(400).json({ error: 'No file' });
+
+const getPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+        if(userId) {
+            const directoryPath = path.join('uploads', 'users');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'users', userId + '.png'));
+            raw.on('error', function(err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> changePodPhoto()', err);
+        res.send({ success: false });
     }
 };
 
@@ -916,5 +963,6 @@ module.exports = {
     editUser,
     changeUserProfilePhoto,
     getSocialTokens,
-    getBasicInfo
+    getBasicInfo,
+    getPhotoById
 };

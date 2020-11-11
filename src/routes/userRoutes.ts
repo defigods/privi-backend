@@ -13,7 +13,8 @@ let storage = multer.diskStorage({
         cb(null, 'uploads/users')
     },
     filename: function (req: any, file: any, cb: any) {
-        cb(null, Date.now() + '.png')
+        console.log(file);
+        cb(null, file.originalname + '.png')
     }
 });
 let upload = multer({
@@ -55,6 +56,7 @@ router.post('/connections/unFollowUser', userController.unFollowUser);
 
 router.post('/editUser', userController.editUser);
 router.post('/changeProfilePhoto', upload.single('image'), userController.changeUserProfilePhoto);
+router.get('/getPhoto/:userId', userController.getPhotoById);
 
 router.post('/addToWaitlist', userControllerJS.addToWaitlist);
 router.post('/register', userControllerJS.register);

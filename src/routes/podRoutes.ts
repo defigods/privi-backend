@@ -21,6 +21,10 @@ let upload = multer({
 });
 
 router.post('/changePodPhoto', upload.single('image'), podController.changePodPhoto);
+router.get('/FT/getPhoto/:podId', podController.getPhotoById);
+
+router.get('/NFT/getPod/:podId', podController.getNFTPod);
+router.get('/FT/getPod/:podId', podController.getFTPod);
 
 router.get('/NFT/getMyPods/:userId', podController.getMyPodsNFT);
 router.get('/FT/getMyPods/:userId', podController.getMyPodsFT);
