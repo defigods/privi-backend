@@ -949,6 +949,11 @@ const getUserList = async (req: express.Request, res: express.Response) => {
         let filters = req.body;
 
         if(filters) {
+            const userRef = db.collection(collections.user)
+                .doc(filters.userId);
+            const userGet = await userRef.get();
+            const user : any = userGet.data();
+
             const usersRef = db.collection(collections.user);
             usersRef.where("endorsementScore", ">", filters.endorsementScore[0]/100)
                 .where("trustScore", ">", filters.trustScore[0]/100);
@@ -973,7 +978,21 @@ const getUserList = async (req: express.Request, res: express.Response) => {
                     arrayUsers.push(data);
                 }
                 if (usersGet.docs.length === i + 1) {
-                    res.send({ success: true, data: arrayUsers});
+
+                    if(arrayUsers.length !== 0) {
+                        arrayUsers.forEach((item, i) => {
+                            if(user.followings && user.followings.length !== 0) {
+                                item.isFollowing = user.followings.findIndex(usr => usr === item.id) !== -1;
+                            } else {
+                                item.isFollowing = false;
+                            }
+                            if(arrayUsers.length === i + 1) {
+                                res.send({ success: true, data: arrayUsers});
+                            }
+                        });
+                    } else {
+                        res.send({ success: true, data: []});
+                    }
                 }
             });
         } else {
