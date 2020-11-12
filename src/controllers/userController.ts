@@ -11,6 +11,7 @@ import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
+import notificationTypes from "../constants/notificationType";
 const bcrypt = require('bcrypt')
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const nodemailer = require("nodemailer");
@@ -943,6 +944,48 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
     }
 };
 
+const getUserList = async (req: express.Request, res: express.Response) => {
+    try {
+        let filters = req.body;
+
+        if(filters) {
+            const usersRef = db.collection(collections.user);
+            usersRef.where("endorsementScore", ">", filters.endorsementScore[0]/100)
+                .where("trustScore", ">", filters.trustScore[0]/100);
+            usersRef.where("endorsementScore", "<", filters.endorsementScore[1]/100)
+                .where("trustScore", "<", filters.trustScore[1]/100)
+                .orderBy("Followers", "desc")
+
+            const usersGet = await usersRef.get();
+
+            let arrayUsers: any[] = [];
+            usersGet.docs.map((doc, i) => {
+                let data = doc.data();
+                data.id = doc.id;
+                let name = '';
+                if(data.lastName && data.lastName !== '') {
+                    name = data.firstName + ' ' + data.lastName;
+                } else {
+                    name = data.firstName;
+                }
+
+                if(filters.name === '' || name.startsWith(filters.name)) {
+                    arrayUsers.push(data);
+                }
+                if (usersGet.docs.length === i + 1) {
+                    res.send({ success: true, data: arrayUsers});
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> getUserList()', "There's no filters");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> getUserList()', err);
+        res.send({ success: false });
+    }
+};
+
 
 module.exports = {
 	forgotPassword,
@@ -964,5 +1007,6 @@ module.exports = {
     changeUserProfilePhoto,
     getSocialTokens,
     getBasicInfo,
-    getPhotoById
+    getPhotoById,
+    getUserList
 };

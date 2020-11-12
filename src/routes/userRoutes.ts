@@ -64,6 +64,8 @@ router.post('/register', userControllerJS.register);
 router.get('/getPrivacy', userControllerJS.getPrivacy);
 router.post('/setPrivacy', userControllerJS.setPrivacy);
 
+router.post('/getUserList', userController.getUserList);
+
 
 //router.post('/getBasicInfo', userController.getBasicInfo);
 
