@@ -36,6 +36,7 @@ router.get('/FT/getOtherPods/:userId', podController.getOtherPodsFT);
 router.get('/NFT/getAllPodsInfo/:userId', podController.getAllNFTPodsInfo);
 router.get('/FT/getAllPodsInfo/:userId', podController.getAllFTPodsInfo);
 
+// these 4 are implemented for FT pods
 router.post('/initiatePod', podController.initiatePOD);
 router.post('/deletePod', podController.deletePOD);
 router.post('/investPod', podController.investPOD);

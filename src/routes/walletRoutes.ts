@@ -6,6 +6,7 @@ const walletController = require('../controllers/walletController');
 router.post('/send', walletController.send);
 router.post('/withdraw', walletController.withdraw);
 router.post('/swap', walletController.swap);
+router.post('/getUserTokenBalance', walletController.getUserTokenBalance);
 
 router.post('/getTokensRate', walletController.getTokensRate);
 router.get('/getTokensRate', walletController.getTokensRate);

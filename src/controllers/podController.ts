@@ -702,13 +702,26 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
             const podGet = await podRef.get();
             const pod : any = podGet.data();
 
+            // also send back pod rate and PC rate
+            const val = 0.01; // val by default
+            pod.rates = {};
+            pod.rates.PC = val;
+            pod.rates[podId] = val;
+            const rateSnap = await db.collection(collections.rates).get();
+            rateSnap.forEach((doc) => {
+                if (doc.id == "PC" || doc.id == podId) { // only need these two
+                    const rate = doc.data().rate;
+                    pod.rates[doc.id] = rate;
+                }
+            });
+
             res.send({ success: true, data: pod})
         } else {
-            console.log('Error in controllers/podController -> getNFTPod()', "There's no pod id...");
+            console.log('Error in controllers/podController -> getFTPod()', "There's no pod id...");
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> getNFTPod()', err);
+        console.log('Error in controllers/podController -> getFTPod()', err);
         res.send({ success: false });
     }
 };
