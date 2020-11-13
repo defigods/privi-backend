@@ -550,7 +550,7 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
         const userGet = await userRef.get();
         const user : any = userGet.data();
 
-        let allNFTPods : any[] = await getNFTPods();
+        /*let allNFTPods : any[] = await getNFTPods();
 
         let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
 
@@ -562,6 +562,12 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
                 myNFTPods: myNFTPods,
                 otherNFTPods: otherNFTPods,
                 trendingNFTPods: trendingNFTPods
+            }
+        });*/
+        res.send({ success: true, data: {
+                myNFTPods: [],
+                otherNFTPods: [],
+                trendingNFTPods: []
             }
         });
     } catch (err) {

@@ -859,7 +859,10 @@ const editUser = async (req: express.Request, res: express.Response) => {
             postalCode: body.postalCode,
             location: body.location,
             address: body.address,
-            bio: body.bio
+            bio: body.bio,
+            instagram: body.instagram,
+            twitter: body.twitter,
+            facebook: body.facebook
         });
 
         res.send({
@@ -872,7 +875,10 @@ const editUser = async (req: express.Request, res: express.Response) => {
                 postalCode: body.postalCode,
                 location: body.location,
                 address: body.address,
-                bio: body.bio
+                bio: body.bio,
+                instagram: body.instagram,
+                twitter: body.twitter,
+                facebook: body.facebook
             }
         });
     } catch (err) {
