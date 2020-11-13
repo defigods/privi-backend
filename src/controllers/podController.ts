@@ -1,6 +1,7 @@
 import express, { response } from 'express';
 import podProtocol from "../blockchain/podProtocol";
-import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
+import nftPodProtocol from "../blockchain/nftPodProtocol";
+import { updateFirebase, getRateOfChange, createNotificaction, updateFirebaseNFT } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -576,3 +577,92 @@ const getFTPods = (): Promise<any[]> => {
         });
     });
 }
+
+
+// ---------------- NFT Pod backend-blockchain calls -----------------
+exports.initiatePodNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const creator = body.creator;
+        const token = body.token;
+        const royalty = body.royalty;
+        const offers = body.offers; 
+        // maybe frontend need to store more info to db
+        // ...
+        const blockchainRes = await nftPodProtocol.initiatePodNFT(creator, token, royalty, offers);
+        console.log(blockchainRes);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotificaction(creator, "NFT Pod - Pod Created",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> initiatePodNFT(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> initiatePodNFT(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.trader;
+        const podId = body.podId;
+        const amount = body.amount;
+        const price = body.price; 
+        const blockchainRes = await nftPodProtocol.newBuyOrder(podId, trader, amount, price);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotificaction(trader, "NFT Pod - Pod Buy Offer Crated",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> newBuyOrder(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> newBuyOrder(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.newSellOrder = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.trader;
+        const podId = body.podId;
+        const amount = body.amount;
+        const price = body.price; 
+        const blockchainRes = await nftPodProtocol.newSellOrder(podId, trader, amount, price);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotificaction(trader, "NFT Pod - Pod Sell Offer Crated",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> newSellOrder(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> newSellOrder(): ', err);
+        res.send({ success: false });
+    }
+}
+
+
+// --------------------------------------------------------------------

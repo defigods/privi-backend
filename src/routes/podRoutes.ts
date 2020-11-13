@@ -22,4 +22,9 @@ router.post('/swapPod', authenticateJWT, podController.swapPod);
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
+// NFT backend-blockchain
+router.post('/NFT/initiatePodNFT', authenticateJWT, podController.initiatePodNFT);
+router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
+router.post('/NFT/newSellOrder', authenticateJWT, podController.newSellOrder);
+
 module.exports = router;

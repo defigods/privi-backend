@@ -13,6 +13,7 @@ const bcrypt = require('bcrypt')
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const nodemailer = require("nodemailer");
 import configuration from "../constants/configuration";
+import { accessSync } from 'fs';
 const jwt = require('jsonwebtoken');
 
 // AUTHENTICATION
@@ -131,17 +132,13 @@ PRIVI Protocol
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-
         const email = body.email;
         const password = body.password;
-
         if (email && password) {
-
             // Compare user & passwd between login input and DB
             const user = await db.collection(collections.user)
                 .where('email', '==', email)
                 .get();
-
             // Return result
             if (user.empty) {
                 console.log('not found');
@@ -196,7 +193,6 @@ const signIn = async (req: express.Request, res: express.Response) => {
 					expiryDate.setDate(new Date().getDate()+configuration.LOGIN_EXPIRY_DAYS);
 
 					const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat:Date.now(), exp:expiryDate.getTime()}, configuration.JWT_SECRET_STRING);
-
 					res.send({ isSignedIn: true, userData: data, accessToken:accessToken });
 
                 } else {
@@ -218,7 +214,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
 
-}; // signIn
+};
 
 const signUp = async (req: express.Request, res: express.Response) => {
     try {
