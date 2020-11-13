@@ -318,6 +318,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     myFTPods: [],
                     investedNFTPods: [],
                     investedFTPods: [],
+                    twitter: '',
+                    instagram: '',
+                    facebook: ''
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
