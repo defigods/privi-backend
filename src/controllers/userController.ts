@@ -406,13 +406,17 @@ interface BasicInfo {
     endorsementScore: number,
     numFollowers: number,
     numFollowings: number,
-    bio: string
+    bio: string,
+    twitter: string,
+    facebook: string,
+    instagram: string
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0, bio: '' };
+        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
+            numFollowings: 0, bio: '', twitter: '', instagram: '', facebook: ''};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -423,6 +427,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
+            basicInfo.twitter = userData.twitter || '';
+            basicInfo.instagram = userData.instagram || '';
+            basicInfo.facebook = userData.facebook || '';
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
