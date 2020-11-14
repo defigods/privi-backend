@@ -5,6 +5,7 @@ import { db } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
+import { countDecimals } from "../functions/utilities";
 
 module.exports.send = async (req: express.Request, res: express.Response) => {
     try {
@@ -23,6 +24,14 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
             res.send({ success: true, message: "toUid is required" });
             return;
         }
+        
+		// check that fromUid is same as user in jwt
+		if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
+			console.log("error: jwt user is not the same as fromUid");
+			res.send({ success: false, message: "jwt user is not the same as fromUid" });
+			return;
+		}
+        
         console.log("token", token);
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
@@ -56,7 +65,8 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/walletController -> send()', err);
         res.send({ success: false });
     }
-}
+    
+} // send
 
 
 module.exports.withdraw = async (req: express.Request, res: express.Response) => {
@@ -65,6 +75,14 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
         const publicId = body.publicId;
         const amount = body.amount;
         const token = body.token;
+
+		// check that publicId is same as user in jwt
+		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+			console.log("error: jwt user is not the same as publicId");
+			res.send({ success: false, message: "jwt user is not the same as publicId" });
+			return;
+		}
+		
         const blockchainRes = await coinBalance.withdraw(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -73,15 +91,18 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
                 notificationTypes.withdraw
             );
             res.send({ success: true });
+
         } else {
             console.log('Error in controllers/walletController -> withdraw()');
             res.send({ success: false });
         }
+
     } catch (err) {
         console.log('Error in controllers/walletController -> withdraw()', err);
         res.send({ success: false });
     }
-}
+
+} // withdraw
 
 module.exports.swap = async (req: express.Request, res: express.Response) => {
     try {
@@ -89,6 +110,14 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
         const publicId = body.publicId;
         const amount = body.amount;
         const token = body.token;
+        
+        // check that publicId is same as user in jwt
+		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+			console.log("error: jwt user is not the same as publicId");
+			res.send({ success: false, message: "jwt user is not the same as publicId" });
+			return;
+		}
+		
         const blockchainRes = await coinBalance.swap(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -105,16 +134,14 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/walletController -> swap()', err);
         res.send({ success: false });
     }
-}
-
+    
+} // swap
 
 
 ///////////////////////////// gets //////////////////////////////
 
-const getTotalBalance = async (req: express.Request, res: express.Response) => {
+module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-
         let { userId } = req.query;
 		userId = userId!.toString()
 
@@ -155,7 +182,6 @@ const getTotalBalance = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 }
-module.exports.getTotalBalance = getTotalBalance;
 
 module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
     try {
@@ -288,12 +314,6 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
         console.log('Error in controllers/walletController -> getTransfers()', err);
         res.send({ success: false });
     }
-}
-
-// thanks https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
-function countDecimals(value) {
-    if (Math.floor(value) === value) return 0;
-    return value.toString().split(".")[1].length || 0; 
 }
 
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {

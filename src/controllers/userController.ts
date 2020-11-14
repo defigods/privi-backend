@@ -2,7 +2,6 @@ import express from 'express';
 // import * as fs from 'fs';
 // import * as path from 'path';
 // import { stringify } from 'querystring';
-//const jwt = require("jsonwebtoken");
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
