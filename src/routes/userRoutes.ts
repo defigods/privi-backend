@@ -57,7 +57,7 @@ router.post('/connections/unFollowUser', authenticateJWT, userController.unFollo
 
 router.post('/editUser', authenticateJWT, userController.editUser);
 router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), userController.changeUserProfilePhoto);
-router.get('/getPhoto/:userId', authenticateJWT, userController.getPhotoById);
+router.get('/getPhoto/:userId', userController.getPhotoById);
 
 router.post('/addToWaitlist', authenticateJWT, userControllerJS.addToWaitlist);
 router.post('/register', authenticateJWT, userControllerJS.register);
