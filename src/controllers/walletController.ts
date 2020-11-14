@@ -435,3 +435,26 @@ module.exports.getTotalExpense = async (req: express.Request, res: express.Respo
         res.send({ success: false });
     }
 }
+
+
+/**
+ * Function used to get the user's ballance of a specific token 
+ * @param req {userId, token}. userId: id of the user to query the balance. token: the token to look at.
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: number indicating the balance of the user
+ */
+module.exports.getUserTokenBalance = async (req: express.Request, res: express.Response) => {
+    const body = req.body;
+    const userId = body.userId;
+    const token = body.token;
+    const tokenWalletSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
+    if (tokenWalletSnap.exists) {
+        const data = tokenWalletSnap.data();
+        if (data) {
+            const balance = data.Amount;
+            if (balance) res.send({success: true, data:balance});
+            else res.send({success: false});
+        }
+        else res.send({success: false});
+    }
+    else res.send({success: false});
+}

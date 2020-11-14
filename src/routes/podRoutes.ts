@@ -1,8 +1,31 @@
 import express from 'express';
+import multer from "multer";
 const router = express.Router();
 
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const podController = require('../controllers/podController');
+
+
+// let upload = multer({ dest: 'uploads' });
+// Multer Settings for file upload
+let storage = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/pods')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload = multer({
+    storage: storage
+});
+
+router.post('/changePodPhoto', upload.single('image'), podController.changePodPhoto);
+router.get('/FT/getPhoto/:podId', podController.getPhotoById);
+
+router.get('/NFT/getPod/:podId', podController.getNFTPod);
+router.get('/FT/getPod/:podId', podController.getFTPod);
 
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
 router.get('/FT/getMyPods/:userId', authenticateJWT, podController.getMyPodsFT);

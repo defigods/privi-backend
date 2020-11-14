@@ -4,6 +4,7 @@ const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const walletController = require('../controllers/walletController');
 
+router.post('/getUserTokenBalance', authenticateJWT,walletController.getUserTokenBalance);
 router.post('/send', authenticateJWT, walletController.send);
 router.post('/withdraw', authenticateJWT, walletController.withdraw);
 router.post('/swap', authenticateJWT, walletController.swap);
