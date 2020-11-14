@@ -27,12 +27,14 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
             console.log(blockchainRes, blockchainRes.output.UpdatePods, blockchainRes.output.UpdatePods[podId]);
 
+            blockchainRes.output.UpdatePods[podId].Name = body.Name || '';
             blockchainRes.output.UpdatePods[podId].Description = body.Description || '';
             blockchainRes.output.UpdatePods[podId].Hashtags = body.Hashtags || [];
             blockchainRes.output.UpdatePods[podId].Private = body.Private || false;
             blockchainRes.output.UpdatePods[podId].HasPhoto = body.HasPhoto || false;
             blockchainRes.output.UpdatePods[podId].EndorsementScore = 0.5;
             blockchainRes.output.UpdatePods[podId].TrustScore = 0.5;
+            blockchainRes.output.UpdatePods[podId].Admins = body.Admins;
 
             updateFirebase(blockchainRes);
             createNotificaction(creator, "FT Pod - Pod Created",
