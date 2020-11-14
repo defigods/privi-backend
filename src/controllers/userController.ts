@@ -15,6 +15,8 @@ import notificationTypes from "../constants/notificationType";
 const bcrypt = require('bcrypt')
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const nodemailer = require("nodemailer");
+import configuration from "../constants/configuration";
+const jwt = require('jsonwebtoken');
 
 // AUTHENTICATION
 const forgotPassword = async (req: express.Request, res: express.Response) => {
@@ -43,9 +45,9 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 			const hash = await bcrypt.hash(tempPassword, salt);
 			data["temp_password"] = hash;
 
-			let tomorrow = new Date();
-			tomorrow.setDate(new Date().getDate()+1);
-			data["temp_password_expiry"] = tomorrow.getTime(); // 1 day temporary password expiry
+			let expiryDate = new Date();
+			expiryDate.setDate(new Date().getDate()+configuration.FORGOT_PASSWORD_EXPIRY_DAYS);
+			data["temp_password_expiry"] = expiryDate.getTime(); // 1 day temporary password expiry
 
 			data["lastUpdate"] = Date.now();
 
@@ -64,7 +66,7 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 		res.send({ success: false, message: "email required" });
 	}
 
-};
+}; // forgotPassword
 
 async function sendForgotPasswordEmail(email, tempPassword) {
 
@@ -191,7 +193,14 @@ const signIn = async (req: express.Request, res: express.Response) => {
                 data.id = user.docs[0].id;
                 if (success) {
 					console.log('Login successful');
-					res.send({ isSignedIn: true, userData: data });
+
+					// Generate an access token
+					let expiryDate = new Date();
+					expiryDate.setDate(new Date().getDate()+configuration.LOGIN_EXPIRY_DAYS);
+
+					const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat:Date.now(), exp:expiryDate.getTime()}, configuration.JWT_SECRET_STRING);
+
+					res.send({ isSignedIn: true, userData: data, accessToken:accessToken });
 
                 } else {
 					console.log('wrong password');
@@ -211,7 +220,8 @@ const signIn = async (req: express.Request, res: express.Response) => {
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
-};
+
+}; // signIn
 
 const signUp = async (req: express.Request, res: express.Response) => {
     try {
