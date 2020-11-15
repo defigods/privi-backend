@@ -65,7 +65,7 @@ PRIVI Protocol
 
 } // sendForgotPasswordEmail
 
-export async function sendEmailValidation(userData) {
+export async function sendEmailValidation(userData, isResend) {
 	const email = userData.email;
 	const validationLink = URL() + "/user/email_validation/" + Buffer.from(userData.id + "_" + userData.validationSecret).toString('base64');
 
@@ -113,7 +113,7 @@ PRIVI Protocol
 	  let info = await transporter.sendMail({
 		from: '"PRIVI Protocol" <noreply@priviprotocol.io>', // sender address
 		to: email, // list of receivers
-		subject: "Validate your email - PRIVI Protocol", // Subject line
+		subject: !isResend? "Validate your email - PRIVI Protocol" : "Resend email validation - PRIVI Protocol", // Subject line
 		text: textEmail, // plain text body
 		html: htmlEmail, // html body
 	  });

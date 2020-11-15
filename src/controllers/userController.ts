@@ -94,7 +94,6 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 			let tempPassword = crypto.randomBytes(8).toString('hex');
 			// console.log("temporary password:", tempPassword);
 
-			// save to db
             const data = user.docs[0].data();
 
 			const salt = await bcrypt.genSalt(10);
@@ -107,6 +106,7 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 
 			data["lastUpdate"] = Date.now();
 
+			// save to db
 			db.collection(collections.user).doc(user.docs[0].id).update(data);
 			
 			let successEmail = await sendForgotPasswordEmail(data, tempPassword);
@@ -123,6 +123,50 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 	}
 
 }; // forgotPassword
+
+const resendEmailValidation = async (req: express.Request, res: express.Response) => {
+	const body = req.body;
+
+	const email = body.email;
+	if (email) {
+		const user = await db.collection(collections.user)
+			.where('email', '==', email)
+			.get();
+
+		if (user.empty) {
+			console.log('not found');
+			res.send({ success: false, message: "user not found" });
+
+		} else {
+            const data = user.docs[0].data();
+
+			if (data.isEmailValidated) {
+				res.send({ success: false, message: "user already validated" });
+				
+			} else {
+				if (!data.validationSecret) { // no validation secret field
+					data.validationSecret = crypto.randomBytes(8).toString('hex');
+					data.isEmailValidated = false;
+					
+					// save to db
+					db.collection(collections.user).doc(user.docs[0].id).update(data);
+				}
+			
+				let successEmail = await sendEmailValidation(data, true);
+				if (!successEmail) {
+					console.log("failed to resend email validation");
+				}
+			
+				res.send({ success: true, message: "email validation resent" });
+			}
+		}
+		
+	} else {
+		console.log('email required');
+		res.send({ success: false, message: "email required" });
+	}
+
+}; // resendEmailValidation
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
@@ -396,7 +440,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
 				firstName: firstName,
 			};
 
-			let successEmail = await sendEmailValidation(userData);
+			let successEmail = await sendEmailValidation(userData, false);
 			if (!successEmail) {
 				console.log("failed to send email validation");
 			}
@@ -1043,6 +1087,7 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 module.exports = {
 	emailValidation,
 	forgotPassword,
+	resendEmailValidation,
     signIn,
     signUp,
     getFollowPodsInfo,
