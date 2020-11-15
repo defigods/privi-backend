@@ -7,7 +7,7 @@ import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
 
-module.exports.send = async (req: express.Request, res: express.Response) => {
+module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const fromUid = body.fromUid;
@@ -24,14 +24,14 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
             res.send({ success: true, message: "toUid is required" });
             return;
         }
-        
+
 		// check that fromUid is same as user in jwt
 		if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
-			console.log("error: jwt user is not the same as fromUid");
+			console.log("error: jwt user is not the same as fromUid ban?");
 			res.send({ success: false, message: "jwt user is not the same as fromUid" });
 			return;
 		}
-        
+
         console.log("token", token);
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
@@ -45,7 +45,7 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
             if (senderData !== undefined && receriverData !== undefined) {
                 senderName = senderData.firstName;
                 receiverName = receriverData.firstName;
-                // notification to sender 
+                // notification to sender
                 createNotificaction(fromUid, "Transfer - Sent",
                     `You have succesfully send ${amount} ${token} to ${receiverName}!`,
                     notificationTypes.transferSend
@@ -65,8 +65,8 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/walletController -> send()', err);
         res.send({ success: false });
     }
-    
-} // send
+
+} // transfer
 
 
 module.exports.withdraw = async (req: express.Request, res: express.Response) => {
@@ -78,11 +78,11 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 
 		// check that publicId is same as user in jwt
 		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
-			console.log("error: jwt user is not the same as publicId");
+			console.log("error: jwt user is not the same as publicId ban?");
 			res.send({ success: false, message: "jwt user is not the same as publicId" });
 			return;
 		}
-		
+
         const blockchainRes = await coinBalance.withdraw(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -104,20 +104,20 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 
 } // withdraw
 
-module.exports.swap = async (req: express.Request, res: express.Response) => {
+module.exports.deposit = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const publicId = body.publicId;
         const amount = body.amount;
         const token = body.token;
-        
+
         // check that publicId is same as user in jwt
 		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
-			console.log("error: jwt user is not the same as publicId");
+			console.log("error: jwt user is not the same as publicId ban?");
 			res.send({ success: false, message: "jwt user is not the same as publicId" });
 			return;
 		}
-		
+
         const blockchainRes = await coinBalance.swap(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -134,8 +134,8 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/walletController -> swap()', err);
         res.send({ success: false });
     }
-    
-} // swap
+
+} // deposit
 
 
 ///////////////////////////// gets //////////////////////////////
@@ -186,7 +186,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
 module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        
+
         let { userId } = req.query;
 		userId = userId!.toString()
 
@@ -213,7 +213,7 @@ module.exports.getTotalBalancePC = async (req: express.Request, res: express.Res
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
 	const data = await getTokensRateHelper();
 	if (data.length > 0) {
-        res.send({ success: true, data: data });	
+        res.send({ success: true, data: data });
 	} else {
         res.send({ success: false });
 	}
@@ -221,7 +221,7 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
 
 async function getTokensRateHelper() {
     const data: {}[] = [];
-        
+
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
@@ -236,7 +236,7 @@ async function getTokensRateHelper() {
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
     }
-    
+
     return data;
 }
 
@@ -355,7 +355,7 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
 					}
 				}
 			});
-			
+
             const data = { id: doc.data().Id, token: doc.data().Token, tokenRate: tokenRate, value: value, valueCurrency: valueCurrency, realValue: realValue, realValueCurrency: realValueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
@@ -438,7 +438,7 @@ module.exports.getTotalExpense = async (req: express.Request, res: express.Respo
 
 
 /**
- * Function used to get the user's ballance of a specific token 
+ * Function used to get the user's ballance of a specific token
  * @param req {userId, token}. userId: id of the user to query the balance. token: the token to look at.
  * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: number indicating the balance of the user
  */
