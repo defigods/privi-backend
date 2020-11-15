@@ -1,6 +1,6 @@
 import express, { response } from 'express';
 import podProtocol from "../blockchain/podProtocol";
-import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
@@ -35,7 +35,7 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
             blockchainRes.output.UpdatePods[podId].TrustScore = 0.5;
 
             updateFirebase(blockchainRes);
-            createNotificaction(creator, "FT Pod - Pod Created",
+            createNotification(creator, "FT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
             );
@@ -82,7 +82,7 @@ exports.deletePOD = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await podProtocol.deletePod(publicId, podId);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "FT Pod - Pod Deleted",
+            createNotification(publicId, "FT Pod - Pod Deleted",
                 ` `,
                 notificationTypes.podDeletion
             );
@@ -108,7 +108,7 @@ exports.investPOD = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await podProtocol.investPOD(investorId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(investorId, "FT Pod - Pod Invested",
+            createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
             );
@@ -136,7 +136,7 @@ exports.swapPod = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             console.log(blockchainRes);
-            createNotificaction(investorId, "FT Pod - Pod Swapped",
+            createNotification(investorId, "FT Pod - Pod Swapped",
                 ` `,
                 notificationTypes.podSwapGive
             );
@@ -202,7 +202,7 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
             const blockchainRes = await podProtocol.checkPODLiquidation(podId, rateOfChange);
             if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
                 updateFirebase(blockchainRes);
-                createNotificaction(podIdUidMap[podId], "FT Pod - Pod Liquidated",
+                createNotification(podIdUidMap[podId], "FT Pod - Pod Liquidated",
                     ` `,
                     notificationTypes.podLiquidationFunds
                 );
@@ -236,7 +236,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                 let walletObj: any = null;
                 for ([uid, walletObj] of Object.entries(updateWallets)) {
                     if (walletObj["Transaction"].length > 0) {
-                        createNotificaction(uid, "FT Pod - Interest Payment",
+                        createNotification(uid, "FT Pod - Interest Payment",
                             ` `,
                             notificationTypes.traditionalInterest
                         );

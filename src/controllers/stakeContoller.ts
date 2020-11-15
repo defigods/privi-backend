@@ -1,6 +1,6 @@
 import express from 'express';
 import tradinionalLending from "../blockchain/traditionalLending";
-import { updateFirebase, createNotificaction } from "../functions/functions";
+import { updateFirebase, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections, { stakingDeposit } from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -34,7 +34,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 obj[dotNotation] = newTokenDepositVal;
                 db.collection(collections.stakingDeposit).doc(publicId).update(obj);
             }
-            createNotificaction(publicId, "Staking - Token Unstaked",
+            createNotification(publicId, "Staking - Token Unstaked",
                 ` `,
                 notificationTypes.unstaking
             );
@@ -75,7 +75,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                 const obj = {};
                 obj[dotNotation] = newTokenDepositVal;
                 db.collection(collections.stakingDeposit).doc(publicId).update(obj);
-                createNotificaction(publicId, "Staking - Token Unstaked",
+                createNotification(publicId, "Staking - Token Unstaked",
                     ` `,
                     notificationTypes.unstaking
                 );
@@ -96,7 +96,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     }
 };
 
-// get the reward earned by staking token, 
+// get the reward earned by staking token,
 // output: object which key is the token and value the amount earned in this token
 exports.getStakeReward = async (req: express.Request, res: express.Response) => {
     try {
@@ -136,7 +136,7 @@ exports.getStakeReward = async (req: express.Request, res: express.Response) => 
     }
 };
 
-// get the staking information needed for the frontend 
+// get the staking information needed for the frontend
 // output: object which key is the token and value another object with three fields: stakingDeposit, annualRate, stakingReward
 exports.getUserStakeInfo = async (req: express.Request, res: express.Response) => {
     try {

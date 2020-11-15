@@ -1,6 +1,6 @@
 import express from 'express';
 import podProtocol from "../blockchain/podProtocol";
-import { updateFirebase, getRateOfChange, createNotificaction } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {
@@ -18,7 +18,7 @@ exports.createLiquidityPool = async (req: express.Request, res: express.Response
         const blockchainRes = await podProtocol.createLiquidityPool(creatorId, token, minReserveRatio, initialAmount, fee, withdrawalTime, withdrawalFee, minEndorsementScore, minTrustScore);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(creatorId, "Liquidity Pool - Pool Created",
+            createNotification(creatorId, "Liquidity Pool - Pool Created",
                 ` `,
                 notificationTypes.liquidityPoolCreation
             );
@@ -43,7 +43,7 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
         const blockchainRes = await podProtocol.depositLiquidity(liquidityPoolId, providerId, amount);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(providerId, "Liquidity Pool - Pool Deposited",
+            createNotification(providerId, "Liquidity Pool - Pool Deposited",
                 ` `,
                 notificationTypes.liquidityPoolProvide
             );
@@ -69,7 +69,7 @@ exports.withdrawLiquidity = async (req: express.Request, res: express.Response) 
         const blockchainRes = await podProtocol.withdrawLiquidity(liquidityPoolId, providerId, amount, rateOfChange)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(providerId, "Liquidity Pool - Pool Deposited",
+            createNotification(providerId, "Liquidity Pool - Pool Deposited",
                 ` `,
                 notificationTypes.liquidityPoolWithdraw
             );

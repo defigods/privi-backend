@@ -6,7 +6,7 @@ import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
