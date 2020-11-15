@@ -30,14 +30,14 @@ const emailValidation = async (req: express.Request, res: express.Response) => {
 	if (split.length == 2) {
 		const uid = split[0];
 		const validationSecret = split[1];
-		
+
 		// look for user record given uid
         const userRef = db.collection(collections.user)
             .doc(uid);
         const userGet = await userRef.get();
         const user: any = userGet.data();
-		
-		if (user.empty) {
+
+		if (user == null) {
 			message = "user not found";
 			// message_key = "USER_NOT_FOUND";
 
@@ -51,14 +51,14 @@ const emailValidation = async (req: express.Request, res: express.Response) => {
 					// update user
 					user.isEmailValidated = true;
 					user.validationSecret = "";
-					
+
 					db.collection(collections.user).doc(uid).update(user);
-					
+
 					message = "user validated successfully please login";
 					// message_key = "VALIDATION_SUCCESS";
-					
+
 					success = true;
-				
+
 				} else {
 					message = "failed to validate user";
 					// message_key = "INVALID_VALIDATION_SECRET";
@@ -108,7 +108,7 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 
 			// save to db
 			db.collection(collections.user).doc(user.docs[0].id).update(data);
-			
+
 			let successEmail = await sendForgotPasswordEmail(data, tempPassword);
 			if (successEmail) {
 				res.send({ success: true, message: "Temporary password sent to email." });
@@ -116,7 +116,7 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 				res.send({ success: false, message: "Failed to send temporary password email." });
 			}
 		}
-		
+
 	} else {
 		console.log('email required');
 		res.send({ success: false, message: "email required" });
@@ -142,25 +142,26 @@ const resendEmailValidation = async (req: express.Request, res: express.Response
 
 			if (data.isEmailValidated) {
 				res.send({ success: false, message: "user already validated" });
-				
+
 			} else {
 				if (!data.validationSecret) { // no validation secret field
 					data.validationSecret = crypto.randomBytes(8).toString('hex');
 					data.isEmailValidated = false;
-					
+
 					// save to db
 					db.collection(collections.user).doc(user.docs[0].id).update(data);
 				}
-			
+
+				data.id = user.docs[0].id;
 				let successEmail = await sendEmailValidation(data, true);
 				if (!successEmail) {
 					console.log("failed to resend email validation");
 				}
-			
+
 				res.send({ success: true, message: "email validation resent" });
 			}
 		}
-		
+
 	} else {
 		console.log('email required');
 		res.send({ success: false, message: "email required" });
@@ -226,7 +227,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
 						}
 					}
 				}
-                
+
                 data.id = user.docs[0].id;
                 if (success) {
 					console.log('Login successful');
@@ -444,9 +445,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
 			if (!successEmail) {
 				console.log("failed to send email validation");
 			}
-			
+
             res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
-            
+
         } else {
             console.log('Warning in controllers/user.ts -> signUp():', blockchainRes);
             res.send({ success: false });
