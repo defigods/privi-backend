@@ -18,6 +18,64 @@ const jwt = require('jsonwebtoken');
 const crypto = require("crypto");
 import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates/emailTemplates";
 
+const emailValidation = async (req: express.Request, res: express.Response) => {
+	let success = false;
+	let message = "";
+	// let message_key = "";
+
+	const validation_slug = req.params.validation_slug;
+
+	const decodeValidationSlug = Buffer.from(validation_slug, 'base64').toString('ascii');
+	const split = decodeValidationSlug.split("_");
+	if (split.length == 2) {
+		const uid = split[0];
+		const validationSecret = split[1];
+		
+		// look for user record given uid
+        const userRef = db.collection(collections.user)
+            .doc(uid);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+		
+		if (user.empty) {
+			message = "user not found";
+			// message_key = "USER_NOT_FOUND";
+
+		} else {
+			if (user.isEmailValidated) {
+				message = "user already validated";
+				// message_key = "USER_ALREADY_VALIDATED";
+
+			} else {
+				if (user.validationSecret == validationSecret) {
+					// update user
+					user.isEmailValidated = true;
+					user.validationSecret = "";
+					
+					db.collection(collections.user).doc(uid).update(user);
+					
+					message = "user validated successfully please login";
+					// message_key = "VALIDATION_SUCCESS";
+					
+					success = true;
+				
+				} else {
+					message = "failed to validate user";
+					// message_key = "INVALID_VALIDATION_SECRET";
+				}
+			}
+		}
+
+	} else {
+		message = "invalid validation link";
+		// message_key = "INVALID_VALIDATION_LINK";
+	}
+
+	res.setHeader('Content-Type', 'text/html');
+	res.send(message);
+
+}; // emailValidation
+
 const forgotPassword = async (req: express.Request, res: express.Response) => {
 	const body = req.body;
 
@@ -33,7 +91,7 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 
 		} else {
 			// create a temporary password
-			var tempPassword = crypto.randomBytes(8).toString('hex');
+			let tempPassword = crypto.randomBytes(8).toString('hex');
 			// console.log("temporary password:", tempPassword);
 
 			// save to db
@@ -331,7 +389,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
             // ------------------------------------------------------------------------------------
 
 			// send email validation here
-			var userData = {
+			let userData = {
 				id: uid,
 				email: email,
 				validationSecret: validationSecret,
@@ -983,6 +1041,7 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 
 
 module.exports = {
+	emailValidation,
 	forgotPassword,
     signIn,
     signUp,

@@ -27,6 +27,7 @@ router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
 router.post('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
+router.get('/email_validation/:validation_slug', userController.emailValidation);
 
 router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
 
