@@ -173,7 +173,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
 
-        const email = body.email;
+				const email = body.email;
         const password = body.password;
 
         if (email && password) {
@@ -187,71 +187,78 @@ const signIn = async (req: express.Request, res: express.Response) => {
             if (user.empty) {
                 console.log('not found');
                 res.send({ isSignedIn: false, userData: {} });
+
             } else {
                 console.log('found from email')
-
                 const data = user.docs[0].data();
-				let success = false;
-				if (data.password == password) { // unencrypted so let's encrypt this password
-				    const salt = await bcrypt.genSalt(10)
-					const hash = await bcrypt.hash(password, salt);
-					data["password"] = hash;
 
-					db.collection(collections.user).doc(user.docs[0].id).update(data);
+								if (!data.isEmailValidated) {
+                	res.send({ isSignedIn: false, userData: {}, message: "please validate your email", message_key:"EMAIL_VALIDATION_REQUIRED" });
 
-					success = true;
-					console.log("password encrypted");
+								} else {
+									let success = false;
 
-				} else {
-					let isSame = await bcrypt.compare(password, data.password);
-					success = isSame;
+									if (data.password == password) { // unencrypted so let's encrypt this password
+									    const salt = await bcrypt.genSalt(10)
+									  const hash = await bcrypt.hash(password, salt);
+									  data["password"] = hash;
 
-					if (!isSame && data.temp_password && (data.temp_password_expiry > Date.now())) { // has temporary password that is not yet expired
-						isSame = await bcrypt.compare(password, data.temp_password);
-						success = isSame
+									  db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-						if (isSame) { // let's use the temporary password going forward
-							const salt = await bcrypt.genSalt(10)
-							const hash = await bcrypt.hash(password, salt);
-							data["password"] = hash;
+									  success = true;
+									  console.log("password encrypted");
 
-							// delete temp fields
-							data["temp_password"] = FieldValue.delete();
-							// data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
+									} else {
+									  let isSame = await bcrypt.compare(password, data.password);
+									  success = isSame;
 
-							data["lastUpdate"] = Date.now();
+									  if (!isSame && data.temp_password && (data.temp_password_expiry > Date.now())) { // has temporary password that is not yet expired
+									    isSame = await bcrypt.compare(password, data.temp_password);
+									    success = isSame
 
-							db.collection(collections.user).doc(user.docs[0].id).update(data);
+									    if (isSame) { // let's use the temporary password going forward
+									      const salt = await bcrypt.genSalt(10)
+									      const hash = await bcrypt.hash(password, salt);
+									      data["password"] = hash;
 
-							console.log("temporary password used");
-						}
-					}
-				}
+									      // delete temp fields
+									      data["temp_password"] = FieldValue.delete();
+									      // data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
 
-                data.id = user.docs[0].id;
-                if (success) {
-					console.log('Login successful');
+									      data["lastUpdate"] = Date.now();
 
-					// Generate an access token
-					let expiryDate = new Date();
-					expiryDate.setDate(new Date().getDate()+configuration.LOGIN_EXPIRY_DAYS);
+									      db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-					const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat:Date.now(), exp:expiryDate.getTime()}, configuration.JWT_SECRET_STRING);
+									      console.log("temporary password used");
+									    }
+									  }
+									}
 
-					res.send({ isSignedIn: true, userData: data, accessToken:accessToken });
+									data.id = user.docs[0].id;
+									if (success) {
+										console.log('Login successful');
 
-                } else {
-					console.log('wrong password');
-					res.send({ isSignedIn: false, userData: {} });
-					return;
-                }
+									  // Generate an access token
+									  let expiryDate = new Date();
+									  expiryDate.setDate(new Date().getDate()+configuration.LOGIN_EXPIRY_DAYS);
 
+									  const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat:Date.now(), exp:expiryDate.getTime()}, configuration.JWT_SECRET_STRING);
+
+									  res.send({ isSignedIn: true, userData: data, accessToken:accessToken });
+
+									} else {
+									  console.log('wrong password');
+									  res.send({ isSignedIn: false, userData: {} });
+									  return;
+									}
+								}
             }
 
         } else {
-			console.log('email and password required');
-			res.send({ isSignedIn: false, userData: {} });
-		}
+					console.log('email and password required');
+					res.send({ isSignedIn: false, userData: {} });
+				}
+
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
