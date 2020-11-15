@@ -9,6 +9,9 @@ import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
 import { addListener } from "cluster";
+import path from "path";
+import fs from "fs";
+import notificationTypes from "../constants/notificationType";
 const bcrypt = require('bcrypt')
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const nodemailer = require("nodemailer");
@@ -315,6 +318,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     myFTPods: [],
                     investedNFTPods: [],
                     investedFTPods: [],
+                    twitter: '',
+                    instagram: '',
+                    facebook: ''
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -400,13 +406,17 @@ interface BasicInfo {
     endorsementScore: number,
     numFollowers: number,
     numFollowings: number,
-    bio: string
+    bio: string,
+    twitter: string,
+    facebook: string,
+    instagram: string
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0, bio: '' };
+        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
+            numFollowings: 0, bio: '', twitter: '', instagram: '', facebook: ''};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -417,6 +427,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
+            basicInfo.twitter = userData.twitter || '';
+            basicInfo.instagram = userData.instagram || '';
+            basicInfo.facebook = userData.facebook || '';
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
@@ -856,7 +869,10 @@ const editUser = async (req: express.Request, res: express.Response) => {
             postalCode: body.postalCode,
             location: body.location,
             address: body.address,
-            bio: body.bio
+            bio: body.bio,
+            instagram: body.instagram,
+            twitter: body.twitter,
+            facebook: body.facebook
         });
 
         res.send({
@@ -869,7 +885,10 @@ const editUser = async (req: express.Request, res: express.Response) => {
                 postalCode: body.postalCode,
                 location: body.location,
                 address: body.address,
-                bio: body.bio
+                bio: body.bio,
+                instagram: body.instagram,
+                twitter: body.twitter,
+                facebook: body.facebook
             }
         });
     } catch (err) {
@@ -881,18 +900,124 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
 
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
-    if (req.file) {
-        console.log(req.file);
-        let newImage = {
-            filename: req.file.filename,
-            originalName: req.file.originalname
-            // url: req.protocol + '://' + req.get('host') + '/images/' + image._id
-        };
-        newImage.filename = req.file.filename;
-        newImage.originalName = req.file.originalname;
+    try {
+        if(req.file) {
+            const userRef = db.collection(collections.user)
+                .doc(req.file.originalname);
+            const userGet = await userRef.get();
+            const user : any = userGet.data();
+            if(user.HasPhoto) {
+                await userRef.update({
+                    HasPhoto: true
+                });
+            }
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/userController -> changeUserProfilePhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
+};
 
-    } else {
-        res.status(400).json({ error: 'No file' });
+
+const getPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+        if(userId) {
+            const directoryPath = path.join('uploads', 'users');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'users', userId + '.png'));
+            raw.on('error', function(err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
+};
+
+const getUserList = async (req: express.Request, res: express.Response) => {
+    try {
+        let filters = req.body;
+
+        if(filters) {
+            const userRef = db.collection(collections.user)
+                .doc(filters.userId);
+            const userGet = await userRef.get();
+            const user : any = userGet.data();
+
+            const usersRef = db.collection(collections.user);
+            usersRef.where("endorsementScore", ">", filters.endorsementScore[0]/100)
+                .where("trustScore", ">", filters.trustScore[0]/100);
+            usersRef.where("endorsementScore", "<", filters.endorsementScore[1]/100)
+                .where("trustScore", "<", filters.trustScore[1]/100)
+                .orderBy("Followers", "desc")
+
+            const usersGet = await usersRef.get();
+
+            let arrayUsers: any[] = [];
+            usersGet.docs.map((doc, i) => {
+                let data = doc.data();
+                data.id = doc.id;
+                let name = '';
+                if(data.lastName && data.lastName !== '') {
+                    name = data.firstName + ' ' + data.lastName;
+                } else {
+                    name = data.firstName;
+                }
+
+                if(filters.name === '' || name.startsWith(filters.name)) {
+                    arrayUsers.push(data);
+                }
+                if (usersGet.docs.length === i + 1) {
+
+                    if(arrayUsers.length !== 0) {
+                        arrayUsers.forEach((item, i) => {
+                            if(user.followings && user.followings.length !== 0) {
+                                item.isFollowing = user.followings.findIndex(usr => usr === item.id) !== -1;
+                            } else {
+                                item.isFollowing = false;
+                            }
+                            if(arrayUsers.length === i + 1) {
+                                res.send({ success: true, data: arrayUsers});
+                            }
+                        });
+                    } else {
+                        res.send({ success: true, data: []});
+                    }
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> getUserList()', "There's no filters");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> getUserList()', err);
+        res.send({ success: false });
     }
 };
 
@@ -916,5 +1041,7 @@ module.exports = {
     editUser,
     changeUserProfilePhoto,
     getSocialTokens,
-    getBasicInfo
+    getBasicInfo,
+    getPhotoById,
+    getUserList
 };
