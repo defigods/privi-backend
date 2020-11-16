@@ -1,7 +1,7 @@
 import express, {response} from 'express';
 import podProtocol from "../blockchain/podProtocol";
 import nftPodProtocol from "../blockchain/nftPodProtocol";
-import { updateFirebase, getRateOfChange, createNotificaction, updateFirebaseNFT } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
@@ -737,7 +737,7 @@ exports.initiatePodNFT = async (req: express.Request, res: express.Response) => 
         if (blockchainRes && blockchainRes.success) {
             updateFirebaseNFT(blockchainRes);
             // TODO: set correct notification type
-            createNotificaction(creator, "NFT Pod - Pod Created",
+            createNotification(creator, "NFT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
             );
@@ -764,7 +764,7 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebaseNFT(blockchainRes);
             // TODO: set correct notification type
-            createNotificaction(trader, "NFT Pod - Pod Buy Offer Crated",
+            createNotification(trader, "NFT Pod - Pod Buy Offer Crated",
                 ` `,
                 notificationTypes.podCreation
             );
@@ -791,7 +791,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebaseNFT(blockchainRes);
             // TODO: set correct notification type
-            createNotificaction(trader, "NFT Pod - Pod Sell Offer Crated",
+            createNotification(trader, "NFT Pod - Pod Sell Offer Crated",
                 ` `,
                 notificationTypes.podCreation
             );
