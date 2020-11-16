@@ -48,5 +48,8 @@ router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 router.post('/NFT/initiatePodNFT', authenticateJWT, podController.initiatePodNFT);
 router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
 router.post('/NFT/newSellOrder', authenticateJWT, podController.newSellOrder);
-
+router.post('/NFT/deleteBuyOrder', authenticateJWT, podController.deleteBuyOrder);
+router.post('/NFT/deleteSellOrder', authenticateJWT, podController.deleteSellOrder);
+router.post('/NFT/sellPodNFT', authenticateJWT, podController.sellPodNFT);
+router.post('/NFT/buyPodNFT', authenticateJWT, podController.buyPodNFT);
 module.exports = router;

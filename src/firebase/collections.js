@@ -1,6 +1,8 @@
 module.exports = {
     user: "User",
     wallet: "Wallet",
+    walletNFT: "WalletNFT",
+    walletFT: "WalletFT",
     history: "History",
     allTransactions: "AllTransaction",
     waitlist: "Waitlist",

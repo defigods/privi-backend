@@ -54,12 +54,12 @@ export async function updateFirebase(blockchainRes) {
                 // balances ft
                 const balancesFT = walletObj.BalancesFT;
                 for (const [token, value] of Object.entries(balancesFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // balances nft
                 const balancesNFT = walletObj.BalancesNFT;
                 for (const [token, value] of Object.entries(balancesNFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // transactions
                 const history = walletObj.Transaction;
@@ -148,12 +148,12 @@ export async function updateFirebaseNFT(blockchainRes) {
                 // balances ft
                 const balancesFT = walletObj.BalancesFT;
                 for (const [token, value] of Object.entries(balancesFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // balances nft
                 const balancesNFT = walletObj.BalancesNFT;
                 for (const [token, value] of Object.entries(balancesNFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // transactions
                 const history = walletObj.Transaction;
