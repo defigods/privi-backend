@@ -3,7 +3,12 @@ import axios from 'axios';
 import express from 'express';
 import { Transaction } from 'ethereumjs-tx';
 import api from '../blockchain/blockchainApi';
+import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
+import SwapManagerContract from '../contracts/SwapManager.json'
+import IERC20Contract from '../contracts/IERC20.json';
 let web3: any;
+web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
+
 
 /**
  * @dev The minimum ABI to get ERC20 Token balance
@@ -57,7 +62,7 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
 
     // Call balace function from ERC20 token and send back the amount
     try {
-        web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
+        
         let contract = new web3.eth.Contract(minABI, contractAddress);
 
         await contract.methods.balanceOf(fromAddress).call()
@@ -83,17 +88,35 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
     };
 };
 
+
 /**
- * @dev Swap amount from Ethereum to Fabric's User account
- * @returns b
+ * @dev Withdraw amount from Fabric to Ethereum's User account
+ * @returns c
  *          e: f
- * @param c d
+ * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
+ * @param fromAddress User account to retrieve the balance
  */
-const swapERC20 = async (req: express.Request, res: express.Response) => {
-    const { fromAddress } = req.query;
-    console.log('--- fromAddress: ', fromAddress);
-    res.send(fromAddress);
+const withdrawETH = async (req: express.Request, res: express.Response) => {
+    const body = req.body;
+    const { publicId, amount, token, to } = req.body;
+    console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
+
+    const Contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+    const amountWei = web3.utils.toWei(String(amount));
+
+    const params = {
+        fromAddress: ETH_PRIVI_ADDRESS,
+        fromAddressKey: ETH_PRIVI_KEY,
+        encodedABI: Contract.methods.withdrawEther(to, amountWei).encodeABI(),
+        toAddress: ETH_SWAP_MANAGER_ADDRESS
+    };
+
+    console.log ('from: ', params.fromAddress, ' fromKey: ', params.fromAddressKey, ' toAddress: ', params.toAddress);
+    await executeTX(params);
+   
+
 };
+
 
 /**
  * @dev Withdraw amount from Fabric to Ethereum's User account
@@ -103,13 +126,60 @@ const swapERC20 = async (req: express.Request, res: express.Response) => {
  * @param fromAddress User account to retrieve the balance
  */
 const withdrawERC20 = async (req: express.Request, res: express.Response) => {
-
+    const body = req.body;
+    const { publicId, amount, token, to } = req.body;
+    console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
 };
 
+/**
+ * @dev Generic function to execute Ethereum transactions with signature
+ * @return @result: true if transaction was executed successfuly, or false otherwise
+ * @return @error: error description if transaction failed
+ * @return @res: transaction response  
+ * @param params.fromAddress        From account
+ * @param params.fromAddressKey     From private key   
+ * @param params.encodedABI         Contract data 
+ * @param params.contractAddress    Contract address
+ */
+const executeTX = (params: any) => {
+    return new Promise(async (resolve) => {
+
+        // Prepare transaction
+        const nonce = await web3.eth.getTransactionCount(params.fromAddress);
+        const tx = {
+            gas: 1500000,
+            gasPrice: '30000000000',
+            from: params.fromAddress,
+            data: params.encodedABI,
+            chainId: 3,
+            to: params.toAddress,
+            nonce: nonce,
+        };
+
+        // Sign transaction
+        web3.eth.accounts.signTransaction(tx, params.fromAddressKey)
+            .then((signed: any) => {
+                // Send transaction
+                web3.eth.sendSignedTransaction(signed.rawTransaction)
+                    .then(async (res: any) => {
+                        console.log('Response: ', res)
+                        resolve({ result: true, error: null, output: res });
+                    })
+                    .catch((err: string) => {
+                        console.log('Error in ethUtils.js (A) -> executeTX(): ', err);
+                        resolve({ result: false, error: err, output: null });
+                    });
+            })
+            .catch((err: string) => {
+                console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
+                resolve({ result: false, error: err, output: null });
+            });
+    });
+};
 
 module.exports = {
     getERC20Balance,
-    swapERC20,
+    withdrawETH,
     withdrawERC20,
 };
 
