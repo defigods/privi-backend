@@ -6,6 +6,7 @@ import collections, { stakingDeposit } from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 
+// user stakes in a token
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -35,27 +36,31 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
             }
             createNotification(publicId, "Staking - Token Unstaked",
                 ` `,
-                notificationTypes.staking
+                notificationTypes.unstaking
             );
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/lendingController -> stakeToken(): success = false');
+            console.log('Error in controllers/stakingController -> stakeToken(): success = false', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/lendingController -> stakeToken(): ', err);
+        console.log('Error in controllers/stakingController -> stakeToken(): ', err);
         res.send({ success: false });
     }
 };
 
+// user unstakes in a token
 exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        console.log(body);
         const publicId = body.publicId;
-        const amount = body.amount;
+        const unstakeAmount = body.unstakeAmount;
+        const unstakeReward = body.unstakeReward;
         const token = body.token;
-        const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, amount)
+        const total = unstakeAmount + unstakeReward;
+        const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, total);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
@@ -82,7 +87,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
             }
         }
         else {
-            console.log('Error in controllers/lendingController -> unstakeToken(): success = false');
+            console.log('Error in controllers/stakingController -> unstakeToken(): success = false');
             res.send({ success: false });
         }
     } catch (err) {

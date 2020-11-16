@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 const router = express.Router();
 
+import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const userController = require('../controllers/userController');
 const userControllerJS = require('../controllers/userControllerJS');
 
@@ -29,45 +30,46 @@ router.post('/signUp', userController.signUp);
 router.get('/email_validation/:validation_slug', userController.emailValidation);
 router.post('/resend_email_validation', userController.resendEmailValidation);
 
-router.get('/getBasicInfo/:userId', userController.getBasicInfo);
+router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
 
 // MY WALL - GETS
-router.get('/wall/getFollowPodsInfo/:userId', userController.getFollowPodsInfo);
-router.get('/wall/getFollowUserInfo/:userId', userController.getFollowingUserInfo);
-router.get('/wall/getFollowMyInfo/:userId', userController.getOwnInfo);
+router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
+router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.getFollowingUserInfo);
+router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
 
 // CONNECTIONS - GETS
-router.get('/connections/getFollowers/:userId', userController.getFollowers);
-router.get('/connections/getFollowings/:userId', userController.getFollowing);
+router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
+router.get('/connections/getFollowings/:userId', authenticateJWT, userController.getFollowing);
 
 // INVESTMENTS - GETS
-router.get('/investments/getMyPods/:userId', userController.getMyPods);
-router.get('/investments/getPodsInvestment/:userId', userController.getPodsInvestments);
-router.get('/investments/getPodsFollowed/:userId', userController.getPodsFollowed);
-router.get('/investments/getReceivables/:userId', userController.getReceivables);
-router.get('/investments/getLiabilities/:userId', userController.getLiabilities);
-router.get('/investments/getSocialTokens/:userId', userController.getSocialTokens);
+router.get('/investments/getMyPods/:userId', authenticateJWT, userController.getMyPods);
+router.get('/investments/getPodsInvestment/:userId', authenticateJWT, userController.getPodsInvestments);
+router.get('/investments/getPodsFollowed/:userId', authenticateJWT, userController.getPodsFollowed);
+router.get('/investments/getReceivables/:userId', authenticateJWT, userController.getReceivables);
+router.get('/investments/getLiabilities/:userId', authenticateJWT, userController.getLiabilities);
+router.get('/investments/getSocialTokens/:userId', authenticateJWT, userController.getSocialTokens);
 
 // POST
-/*router.post('/addToWaitlist', userController.addToWaitlist);
-router.post('/register', userController.register);*/
+/*router.post('/addToWaitlist', authenticateJWT, userController.addToWaitlist);
+*/
 
 // CONNECTIONS - POST
-router.post('/connections/followUser', userController.followUser);
-router.post('/connections/unFollowUser', userController.unFollowUser);
+router.post('/connections/followUser', authenticateJWT, userController.followUser);
+router.post('/connections/unFollowUser', authenticateJWT, userController.unFollowUser);
 
-router.post('/editUser', userController.editUser);
-router.post('/changeProfilePhoto', upload.single('image'), userController.changeUserProfilePhoto);
+router.post('/editUser', authenticateJWT, userController.editUser);
+router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), userController.changeUserProfilePhoto);
+router.get('/getPhoto/:userId', authenticateJWT, userController.getPhotoById);
 
-router.post('/addToWaitlist', userControllerJS.addToWaitlist);
-router.post('/register', userControllerJS.register);
+router.post('/addToWaitlist', authenticateJWT, userControllerJS.addToWaitlist);
+router.post('/register', authenticateJWT, userControllerJS.register);
 
-router.get('/getPrivacy', userControllerJS.getPrivacy);
-router.post('/setPrivacy', userControllerJS.setPrivacy);
+router.get('/getPrivacy', authenticateJWT, userControllerJS.getPrivacy);
+router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
 
-router.post('/getUserList',  userController.getUserList);
+router.post('/getUserList', authenticateJWT, userController.getUserList);
 
 
-//router.post('/getBasicInfo', userController.getBasicInfo);
+//router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
 
 module.exports = router;

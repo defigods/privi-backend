@@ -100,9 +100,9 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 			const hash = await bcrypt.hash(tempPassword, salt);
 			data["temp_password"] = hash;
 
-			let tomorrow = new Date();
-			tomorrow.setDate(new Date().getDate()+1);
-			data["temp_password_expiry"] = tomorrow.getTime(); // 1 day temporary password expiry
+			let expiryDate = new Date();
+			expiryDate.setDate(new Date().getDate()+configuration.FORGOT_PASSWORD_EXPIRY_DAYS);
+			data["temp_password_expiry"] = expiryDate.getTime(); // 1 day temporary password expiry
 
 			data["lastUpdate"] = Date.now();
 
@@ -122,7 +122,7 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 		res.send({ success: false, message: "email required" });
 	}
 
-};
+}; // forgotPassword
 
 const resendEmailValidation = async (req: express.Request, res: express.Response) => {
 	const body = req.body;
@@ -262,7 +262,8 @@ const signIn = async (req: express.Request, res: express.Response) => {
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
-};
+
+}; // signIn
 
 const signUp = async (req: express.Request, res: express.Response) => {
     try {

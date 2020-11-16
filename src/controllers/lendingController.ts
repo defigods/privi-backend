@@ -26,17 +26,17 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
         for (const [token, _] of Object.entries(rateOfChange)) {
             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
-            if (!data) {continue;}
+            if (!data) { continue; }
             if (data.Borrowing_Amount == 0) { continue; }
 
             // It has a loan //
             const CCR = computeCCR(data.Borrowing_Amount, token, data.Collaterals, rateOfChange);
             let state = "Overcollateralised"
             if (CCR_levels) {
-                if ( CCR < CCR_levels.requiredCCR ) {
+                if (CCR < CCR_levels.requiredCCR) {
                     state = "Undercollateralised"
                 }
-                if ( CCR < CCR_levels.withdrawalCCR ) {
+                if (CCR < CCR_levels.withdrawalCCR) {
                     state = "Collateralised"
                 }
             }
@@ -45,9 +45,11 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
             if (interest_rate) {
                 rate = interest_rate.annualRates[token]
             }
-            retData.push({ principal_token: token, principal: data.Borrowing_Amount,
-                           collaterals: data.Collaterals, CCR: CCR, state: state,
-                           daily_interest: rate });
+            retData.push({
+                principal_token: token, principal: data.Borrowing_Amount,
+                collaterals: data.Collaterals, CCR: CCR, state: state,
+                daily_interest: rate
+            });
         }
         res.send({ success: true, data: retData });
     } catch (err) {
@@ -164,7 +166,7 @@ exports.getTokenReserves = async (req: express.Request, res: express.Response) =
     try {
         const blockchainRes = await tradinionalLending.getReserves();
         if (blockchainRes && blockchainRes.success) {
-            const retData = {};
+            const retData: any = {};
             const reserves = blockchainRes.output; // object {token: reserves}
             delete reserves.PDT // PDT already deleted from system, don't need it
             const constants = await db.collection(collections.constants).doc(collections.reserveConstants).get();
@@ -176,11 +178,12 @@ exports.getTokenReserves = async (req: express.Request, res: express.Response) =
                     let annualRate = data.annualRates[token];   // annual rate stored in manualConstants
                     let dailyRate = annualRate / 365;   // daily rate
                     retData[token] = {
-                        annaulRate: annualRate,
+                        annualRate: annualRate,
                         dailyRate: dailyRate,
                         reserve: reserve
                     }
                 }
+                delete retData.MRK; // this line to be deleted when bug fixed.
                 res.send({ success: true, data: retData });
             }
             else {
@@ -198,26 +201,88 @@ exports.getTokenReserves = async (req: express.Request, res: express.Response) =
     }
 };
 
+// an user stakes in a token the given amount
+exports.stakeToken = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const publicId = body.publicId;
+        const amount = body.amount;
+        const token = body.token;
+        const blockchainRes = await tradinionalLending.stakeToken(publicId, token, amount)
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
+            let newTokenDepositVal = Number(amount);
+            const docSnap = await db.collection(collections.stakingDeposit).doc(publicId).get();
+            const data = docSnap.data();
+            if (data) { // update if already has some staking
+                if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
+            }
+            const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
+            db.collection(collections.stakingDeposit).doc(publicId).update({ dotNotation: newTokenDepositVal });
+            createNotification(publicId, "Staking - Token Staked",
+                ` `,
+                notificationTypes.staking
+            );
+            res.send({ success: true });
+        }
+        else {
+            console.log('Error in controllers/lendingController -> stakeToken(): success = false');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/lendingController -> stakeToken(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// an user unstakes in a token the given amount
+exports.unstakeToken = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const publicId = body.publicId;
+        const amount = body.amount;
+        const token = body.token;
+        const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, amount)
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
+            let newTokenDepositVal = -Number(amount);
+            const docSnap = await db.collection(collections.stakingDeposit).doc(publicId).get();
+            const data = docSnap.data();
+            if (data) { // update if already has some staking
+                if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
+            }
+            const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
+            db.collection(collections.stakingDeposit).doc(publicId).update({ dotNotation: newTokenDepositVal });
+            createNotification(publicId, "Staking - Token Unstaked",
+                ` `,
+                notificationTypes.unstaking
+            );
+            res.send({ success: true });
+        }
+        else {
+            console.log('Error in controllers/lendingController -> unstakeToken(): success = false');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/lendingController -> unstakeToken(): ', err);
+        res.send({ success: false });
+    }
+};
+
+
+
 // get the CCR levels info stored in manualConstants
 exports.getCCRlevels = async (req: express.Request, res: express.Response) => {
     try {
-        const blockchainRes = await tradinionalLending.getReserves();
-        if (blockchainRes && blockchainRes.success) {
-            const retData = {};
-            const reserves = blockchainRes.output; // object {token: reserves}
-            delete reserves.PDT // PDT already deleted from system, don't need it
-            const constants = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
-            const data = constants.data();
-            if (data) {
-                res.send({ success: true, data: data });
-            }
-            else {
-                console.log('Error in controllers/lendingController -> getCCRlevels(): error getting getCCRlevels data in firestore');
-                res.send({ success: false });
-            }
+        const constants = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
+        const data = constants.data();
+        if (data) {
+            res.send({ success: true, data: data });
         }
         else {
-            console.log('Error in controllers/lendingController -> getCCRlevels(): success = false');
+            console.log('Error in controllers/lendingController -> getCCRlevels(): error getting getCCRlevels data in firestore');
             res.send({ success: false });
         }
     } catch (err) {

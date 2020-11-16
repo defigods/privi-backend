@@ -2,24 +2,46 @@ import express from 'express';
 import multer from "multer";
 const router = express.Router();
 
+import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const podController = require('../controllers/podController');
 
-router.get('/NFT/getMyPods/:userId', podController.getMyPodsNFT);
-router.get('/FT/getMyPods/:userId', podController.getMyPodsFT);
-router.get('/NFT/getTrendingPods/:userId', podController.getTrendingPodsNFT);
-router.get('/FT/getTrendingPods/:userId', podController.getTrendingPodsFT);
-router.get('/NFT/getOtherPods/:userId', podController.getOtherPodsNFT);
-router.get('/FT/getOtherPods/:userId', podController.getOtherPodsFT);
+// let upload = multer({ dest: 'uploads' });
+// Multer Settings for file upload
+let storage = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/pods')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload = multer({
+    storage: storage
+});
 
-router.get('/NFT/getAllPodsInfo/:userId', podController.getAllNFTPodsInfo);
-router.get('/FT/getAllPodsInfo/:userId', podController.getAllFTPodsInfo);
+router.post('/changePodPhoto', authenticateJWT, upload.single('image'), podController.changePodPhoto);
+router.get('/FT/getPhoto/:podId', authenticateJWT, podController.getPhotoById);
 
-router.post('/initiatePod', podController.initiatePOD);
-router.post('/deletePod', podController.deletePOD);
-router.post('/investPod', podController.investPOD);
-router.post('/swapPod', podController.swapPod);
+router.get('/NFT/getPod/:podId', authenticateJWT, podController.getNFTPod);
+router.get('/FT/getPod/:podId', authenticateJWT, podController.getFTPod);
 
-router.post('/followPod', podController.followPod);
-router.post('/unFollowPod', podController.unFollowPod);
+router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
+router.get('/FT/getMyPods/:userId', authenticateJWT, podController.getMyPodsFT);
+router.get('/NFT/getTrendingPods/:userId', authenticateJWT, podController.getTrendingPodsNFT);
+router.get('/FT/getTrendingPods/:userId', authenticateJWT, podController.getTrendingPodsFT);
+router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
+router.get('/FT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsFT);
+
+router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
+router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFTPodsInfo);
+
+router.post('/initiatePod', authenticateJWT, podController.initiatePOD);
+router.post('/deletePod', authenticateJWT, podController.deletePOD);
+router.post('/investPod', authenticateJWT, podController.investPOD);
+router.post('/swapPod', authenticateJWT, podController.swapPod);
+
+router.post('/followPod', authenticateJWT, podController.followPod);
+router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
 module.exports = router;
