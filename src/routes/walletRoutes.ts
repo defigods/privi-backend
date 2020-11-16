@@ -3,10 +3,10 @@ const router = express.Router();
 
 const walletController = require('../controllers/walletController');
 
-router.post('/getUserTokenBalance', walletController.getUserTokenBalance);
-router.post('/send', walletController.send);
-router.post('/withdraw', walletController.withdraw);
-router.post('/swap', walletController.swap);
+router.post('/getUserTokenBalance', authenticateJWT,walletController.getUserTokenBalance);
+router.post('/transfer', authenticateJWT, walletController.transfer);
+router.post('/withdraw', authenticateJWT, walletController.withdraw);
+router.post('/deposit', authenticateJWT, walletController.deposit);
 
 router.post('/getTokensRate', walletController.getTokensRate);
 router.get('/getTokensRate', walletController.getTokensRate);

@@ -1,7 +1,7 @@
 import express from 'express';
 import tradinionalLending from "../blockchain/traditionalLending";
 import coinBalance from "../blockchain/coinBalance";
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction } from "../functions/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -20,7 +20,7 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
         // Get Interest Rates //
         const constants = await db.collection(collections.constants).doc(collections.reserveConstants).get();
         const interest_rate = constants.data();
-    
+
         const retData: {}[] = [];
         const rateOfChange = await getRateOfChange();
         for (const [token, _] of Object.entries(rateOfChange)) {
@@ -28,11 +28,11 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
             const data = walletTokenSnap.data();
             if (!data) {continue;}
             if (data.Borrowing_Amount == 0) { continue; }
-   
-            // It has a loan // 
+
+            // It has a loan //
             const CCR = computeCCR(data.Borrowing_Amount, token, data.Collaterals, rateOfChange);
             let state = "Overcollateralised"
-            if (CCR_levels) { 
+            if (CCR_levels) {
                 if ( CCR < CCR_levels.requiredCCR ) {
                     state = "Undercollateralised"
                 }
@@ -45,8 +45,8 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
             if (interest_rate) {
                 rate = interest_rate.annualRates[token]
             }
-            retData.push({ principal_token: token, principal: data.Borrowing_Amount,  
-                           collaterals: data.Collaterals, CCR: CCR, state: state, 
+            retData.push({ principal_token: token, principal: data.Borrowing_Amount,
+                           collaterals: data.Collaterals, CCR: CCR, state: state,
                            daily_interest: rate });
         }
         res.send({ success: true, data: retData });
@@ -67,7 +67,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await tradinionalLending.borrowFunds(publicId, token, amount, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "Loans 1.0 - Funds Borrowed",
+            createNotification(publicId, "Loans 1.0 - Funds Borrowed",
                 ` `,
                 notificationTypes.priviCreditCreated
             );
@@ -92,7 +92,7 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
         const blockchainRes = await tradinionalLending.depositCollateral(publicId, token, collaterals)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "Loans 1.0 - Deposit Collateral",
+            createNotification(publicId, "Loans 1.0 - Deposit Collateral",
                 ` `,
                 notificationTypes.traditionalDepositCollateral
             );
@@ -118,7 +118,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
         const blockchainRes = await tradinionalLending.withdrawCollateral(publicId, token, collaterals, rateOfChange)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "Loans 1.0 - Withdraw Collateral",
+            createNotification(publicId, "Loans 1.0 - Withdraw Collateral",
                 ` `,
                 notificationTypes.traditionalWithdrawCollateral
             );
@@ -143,7 +143,7 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await tradinionalLending.repayFunds(publicId, token, amount)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "Loans 1.0 - Funds Repaid",
+            createNotification(publicId, "Loans 1.0 - Funds Repaid",
                 ` `,
                 notificationTypes.traditionalRepay
             );
@@ -289,7 +289,7 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
                 const blockchainRes = await tradinionalLending.checkLiquidation(uid, token, rateOfChange);
                 if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
                     updateFirebase(blockchainRes);
-                    createNotificaction(uid, "Loans 1.0 - Loan Liquidated",
+                    createNotification(uid, "Loans 1.0 - Loan Liquidated",
                         ` `,
                         notificationTypes.traditionalLiquidation
                     );
@@ -320,7 +320,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
             let walletObj: any = null;
             for ([uid, walletObj] of Object.entries(updateWallets)) {
                 if (walletObj["Transaction"].length > 0) {
-                    createNotificaction(uid, "Loans 1.0 - Interest Payment",
+                    createNotification(uid, "Loans 1.0 - Interest Payment",
                         ` `,
                         notificationTypes.traditionalInterest
                     );

@@ -2,21 +2,80 @@ import express from 'express';
 // import * as fs from 'fs';
 // import * as path from 'path';
 // import { stringify } from 'querystring';
-//const jwt = require("jsonwebtoken");
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotificaction, getUidFromEmail } from "../functions/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
 import notificationTypes from "../constants/notificationType";
 const bcrypt = require('bcrypt')
 const FieldValue = require('firebase-admin').firestore.FieldValue;
-const nodemailer = require("nodemailer");
+import configuration from "../constants/configuration";
+const jwt = require('jsonwebtoken');
+const crypto = require("crypto");
+import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates/emailTemplates";
 
-// AUTHENTICATION
+const emailValidation = async (req: express.Request, res: express.Response) => {
+	let success = false;
+	let message = "";
+	// let message_key = "";
+
+	const validation_slug = req.params.validation_slug;
+
+	const decodeValidationSlug = Buffer.from(validation_slug, 'base64').toString('ascii');
+	const split = decodeValidationSlug.split("_");
+	if (split.length == 2) {
+		const uid = split[0];
+		const validationSecret = split[1];
+
+		// look for user record given uid
+        const userRef = db.collection(collections.user)
+            .doc(uid);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+		if (user == null) {
+			message = "user not found";
+			// message_key = "USER_NOT_FOUND";
+
+		} else {
+			if (user.isEmailValidated) {
+				message = "user already validated";
+				// message_key = "USER_ALREADY_VALIDATED";
+
+			} else {
+				if (user.validationSecret == validationSecret) {
+					// update user
+					user.isEmailValidated = true;
+					user.validationSecret = "";
+
+					db.collection(collections.user).doc(uid).update(user);
+
+					message = "user validated successfully please login";
+					// message_key = "VALIDATION_SUCCESS";
+
+					success = true;
+
+				} else {
+					message = "failed to validate user";
+					// message_key = "INVALID_VALIDATION_SECRET";
+				}
+			}
+		}
+
+	} else {
+		message = "invalid validation link";
+		// message_key = "INVALID_VALIDATION_LINK";
+	}
+
+	res.setHeader('Content-Type', 'text/html');
+	res.send(message);
+
+}; // emailValidation
+
 const forgotPassword = async (req: express.Request, res: express.Response) => {
 	const body = req.body;
 
@@ -29,14 +88,12 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 		if (user.empty) {
 			console.log('not found');
 			res.send({ success: false, message: "user not found" });
-			
+
 		} else {
 			// create a temporary password
-			var crypto = require("crypto");
-			var tempPassword = crypto.randomBytes(8).toString('hex');
-			console.log("temporary password:", tempPassword);
+			let tempPassword = crypto.randomBytes(8).toString('hex');
+			// console.log("temporary password:", tempPassword);
 
-			// save to db
             const data = user.docs[0].data();
 
 			const salt = await bcrypt.genSalt(10);
@@ -49,16 +106,17 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 
 			data["lastUpdate"] = Date.now();
 
+			// save to db
 			db.collection(collections.user).doc(user.docs[0].id).update(data);
-			
-			let successEmail = await sendForgotPasswordEmail(email, tempPassword);
+
+			let successEmail = await sendForgotPasswordEmail(data, tempPassword);
 			if (successEmail) {
 				res.send({ success: true, message: "Temporary password sent to email." });
 			} else {
 				res.send({ success: false, message: "Failed to send temporary password email." });
 			}
 		}
-		
+
 	} else {
 		console.log('email required');
 		res.send({ success: false, message: "email required" });
@@ -66,74 +124,56 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 
 };
 
-async function sendForgotPasswordEmail(email, tempPassword) {
+const resendEmailValidation = async (req: express.Request, res: express.Response) => {
+	const body = req.body;
 
-  // create reusable transporter object using the default SMTP transport
-  let transporter = nodemailer.createTransport({
-	service: "gmail",
-    auth: {
-/*
-      user: "noreply@priviprotocol.io",
-      pass: "Y4*3auChPRIVI",
-*/      
-      user: "away45846",
-      pass: "QSidiNX3infbiHs",
-    },
-  });
+	const email = body.email;
+	if (email) {
+		const user = await db.collection(collections.user)
+			.where('email', '==', email)
+			.get();
 
-  let htmlEmail = `
-<p>
-You have recently requested a new password. (If this is a mistake then it should be safe to ignore this email.) <br />
-<br />
-Your new password: ${tempPassword} <br />
-<br />
-Thanks! <br />
-PRIVI Protocol <br />
-<br />
-** PLEASE DO NOT REPLY TO THIS EMAIL as this is automatically generated and you will not receive a response.  **
-</p>
-  `;
-  let textEmail = `
+		if (user.empty) {
+			console.log('not found');
+			res.send({ success: false, message: "user not found" });
 
-You have recently requested a new password. (If this is a mistake then it should be safe to ignore this email.)
+		} else {
+            const data = user.docs[0].data();
 
-Your new password: ${tempPassword}
+			if (data.isEmailValidated) {
+				res.send({ success: false, message: "user already validated" });
 
-Thanks!
-PRIVI Protocol
+			} else {
+				if (!data.validationSecret) { // no validation secret field
+					data.validationSecret = crypto.randomBytes(8).toString('hex');
+					data.isEmailValidated = false;
 
-** PLEASE DO NOT REPLY TO THIS EMAIL as this is automatically generated and you will not receive a response.  **
-  `;
+					// save to db
+					db.collection(collections.user).doc(user.docs[0].id).update(data);
+				}
 
-	let success = false;
-	try {
-	  // send mail with defined transport object
-	  let info = await transporter.sendMail({
-		from: '"PRIVI Protocol" <noreply@priviprotocol.io>', // sender address
-		to: email, // list of receivers
-		subject: "Temporary Password - PRIVI Protocol", // Subject line
-		text: "Hello world? temporary password is " + tempPassword, // plain text body
-		html: htmlEmail, // html body
-	  });
+				data.id = user.docs[0].id;
+				let successEmail = await sendEmailValidation(data, true);
+				if (!successEmail) {
+					console.log("failed to resend email validation");
+				}
 
-	  console.log("Message sent: %s", info.messageId);
-	  // Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
-  
-		success = (info.messageId != "");
+				res.send({ success: true, message: "email validation resent" });
+			}
+		}
 
-	} catch (err) {
-		console.log('Error in controllers/userController.ts -> sendForgotPasswordEmail(): ', err);
+	} else {
+		console.log('email required');
+		res.send({ success: false, message: "email required" });
 	}
 
-  return success;
-
-} // sendForgotPasswordEmail
+}; // resendEmailValidation
 
 const signIn = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
 
-        const email = body.email;
+				const email = body.email;
         const password = body.password;
 
         if (email && password) {
@@ -147,67 +187,78 @@ const signIn = async (req: express.Request, res: express.Response) => {
             if (user.empty) {
                 console.log('not found');
                 res.send({ isSignedIn: false, userData: {} });
+
             } else {
                 console.log('found from email')
-
                 const data = user.docs[0].data();
-				let success = false;
-				if (data.password == password) { // unencrypted so let's encrypt this password
-				    const salt = await bcrypt.genSalt(10)
-					const hash = await bcrypt.hash(password, salt);
-					data["password"] = hash;
 
-					db.collection(collections.user).doc(user.docs[0].id).update(data);
+								if (!data.isEmailValidated) {
+                	res.send({ isSignedIn: false, userData: {}, message: "please validate your email", message_key:"EMAIL_VALIDATION_REQUIRED" });
 
-					success = true;
-					console.log("password encrypted");
+								} else {
+									let success = false;
 
-				} else {
-					let isSame = await bcrypt.compare(password, data.password);
-					success = isSame;
+									if (data.password == password) { // unencrypted so let's encrypt this password
+									    const salt = await bcrypt.genSalt(10)
+									  const hash = await bcrypt.hash(password, salt);
+									  data["password"] = hash;
 
-					if (!isSame && data.temp_password && (data.temp_password_expiry > Date.now())) { // has temporary password that is not yet expired
-						isSame = await bcrypt.compare(password, data.temp_password);
-						success = isSame
+									  db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-						if (isSame) { // let's use the temporary password going forward
-							const salt = await bcrypt.genSalt(10)
-							const hash = await bcrypt.hash(password, salt);
-							data["password"] = hash;
+									  success = true;
+									  console.log("password encrypted");
 
-							// delete temp fields
-							data["temp_password"] = FieldValue.delete();
-							// data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
+									} else {
+									  let isSame = await bcrypt.compare(password, data.password);
+									  success = isSame;
 
-							data["lastUpdate"] = Date.now();
+									  if (!isSame && data.temp_password && (data.temp_password_expiry > Date.now())) { // has temporary password that is not yet expired
+									    isSame = await bcrypt.compare(password, data.temp_password);
+									    success = isSame
 
-							db.collection(collections.user).doc(user.docs[0].id).update(data);
+									    if (isSame) { // let's use the temporary password going forward
+									      const salt = await bcrypt.genSalt(10)
+									      const hash = await bcrypt.hash(password, salt);
+									      data["password"] = hash;
 
-							console.log("temporary password used");
-						}
-					}
-				}
-                
-                data.id = user.docs[0].id;
-                if (success) {
-					console.log('Login successful');
-					res.send({ isSignedIn: true, userData: data });
+									      // delete temp fields
+									      data["temp_password"] = FieldValue.delete();
+									      // data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
 
-                } else {
-					console.log('wrong password');
-					res.send({ isSignedIn: false, userData: {} });
-					return;
-                }
+									      data["lastUpdate"] = Date.now();
 
+									      db.collection(collections.user).doc(user.docs[0].id).update(data);
+
+									      console.log("temporary password used");
+									    }
+									  }
+									}
+
+									data.id = user.docs[0].id;
+									if (success) {
+										console.log('Login successful');
+
+									  // Generate an access token
+									  let expiryDate = new Date();
+									  expiryDate.setDate(new Date().getDate()+configuration.LOGIN_EXPIRY_DAYS);
+
+									  const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat:Date.now(), exp:expiryDate.getTime()}, configuration.JWT_SECRET_STRING);
+
+									  res.send({ isSignedIn: true, userData: data, accessToken:accessToken });
+
+									} else {
+									  console.log('wrong password');
+									  res.send({ isSignedIn: false, userData: {} });
+									  return;
+									}
+								}
             }
 
-            // TODO: Create session token
-            // TODO: Compare password using encryption
-
         } else {
-			console.log('email and password required');
-			res.send({ isSignedIn: false, userData: {} });
-		}
+					console.log('email and password required');
+					res.send({ isSignedIn: false, userData: {} });
+				}
+
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
@@ -282,10 +333,12 @@ const signUp = async (req: express.Request, res: express.Response) => {
 			const salt = await bcrypt.genSalt(10)
 			const hash = await bcrypt.hash(password, salt);
 
+			const validationSecret = crypto.randomBytes(8).toString('hex');
+
             // Creates User in DB
             await db.runTransaction(async (transaction) => {
 
-                // userData
+                // userData - no check if firestore insert works? TODO
                 transaction.set(db.collection(collections.user).doc(uid), {
                     firstName: firstName,
                     country: country,
@@ -293,6 +346,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     email: email,
                     password: hash,
                     role: role,
+
+					validationSecret: validationSecret,
+					isEmailValidated: false,
 
                     /*
                                         gender: gender,
@@ -383,10 +439,23 @@ const signUp = async (req: express.Request, res: express.Response) => {
             }
             // ------------------------------------------------------------------------------------
 
+			// send email validation here
+			let userData = {
+				id: uid,
+				email: email,
+				validationSecret: validationSecret,
+				firstName: firstName,
+			};
+
+			let successEmail = await sendEmailValidation(userData, false);
+			if (!successEmail) {
+				console.log("failed to send email validation");
+			}
+
             res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
+
         } else {
-            console.log(
-                'Warning in controllers/user.ts -> signUp():', blockchainRes);
+            console.log('Warning in controllers/user.ts -> signUp():', blockchainRes);
             res.send({ success: false });
         }
     } catch (err) {
@@ -1023,7 +1092,9 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 
 
 module.exports = {
+	emailValidation,
 	forgotPassword,
+	resendEmailValidation,
     signIn,
     signUp,
     getFollowPodsInfo,
