@@ -13,7 +13,11 @@ export const authenticateJWT = (req, res, next) => {
                 return res.sendStatus(403);
             }
 
-            req.user = user;
+            if (!req.body) {
+				req.body = {};
+            }
+            req.body.priviUser = user
+            
             next();
         });
     } else {

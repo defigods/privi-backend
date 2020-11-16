@@ -259,7 +259,7 @@ export async function getStakingInterest() {
     }
 };
 
-export async function createNotificaction(userId, title, text, type) {
+export async function createNotification(userId, title, text, type) {
     if (userId && title && text && type) {
         const dbNotificationRef = db.collection(collections.user).doc(userId).collection(collections.notificaction);
         await dbNotificationRef.add({

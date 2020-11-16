@@ -40,6 +40,7 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
     let contractAddress = '';
 
     // Get contract address for the target ERC20 token
+    // TODO: contract address will depend on the chain id
     switch (token) {
         case 'DAI':
             contractAddress = '0xad6d458402f60fd3bd25163575031acdce07538d';  // DAI contract @ Ropsten
@@ -47,8 +48,10 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
         case 'UNI':
             contractAddress = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';  // Uniswap contract @ Ropsten
             break;
+        case 'WETH':
+            contractAddress = '0xc778417e063141139fce010982780140aa0cd5ab'; // wETH contract @ Ropsten
         default:
-            contractAddress = '0';
+            contractAddress = '0x0000000000000000000000000000000000000000'; // 0x address
             break;
     };
 
@@ -80,14 +83,37 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
     };
 };
 
+/**
+ * @dev Swap amount from Ethereum to Fabric's User account
+ * @returns b
+ *          e: f
+ * @param c d
+ */
+const swapERC20 = async (req: express.Request, res: express.Response) => {
+    const { fromAddress } = req.query;
+    console.log('--- fromAddress: ', fromAddress);
+    res.send(fromAddress);
+};
 
+/**
+ * @dev Withdraw amount from Fabric to Ethereum's User account
+ * @returns c
+ *          e: f
+ * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
+ * @param fromAddress User account to retrieve the balance
+ */
+const withdrawERC20 = async (req: express.Request, res: express.Response) => {
+
+};
 
 
 module.exports = {
     getERC20Balance,
+    swapERC20,
+    withdrawERC20,
 };
 
-
+/*
 exports.balanceToken = async (req: express.Request, res: express.Response) => {
     const body = req.body;
     const userId = body.fromAccount;
@@ -110,7 +136,7 @@ exports.balanceToken = async (req: express.Request, res: express.Response) => {
         })
     });
 };
-
+*/
 
 /*
 //Ethereum withdraw function

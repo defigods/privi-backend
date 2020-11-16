@@ -1,12 +1,13 @@
-import { updateFirebase, createNotificaction, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../functions/functions";
+import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
+import { countDecimals } from "../functions/utilities";
 
-module.exports.send = async (req: express.Request, res: express.Response) => {
+module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const fromUid = body.fromUid;
@@ -23,6 +24,14 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
             res.send({ success: true, message: "toUid is required" });
             return;
         }
+
+		// check that fromUid is same as user in jwt
+		if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
+			console.log("error: jwt user is not the same as fromUid ban?");
+			res.send({ success: false, message: "jwt user is not the same as fromUid" });
+			return;
+		}
+
         console.log("token", token);
         const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
         if (blockchainRes && blockchainRes.success) {
@@ -36,13 +45,13 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
             if (senderData !== undefined && receriverData !== undefined) {
                 senderName = senderData.firstName;
                 receiverName = receriverData.firstName;
-                // notification to sender 
-                createNotificaction(fromUid, "Transfer - Sent",
+                // notification to sender
+                createNotification(fromUid, "Transfer - Sent",
                     `You have succesfully send ${amount} ${token} to ${receiverName}!`,
                     notificationTypes.transferSend
                 );
                 // notification to receiver
-                createNotificaction(fromUid, "Transfer - Received",
+                createNotification(fromUid, "Transfer - Received",
                     `You have succesfully received ${amount} ${token} from ${senderName}!`,
                     notificationTypes.transferReceive
                 );
@@ -56,8 +65,8 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/walletController -> send()', err);
         res.send({ success: false });
     }
-}
 
+} // transfer
 
 module.exports.withdraw = async (req: express.Request, res: express.Response) => {
     try {
@@ -65,34 +74,53 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
         const publicId = body.publicId;
         const amount = body.amount;
         const token = body.token;
+
+		// check that publicId is same as user in jwt
+		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+			console.log("error: jwt user is not the same as publicId ban?");
+			res.send({ success: false, message: "jwt user is not the same as publicId" });
+			return;
+		}
+
         const blockchainRes = await coinBalance.withdraw(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "Withdraw - Complete",
+            createNotification(publicId, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
             res.send({ success: true });
+
         } else {
             console.log('Error in controllers/walletController -> withdraw()');
             res.send({ success: false });
         }
+
     } catch (err) {
         console.log('Error in controllers/walletController -> withdraw()', err);
         res.send({ success: false });
     }
-}
 
-module.exports.swap = async (req: express.Request, res: express.Response) => {
+} // withdraw
+
+module.exports.deposit = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const publicId = body.publicId;
         const amount = body.amount;
         const token = body.token;
+
+        // check that publicId is same as user in jwt
+		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+			console.log("error: jwt user is not the same as publicId ban?");
+			res.send({ success: false, message: "jwt user is not the same as publicId" });
+			return;
+		}
+
         const blockchainRes = await coinBalance.swap(publicId, amount, token);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotificaction(publicId, "Swap - Complete",
+            createNotification(publicId, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );
@@ -105,16 +133,14 @@ module.exports.swap = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/walletController -> swap()', err);
         res.send({ success: false });
     }
-}
 
+} // deposit
 
 
 ///////////////////////////// gets //////////////////////////////
 
-const getTotalBalance = async (req: express.Request, res: express.Response) => {
+module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-
         let { userId } = req.query;
 		userId = userId!.toString()
 
@@ -155,12 +181,11 @@ const getTotalBalance = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 }
-module.exports.getTotalBalance = getTotalBalance;
 
 module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        
+
         let { userId } = req.query;
 		userId = userId!.toString()
 
@@ -187,7 +212,7 @@ module.exports.getTotalBalancePC = async (req: express.Request, res: express.Res
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
 	const data = await getTokensRateHelper();
 	if (data.length > 0) {
-        res.send({ success: true, data: data });	
+        res.send({ success: true, data: data });
 	} else {
         res.send({ success: false });
 	}
@@ -195,7 +220,7 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
 
 async function getTokensRateHelper() {
     const data: {}[] = [];
-        
+
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
@@ -210,7 +235,7 @@ async function getTokensRateHelper() {
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
     }
-    
+
     return data;
 }
 
@@ -290,12 +315,6 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
     }
 }
 
-// thanks https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
-function countDecimals(value) {
-    if (Math.floor(value) === value) return 0;
-    return value.toString().split(".")[1].length || 0; 
-}
-
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
 	const rateData = await getTokensRateHelper();
 
@@ -335,7 +354,7 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
 					}
 				}
 			});
-			
+
             const data = { id: doc.data().Id, token: doc.data().Token, tokenRate: tokenRate, value: value, valueCurrency: valueCurrency, realValue: realValue, realValueCurrency: realValueCurrency, type: doc.data().Type, date: (date.getDate() + "/" + (date.getMonth()+1) + "/" + date.getFullYear()) };
             retData.push(data);
         })
@@ -414,4 +433,27 @@ module.exports.getTotalExpense = async (req: express.Request, res: express.Respo
         console.log('Error in controllers/walletController -> getTotalSwap()', err);
         res.send({ success: false });
     }
+}
+
+
+/**
+ * Function used to get the user's ballance of a specific token
+ * @param req {userId, token}. userId: id of the user to query the balance. token: the token to look at.
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: number indicating the balance of the user
+ */
+module.exports.getUserTokenBalance = async (req: express.Request, res: express.Response) => {
+    const body = req.body;
+    const userId = body.userId;
+    const token = body.token;
+    const tokenWalletSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
+    if (tokenWalletSnap.exists) {
+        const data = tokenWalletSnap.data();
+        if (data) {
+            const balance = data.Amount;
+            if (balance) res.send({success: true, data:balance});
+            else res.send({success: false});
+        }
+        else res.send({success: false});
+    }
+    else res.send({success: false});
 }

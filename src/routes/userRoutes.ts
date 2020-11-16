@@ -11,10 +11,11 @@ const userControllerJS = require('../controllers/userControllerJS');
 // Multer Settings for file upload
 let storage = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads')
+        cb(null, 'uploads/users')
     },
     filename: function (req: any, file: any, cb: any) {
-        cb(null, Date.now() + '.png')
+        console.log(file);
+        cb(null, file.originalname + '.png')
     }
 });
 let upload = multer({
@@ -26,6 +27,8 @@ router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
 router.post('/signUp', userController.signUp);
 //router.get('/:userId', userController.signIn);
+router.get('/email_validation/:validation_slug', userController.emailValidation);
+router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
 
@@ -56,12 +59,15 @@ router.post('/connections/unFollowUser', authenticateJWT, userController.unFollo
 
 router.post('/editUser', authenticateJWT, userController.editUser);
 router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), userController.changeUserProfilePhoto);
+router.get('/getPhoto/:userId', authenticateJWT, userController.getPhotoById);
 
 router.post('/addToWaitlist', authenticateJWT, userControllerJS.addToWaitlist);
 router.post('/register', authenticateJWT, userControllerJS.register);
 
 router.get('/getPrivacy', authenticateJWT, userControllerJS.getPrivacy);
 router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
+
+router.post('/getUserList', authenticateJWT, userController.getUserList);
 
 
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);

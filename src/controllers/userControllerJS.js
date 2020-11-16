@@ -1,7 +1,7 @@
 import express from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-const jwt = require("jsonwebtoken");
+// const jwt = require("jsonwebtoken");
 //const Cons = require('../shared/Config');
 //const { query } = require('../shared/query');
 import { db, admin } from "../firebase/firebase";
