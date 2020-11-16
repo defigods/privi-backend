@@ -5,12 +5,12 @@ const jwt = require('jsonwebtoken');
 export const authenticateJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader) {
-        //const token = authHeader.split(' ')[1];
-        const token = authHeader;
+        const token = authHeader.split(' ')[1];
+        //const token = authHeader;
         console.log(token);
         jwt.verify(token, configuration.JWT_SECRET_STRING, (err, user) => {
             if (err) {
-                return res.sendStatus(403);
+                return res.status(403).send(err);
             }
 
             if (!req.body) {
