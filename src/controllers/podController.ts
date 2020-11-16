@@ -807,5 +807,110 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
     }
 }
 
+exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.trader;
+        const podId = body.podId;
+        const orderId = body.orderId;
+        const blockchainRes = await nftPodProtocol.deleteBuyOrder(podId, orderId, trader);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotification(trader, "NFT Pod - Pod Buy Offer Deleted",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> deleteBuyOrder(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> deleteBuyOrder(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.deleteSellOrder = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.trader;
+        const podId = body.podId;
+        const orderId = body.orderId;
+        const blockchainRes = await nftPodProtocol.deleteSellOrder(podId, orderId, trader);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotification(trader, "NFT Pod - Pod Sell Offer Deleted",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> deleteSellOrder(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.trader;
+        const podId = body.podId;
+        const orderId = body.orderId;
+        const amount = body.amount;
+        const blockchainRes = await nftPodProtocol.sellPodNFT(podId, orderId, trader, amount);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotification(trader, "NFT Pod - Pod Token Sold",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> deleteSellOrder(): ', err);
+        res.send({ success: false });
+    }
+}
+
+exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.trader;
+        const podId = body.podId;
+        const orderId = body.orderId;
+        const amount = body.amount;
+        const blockchainRes = await nftPodProtocol.buyPodNFT(podId, orderId, trader, amount);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);
+            // TODO: set correct notification type
+            createNotification(trader, "NFT Pod - Pod Token Bought",
+                ` `,
+                notificationTypes.podCreation
+            );
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> buyPodNFT(), blockchain success = false, ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> buyPodNFT(): ', err);
+        res.send({ success: false });
+    }
+}
 
 // --------------------------------------------------------------------
