@@ -22,6 +22,19 @@ let upload = multer({
     storage: storage
 });
 
+let storage2 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/badges')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload2 = multer({
+    storage: storage2
+});
+
 // AUTHENTICATION
 router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
@@ -70,6 +83,8 @@ router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
 
+router.post('/badge/createBadge', authenticateJWT, userController.createBadge);
+router.post('/badge/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
 
 module.exports = router;

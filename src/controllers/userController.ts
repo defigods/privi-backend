@@ -1088,6 +1088,67 @@ const getUserList = async (req: express.Request, res: express.Response) => {
     }
 };
 
+const createBadge = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        let badgesGet = await db.collection('collectionName').get();
+        let id = badgesGet.size;
+
+        if(body) {
+            await db.runTransaction(async (transaction) => {
+
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.badges).doc(''+id+1), {
+                    creatorId: body.creatorId,
+                    users: [],
+                    badgesAvailable: body.badgesAvailable,
+                    name: body.name,
+                    hasPhoto: false
+                });
+            });
+            res.send({ success: true, data: {
+                    creatorId: body.userId,
+                    users: [],
+                    badgesAvailable: body.badgesAvailable,
+                    name: body.name,
+                    hasPhoto: false,
+                    id: id+1
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> createBadge()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> createBadge()', err);
+        res.send({ success: false });
+    }
+}
+
+const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if(req.file) {
+            const badgeRef = db.collection(collections.badges)
+                .doc(req.file.originalname);
+            const badgeGet = await badgeRef.get();
+            const badge : any = badgeGet.data();
+            if(badge.HasPhoto) {
+                await badgeRef.update({
+                    HasPhoto: true
+                });
+            }
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/userController -> changeBadgePhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
+};
+
 
 module.exports = {
 	emailValidation,
@@ -1112,5 +1173,7 @@ module.exports = {
     getSocialTokens,
     getBasicInfo,
     getPhotoById,
-    getUserList
+    getUserList,
+    createBadge,
+    changeBadgePhoto
 };
