@@ -1,14 +1,16 @@
 import Web3 from 'web3';
-import axios from 'axios';
 import express from 'express';
-import { Transaction } from 'ethereumjs-tx';
 import api from '../blockchain/blockchainApi';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json'
-import IERC20Contract from '../contracts/IERC20.json';
 let web3: any;
-web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
+web3 = new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`));
 
+type PromiseResponse = {
+    success: boolean,
+    error: string,
+    data: any
+}
 
 /**
  * @dev The minimum ABI to get ERC20 Token balance
@@ -41,30 +43,40 @@ const minABI = [
  * @param fromAddress User account to retrieve the balance
  */
 const getERC20Balance = async (req: express.Request, res: express.Response) => {
-    const { fromAddress, token } = req.query;
+    const { token, fromAddress, chainId } = req.query;
     let contractAddress = '';
-
+    const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+    console.log('chainId backend: ', chainId);
     // Get contract address for the target ERC20 token
     // TODO: contract address will depend on the chain id
-    switch (token) {
-        case 'DAI':
-            contractAddress = '0xad6d458402f60fd3bd25163575031acdce07538d';  // DAI contract @ Ropsten
-            break;
-        case 'UNI':
-            contractAddress = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';  // Uniswap contract @ Ropsten
-            break;
-        case 'WETH':
-            contractAddress = '0xc778417e063141139fce010982780140aa0cd5ab'; // wETH contract @ Ropsten
-        default:
-            contractAddress = '0x0000000000000000000000000000000000000000'; // 0x address
-            break;
+
+
+    if (chainId === '1') { //Mainnet
+        // TBC
+        contractAddress = ZERO_ADDRESS;
+    } else if (chainId === '3') { //Ropsten
+        switch (token) {
+            case 'DAI':
+                contractAddress = '0xad6d458402f60fd3bd25163575031acdce07538d';  // DAI contract @ Ropsten
+                break;
+            case 'UNI':
+                contractAddress = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';  // Uniswap contract @ Ropsten
+                break;
+            case 'WETH':
+                contractAddress = '0xc778417e063141139fce010982780140aa0cd5ab'; // wETH contract @ Ropsten
+            default:
+                contractAddress = ZERO_ADDRESS;
+                break;
+        };
+    } else {
+        contractAddress = ZERO_ADDRESS;
     };
 
-    // Call balace function from ERC20 token and send back the amount
-    try {
-        
-        let contract = new web3.eth.Contract(minABI, contractAddress);
 
+
+    // Call balace function from ERC20 token and send back the amount
+    if (contractAddress !== ZERO_ADDRESS) {
+        let contract = new web3.eth.Contract(minABI, contractAddress);
         await contract.methods.balanceOf(fromAddress).call()
             .then(result => {
                 res.send({
@@ -79,13 +91,13 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
                     amount: 0,
                 });
             })
-    } catch (err) {
-        console.log('Error in connectController.ts -> getERC20Balance(): [catch]', err);
+    } else {
         res.send({
             success: false,
             amount: 0,
         });
     };
+
 };
 
 
@@ -98,23 +110,26 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
  */
 const withdrawETH = async (req: express.Request, res: express.Response) => {
     const body = req.body;
-    const { publicId, amount, token, to } = req.body;
+    const { chainId, publicId, amount, token, to } = req.body;
     console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
 
     const Contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
     const amountWei = web3.utils.toWei(String(amount));
 
     const params = {
+        chainId: chainId,
         fromAddress: ETH_PRIVI_ADDRESS,
         fromAddressKey: ETH_PRIVI_KEY,
         encodedABI: Contract.methods.withdrawEther(to, amountWei).encodeABI(),
-        toAddress: ETH_SWAP_MANAGER_ADDRESS
+        toAddress: ETH_SWAP_MANAGER_ADDRESS,
     };
 
-    console.log ('from: ', params.fromAddress, ' fromKey: ', params.fromAddressKey, ' toAddress: ', params.toAddress);
-    await executeTX(params);
-   
+    const { success, error, data } = await executeTX(params);
+    console.log('Result tx - success:', success, ' error: ', error, ' data: ', data);
 
+    (success)
+        ? res.send('Yeah!!')
+        : res.send('Shit!');
 };
 
 
@@ -142,7 +157,7 @@ const withdrawERC20 = async (req: express.Request, res: express.Response) => {
  * @param params.contractAddress    Contract address
  */
 const executeTX = (params: any) => {
-    return new Promise(async (resolve) => {
+    return new Promise<PromiseResponse>(async (resolve) => {
 
         // Prepare transaction
         const nonce = await web3.eth.getTransactionCount(params.fromAddress);
@@ -151,7 +166,7 @@ const executeTX = (params: any) => {
             gasPrice: '30000000000',
             from: params.fromAddress,
             data: params.encodedABI,
-            chainId: 3,
+            chainId: params.chainId,
             to: params.toAddress,
             nonce: nonce,
         };
@@ -163,16 +178,16 @@ const executeTX = (params: any) => {
                 web3.eth.sendSignedTransaction(signed.rawTransaction)
                     .then(async (res: any) => {
                         console.log('Response: ', res)
-                        resolve({ result: true, error: null, output: res });
+                        resolve({ success: true, error: '', data: res });
                     })
                     .catch((err: string) => {
                         console.log('Error in ethUtils.js (A) -> executeTX(): ', err);
-                        resolve({ result: false, error: err, output: null });
+                        resolve({ success: false, error: err, data: null });
                     });
             })
             .catch((err: string) => {
                 console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
-                resolve({ result: false, error: err, output: null });
+                resolve({ success: false, error: err, data: null });
             });
     });
 };
