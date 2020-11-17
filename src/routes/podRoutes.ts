@@ -26,6 +26,9 @@ router.get('/FT/getPhoto/:podId', authenticateJWT, podController.getPhotoById);
 router.get('/NFT/getPod/:podId', authenticateJWT, podController.getNFTPod);
 router.get('/FT/getPod/:podId', authenticateJWT, podController.getFTPod);
 
+router.get('/NFT/getPodTransactions/:podId', authenticateJWT, podController.getNFTPodTransactions);
+router.get('/FT/getPodTransactions/:podId', authenticateJWT, podController.getFTPodTransactions);
+
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
 router.get('/FT/getMyPods/:userId', authenticateJWT, podController.getMyPodsFT);
 router.get('/NFT/getTrendingPods/:userId', authenticateJWT, podController.getTrendingPodsNFT);

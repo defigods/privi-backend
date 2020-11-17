@@ -79,7 +79,8 @@ export async function updateFirebase(blockchainRes) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
                 if (podObj.Royalty) colectionName = collections.podsNFT;    // case NFT
-                transaction.set(db.collection(colectionName).doc(podId), podObj); // to be deleted later
+                // with merge flag because pods have more info thats not in blockchain (eg followers)
+                transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
             }
         }
         // update pools
@@ -172,7 +173,7 @@ export async function updateFirebaseNFT(blockchainRes) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
                 if (podObj.Royalty !== undefined) colectionName = collections.podsNFT;    // case NFT
-                transaction.set(db.collection(colectionName).doc(podId), podObj);   // to be deleted later
+                transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
             });
         }
         // update pools
