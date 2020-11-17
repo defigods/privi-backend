@@ -24,5 +24,6 @@ module.exports = {
     reserveConstants: "StakingReserveContants",
     stakingRates: "StakingRates", // constant
     stakingDeposit: "StakingDeposit",
-    podTransactions: "PodTransactions"
+    podTransactions: "PodTransactions",
+    badges: "Badges"
 }
