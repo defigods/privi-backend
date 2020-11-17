@@ -1,6 +1,6 @@
 import Web3 from 'web3';
 import express from 'express';
-import { withdraw as withdrawFab } from '../blockchain/coinBalance';
+import { swap as swapFab, withdraw as withdrawFab } from '../blockchain/coinBalance';
 import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import { CONTRACT } from '../constants/ethContracts';
@@ -52,7 +52,8 @@ const executeTX = (params: any) => {
     return new Promise<PromiseResponse>(async (resolve) => {
 
         // Prepare transaction
-        const nonce = await web3.eth.getTransactionCount(params.fromAddress);
+        // remark: added 'pending' to avoid 'Known Transaction' error
+        const nonce = await web3.eth.getTransactionCount(params.fromAddress, 'pending');
         const tx = {
             gas: 1500000,
             gasPrice: '30000000000',
@@ -113,7 +114,7 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
 const getERC20Balance = async (req: express.Request, res: express.Response) => {
     const { fromAddress, chainId } = req.query;
 
-    if (chainId === '3') {
+    if (chainId === '3') { // Ropsten
         const amountDAI = await callBalance(CONTRACT.Ropsten.DAI, fromAddress);
         const amountUNI = await callBalance(CONTRACT.Ropsten.UNI, fromAddress);
         const amountWETH = await callBalance(CONTRACT.Ropsten.WETH, fromAddress);
@@ -126,7 +127,7 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
             success: true,
             amount: result,
         });
-    } else {
+    } else { // Unknown network
         const result = {
             DAI: 0,
             UNI: 0,
@@ -136,20 +137,41 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
             success: true,
             amount: result,
         });
-    }
+    };
 
+};
+
+const swap = async (req: express.Request, res: express.Response) => {
+    const body = req.body;
+    const { publicId, amount, token } = req.body;
+    let statusCode = '0';
+
+    // ** STEP 1: Swap to Fabric **
+    const response = await swapFab(publicId, amount, token);
+    if (response && response.success) {
+
+        // Update balances in Firestore
+        await updateFirebase(response);
+        statusCode = '1';
+
+    } else {
+        console.log('Error in connectController.ts -> withdraw(): Withdraw call in Fabric not successful');
+    };
+
+    // Send back status code to front-end
+    res.send(statusCode);
 };
 
 /**
  * @dev Withdraw ETH or ERC20 tokens from Fabric to Ethereum's User account
  * @return  status of the withdrwaw process:
  *          0: Fabric Failed / 1: Ethereum failed / 2: Fabric & Ethereum succeded
- * @param mode
- * @param chainId
- * @param publicId
- * @param amount
- * @param token
- * @param to 
+ * @param mode 'WITHDRAW_ETH': withdraw ethers / 'WITHDRAW_ERC20': withdraw ERC20 tokens
+ * @param chainId Blockchain network identifier
+ * @param publicId User identifier
+ * @param amount Amount to be withdrawn
+ * @param token Token name
+ * @param to Destination address
  */
 const withdraw = async (req: express.Request, res: express.Response) => {
     const body = req.body;
@@ -159,23 +181,34 @@ const withdraw = async (req: express.Request, res: express.Response) => {
     console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token,
         ' to: ', to, 'action: ', action);
 
-    // Step 1: Withdraw from Fabric
+    // ** STEP 1: Withdraw from Fabric **
     const response = await withdrawFab(publicId, amount, token);
+console.log('** Fab Response: ', response);
     if (response && response.success) {
+
+        // Update balances in Firestore
         await updateFirebase(response);
         statusCode = '1';
 
     } else {
         console.log('Error in connectController.ts -> withdraw(): Withdraw call in Fabric not successful');
-    }
+    };
 
-    // Step 2: Withdraw from Ethereum
+    // ** STEP 2: Withdraw from Ethereum **
     if (response && response.success) {
+
+        // Convert value into wei
         const amountWei = web3.utils.toWei(String(amount));
+
+        // Get SwapManager contract code
         const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+
+        // Choose method from SwapManager to be called
         const method = (action === 'WITHDRAW_ETH')
             ? contract.methods.withdrawEther(to, amountWei).encodeABI()
             : contract.methods.withdrawERC20Token(token, to, amountWei).encodeABI();
+
+        // Transaction parameters
         const params = {
             chainId: chainId,
             fromAddress: ETH_PRIVI_ADDRESS,
@@ -184,17 +217,19 @@ const withdraw = async (req: express.Request, res: express.Response) => {
             toAddress: ETH_SWAP_MANAGER_ADDRESS,
         };
 
+        // Execute transaction
         const { success } = await executeTX(params);
         (success) ? statusCode = '2' : null;
     };
 
-    console.log('status: ', statusCode)
+    // Send back status code to front-end
     res.send(statusCode);
 };
 
 
 module.exports = {
     getERC20Balance,
+    swap,
     withdraw,
 };
 
