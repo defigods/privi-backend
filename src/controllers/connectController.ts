@@ -1,6 +1,7 @@
 import Web3 from 'web3';
 import express from 'express';
-import api from '../blockchain/blockchainApi';
+import { withdraw as withdrawFab } from '../blockchain/coinBalance';
+import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import { CONTRACT } from '../constants/ethContracts';
 import SwapManagerContract from '../contracts/SwapManager.json'
@@ -89,8 +90,6 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
             let contract = new web3.eth.Contract(miniABI, contractAddress);
             await contract.methods.balanceOf(fromAddress).call()
                 .then(result => {
-                    console.log('result1: ', result)
-                    console.log('result2: ', web3.utils.fromWei((result), 'ether'));
                     resolve(web3.utils.fromWei((result), 'ether'));
                 })
                 .catch(err => {
@@ -113,7 +112,7 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
  */
 const getERC20Balance = async (req: express.Request, res: express.Response) => {
     const { fromAddress, chainId } = req.query;
- 
+
     if (chainId === '3') {
         const amountDAI = await callBalance(CONTRACT.Ropsten.DAI, fromAddress);
         const amountUNI = await callBalance(CONTRACT.Ropsten.UNI, fromAddress);
@@ -142,54 +141,91 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
 };
 
 /**
- * @dev Withdraw amount from Fabric to Ethereum's User account
- * @returns c
- *          e: f
- * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
- * @param fromAddress User account to retrieve the balance
+ * @dev Withdraw ETH or ERC20 tokens from Fabric to Ethereum's User account
+ * @return  status of the withdrwaw process:
+ *          0: Fabric Failed / 1: Ethereum failed / 2: Fabric & Ethereum succeded
+ * @param mode
+ * @param chainId
+ * @param publicId
+ * @param amount
+ * @param token
+ * @param to 
  */
-const withdrawETH = async (req: express.Request, res: express.Response) => {
+const withdraw = async (req: express.Request, res: express.Response) => {
     const body = req.body;
-    const { chainId, publicId, amount, token, to } = req.body;
-    console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
+    const { action, chainId, publicId, amount, token, to } = req.body;
+    let statusCode = '0';
 
-    const Contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
-    const amountWei = web3.utils.toWei(String(amount));
+    console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token,
+        ' to: ', to, 'action: ', action);
 
-    const params = {
-        chainId: chainId,
-        fromAddress: ETH_PRIVI_ADDRESS,
-        fromAddressKey: ETH_PRIVI_KEY,
-        encodedABI: Contract.methods.withdrawEther(to, amountWei).encodeABI(),
-        toAddress: ETH_SWAP_MANAGER_ADDRESS,
+    // Step 1: Withdraw from Fabric
+    const response = await withdrawFab(publicId, amount, token);
+    if (response && response.success) {
+        await updateFirebase(response);
+        statusCode = '1';
+
+    } else {
+        console.log('Error in connectController.ts -> withdraw(): Withdraw call in Fabric not successful');
+    }
+
+    // Step 2: Withdraw from Ethereum
+    if (response && response.success) {
+        const amountWei = web3.utils.toWei(String(amount));
+        const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+        const method = (action === 'WITHDRAW_ETH')
+            ? contract.methods.withdrawEther(to, amountWei).encodeABI()
+            : contract.methods.withdrawERC20Token(token, to, amountWei).encodeABI();
+        const params = {
+            chainId: chainId,
+            fromAddress: ETH_PRIVI_ADDRESS,
+            fromAddressKey: ETH_PRIVI_KEY,
+            encodedABI: method,
+            toAddress: ETH_SWAP_MANAGER_ADDRESS,
+        };
+
+        const { success } = await executeTX(params);
+        (success) ? statusCode = '2' : null;
     };
 
-    const { success, error, data } = await executeTX(params);
-    console.log('Result tx - success:', success, ' error: ', error, ' data: ', data);
-
-    (success)
-        ? res.send('Yeah!!')
-        : res.send('Shit!');
+    console.log('status: ', statusCode)
+    res.send(statusCode);
 };
-
-
-/**
- * @dev Withdraw amount from Fabric to Ethereum's User account
- * @returns c
- *          e: f
- * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
- * @param fromAddress User account to retrieve the balance
- */
-const withdrawERC20 = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
-    const { publicId, amount, token, to } = req.body;
-    console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
-};
-
 
 
 module.exports = {
     getERC20Balance,
-    withdrawETH,
-    withdrawERC20,
+    withdraw,
 };
+
+
+// /**
+//  * @dev Withdraw amount from Fabric to Ethereum's User account
+//  * @returns c
+//  *          e: f
+//  * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
+//  * @param fromAddress User account to retrieve the balance
+//  */
+// const withdrawERC20 = async (req: express.Request, res: express.Response) => {
+//     const body = req.body;
+//     const { chainId, publicId, amount, token, to } = req.body;
+//     console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
+
+//     const Contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+//     const amountWei = web3.utils.toWei(String(amount));
+
+//     const params = {
+//         chainId: chainId,
+//         fromAddress: ETH_PRIVI_ADDRESS,
+//         fromAddressKey: ETH_PRIVI_KEY,
+//         encodedABI: Contract.methods.withdrawEther(to, amountWei).encodeABI(),
+//         toAddress: ETH_SWAP_MANAGER_ADDRESS,
+//     };
+
+//     const { success, error, data } = await executeTX(params);
+//     console.log('Result tx - success:', success, ' error: ', error, ' data: ', data);
+
+//     (success)
+//         ? res.send('Yeah!!')
+//         : res.send('Shit!');
+// };
