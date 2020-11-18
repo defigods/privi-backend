@@ -25,5 +25,7 @@ module.exports = {
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
     podTransactions: "PodTransactions",
+    priceOfTheDay: "PriceOfTheDay",
+    priceHistory: "PriceHistory",
     badges: "Badges"
 }

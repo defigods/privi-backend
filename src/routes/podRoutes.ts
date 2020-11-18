@@ -55,4 +55,7 @@ router.post('/NFT/deleteBuyOrder', authenticateJWT, podController.deleteBuyOrder
 router.post('/NFT/deleteSellOrder', authenticateJWT, podController.deleteSellOrder);
 router.post('/NFT/sellPodNFT', authenticateJWT, podController.sellPodNFT);
 router.post('/NFT/buyPodNFT', authenticateJWT, podController.buyPodNFT);
+router.get('/NFT/getPriceHistory/:podId', authenticateJWT, podController.getNFTPodPriceHistory);
+
+
 module.exports = router;
