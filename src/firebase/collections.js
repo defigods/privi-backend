@@ -1,6 +1,8 @@
 module.exports = {
     user: "User",
     wallet: "Wallet",
+    walletNFT: "WalletNFT",
+    walletFT: "WalletFT",
     history: "History",
     allTransactions: "AllTransaction",
     waitlist: "Waitlist",
@@ -20,6 +22,8 @@ module.exports = {
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
-    stakingRates: "StakingRates", // constant
-    stakingDeposit: "StakingDeposit"
+    stakingRates: "StakingRates",
+    stakingDeposit: "StakingDeposit",
+    podTransactions: "PodTransactions",
+    badges: "Badges"
 }

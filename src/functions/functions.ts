@@ -54,12 +54,12 @@ export async function updateFirebase(blockchainRes) {
                 // balances ft
                 const balancesFT = walletObj.BalancesFT;
                 for (const [token, value] of Object.entries(balancesFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // balances nft
                 const balancesNFT = walletObj.BalancesNFT;
                 for (const [token, value] of Object.entries(balancesNFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // transactions
                 const history = walletObj.Transaction;
@@ -79,7 +79,8 @@ export async function updateFirebase(blockchainRes) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
                 if (podObj.Royalty) colectionName = collections.podsNFT;    // case NFT
-                transaction.set(db.collection(colectionName).doc(podId), podObj); // to be deleted later
+                // with merge flag because pods have more info thats not in blockchain (eg followers)
+                transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
             }
         }
         // update pools
@@ -148,12 +149,12 @@ export async function updateFirebaseNFT(blockchainRes) {
                 // balances ft
                 const balancesFT = walletObj.BalancesFT;
                 for (const [token, value] of Object.entries(balancesFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // balances nft
                 const balancesNFT = walletObj.BalancesNFT;
                 for (const [token, value] of Object.entries(balancesNFT)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value);
+                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value);
                 }
                 // transactions
                 const history = walletObj.Transaction;
@@ -172,7 +173,7 @@ export async function updateFirebaseNFT(blockchainRes) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
                 if (podObj.Royalty !== undefined) colectionName = collections.podsNFT;    // case NFT
-                transaction.set(db.collection(colectionName).doc(podId), podObj);   // to be deleted later
+                transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
             });
         }
         // update pools
@@ -303,3 +304,13 @@ export async function getUidFromEmail(email) {
     }
     return res;
 };
+
+export async function getUidNameMap() {
+    const map = {};
+    const userSnap = await db.collection(collections.user).get();
+    userSnap.forEach((doc) => {
+        const name = doc.data().firstName;
+        map[doc.id] = name;
+    })
+    return map;
+}
