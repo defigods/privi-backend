@@ -1,7 +1,7 @@
 import express, {response} from 'express';
 import podProtocol from "../blockchain/podProtocol";
 import nftPodProtocol from "../blockchain/nftPodProtocol";
-import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
@@ -111,6 +111,27 @@ exports.investPOD = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await podProtocol.investPOD(investorId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+            // add pod transaction (get price from blockchainRes)
+            let price = 0;
+            let token = "unknown";
+            const output = blockchainRes.output;
+            const updateWallets = output.UpdateWallets;
+            const transactions = updateWallets[investorId].Transaction;
+            transactions.forEach(tx => {
+                if (tx.From == investorId) {
+                    price = tx.Amount;
+                    token = tx.Token;
+                }
+            });
+            db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).add({
+                amount: amount,
+                price: price,
+                token: token, 
+                from: investorId,
+                to: "Pod Pool",
+                date: Date.now(),
+                guarantor: "None"
+            })
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
@@ -709,9 +730,19 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
         let podId = req.params.podId;
         const txns:any[] = [];
         if(podId) {
+            const uidNameMap = await getUidNameMap();
             const podTxnSnapshot = await db.collection(collections.podsFT).doc(podId).collection(collections.podTransactions).get();
             podTxnSnapshot.forEach((doc) => {
-                txns.push(doc.data());
+                const data = doc.data();
+                const txn = data;
+                let from = data.from;
+                let to = data.to;
+                // find name of "from" and "to"
+                if (uidNameMap[from]) from = uidNameMap[from];
+                if (uidNameMap[to]) to = uidNameMap[to];
+                txn.from = from;
+                txn.to = to;
+                txns.push(txn);
             });
             res.send({ success: true, data: txns});
         } else {
@@ -729,9 +760,20 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
         let podId = req.params.podId;
         const txns:any[] = [];
         if(podId) {
+            const uidNameMap = await getUidNameMap();
+            console.log(uidNameMap);
             const podTxnSnapshot = await db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).get();
             podTxnSnapshot.forEach((doc) => {
-                txns.push(doc.data());
+                const data = doc.data();
+                const txn = data;
+                let from = data.from;
+                let to = data.to;
+                // find name of "from" and "to"
+                if (uidNameMap[from]) from = uidNameMap[from];
+                if (uidNameMap[to]) to = uidNameMap[to];
+                txn.from = from;
+                txn.to = to;
+                txns.push(txn);
             });
             res.send({ success: true, data: txns});
         } else {
@@ -897,19 +939,22 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
             // add pod transaction
             let buyer = "unknown";
             let price = 0;
+            let token = "unknown";
             const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
             const data = podSnap.data();
             if (data && data.OrderBook && data.OrderBook.Buy && data.OrderBook.Buy[orderId]) {
                 buyer = data.OrderBook.Buy[orderId].Trader;
-                price = data.OrderBook.Buy[orderId].Price;
+                price = data.OrderBook.Buy[orderId].Price * amount;
+                token = data.Token;
             }
             db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).add({
                 amount: amount,
                 price: price,
+                token: token,
                 from: trader,
                 to: buyer,
                 date: Date.now(),
-                guarantor: "none"
+                guarantor: "None"
             })
             // TODO: set correct notification type
             createNotification(trader, "NFT Pod - Pod Token Sold",
@@ -941,15 +986,18 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
             // add pod transaction
             let seller = "unknown";
             let price = 0;
+            let token = "unknown";
             const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
             const data = podSnap.data();
             if (data && data.OrderBook && data.OrderBook.Sell && data.OrderBook.Sell[orderId]) {
                 seller = data.OrderBook.Sell[orderId].Trader;
-                price = data.OrderBook.Sell[orderId].Price;
+                price = data.OrderBook.Sell[orderId].Price * amount;
+                token = data.Token;
             }
             db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).add({
                 amount: amount,
                 price: price,
+                token: token,
                 from: seller,
                 to: trader,
                 date: Date.now(),

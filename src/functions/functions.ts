@@ -304,3 +304,13 @@ export async function getUidFromEmail(email) {
     }
     return res;
 };
+
+export async function getUidNameMap() {
+    const map = {};
+    const userSnap = await db.collection(collections.user).get();
+    userSnap.forEach((doc) => {
+        const name = doc.data().firstName;
+        map[doc.id] = name;
+    })
+    return map;
+}

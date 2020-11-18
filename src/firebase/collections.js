@@ -22,7 +22,7 @@ module.exports = {
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
-    stakingRates: "StakingRates", // constant
+    stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
     podTransactions: "PodTransactions",
     badges: "Badges"
