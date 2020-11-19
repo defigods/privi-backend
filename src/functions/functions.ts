@@ -204,6 +204,27 @@ export async function getRateOfChange() {
     return res;
 };
 
+export async function getTokensRate2() {
+    const data:{}[] = [];
+    try {
+        const ratesSnap = await db.collection(collections.rates).get();
+        for (const doc of ratesSnap.docs) {
+            const name = doc.data().name;
+            const token = doc.id;
+            const rate = doc.data().rate;
+            if (name) data.push({ token: token, name: name, rate: rate });
+        }
+        data.push({ token: "BC", name: "Base Coin", rate: 1 });
+        data.push({ token: "DC", name: "Data Coin", rate: data["BC"].rate });
+
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTokensRate()', err);
+    }
+
+    return data;
+}
+
+
 // traditional lending interest harcoded in firebase
 export async function getLendingInterest() {
     const res = {};
