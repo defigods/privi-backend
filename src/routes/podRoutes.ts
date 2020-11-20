@@ -39,16 +39,16 @@ router.get('/FT/getOtherPods/:userId', authenticateJWT, podController.getOtherPo
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFTPodsInfo);
 
-router.post('/initiatePod', authenticateJWT, podController.initiatePOD);
-router.post('/deletePod', authenticateJWT, podController.deletePOD);
-router.post('/investPod', authenticateJWT, podController.investPOD);
-router.post('/swapPod', authenticateJWT, podController.swapPod);
+router.post('/FT/initiatePod', authenticateJWT, podController.initiateFTPOD);
+router.post('/FT/deletePod', authenticateJWT, podController.deleteFTPOD);
+router.post('/FT/investPod', authenticateJWT, podController.investFTPOD);
+router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
 
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
 // NFT backend-blockchain
-router.post('/NFT/initiatePodNFT', authenticateJWT, podController.initiatePodNFT);
+router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);
 router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
 router.post('/NFT/newSellOrder', authenticateJWT, podController.newSellOrder);
 router.post('/NFT/deleteBuyOrder', authenticateJWT, podController.deleteBuyOrder);

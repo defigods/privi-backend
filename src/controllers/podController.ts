@@ -9,7 +9,9 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 
-exports.initiatePOD = async (req: express.Request, res: express.Response) => {
+
+// POD FT
+exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         console.log(req.body);
         const body = req.body;
@@ -26,7 +28,6 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
-            console.log(blockchainRes, blockchainRes.output.UpdatePods, blockchainRes.output.UpdatePods[podId]);
 
             blockchainRes.output.UpdatePods[podId].Name = body.Name || '';
             blockchainRes.output.UpdatePods[podId].Description = body.Description || '';
@@ -77,7 +78,7 @@ exports.initiatePOD = async (req: express.Request, res: express.Response) => {
     }
 };
 
-exports.deletePOD = async (req: express.Request, res: express.Response) => {
+exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const publicId = body.publicId;
@@ -101,7 +102,7 @@ exports.deletePOD = async (req: express.Request, res: express.Response) => {
     }
 };
 
-exports.investPOD = async (req: express.Request, res: express.Response) => {
+exports.investFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const investorId = body.investorId;
@@ -148,7 +149,7 @@ exports.investPOD = async (req: express.Request, res: express.Response) => {
     }
 };
 
-exports.swapPod = async (req: express.Request, res: express.Response) => {
+exports.swapFTPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const investorId = body.investorId;
@@ -176,7 +177,7 @@ exports.swapPod = async (req: express.Request, res: express.Response) => {
     }
 };
 
-
+// for both FT and NFT
 exports.followPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -658,18 +659,22 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
 
 // ----------------------- NFT Pod backend-blockchain calls -------------------------------
 
-exports.initiatePodNFT = async (req: express.Request, res: express.Response) => {
+exports.initiateNFTPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const creator = body.creator;
-        const token = body.token;
-        const royalty = body.royalty;
-        const offers = body.offers; 
-        // maybe frontend need to store more info to db
-        // ...
+        const creator = body.Creator;
+        const token = body.Token;
+        const royalty = body.Royalty;
+        const offers = body.Offers; 
         const blockchainRes = await nftPodProtocol.initiatePodNFT(creator, token, royalty, offers);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
+            const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
+            blockchainRes.output.UpdatePods[podId].Name = body.Name || '';
+            blockchainRes.output.UpdatePods[podId].Description = body.Description || '';
+            blockchainRes.output.UpdatePods[podId].Hashtags = body.Hashtags || [];
+            blockchainRes.output.UpdatePods[podId].Private = body.Private || false;
+            blockchainRes.output.UpdatePods[podId].HasPhoto = body.HasPhoto || false;
             updateFirebaseNFT(blockchainRes);
             // TODO: set correct notification type
             createNotification(creator, "NFT Pod - Pod Created",
@@ -679,11 +684,11 @@ exports.initiatePodNFT = async (req: express.Request, res: express.Response) => 
             res.send({ success: true });
         } 
         else {
-            console.log('Error in controllers/podController -> initiatePodNFT(), blockchain success = false, ', blockchainRes.message);
+            console.log('Error in controllers/podController -> initiateNFTPod(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> initiatePodNFT(): ', err);
+        console.log('Error in controllers/podController -> initiateNFTPod(): ', err);
         res.send({ success: false });
     }
 }
@@ -850,6 +855,7 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
 exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        console.log(body);
         const trader = body.trader;
         const podId = body.podId;
         const orderId = body.orderId;
