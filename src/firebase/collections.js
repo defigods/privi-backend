@@ -5,6 +5,7 @@ module.exports = {
     walletFT: "WalletFT",
     history: "History",
     allTransactions: "AllTransaction",
+    ethTransactions: "EthTransactions",
     waitlist: "Waitlist",
     cloudDatabase: "CloudDatabase",
     priviCredits: "PriviCredits",

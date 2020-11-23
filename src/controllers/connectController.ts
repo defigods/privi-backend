@@ -1,12 +1,16 @@
 import Web3 from 'web3';
 import express from 'express';
+import cron from 'node-cron';
+import { db } from "../firebase/firebase";
+import collections from "../firebase/collections";
 import { swap as swapFab, withdraw as withdrawFab } from '../blockchain/coinBalance';
 import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import { CONTRACT } from '../constants/ethContracts';
 import SwapManagerContract from '../contracts/SwapManager.json'
 let web3: any;
-web3 = new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`));
+//web3 = new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
+web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));  // Local Ganache
 
 type PromiseResponse = {
     success: boolean,
@@ -85,6 +89,7 @@ const executeTX = (params: any) => {
     });
 };
 
+
 const callBalance = (contractAddress: string, fromAddress: any) => {
     return new Promise<number>(async (resolve) => {
         if (contractAddress !== ZERO_ADDRESS) {
@@ -141,26 +146,135 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
 
 };
 
-const swap = async (req: express.Request, res: express.Response) => {
+const saveTx = async (params: any) => {
+
+    const data = {
+        txHash: params.txHash,
+        publicId: params.publicId,
+        action: params.action,
+        description: params.description,
+        amount: params.amount,
+        token: params.token,
+        status: params.status,
+        lastUpdate: params.lastUpdate,
+    };
+
+    // Insert into Firestore
+    const res = await db
+        .collection(collections.ethTransactions)
+        .add(data);
+};
+
+const updateTx = async (txHash: string) => {
+
+    // Retrieve TX doc
+    const snapshot = await db
+        .collection(collections.ethTransactions)
+        .where('txHash', '==', txHash)
+        .get();
+
+    // Update TX status
+    for (var i in snapshot.docs) {
+        const res = await db
+            .collection(collections.ethTransactions)
+            .doc(snapshot.docs[i].id)
+            .set({ status: 'confirmed' }, { merge: true });
+    }
+
+
+};
+
+const checkTxConfirmations = async (txHash: string) => {
+    try {
+        // Get transaction details
+        const trx = await web3.eth.getTransaction(txHash);
+
+        // Get current block number
+        const currentBlock = await web3.eth.getBlockNumber();
+
+        // When transaction is unconfirmed, its block number is null.
+        // In this case we return 0 as number of confirmations
+        return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber;
+    } catch (err) {
+        console.log('Error in ConnectController.ts -> checkTxConfirmations(): ', err);
+    };
+};
+
+let txQueue = [''];
+
+const checkTx = cron.schedule('*/5 * * * * *', async () => {
+
+    //Retrieve all TX from Firestore
+    const snapshot = await db
+        .collection(collections.ethTransactions)
+        .where('status', '==', 'pending').get();
+
+    // Process outstanding TX
+    if (!snapshot.empty) {
+        for (var i in snapshot.docs) {
+            const doc = snapshot.docs[i].data();
+            const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+//console.log('confs: ', confirmations, ' for tx: ', doc.txHash);
+            if (confirmations > 0) {
+                if (!txQueue.includes(doc.txHash)) {
+                    txQueue.push(doc.txHash);
+                    switch (doc.action) {
+                        case 'SWAP_TRANSFER_ETH':
+                            //TODO: to be placed in swap function
+                            const response = await swapFab(doc.publicId, doc.amount, doc.token);
+                            if (response && response.success) {
+                                // Update balances in Firestore
+                                await updateFirebase(response);
+                                // Update TX status in Firestore
+                                await updateTx(doc.txHash);
+                                console.log('Fabric data successfully inserted!');
+                                txQueue = txQueue.filter(elem => elem != doc.txHash);
+                            } else {
+                                console.log('Error in connectController.ts -> withdraw(): Withdraw call in Fabric not successful');
+                            };
+                            break;
+
+                        default:
+                            break;
+                    };
+                };
+            };
+        };
+    };
+});
+
+
+
+
+const send = async (req: express.Request, res: express.Response) => {
     const body = req.body;
-    const { publicId, amount, token } = req.body;
+    const { publicId, txHash, action, amount, token, description, status, lastUpdate } = req.body;
+
+    // Save transaction into Firestore
+    await saveTx(body);
+    //TODO: if record successfully store, return true and move forward; otherwise, hold on.
+
+    // Send back status code to front-end
+    res.send('ok');
+};
+
+
+const swap = async (publicId: string, amount: string, token: string) => {
+
+    // Swap to Fabric
     let statusCode = '0';
 
-    // ** STEP 1: Swap to Fabric **
     const response = await swapFab(publicId, amount, token);
     if (response && response.success) {
-
         // Update balances in Firestore
         await updateFirebase(response);
         statusCode = '1';
-
     } else {
         console.log('Error in connectController.ts -> withdraw(): Withdraw call in Fabric not successful');
     };
-
-    // Send back status code to front-end
-    res.send(statusCode);
 };
+
+
 
 /**
  * @dev Withdraw ETH or ERC20 tokens from Fabric to Ethereum's User account
@@ -183,7 +297,7 @@ const withdraw = async (req: express.Request, res: express.Response) => {
 
     // ** STEP 1: Withdraw from Fabric **
     const response = await withdrawFab(publicId, amount, token);
-console.log('** Fab Response: ', response);
+    console.log('** Fab Response: ', response);
     if (response && response.success) {
 
         // Update balances in Firestore
@@ -227,10 +341,14 @@ console.log('** Fab Response: ', response);
 };
 
 
+
+
 module.exports = {
     getERC20Balance,
-    swap,
+    // swap,
     withdraw,
+    send,
+    checkTx,
 };
 
 

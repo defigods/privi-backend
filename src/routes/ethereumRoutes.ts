@@ -6,7 +6,8 @@ import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const connectController = require('../controllers/connectController');
 
 router.get('/getERC20Balance', authenticateJWT, connectController.getERC20Balance);
-router.post('/swap', authenticateJWT, connectController.swap);
+// router.post('/swap', authenticateJWT, connectController.swap);
 router.post('/withdraw', authenticateJWT, connectController.withdraw);
+router.post('/send', authenticateJWT, connectController.send);
 
 module.exports = router;
