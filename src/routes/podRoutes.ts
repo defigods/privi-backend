@@ -47,6 +47,8 @@ router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
+router.get('/FT/getPriceHistory/:podId', authenticateJWT, podController.getFTPodPriceHistory);
+
 // NFT backend-blockchain
 router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);
 router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
