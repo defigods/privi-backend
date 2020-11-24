@@ -289,7 +289,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
         const currency = body.currency;
         const email = body.email;
         const password = body.password;
-        const role = body.role; // role should not be coming from user input?
+
+        // const role = body.role; // role should not be coming from user input?
+		const role = "USER";
 
 		if (email == "" || password == "") { // basic requirement validation
 			console.log('email and password required');
@@ -1092,7 +1094,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
     try{
         let body = req.body;
 
-        let badgesGet = await db.collection('collectionName').get();
+        let badgesGet = await db.collection('collectionName').get(); // you sure this is 'collectionName' and not collection.badges
         let id = badgesGet.size;
 
         if(body) {
