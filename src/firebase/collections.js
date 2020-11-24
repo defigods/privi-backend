@@ -10,6 +10,11 @@ module.exports = {
     priviCredits: "PriviCredits",
     podsFT: "PodsFT",
     podsNFT: "PodsNFT",
+    podTransactions: "PodTransactions",
+    priceOfTheDay: "PriceOfTheDay",
+    priceHistory: "PriceHistory",
+    podRoleInvitation: "PodRoleInvitation",
+    podViewInvitation: "PodViewInvitation",
     liquidityPools: "LiquidityPools",
     insurancePools: "InsurancePools",
     notificaction: "Notification",
@@ -24,8 +29,5 @@ module.exports = {
     reserveConstants: "StakingReserveContants",
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
-    podTransactions: "PodTransactions",
-    priceOfTheDay: "PriceOfTheDay",
-    priceHistory: "PriceHistory",
     badges: "Badges"
 }
