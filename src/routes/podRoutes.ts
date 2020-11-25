@@ -47,7 +47,9 @@ router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
-// NFT backend-blockchain
+router.get('/FT/getPriceHistory/:podId', authenticateJWT, podController.getFTPodPriceHistory);
+
+// NFT 
 router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);
 router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
 router.post('/NFT/newSellOrder', authenticateJWT, podController.newSellOrder);
@@ -57,5 +59,9 @@ router.post('/NFT/sellPodNFT', authenticateJWT, podController.sellPodNFT);
 router.post('/NFT/buyPodNFT', authenticateJWT, podController.buyPodNFT);
 router.get('/NFT/getPriceHistory/:podId', authenticateJWT, podController.getNFTPodPriceHistory);
 
+// common functions
+router.post('/inviteRole', authenticateJWT, podController.inviteRole);
+router.post('/replyRoleInvitation', authenticateJWT, podController.replyRoleInvitation);
+router.post('/inviteView', authenticateJWT, podController.inviteView);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import express, {response} from 'express';
 import podProtocol from "../blockchain/podProtocol";
 import nftPodProtocol from "../blockchain/nftPodProtocol";
-import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap, getEmailUidMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
@@ -9,8 +9,158 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 
+/////////////////////////// COMMON //////////////////////////////
 
-// POD FT
+// auxiliar function used to update common fields of both NFT and FT pod (name, desc, hashtags..) 
+async function updateCommonFields(body:any, podId:string, isPodFT:boolean) {
+    const name = body.Name;
+    const description = body.Description;
+    const mainHashtag = body.MainHashtag; // recently added
+    const hashtags = body.Hashtags;
+    const isPrivate = body.Private;
+    const hasPhoto = body.HasPhoto;
+    const endorsementScore = body.EndorsementScore;
+    const trustScore = body.TrustScore;
+    const admins = body.Admins;
+    const isOpenToAdvertisement = body.IsOpenToAdvertisement; // recently added
+
+    let podRef = db.collection(collections.podsFT).doc(podId);
+    if (!isPodFT) podRef = db.collection(collections.podsNFT).doc(podId);
+
+    podRef.update({
+        Name: name || '',
+        Description: description || '',
+        MainHashtag: mainHashtag || '',
+        Hashtags: hashtags || [],
+        Private: isPrivate || false,
+        HasPhoto: hasPhoto || false,
+        EndorsementScore: endorsementScore || 0.5,
+        TrustScore: trustScore || 0.5,
+        Admins: admins || [],
+        IsOpenToAdvertisement: isOpenToAdvertisement || false
+    })
+}
+
+/**
+ * Pod creator/admin invites some user to assume some role of the pod
+ * @param req {adminId, isPodFT, podId, invitedUser, role}. isPodFT boolean, adminId is an uid and inivtedUser an email
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
+exports.inviteRole = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const adminId:string = body.adminId;
+        const isPodFT:boolean = body.isPodFT;
+        const podId:string = body.podId;
+        const invitedUser:string = body.invitedUser;
+        const role:string = body.role;
+        let ok:boolean = true;
+        const emailToUid = await getEmailUidMap() ;
+        const adminSnap = await db.collection(collections.user).doc(adminId).get();
+        if (!adminSnap.exists) ok = false
+        const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
+        if (!invitedSnap.exists) ok = false
+        let podSnap = await db.collection(collections.podsFT).doc(podId).get();
+        if (!isPodFT) podSnap = await db.collection(collections.podsNFT).doc(podId).get();
+        // check if adminId is one of the admins of the pod
+        const podData = podSnap.data();
+        if (!podData || !podData.Admin || !podData.Admin.includes(adminId)) ok = false;
+        if (ok) {
+            invitedSnap.ref.collection(collections.podRoleInvitation).add({
+                podId: podId,
+                isPodFT: isPodFT,
+                inviter: adminId,
+                role: role,
+                data: Date.now(),
+                replied: false,
+            })
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> inviteRole()');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> inviteRole(): ', err);
+        res.send({ success: false });
+    }
+}
+
+/**
+ * Invited users (by pod admins) can accept or decline the role invitation, then this invitation pass to be replied
+ * @param req {userId, invitationId, accept}. userId is the uid of the user, invitationId the doc id of the invitation, accept is a boolean
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
+exports.replyRoleInvitation = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userId:string = body.userId;
+        const invitationId:string = body.invitationId;
+        const accept:boolean = body.accept;
+        const invitationSnap = await db.collection(collections.user).doc(userId).collection(collections.podRoleInvitation).doc(invitationId).get();
+        if (invitationSnap.exists) {
+            const invitationData = invitationSnap.data();
+            // only not replied invitations
+            if (invitationData && !invitationData.replied) {
+                const podId = invitationData.podId;
+                if (accept) {
+                    let podSnap = await db.collection(collections.podsFT).doc(podId).get();
+                    if (!invitationData.isPodFT) podSnap = await db.collection(collections.podsNFT).doc(podId).get();
+                    const podData = podSnap.data();
+                    if (podData) {
+                        const currRoleArray:string[] = podData.roles[invitationData.role];
+                        if (!currRoleArray.includes(userId)) currRoleArray.push(userId);
+                        const roleMap = "roles." + invitationData.role;
+                        podSnap.ref.update({roleMap: currRoleArray});
+                    }
+                }
+                invitationSnap.ref.update({replied: true});
+            }
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> inviteRole(): ', err);
+        res.send({ success: false });
+    }
+}
+
+/**
+ * Invite user to view a pod, this function store a view invitation doc in users collection
+ * @param req {userId, inviterId, podId, isPodFT}. userId is the uid of the user, inviterId the uid of the persone who invites, 
+ * podId the id of teh pod, isPodFT boolean that tells if the pod is FT/NFT
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
+exports.inviteView = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userId:string = body.userId;
+        const inviterId:string = body.inviterId;
+        const podId:string = body.podId;
+        const isPodFT:boolean = body.isPodFT;
+        const userSnap = await db.collection(collections.user).doc(userId).get()
+        if (userSnap.exists) {
+            let url = "https://privibeta.web.app/#/FTPod/" + podId;
+            if (!isPodFT) url = "https://privibeta.web.app/#/NFTPod/" + podId;
+            userSnap.ref.collection(collections.podViewInvitation).add({
+                inviter: inviterId,
+                podId: podId,
+                isPodFT: isPodFT,
+                url: url,
+                date: Date.now()
+            });
+            res.send({success:true});
+        } else {
+            console.log('Error in controllers/podController -> inviteView(): invited user doesnt exists');
+            res.send({success:false});
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> inviteView(): ', err);
+        res.send({ success: false });
+    }
+}
+
+
+/////////////////////////// POD FT //////////////////////////////
+
 exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         console.log(req.body);
@@ -27,18 +177,11 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         const rateOfChange = await getRateOfChange();
         const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);  // update blockchain res
+
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
+            updateCommonFields(body, podId, true); // update common fields
 
-            blockchainRes.output.UpdatePods[podId].Name = body.Name || '';
-            blockchainRes.output.UpdatePods[podId].Description = body.Description || '';
-            blockchainRes.output.UpdatePods[podId].Hashtags = body.Hashtags || [];
-            blockchainRes.output.UpdatePods[podId].Private = body.Private || false;
-            blockchainRes.output.UpdatePods[podId].HasPhoto = body.HasPhoto || false;
-            blockchainRes.output.UpdatePods[podId].EndorsementScore = 0.5;
-            blockchainRes.output.UpdatePods[podId].TrustScore = 0.5;
-            blockchainRes.output.UpdatePods[podId].Admins = body.Admins;
-
-            updateFirebase(blockchainRes);
             createNotification(creator, "FT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
@@ -132,6 +275,11 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 to: "Pod Pool",
                 date: Date.now(),
                 guarantor: "None"
+            })
+            // add to PriceOf the day 
+            db.collection(collections.podsFT).doc(podId).collection(collections.priceOfTheDay).add({
+                price: price,
+                date: Date.now()
             })
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
@@ -656,9 +804,50 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
     }
 };
 
+// get price from history and today price colections, merge, sort (by ascending date) and return this data
+exports.getFTPodPriceHistory = async (req: express.Request, res: express.Response) => {
+    try {
+        // comparator function used to sort by ascending date
+        const comparator = (a, b) => {
+            if (a.date > b.date) return 1;
+            if (b.date > a.date) return -1;
+            return 0;
+        }
 
-// ----------------------- NFT Pod backend-blockchain calls -------------------------------
+        let podId = req.params.podId;
+        console.log("getPriceHisotry", podId);
+        const data:any[] = [];
+        if(podId) {
+            const priceHistorySnap = await db.collection(collections.podsFT).doc(podId).collection(collections.priceHistory).get();
+            priceHistorySnap.forEach((doc) => {
+                data.push(doc.data());
+            });
+            const todayPriceSnap = await db.collection(collections.podsFT).doc(podId).collection(collections.priceOfTheDay).get();
+            todayPriceSnap.forEach((doc) => {
+                data.push(doc.data());
+            });
+            // sort data by ascending date
+            data.sort(comparator);
+            res.send({ success: true, data: data});
+        } else {
+            console.log('Error in controllers/podController -> getFTPodTransactions()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> getFTPodTransactions()', err);
+        res.send({ success: false });
+    }
+};
 
+/////////////////////////// NFT //////////////////////////////
+
+/**
+ * Blockchain-Backend function, used to initiate a NFT pod 
+ * if the operation is performed (success = true) then update firebase accordingly
+ * @param req {creator, token, royalty, offers}. creator: uid of the creator, token: crypto in which the NFT will be sold/bought, 
+ * royalty: [0,1] number, offers: object {amount: price} that represent the initial token supply
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.initiateNFTPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -669,13 +858,9 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const blockchainRes = await nftPodProtocol.initiatePodNFT(creator, token, royalty, offers);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
+            updateFirebaseNFT(blockchainRes);   // update blockchain res
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
-            blockchainRes.output.UpdatePods[podId].Name = body.Name || '';
-            blockchainRes.output.UpdatePods[podId].Description = body.Description || '';
-            blockchainRes.output.UpdatePods[podId].Hashtags = body.Hashtags || [];
-            blockchainRes.output.UpdatePods[podId].Private = body.Private || false;
-            blockchainRes.output.UpdatePods[podId].HasPhoto = body.HasPhoto || false;
-            updateFirebaseNFT(blockchainRes);
+            updateCommonFields(body, podId, false); // update common fields
             // TODO: set correct notification type
             createNotification(creator, "NFT Pod - Pod Created",
                 ` `,
@@ -693,6 +878,13 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
     }
 }
 
+
+/**
+ * Blockchain-Backend function, a user request a buy offer specifying the conditions
+ * if the operation is performed (success = true) then update firebase accordingly
+ * @param req {podId, trader, amount, price}. trader: buyer
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -720,6 +912,12 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
     }
 }
 
+/**
+ * Blockchain-Backend function, a user who must hold some pod token, post a selling offer specifying the conditions (price, amount)
+ * if the operation is performed (success = true) then update firebase accordingly
+ * @param req {podId, trader, amount, price}. trader: buyer
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.newSellOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -747,6 +945,11 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
     }
 }
 
+/**
+ * Blockchain-Backend function, the buy offer creator deletes the offer, and if the operation is performed (success = true) then update firebase accordingly
+ * @param req {podId, trader, orderId, amount}.
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -773,6 +976,11 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
     }
 }
 
+/**
+ * Blockchain-Backend function used to buy an offer of a NFT pod, and if the operation is performed (success = true) then update firebase accordingly
+ * @param req {podId, trader, orderId, amount}.
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.deleteSellOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -799,6 +1007,11 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
     }
 }
 
+/**
+ * Blockchain-Backend function used to sell an offer of a NFT pod, and if the operation is performed (success = true) then update firebase accordingly
+ * @param req {podId, trader, orderId, amount}. trader: the user that sells the pod token
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -852,10 +1065,14 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
     }
 }
 
+/**
+ * Blockchain-Backend function used to buy an offer of a NFT pod, and if the operation is performed (success = true) then update firebase accordingly
+ * @param req {podId, trader, orderId, amount}. trader: the user that buys the pod token
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        console.log(body);
         const trader = body.trader;
         const podId = body.podId;
         const orderId = body.orderId;
@@ -906,6 +1123,11 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
     }
 }
 
+/**
+ * Function to get all the trasactions of the given pod
+ * @param req {podId}. podId: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
+ */
 exports.getNFTPodTransactions = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
@@ -937,7 +1159,11 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
 };
 
 
-// get price from history and today price colections, merge, sort (by ascending date) and return this data
+/**
+ * Function to get price from history and today price colections, merge, sort (by ascending date) and return this data
+ * @param req {podId}. podId: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: price history array
+ */
 exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Response) => {
     try {
         // comparator function used to sort by ascending date
@@ -971,8 +1197,53 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
     }
 };
 
-// --------------------------------------------------------------------
 
+/////////////////////////// COMMON //////////////////////////////
+
+/**
+ * Pod creator/admin invites some user to assume some role of the pod
+ * @param req {admin, podType, podId, invitedUser, role}. podType in ["NF", "NFT"], admin and invitedUser are emails
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
+exports.inviteRole = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const admin:string = body.admin;
+        const podType:string = body.podType;
+        const podId:string = body.podId;
+        const invitedUser:string = body.invitedUser;
+        const role:string = body.role;
+        let ok:boolean = true;
+        const emailToUid = await getEmailUidMap() ;
+        const adminSnap = await db.collection(collections.user).doc(emailToUid[admin]).get();
+        if (!adminSnap.exists) ok = false
+        const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
+        if (!invitedSnap.exists) ok = false
+        if (!["NFT, FT"].includes(podType)) ok = false
+        let podSnap;
+        if (podType == "FT") {
+            podSnap = await db.collection(collections.podsFT).doc(podId).get();
+        } else {
+            podSnap = await db.collection(collections.podsNFT).doc(podId).get();
+        }
+        if (ok) {
+            // check if adminId is one of the admins of the pod
+            const podData = podSnap.data();
+            if (podData) 
+
+
+
+            res.send({ success: true });
+        } 
+        else {
+            console.log('Error in controllers/podController -> inviteRole()');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> inviteRole(): ', err);
+        res.send({ success: false });
+    }
+}
 
 /////////////////////////// CRON JOBS //////////////////////////////
 
@@ -1006,8 +1277,9 @@ async function getPodList() {
     });
     return res;
 }
-
-// scheduled every 5 min, checks the liquidation of each pod (that is ccr below required level)
+/**
+ * cron job scheduled every 5 min, checks the liquidation of each pod (that is ccr below required level)
+ */
 exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
     try {
         console.log("********* Pod checkLiquidation() cron job started *********");
@@ -1036,7 +1308,9 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
     }
 });
 
-// scheduled every day at 00:00, for each pod calls the blockchain payInterest function
+/**
+ * cron job scheduled every day at 00:00, for each pod calls the blockchain payInterest function
+ */
 exports.payInterest = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Pod payInterest() cron job started *********");
@@ -1073,12 +1347,49 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
     }
 });
 
-// NFT cron job, scheduled every day at 00:00. For each NFT pod, this function gets the lowest sale price of the day from the "SalesOfTheDay" colection
-// and add this to "PriceHistory" colection. Then resets (clearing) "SalesOfTheDay".
+
+/**
+ * NFT-FT cron job, scheduled every day at 00:00. For each pod, this function gets the lowest sale price of the day from the "SalesOfTheDay" colection
+ * and add this to "PriceHistory" colection. Then resets (clearing) "SalesOfTheDay".
+ */
 exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
     try {
-        console.log("********* NFT Pod managePriceHistory() cron job started *********");
-        const podsSnap = await db.collection(collections.podsNFT).get();
+        console.log("********* Pod managePriceHistory() cron job started *********");
+        // FT
+        let podsSnap = await db.collection(collections.podsFT).get();
+        podsSnap.forEach(async (pod) => {
+            let dayLowestPrice = Infinity;
+            let date = Date.now();
+            // get lowest price from PriceOfTheDay
+            const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get();
+            if (!priceOfTheDaySnap.empty){
+                priceOfTheDaySnap.forEach((doc) => {
+                    if(doc.data() && doc.data().price < dayLowestPrice) {
+                        dayLowestPrice = doc.data().price;
+                    }
+                });
+            }
+            // get price for nearest (date) price history, to use in case that have no sale offers today.
+            if (dayLowestPrice == Infinity) {
+                const priceHistorySnap = await pod.ref.collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
+                if (priceHistorySnap.docs.length) {
+                    const data = priceHistorySnap.docs[0].data();
+                    dayLowestPrice = data.price;
+                    date = data.date;
+                }
+            }
+            // add this new price and date to PriceHistory colection
+            if (dayLowestPrice != Infinity) {
+                pod.ref.collection(collections.priceHistory).add({
+                    price: dayLowestPrice,
+                    date: date
+                });   
+            }
+            // reset (empty) PriceOfTheDay
+            priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
+        })
+        // NFT
+        podsSnap = await db.collection(collections.podsNFT).get();
         podsSnap.forEach(async (pod) => {
             let dayLowestPrice = Infinity;
             let date = Date.now();
@@ -1101,16 +1412,17 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
                 }
             }
             // add this new price and date to PriceHistory colection
-            if (dayLowestPrice == Infinity) dayLowestPrice = 0; 
-            pod.ref.collection(collections.priceHistory).add({
-                price: dayLowestPrice,
-                date: date}
-            );
+            if (dayLowestPrice != Infinity) {
+                pod.ref.collection(collections.priceHistory).add({
+                    price: dayLowestPrice,
+                    date: date}
+                );
+            }
             // reset (empty) PriceOfTheDay
             const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get()
             priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
-        })
-        console.log("--------- NFT Pod managePriceHistory() finished ---------");
+        });
+        console.log("--------- Pod managePriceHistory() finished ---------");
     } catch (err) {
         console.log('Error in controllers/podController -> managePriceHistory()', err);
     }
