@@ -51,9 +51,12 @@ category list
 router.get('/category', forumController.categoryList); // /forum/category
 
 router.post('/comment/:postId', authenticateJWT, forumController.commentCreate);
+router.delete('/comment/:commentId', authenticateJWT, forumController.commentDelete);
 
 router.post('/', authenticateJWT, forumController.postCreate);
 router.get('/', forumController.postList);
 router.get('/:postId', forumController.postView);
+
+router.delete('/:postId', forumController.postDelete);
 
 module.exports = router;

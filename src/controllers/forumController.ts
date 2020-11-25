@@ -100,6 +100,38 @@ module.exports.commentCreate = async (req: express.Request, res: express.Respons
 
 } // commentCreate
 
+module.exports.commentDelete = async (req: express.Request, res: express.Response) => {
+	const commentId = req.params.commentId;
+
+	if (commentId) {
+		try {
+			const commentSnap = await db.collection(collections.forumComment).doc(commentId).get();
+			const commentData = commentSnap.data();
+
+			if (commentData) {
+				db.collection(collections.forumComment).doc(commentId).delete();
+				
+				res.send({ success: true });	
+			
+			} else {
+				console.log('comment not found');
+				res.status(404);
+				res.send({ success: false, message: "comment not found" });
+			}
+		
+		} catch (err) {
+			console.log('Error in controllers/forumController -> commentDelete()', err);
+			res.send({ success: false });
+		}
+
+	} else {
+		console.log('commentId required');
+		res.send({ success: false, message: "commentId required" });
+	}
+
+
+} // commentDelete
+
 module.exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -152,6 +184,47 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
   }
 
 } // postCreate
+
+module.exports.postDelete = async (req: express.Request, res: express.Response) => {
+	const postId = req.params.postId;
+
+	if (postId) {
+		try {
+			const postSnap = await db.collection(collections.forumPost).doc(postId).get();
+			const postData = postSnap.data();
+
+			if (postData) {
+				db.collection(collections.forumPost).doc(postId).delete();
+				
+				// delete also comments
+				const commentsSnap = await db.collection(collections.forumComment)
+					.where("postId", "==", postId)
+					.orderBy("createdAt", "asc")
+					.get();
+				
+				for (const doc of commentsSnap.docs) {
+					doc.ref.delete();
+				}
+				
+				res.send({ success: true });	
+			
+			} else {
+				console.log('post not found');
+				res.status(404);
+				res.send({ success: false, message: "post not found" });
+			}
+		
+		} catch (err) {
+			console.log('Error in controllers/forumController -> postDelete()', err);
+			res.send({ success: false });
+		}
+
+	} else {
+		console.log('postId required');
+		res.send({ success: false, message: "postId required" });
+	}
+
+} // postDelete
 
 module.exports.postList = async (req: express.Request, res: express.Response) => {
   const data: {}[] = [];
