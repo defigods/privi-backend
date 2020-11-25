@@ -183,6 +183,11 @@ exports.inviteView = async (req: express.Request, res: express.Response) => {
     }
 }
 
+/**
+ * Function used to change a pods photo, that is uploading the image file (name = podId) to the server's storage
+ * @param req file, the file to upload to server's disk
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.changePodPhoto = async (req: express.Request, res: express.Response) => {
     try {
         if(req.file) {
@@ -197,6 +202,11 @@ exports.changePodPhoto = async (req: express.Request, res: express.Response) => 
     }
 };
 
+/**
+ * Function used to retrieve a pod's photo from server, if the pod has image then this image is stored with name = podId
+ * @param req podId as params
+ * @param res {success}. success: boolean that indicates if the opreaction is performed. And the image is transferred to client with pipe
+ */
 exports.getPhotoById = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
@@ -234,10 +244,14 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
     }
 };
 
+/**
+ * Function called when a user request to follow a pod (FT/NFT), updating both user and firebase docs 
+ * @param req {userId, podId, podType} podType in [FT, NFT]
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.followPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        console.log(body);
         const userId = body.userId;
         const podId = body.podId;
         const podType = body.podType; // FT or NFT
@@ -268,6 +282,12 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
     }
 };
 
+
+/**
+ * Function called when a user request to unfollow a pod (FT/NFT), updating both user and firebase docs 
+ * @param req {userId, podId, podType} podType in [FT, NFT]
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
 exports.unFollowPod = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -736,7 +756,6 @@ exports.getFTPodPriceHistory = async (req: express.Request, res: express.Respons
             if (b.date > a.date) return -1;
             return 0;
         }
-
         let podId = req.params.podId;
         console.log("getPriceHisotry", podId);
         const data:any[] = [];
@@ -766,42 +785,11 @@ exports.getFTPodPriceHistory = async (req: express.Request, res: express.Respons
 /////////////////////////// NFT //////////////////////////////
 //////////////////////////////////////////////////////////////
 
-exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) => {
-    try {
-        let userId = req.params.userId;
-
-        const userRef = db.collection(collections.user)
-            .doc(userId);
-        const userGet = await userRef.get();
-        const user : any = userGet.data();
-
-        let allNFTPods : any[] = await getNFTPods();
-
-        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
-
-        let otherNFTPods : any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
-
-        res.send({ success: true, data: otherNFTPods});
-    } catch (err) {
-        console.log('Error in controllers/podController -> getOtherPods()', err);
-        res.send({ success: false });
-    }
-};
-
-const getNFTPods = () : Promise<any[]> => {
-    return new Promise<any[]>(async (resolve, reject) => {
-        const podsNFT = await db.collection(collections.podsNFT).get();
-
-        let array : any[] = [];
-        podsNFT.docs.map((doc, i) => {
-            array.push(doc.data());
-            if (podsNFT.docs.length === i + 1) {
-                resolve(array)
-            }
-        });
-    });
-}
-
+/**
+ * Get all the information of NFT pods, that is the users pod, others pod and treding pods.
+ * @param req {userId as params}. 
+ * @param res {success, data{myNFTPods, otherNFTPods, trendingNFTPods} }. success: boolean that indicates if the opreaction is performed, data: containing the requested data
+ */
 exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
@@ -837,13 +825,42 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
     }
 };
 
-exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response) => {
+/**
+ * Get others NFT pods, that is all pods which are not created by the user
+ * @param req {userId as params}. 
+ * @param res {success, otherNFTPods}. success: boolean that indicates if the opreaction is performed, otherNFTPods contains the requested others pods
+ */
+exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
+
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user : any = userGet.data();
+
         let allNFTPods : any[] = await getNFTPods();
 
-        let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
+        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
 
+        let otherNFTPods : any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
+
+        res.send({ success: true, data: otherNFTPods});
+    } catch (err) {
+        console.log('Error in controllers/podController -> getOtherPodsNFT()', err);
+        res.send({ success: false });
+    }
+};
+
+/**
+ * Get trending NFT pods
+ * @param req 
+ * @param res {success, data }. success: boolean that indicates if the opreaction is performed, data: containing the requested trending pods
+ */
+exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        let allNFTPods : any[] = await getNFTPods();
+        let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
         res.send({ success: true, data: trendingNFTPods});
     } catch (err) {
         console.log('Error in controllers/podController -> getTrendingPods()', err);
@@ -851,6 +868,27 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
     }
 };
 
+// function to get all NFT Pods
+const getNFTPods = () : Promise<any[]> => {
+    return new Promise<any[]>(async (resolve, reject) => {
+        const podsNFT = await db.collection(collections.podsNFT).get();
+
+        let array : any[] = [];
+        podsNFT.docs.map((doc, i) => {
+            array.push(doc.data());
+            if (podsNFT.docs.length === i + 1) {
+                resolve(array)
+            }
+        });
+    });
+}
+
+
+/**
+ * Get the complete information of a particular pod
+ * @param req {podId}
+ * @param res {success, data }. success: boolean that indicates if the opreaction is performed, data: containing the requested pod
+ */
 exports.getNFTPod = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
@@ -858,7 +896,7 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
             const podRef = db.collection(collections.podsNFT)
                 .doc(podId);
             const podGet = await podRef.get();
-            const pod : any = podGet.data();
+            const pod:any = podGet.data();
             res.send({ success: true, data: pod})
         } else {
             console.log('Error in controllers/podController -> getNFTPod()', "There's no pod id...");
