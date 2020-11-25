@@ -17,6 +17,7 @@ const priviScanRoutes = require('../routes/priviScanRoutes');
 const priviCreditRoutes = require('../routes/priviCreditRoutes');
 const poolRoutes = require('../routes/poolRoutes');
 const ethereum = require('../routes/ethereumRoutes');
+const forum = require('../routes/forumRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -55,7 +56,8 @@ export const startServer = (env: Env) => {
   app.use('/priviCredit', priviCreditRoutes);
   app.use('/liquidityPool', poolRoutes);
   app.use('/ethereum', ethereum);
-
+  app.use('/forum', forum);
+  
   // start all cron jobs
   let name: string;
   let cronJob: any;

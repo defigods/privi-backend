@@ -27,5 +27,8 @@ module.exports = {
     podTransactions: "PodTransactions",
     priceOfTheDay: "PriceOfTheDay",
     priceHistory: "PriceHistory",
-    badges: "Badges"
+    badges: "Badges",
+    forumCategory: "ForumCategory",
+    forumPost: "ForumPost",
+	forumComment: "ForumComment",
 }

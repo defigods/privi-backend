@@ -2,5 +2,9 @@
 // thanks https://stackoverflow.com/questions/17369098/simplest-way-of-getting-the-number-of-decimals-in-a-number-in-javascript
 export function countDecimals(value) {
     if (Math.floor(value) === value) return 0;
-    return value.toString().split(".")[1].length || 0; 
+    return value.toString().split(".")[1].length || 0;
+}
+
+export function formatDate(date) {
+  return (date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
 }
