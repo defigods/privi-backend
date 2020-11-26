@@ -1323,6 +1323,27 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
 
 /////////////////////////// CRON JOBS //////////////////////////////
 
+/** 
+ * Cron to daily update the PodDay field when the pod is in 'Initiated' Status
+*/
+exports.updatePodDay = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("********* Pod updatePodDay() cron job started *********");
+        const podsSnap = await db.collection(collections.podsFT).get();
+        podsSnap.forEach(async (pod) => {
+            const data = pod.data();
+            // only update Initiated pods
+            if (data && data.State && data.State.Status == 'INITIATED') {
+                let podDay = data.State.Pod_Day;
+                podDay += 1;    
+                pod.ref.update({"State.POD_Day": podDay});
+            }
+        })
+    } catch (err) {
+        console.log('Error in controllers/podController -> updatePodDay()', err);
+    }
+});
+
 
 // helper function: calculate if deposited collateral is below required ccr level
 function isPodCollateralBellowLiquidation(amount: number, token: string, requiredLevel: number, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {
@@ -1337,7 +1358,7 @@ function isPodCollateralBellowLiquidation(amount: number, token: string, require
     return (sum / amount < requiredLevel);
 }
 
-// helper function: get object of tokens whice values are list of uids of users that have loan with ccr lower than required level
+// helper function: get array of object of tokens whice values are list of uids of users that have loan with ccr lower than required level
 async function getPodList() {
     const res: string[] = [];
     const rateOfChange = await getRateOfChange();
@@ -1384,44 +1405,93 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
     }
 });
 
+
 /**
- * cron job scheduled every day at 00:00, for each pod calls the blockchain payInterest function
+ * cron job scheduled every day at 00:00, calculate if its a payment day for a pod.
+ * For each candidate pod call blockchain/payInterest function
  */
 exports.payInterest = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Pod payInterest() cron job started *********");
-        // get interest rates
         const rateOfChange = await getRateOfChange();
-        const podList: string[] = [];
         const podsSnap = await db.collection(collections.podsFT).get();
-        podsSnap.forEach((doc) => {
-            podList.push(doc.id);
-        });
         podsSnap.forEach(async (pod) => {
-            const blockchainRes = await podProtocol.interestPOD(pod.id, rateOfChange);
-            if (blockchainRes && blockchainRes.success) {
-                updateFirebase(blockchainRes);
-                const updateWallets = blockchainRes.output.UpdateWallets;
-                let uid: string = "";
-                let walletObj: any = null;
-                for ([uid, walletObj] of Object.entries(updateWallets)) {
-                    if (walletObj["Transaction"].length > 0) {
-                        createNotification(uid, "FT Pod - Interest Payment",
-                            ` `,
-                            notificationTypes.traditionalInterest
-                        );
+            const data = pod.data();
+            if (data.State.Status == "INITIATED") {
+                const duration:number = data.Duration;
+                const payments:number = data.Payments;
+                // both duration and payments exists and diferent than 0
+                if (payments && duration) {
+                    const step = parseInt((duration/payments).toString());  // step to int
+                    const podDay = data.State.POD_Day
+                    // payment day
+                    if (podDay%step == 0) {
+                        const blockchainRes = await podProtocol.interestPOD(pod.id, rateOfChange);
+                        if (blockchainRes && blockchainRes.success) {
+                            updateFirebase(blockchainRes);
+                            // send notification to interest payer when payment done
+                            const updateWallets = blockchainRes.output.UpdateWallets;
+                            let uid: string = "";
+                            let walletObj: any = null;
+                            for ([uid, walletObj] of Object.entries(updateWallets)) {
+                                if (walletObj["Transaction"].length > 0) {
+                                    createNotification(uid, "FT Pod - Interest Payment",
+                                        ` `,
+                                        notificationTypes.traditionalInterest
+                                    );
+                                }
+                            }
+                            console.log("--------- Pod payInterest() finished ---------");
+                        }
+                        else {
+                            console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
+                        }
                     }
                 }
-                console.log("--------- Pod payInterest() finished ---------");
-            }
-            else {
-                console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
             }
         })
     } catch (err) {
         console.log('Error in controllers/podController -> payInterest()', err);
     }
 });
+// /**
+//  * cron job scheduled every day at 00:00, calcula if its a payment day
+//  * for each pod candidate to interest payment call blockchain/payInterest function
+//  */
+// exports.payInterest = cron.schedule('0 0 * * *', async () => {
+//     try {
+//         console.log("********* Pod payInterest() cron job started *********");
+//         const rateOfChange = await getRateOfChange();
+//         const podList: string[] = [];
+//         const podsSnap = await db.collection(collections.podsFT).get();
+//         podsSnap.forEach((doc) => {
+//             podList.push(doc.id);
+//         });
+//         podsSnap.forEach(async (pod) => {
+//             const blockchainRes = await podProtocol.interestPOD(pod.id, rateOfChange);
+//             if (blockchainRes && blockchainRes.success) {
+//                 updateFirebase(blockchainRes);
+//                 const updateWallets = blockchainRes.output.UpdateWallets;
+//                 let uid: string = "";
+//                 let walletObj: any = null;
+//                 for ([uid, walletObj] of Object.entries(updateWallets)) {
+//                     if (walletObj["Transaction"].length > 0) {
+//                         createNotification(uid, "FT Pod - Interest Payment",
+//                             ` `,
+//                             notificationTypes.traditionalInterest
+//                         );
+//                     }
+//                 }
+//                 console.log("--------- Pod payInterest() finished ---------");
+//             }
+//             else {
+//                 console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
+//             }
+//         })
+//     } catch (err) {
+//         console.log('Error in controllers/podController -> payInterest()', err);
+//     }
+// });
 
 
 /**
