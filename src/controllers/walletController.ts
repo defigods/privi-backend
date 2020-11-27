@@ -1,4 +1,4 @@
-import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail } from "../functions/functions";
+import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -210,7 +210,7 @@ module.exports.getTotalBalancePC = async (req: express.Request, res: express.Res
 }
 
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
-	const data = await getTokensRateHelper();
+	const data = await getTokensRate2();
 	if (data.length > 0) {
         res.send({ success: true, data: data });
 	} else {
@@ -218,26 +218,6 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
 	}
 }
 
-async function getTokensRateHelper() {
-    const data: {}[] = [];
-
-    try {
-        const ratesSnap = await db.collection(collections.rates).get();
-        for (const doc of ratesSnap.docs) {
-            const name = doc.data().name;
-            const token = doc.id;
-            const rate = doc.data().rate;
-            if (name) data.push({ token: token, name: name, rate: rate });
-        }
-        data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: 0.1 });
-
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTokensRate()', err);
-    }
-
-    return data;
-}
 
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
@@ -263,7 +243,7 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 }
 
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
-	const rateData = await getTokensRateHelper();
+	const rateData = await getTokensRate2();
 
     try {
         const body = req.body;
@@ -316,7 +296,7 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
 }
 
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
-	const rateData = await getTokensRateHelper();
+	const rateData = await getTokensRate2();
 
     try {
         const body = req.body;

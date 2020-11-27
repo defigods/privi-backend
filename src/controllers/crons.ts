@@ -7,13 +7,15 @@ const payInterest = lendingController.payInterest;
 const checkLiquidation = lendingController.checkLiquidation;
 const podCheckLiquidation = podController.checkLiquidation;
 const podPayInterest = podController.payInterest;
+const nftManagePriceHistory = podController.managePriceHistory;
 
 
-// all cron jobs goes here, server.ts will import all these functions and start them
+// all cron jobs go here, server.ts will import all these functions and start them
 module.exports = {
     managePRIVIcredits,
     payInterest,
     checkLiquidation,
     podCheckLiquidation,
-    podPayInterest
+    podPayInterest,
+    nftManagePriceHistory
 }
