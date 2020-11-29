@@ -14,6 +14,8 @@ const MAIl_PASS = "Y4*3auChPRIVI";
 const MAIL_USER = "away45846";
 const MAIL_PASS = "QSidiNX3infbiHs";
 
+
+const CALLER_KEY = "PRIVI"; // secret key used to identify that blockchain function caller is Privi
       
 module.exports = {
 	JWT_SECRET_STRING,
@@ -23,4 +25,6 @@ module.exports = {
 	MAIL_SERVICE,
 	MAIL_USER,
 	MAIL_PASS,
+
+	CALLER_KEY
 }

@@ -1,8 +1,9 @@
-import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2 } from "../functions/functions";
+import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId, getEmailUidMap } from "../functions/functions";
+import {CALLER_KEY} from "../constants/configuration";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
-import coinBalance from "../blockchain/coinBalance";
+import coinBalance from "../blockchain/coinBalance.js";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
@@ -32,8 +33,9 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
 			return;
 		}
 
-        console.log("token", token);
-        const blockchainRes = await coinBalance.blockchainTransfer(fromUid, toUid, amount, token, type);
+        const tid = generateUniqueId();
+        const timestamp = Date.now();
+        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, CALLER_KEY);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             let senderName = fromUid;
@@ -66,7 +68,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
         res.send({ success: false });
     }
 
-} // transfer
+} 
 
 module.exports.withdraw = async (req: express.Request, res: express.Response) => {
     try {
@@ -82,7 +84,9 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 			return;
 		}
 
-        const blockchainRes = await coinBalance.withdraw(publicId, amount, token);
+        const tid = generateUniqueId();
+        const timestamp = Date.now();
+        const blockchainRes = await coinBalance.withdraw(publicId, amount, token, timestamp, tid, CALLER_KEY);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(publicId, "Withdraw - Complete",
@@ -101,7 +105,7 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
         res.send({ success: false });
     }
 
-} // withdraw
+} 
 
 module.exports.deposit = async (req: express.Request, res: express.Response) => {
     try {
@@ -117,7 +121,9 @@ module.exports.deposit = async (req: express.Request, res: express.Response) => 
 			return;
 		}
 
-        const blockchainRes = await coinBalance.swap(publicId, amount, token);
+        const tid = generateUniqueId();
+        const timestamp = Date.now();
+        const blockchainRes = await coinBalance.swap(publicId, amount, token, timestamp, tid, CALLER_KEY);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(publicId, "Swap - Complete",
@@ -139,15 +145,72 @@ module.exports.deposit = async (req: express.Request, res: express.Response) => 
 
 ///////////////////////////// gets //////////////////////////////
 
+/**
+ * Returns the balance of all tokens structured in this way {TokenType: {token: balance}}, this function is used in wallet page
+ */
+module.exports.getBalanceInTokenTypes = async (req: express.Request, res: express.Response) => {
+    try {
+        let { userId } = req.query;
+        console.log("getBalanceInToken", userId);
+		userId = userId!.toString()
+        const walletSnap = await db.collection(collections.wallet).doc(userId).get()
+        if (walletSnap.exists) {
+            // get Crypto
+            const crypto = {};
+            const cryptoSnap = await walletSnap.ref.collection(collections.crypto).get();
+            cryptoSnap.forEach((doc) => {
+                crypto[doc.id] = doc.data().Amount;
+            });
+            // get ft
+            const ft = {};
+            const ftSnap = await walletSnap.ref.collection(collections.crypto).get();
+            ftSnap.forEach((doc) => {
+                ft[doc.id] = doc.data().Amount;
+            });
+            // get nft
+            const nft = {};
+            const nftSnap = await walletSnap.ref.collection(collections.crypto).get();
+            nftSnap.forEach((doc) => {
+                nft[doc.id] = doc.data().Amount;
+            });
+            // get social
+            const social = {};
+            const socialSnap = await walletSnap.ref.collection(collections.crypto).get();
+            socialSnap.forEach((doc) => {
+                social[doc.id] = doc.data().Amount;
+            });
+            const data = {
+                crypto: crypto,
+                ft: ft,
+                nft: nft,
+                social: social
+            }
+            res.send({ success: true, data: data });
+        }
+        
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
+        res.send({ success: false });
+    }
+}
+
+
+module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
+	const data = await getTokensRate2();
+	if (data.length > 0) {
+        res.send({ success: true, data: data });
+	} else {
+        res.send({ success: false });
+	}
+}
+
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
 		userId = userId!.toString()
-
         const rateOfChange = await getRateOfChange();
         // get user currency in usd
-        let sum = 0;
-        let sumTokens = 0;
+        let sum = 0;    // in user currency
         let token: string = "";
         let rate: any = 1;
         for ([token, rate] of Object.entries(rateOfChange)) {
@@ -155,7 +218,6 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
             const data = walletTokenSnap.data();
             if (data) {
                 sum += data.Amount * rate;
-                sumTokens = sumTokens + data.Amount;
             }
         }
         // get user currency
@@ -171,7 +233,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
 
         const data = {
             amount: amountInUserCurrency,
-            tokens: sumTokens,
+            tokens: rateOfChange["PC"]? sum/rateOfChange["PC"]:0,
             currency: currency,
             currency_symbol: currencySymbol.symbol(currency)
         }
@@ -182,50 +244,10 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     }
 }
 
-module.exports.getTotalBalancePC = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-
-        let { userId } = req.query;
-		userId = userId!.toString()
-
-        const rateOfChange = await getRateOfChange();
-        // get user currency in usd
-        let sum = 0;
-        let token: string = "";
-        let rate: any = 1;
-        for ([token, rate] of Object.entries(rateOfChange)) {
-            const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
-            const data = walletTokenSnap.data();
-            if (data) {
-                const convRate = rateOfChange[token] / rateOfChange["PC"];
-                sum += data.Amount * convRate;
-            }
-        }
-        res.send({ success: true, data: sum });
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTotalBalancePC()', err);
-        res.send({ success: false });
-    }
-}
-
-module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
-	const data = await getTokensRate2();
-	if (data.length > 0) {
-        res.send({ success: true, data: data });
-	} else {
-        res.send({ success: false });
-	}
-}
-
-
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
-        const body = req.body;
-
         let { userId } = req.query;
 		userId = userId!.toString()
-
         const retData: {}[] = [];
         const rateOfChange = await getRateOfChange();
         for (const [token, _] of Object.entries(rateOfChange)) {
@@ -436,4 +458,17 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
         else res.send({success: false});
     }
     else res.send({success: false});
+}
+
+/**
+ * Function to get email-uid map
+ */
+module.exports.getEmailToUidMap = async (req: express.Request, res: express.Response) => {
+    try {
+        const data = await getEmailUidMap();
+        res.send({ success: false, data: data });
+    } catch (err) {
+        console.log('Error in controllers/userController -> getEmailUidMap()', err);
+        res.send({ success: false });
+    }
 }

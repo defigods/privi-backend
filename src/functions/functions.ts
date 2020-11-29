@@ -1,7 +1,10 @@
 import { db, firebase } from "../firebase/firebase";
-import coinBalance from "../blockchain/coinBalance";
+import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
+
+const xid = require('xid-js');  // for generating unique ids (in Txns for example)
+
 
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
@@ -340,4 +343,9 @@ export async function getUidNameMap() {
         map[doc.id] = name;
     })
     return map;
+}
+
+export function generateUniqueId() {
+    const id = xid.next();
+    return id;
 }
