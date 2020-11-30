@@ -8,6 +8,10 @@ import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
+require('dotenv').config();
+
+// Get private key for API calls
+const apiKey = process.env.API_KEY;
 
 // Websocket settings
 const webSocketServer = require('websocket').server;
