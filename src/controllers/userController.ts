@@ -55,7 +55,7 @@ const emailValidation = async (req: express.Request, res: express.Response) => {
 
 					db.collection(collections.user).doc(uid).update(user);
 
-					message = "user validated successfully please login";
+					message = "We have successfully verified your email address, please log in here https://privibeta.web.app/";
 					// message_key = "VALIDATION_SUCCESS";
 
 					success = true;
