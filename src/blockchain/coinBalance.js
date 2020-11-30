@@ -1,64 +1,76 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.registerWallet = async (publicId) => {
-	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/registerWallet", {
-		PublicId: publicId,
-	});
-	return blockchainRes.data;
-};
+// module.exports.registerWallet = async (publicId) => {
+// 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/registerWallet", {
+// 		PublicId: publicId,
+// 	});
+// 	return blockchainRes.data;
+// };
 
 
-module.exports.blockchainTransfer = async (from, to, amount, coin, type) => {
+module.exports.transfer = async (from, to, amount, coin, id, date, type, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/transfer", {
 		Token: coin,
 		From: from,
 		To: to,
 		Amount: amount,
-		Type: type
+		Id: id,
+		Date: date,
+		Type: type,
+		Caller: caller
 	});
 	return blockchainRes.data;
 };
 
-module.exports.blockchainBalance = async (publicId) => {
+module.exports.balanceOf = async (publicId, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/balanceOf", {
-		PublicId: publicId
+		PublicId: publicId,
+		Caller: caller
 	});
 	return blockchainRes.data;
 };
 
-module.exports.blockchainHistory = async (publicId, timestamp) => {
+module.exports.getHistory = async (publicId, timestamp, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/getHistory", {
 		PublicId: publicId,
-		Timestamp: timestamp
+		Timestamp: timestamp,
+		Caller: caller
 	});
 	return blockchainRes.data;
 };
 
-module.exports.swap = async (publicId, amount, coin) => {
+module.exports.swap = async (publicId, amount, coin, date, txnId, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/swap", {
 		PublicId: publicId,
 		Token: coin,
-		Amount: amount
+		Amount: amount,
+		Date: date,
+		TxnId: txnId,
+		Caller: caller
 	});
 	return blockchainRes.data;
 }
 
-module.exports.withdraw = async (publicId, amount, coin) => {
+module.exports.withdraw = async (publicId, amount, coin, date, txnId, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/withdraw", {
 		PublicId: publicId,
 		Token: coin,
-		Amount: amount
+		Amount: amount,
+		Date: date,
+		TxnId: txnId,
+		Caller: caller
 	});
 	return blockchainRes.data;
 }
 
-module.exports.spendFunds = async (publicId, amount, coin, providerId) => {
+module.exports.spendFunds = async (publicId, amount, coin, providerId, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/spendFunds", {
 		PublicId: publicId,
 		ProviderId: providerId,
 		Token: coin,
-		Amount: amount
+		Amount: amount,
+		Caller: caller,
 	});
 	return blockchainRes.data;
 }
@@ -69,9 +81,10 @@ module.exports.getTokenList = async () => {
 	return blockchainRes.data;
 }
 
-module.exports.multitransfer = async (arrayObj) => {
+module.exports.multitransfer = async (arrayObj, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/multitransfer", {
-		Multitransfer: arrayObj
+		Multitransfer: arrayObj,
+		Caller: caller,
 	});
 	return blockchainRes.data;
 }
