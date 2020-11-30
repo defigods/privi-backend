@@ -12,7 +12,6 @@ export async function updateFirebase(blockchainRes) {
     await db.runTransaction(async (transaction) => {
         const updateUser = output.UpdateUser;
         const updateWallets = output.UpdateWallets;
-        const updateBalances = output.UpdateBalances;   // new added
         const updateLoans = output.UpdateLoans;
         const updatePods = output.UpdatePods;
         const updatePools = output.UpdatePools;
@@ -77,18 +76,6 @@ export async function updateFirebase(blockchainRes) {
                 }
             }
         }
-        // update balances
-        if (updateBalances) {
-            let key:string = "";
-            let balanceObj:any = null;
-            for ([key, balanceObj] of Object.entries(updateBalances)) {
-                const splitted:string[] = key.split(" ");
-                const uid = splitted[0];
-                const token = splitted[1];
-                const tokenType = await identifyTypeOfToken(token);   // token type colection
-                db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token).set(balanceObj, {merge:true})
-            }
-        }
         // update pods (FT and NFT)
         if (updatePods) {
             let podId: string = '';
@@ -123,7 +110,6 @@ export async function updateFirebaseNFT(blockchainRes) {
     await db.runTransaction(async (transaction) => {
         const updateUser = output.UpdateUser;
         const updateWallets = output.UpdateWallets;
-        const updateBalances = output.UpdateBalances;   // new added
         const updateLoans = output.UpdateLoans;
         const updatePods = output.UpdatePods;
         const updatePools = output.UpdatePools;
@@ -188,18 +174,6 @@ export async function updateFirebaseNFT(blockchainRes) {
                     });
                 }
             });
-        }
-         // update balances
-         if (updateBalances) {
-            let key:string = "";
-            let balanceObj:any = null;
-            for ([key, balanceObj] of Object.entries(updateBalances)) {
-                const splitted:string[] = key.split(" ");
-                const uid = splitted[0];
-                const token = splitted[1];
-                const tokenType = await identifyTypeOfToken(token);   // token type colection
-                db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token).set(balanceObj, {merge:true})
-            }
         }
         // update pods (FT and NFT)
         if (updatePods) {
@@ -380,17 +354,3 @@ export function isEmail(email:string) {
     const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     return emailRegexp.test(email);
 }
-
-const identifyTypeOfToken = async function (token:string):Promise<string> {
-    // check if podFT
-    const ftSnap = await db.collection(collections.podsFT).doc(token).get();
-    if (ftSnap.exists) return collections.ft;
-    // check if podNFT
-    const nftSnap = await db.collection(collections.podsNFT).doc(token).get();
-    if (nftSnap.exists) return collections.nft;
-    // check if social (missing)
-
-    // then crypto
-    return collections.crypto;
-} 
-module.exports.identifyTypeOfToken = identifyTypeOfToken;

@@ -3,7 +3,7 @@ import express from 'express';
 import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
-import { swap as swapFab, withdraw as withdrawFab } from '../blockchain/coinBalance';
+import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance';
 import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import { CONTRACT } from '../constants/ethContracts';

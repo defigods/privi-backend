@@ -6,8 +6,8 @@ const walletController = require('../controllers/walletController');
 
 router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
 router.post('/transfer', authenticateJWT, walletController.transfer);
-router.post('/withdraw', authenticateJWT, walletController.withdraw);
-router.post('/deposit', authenticateJWT, walletController.deposit);
+router.post('/burn', authenticateJWT, walletController.burn);
+router.post('/mint', authenticateJWT, walletController.mint);
 
 router.get('/getTokensRate', authenticateJWT, walletController.getTokensRate);
 router.get('/getTotalBalance', authenticateJWT, walletController.getTotalBalance);

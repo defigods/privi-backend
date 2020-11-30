@@ -19,7 +19,6 @@ const ETH_PRIVI_ADDRESS = '0x9353395A21C4eFe442d1C5B41f3808766AA62cC9';
 const ETH_PRIVI_KEY = 'fa32c34f16b54be767b94aad4f86797bb3966c325c3e0c300b1ea3f4f8d333b6';
 const ETH_INFURA_KEY = 'eda1216d6a374b3b861bf65556944cdb';
 
-const CALLER_KEY = "PRIVI"; // secret key used to identify that blockchain function caller is Privi
 
 module.exports = {
 	JWT_SECRET_STRING,
@@ -29,8 +28,6 @@ module.exports = {
 	MAIL_SERVICE,
 	MAIL_USER,
 	MAIL_PASS,
-
-	CALLER_KEY,
 
 	ETH_SWAP_MANAGER_ADDRESS,
 	ETH_PRIVI_ADDRESS,

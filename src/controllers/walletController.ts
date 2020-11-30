@@ -1,5 +1,5 @@
-import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId, getEmailUidMap } from "../functions/functions";
-import {CALLER_KEY} from "../constants/configuration";
+import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId, 
+    isEmail, getEmailUidMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -8,24 +8,28 @@ import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
 
+require('dotenv').config();
+const apiKey = process.env.API_KEY;
+
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const fromUid = body.fromUid;
-        let toUid = body.toUid;
-        const toEmail = body.toEmail; // in case recipient email is passed instead of uid
+        const to = body.to; // could be email or uid
         const amount = body.amount;
         const token = body.token;
         const type = body.type;
-        if (toEmail) {
-            const emailUidMap = await getUidFromEmail(toEmail);
-            toUid = emailUidMap[toEmail];
+        
+        // convert recipient to uid in case it's given in email
+        let toUid = to;
+        if (isEmail(to)) {
+            const emailUidMap = await getEmailUidMap();
+            toUid = emailUidMap[to];
         }
         if (!toUid) {
-            res.send({ success: true, message: "toUid is required" });
+            res.send({ success: false, message: "'to' argument is required" });
             return;
         }
-
 		// check that fromUid is same as user in jwt
 		if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
 			console.log("error: jwt user is not the same as fromUid ban?");
@@ -35,7 +39,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
-        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, CALLER_KEY);
+        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             let senderName = fromUid;
@@ -70,15 +74,17 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
 
 } 
 
-module.exports.withdraw = async (req: express.Request, res: express.Response) => {
+module.exports.burn = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
+        const type = body.type;
+        const from = body.from;
+        const to = body.to;
         const amount = body.amount;
         const token = body.token;
 
 		// check that publicId is same as user in jwt
-		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+		if (!req.body.priviUser.id || (req.body.priviUser.id != from)) {
 			console.log("error: jwt user is not the same as publicId ban?");
 			res.send({ success: false, message: "jwt user is not the same as publicId" });
 			return;
@@ -86,10 +92,10 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
-        const blockchainRes = await coinBalance.withdraw(publicId, amount, token, timestamp, tid, CALLER_KEY);
+        const blockchainRes = await coinBalance.burn(type, from, to, amount, token, timestamp, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Withdraw - Complete",
+            createNotification(from, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
@@ -107,15 +113,17 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 
 } 
 
-module.exports.deposit = async (req: express.Request, res: express.Response) => {
+module.exports.mint = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
+        const type = body.type;
+        const from = body.from;
+        const to = body.to;
         const amount = body.amount;
         const token = body.token;
 
         // check that publicId is same as user in jwt
-		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+		if (!req.body.priviUser.id || (req.body.priviUser.id != to)) {
 			console.log("error: jwt user is not the same as publicId ban?");
 			res.send({ success: false, message: "jwt user is not the same as publicId" });
 			return;
@@ -123,10 +131,10 @@ module.exports.deposit = async (req: express.Request, res: express.Response) => 
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
-        const blockchainRes = await coinBalance.swap(publicId, amount, token, timestamp, tid, CALLER_KEY);
+        const blockchainRes = await coinBalance.mint(type, from, to, amount, token, timestamp, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Swap - Complete",
+            createNotification(to, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );
@@ -163,19 +171,19 @@ module.exports.getBalanceInTokenTypes = async (req: express.Request, res: expres
             });
             // get ft
             const ft = {};
-            const ftSnap = await walletSnap.ref.collection(collections.crypto).get();
+            const ftSnap = await walletSnap.ref.collection(collections.ft).get();
             ftSnap.forEach((doc) => {
                 ft[doc.id] = doc.data().Amount;
             });
             // get nft
             const nft = {};
-            const nftSnap = await walletSnap.ref.collection(collections.crypto).get();
+            const nftSnap = await walletSnap.ref.collection(collections.nft).get();
             nftSnap.forEach((doc) => {
                 nft[doc.id] = doc.data().Amount;
             });
             // get social
             const social = {};
-            const socialSnap = await walletSnap.ref.collection(collections.crypto).get();
+            const socialSnap = await walletSnap.ref.collection(collections.social).get();
             socialSnap.forEach((doc) => {
                 social[doc.id] = doc.data().Amount;
             });
@@ -187,7 +195,6 @@ module.exports.getBalanceInTokenTypes = async (req: express.Request, res: expres
             }
             res.send({ success: true, data: data });
         }
-        
     } catch (err) {
         console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
         res.send({ success: false });
@@ -466,7 +473,7 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
 module.exports.getEmailToUidMap = async (req: express.Request, res: express.Response) => {
     try {
         const data = await getEmailUidMap();
-        res.send({ success: false, data: data });
+        res.send({ success: true, data: data });
     } catch (err) {
         console.log('Error in controllers/userController -> getEmailUidMap()', err);
         res.send({ success: false });
