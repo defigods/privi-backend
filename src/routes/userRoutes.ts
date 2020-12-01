@@ -62,7 +62,7 @@ router.get('/investments/getReceivables/:userId', authenticateJWT, userControlle
 router.get('/investments/getLiabilities/:userId', authenticateJWT, userController.getLiabilities);
 router.get('/investments/getSocialTokens/:userId', authenticateJWT, userController.getSocialTokens);
 
-router.get('/governance/getIssuesAndProposals', authenticateJWT, userController.getIssuesAndProposals);
+router.get('/governance/getIssuesAndProposals/:userId', authenticateJWT, userController.getIssuesAndProposals);
 
 // POST
 /*router.post('/addToWaitlist', authenticateJWT, userController.addToWaitlist);
@@ -89,6 +89,11 @@ router.post('/badge/createBadge', authenticateJWT, userController.createBadge);
 router.post('/badge/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
 
+router.post('/governance/createIssue', authenticateJWT, userController.createIssue);
+router.post('/governance/createProposal', authenticateJWT, userController.createProposal);
+router.post('/governance/responseIssue', authenticateJWT, userController.responseIssue);
+router.post('/governance/voteIssue', authenticateJWT, userController.voteIssue);
+router.post('/governance/responseProposal', authenticateJWT, userController.responseProposal);
 
 
 module.exports = router;

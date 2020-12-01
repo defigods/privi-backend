@@ -34,5 +34,7 @@ module.exports = {
     reserveConstants: "StakingReserveContants",
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
-    badges: "Badges"
+    badges: "Badges",
+    issues: "Issues",
+    proposals: "Proposals"
 }
