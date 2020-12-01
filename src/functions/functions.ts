@@ -11,10 +11,12 @@ export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
     await db.runTransaction(async (transaction) => {
         const updateUser = output.UpdateUser;
-        const updateWallets = output.UpdateWallets;
+        const updateWallets = output.UpdateWallets; // to be deleted
+        const updateTokens = output.UpdateTokens;   // new added
         const updateBalances = output.UpdateBalances;   // new added
+        const updateTransactions = output.Transactions;   // new added
         const updateLoans = output.UpdateLoans;
-        const updatePods = output.UpdatePods;
+        const updatePods = output.UpdatePods;   // changed 
         const updatePools = output.UpdatePools;
         const updateInsurance = output.UpdateInsurance;
         // update user
@@ -77,6 +79,14 @@ export async function updateFirebase(blockchainRes) {
                 }
             }
         }
+        // update tokens
+        if (updateTokens) {
+            let key:string = "";
+            let val:any = null;
+            for ([key, val] of Object.entries(updateTokens)) {
+                transaction.set(db.collection(collections.tokens).doc(key), val);
+            }
+        }
         // update balances
         if (updateBalances) {
             let key:string = "";
@@ -86,7 +96,18 @@ export async function updateFirebase(blockchainRes) {
                 const uid = splitted[0];
                 const token = splitted[1];
                 const tokenType = await identifyTypeOfToken(token);   // token type colection
-                db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token).set(balanceObj, {merge:true})
+                transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, {merge:true});
+            }
+        }
+        // update transactions (for each txn, save to from's colection and to's colection)
+        if (updateTransactions) {
+            let key:string = "";
+            let val:any = null;
+            for ([key, val] of Object.entries(updateTransactions)) {
+                const from = val.From;
+                const to = val.To;
+                if (from) transaction.set(db.collection(collections.history).doc(collections.history).collection(from).doc(key), val);
+                if (to) transaction.set(db.collection(collections.history).doc(collections.history).collection(to).doc(key), val);
             }
         }
         // update pods (FT and NFT)
@@ -226,6 +247,7 @@ export async function updateFirebaseNFT(blockchainRes) {
     });
 }
 
+// rate of all tokens in ratesOfChange colection (that is all types except nft)
 export async function getRateOfChange() {
     let res = {};
     const ratesQuery = await db.collection(collections.rates).get();
@@ -382,15 +404,11 @@ export function isEmail(email:string) {
 }
 
 const identifyTypeOfToken = async function (token:string):Promise<string> {
-    // check if podFT
-    const ftSnap = await db.collection(collections.podsFT).doc(token).get();
-    if (ftSnap.exists) return collections.ft;
-    // check if podNFT
-    const nftSnap = await db.collection(collections.podsNFT).doc(token).get();
-    if (nftSnap.exists) return collections.nft;
-    // check if social (missing)
-
-    // then crypto
-    return collections.crypto;
+    const tokenSnap = await db.collection(collections.tokens).doc(token).get();
+    if (tokenSnap.exists) {
+        const data = tokenSnap.data();
+        if (data) return data.Type;
+    }
+    return collections.unknown;
 } 
 module.exports.identifyTypeOfToken = identifyTypeOfToken;

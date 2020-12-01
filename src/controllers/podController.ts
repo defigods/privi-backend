@@ -1274,53 +1274,6 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
 };
 
 
-/////////////////////////// COMMON //////////////////////////////
-
-/**
- * Pod creator/admin invites some user to assume some role of the pod
- * @param req {admin, podType, podId, invitedUser, role}. podType in ["NF", "NFT"], admin and invitedUser are emails
- * @param res {success}. success: boolean that indicates if the opreaction is performed.
- */
-exports.inviteRole = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const admin:string = body.admin;
-        const podType:string = body.podType;
-        const podId:string = body.podId;
-        const invitedUser:string = body.invitedUser;
-        const role:string = body.role;
-        let ok:boolean = true;
-        const emailToUid = await getEmailUidMap() ;
-        const adminSnap = await db.collection(collections.user).doc(emailToUid[admin]).get();
-        if (!adminSnap.exists) ok = false
-        const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
-        if (!invitedSnap.exists) ok = false
-        if (!["NFT, FT"].includes(podType)) ok = false
-        let podSnap;
-        if (podType == "FT") {
-            podSnap = await db.collection(collections.podsFT).doc(podId).get();
-        } else {
-            podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-        }
-        if (ok) {
-            // check if adminId is one of the admins of the pod
-            const podData = podSnap.data();
-            if (podData) 
-
-
-
-            res.send({ success: true });
-        } 
-        else {
-            console.log('Error in controllers/podController -> inviteRole()');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/podController -> inviteRole(): ', err);
-        res.send({ success: false });
-    }
-}
-
 /////////////////////////// CRON JOBS //////////////////////////////
 
 /** 
