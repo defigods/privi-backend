@@ -374,7 +374,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     investedFTPods: [],
                     twitter: '',
                     instagram: '',
-                    facebook: ''
+                    facebook: '',
+                    level: 1
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -474,6 +475,7 @@ interface BasicInfo {
     numFollowers: number,
     numFollowings: number,
     bio: string,
+    level: number,
     twitter: string,
     facebook: string,
     instagram: string
@@ -483,7 +485,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
         let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', twitter: '', instagram: '', facebook: ''};
+            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: ''};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -494,6 +496,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
+            basicInfo.level = userData.level || 1;
             basicInfo.twitter = userData.twitter || '';
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
@@ -1149,6 +1152,9 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     }
 };
 
+const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
+
+}
 
 module.exports = {
 	emailValidation,
@@ -1175,5 +1181,6 @@ module.exports = {
     getPhotoById,
     getUserList,
     createBadge,
-    changeBadgePhoto
+    changeBadgePhoto,
+    getIssuesAndProposals
 };
