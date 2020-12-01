@@ -374,7 +374,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     investedFTPods: [],
                     twitter: '',
                     instagram: '',
-                    facebook: ''
+                    facebook: '',
+                    level: 1
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -474,6 +475,7 @@ interface BasicInfo {
     numFollowers: number,
     numFollowings: number,
     bio: string,
+    level: number,
     twitter: string,
     facebook: string,
     instagram: string
@@ -483,7 +485,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
         let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', twitter: '', instagram: '', facebook: ''};
+            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: ''};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -494,6 +496,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
+            basicInfo.level = userData.level || 1;
             basicInfo.twitter = userData.twitter || '';
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
@@ -1092,7 +1095,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
     try{
         let body = req.body;
 
-        let badgesGet = await db.collection('collectionName').get();
+        let badgesGet = await db.collection(collections.badges).get();
         let id = badgesGet.size;
 
         if(body) {
@@ -1149,6 +1152,147 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     }
 };
 
+const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+}
+
+const createIssue = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        let issuesGet = await db.collection(collections.issues).get();
+        let id = issuesGet.size;
+
+        if(body) {
+            await db.runTransaction(async (transaction) => {
+
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.issues).doc(''+id+1), {
+                    issue: body.issue,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: [],
+                    question: body.question,
+                    answers: [],
+                    votes: [],
+                });
+            });
+            res.send({ success: true, data: {
+                    issue: body.issue,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: [],
+                    question: body.question,
+                    answers: [],
+                    votes: [],
+                    id: id+1
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> createIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> createIssue()', err);
+        res.send({ success: false });
+    }
+}
+
+const createProposal = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        let issuesGet = await db.collection(collections.issues).get();
+        let id = issuesGet.size;
+
+        if(body) {
+            await db.runTransaction(async (transaction) => {
+
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.issues).doc(''+id+1), {
+                    issue: body.issue,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: []
+                });
+            });
+            res.send({ success: true, data: {
+                    issue: body.issue,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: [],
+                    id: id+1
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> createIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> createIssue()', err);
+        res.send({ success: false });
+    }
+}
+
+const responseIssue = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        if(body) {
+
+        } else {
+            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> responseIssue()', err);
+        res.send({ success: false });
+    }
+}
+const responseProposal = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        if(body) {
+
+        } else {
+            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> responseIssue()', err);
+        res.send({ success: false });
+    }
+}
+
+const voteIssue = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        if(body) {
+
+        } else {
+            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> responseIssue()', err);
+        res.send({ success: false });
+    }
+}
 
 module.exports = {
 	emailValidation,
@@ -1175,5 +1319,11 @@ module.exports = {
     getPhotoById,
     getUserList,
     createBadge,
-    changeBadgePhoto
+    changeBadgePhoto,
+    getIssuesAndProposals,
+    createIssue,
+    createProposal,
+    responseIssue,
+    voteIssue,
+    responseProposal
 };
