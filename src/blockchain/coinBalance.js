@@ -40,25 +40,29 @@ module.exports.getHistory = async (publicId, timestamp, caller) => {
 	return blockchainRes.data;
 };
 
-module.exports.swap = async (publicId, amount, coin, date, txnId, caller) => {
-	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/swap", {
-		PublicId: publicId,
+module.exports.mint = async (type, from, to, amount, coin, date, txnId, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/mint", {
+		From: from,
+		To: to,
+		Type: type,
 		Token: coin,
 		Amount: amount,
 		Date: date,
-		TxnId: txnId,
+		Id: txnId,
 		Caller: caller
 	});
 	return blockchainRes.data;
 }
 
-module.exports.withdraw = async (publicId, amount, coin, date, txnId, caller) => {
-	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/withdraw", {
-		PublicId: publicId,
+module.exports.burn = async (type, from, to, amount, coin, date, txnId, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/burn", {
+		From: from,
+		To: to,
+		Type: type,
 		Token: coin,
 		Amount: amount,
 		Date: date,
-		TxnId: txnId,
+		Id: txnId,
 		Caller: caller
 	});
 	return blockchainRes.data;
@@ -88,4 +92,3 @@ module.exports.multitransfer = async (arrayObj, caller) => {
 	});
 	return blockchainRes.data;
 }
-
