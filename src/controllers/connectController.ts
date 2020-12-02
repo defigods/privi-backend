@@ -1,14 +1,101 @@
 import Web3 from 'web3';
-import axios from 'axios';
 import express from 'express';
-import { Transaction } from 'ethereumjs-tx';
-import api from '../blockchain/blockchainApi';
+import cron from 'node-cron';
+import { db } from "../firebase/firebase";
+import collections from "../firebase/collections";
+import { swap as swapFab, withdraw as withdrawFab } from '../blockchain/coinBalance';
+import { updateFirebase } from '../functions/functions';
+import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
+import { CONTRACT } from '../constants/ethContracts';
+const fs = require('fs');
+require('dotenv').config();
+
+// Get private key for API calls
+const apiKey = process.env.API_KEY;
+
+// Websocket settings
+const webSocketServer = require('websocket').server;
+const http = require('http');
+const https = require('https')
+const WS_PORT = 8000;
+let wsServer: any;
+
+// Web3 settings
 let web3: any;
+web3 = new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
+//web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));  // Local Ganache
+const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
+let CHAIN_ID = 'NA';
+const TX_LISTENING_CYCLE = 15; // listen for new transactions in ethereum every X seconds
+
+
+type PromiseResponse = {
+    success: boolean,
+    error: string,
+    data: any
+};
+
+// Retrieve current Ethereum chain id
+const getChainId = () => {
+    web3.eth.getChainId()
+        .then((res) => {
+            CHAIN_ID = '0x' + res;
+        })
+        .catch((err) => {
+            console.log('Error in connectController.ts->getChainId: ', err)
+        });
+};
+getChainId();
+
+// Start http & websocket servers
+const startWS = () => {
+    try {
+        // Determine environment (http or https)
+        const env: string = process.argv[2];
+        let server: any;
+        if (env === 'dev') {
+            server = http.createServer();
+        } else if (env === 'devssl') {
+            const credentials = {
+                key: fs.readFileSync('server.key'),
+                cert: fs.readFileSync('server.cert'),
+            };
+            server = https.createServer(credentials);
+        } else if (env === 'prod') {
+            const privateKey = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/privkey.pem', 'utf8');
+            const certificate = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/cert.pem', 'utf8');
+            const ca = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/chain.pem', 'utf8');
+            const credentials = {
+                key: privateKey,
+                cert: certificate,
+                ca: ca
+            };
+            server = https.createServer(credentials);
+        } else {
+            console.log(`Warning in connectController.ts: websocket can't be started`);
+            return false;
+        };
+        // Start WS server
+        server.listen(WS_PORT);
+        wsServer = new webSocketServer({ httpServer: server });
+        if (env === 'devssl' || env === 'prod') {
+            console.log(`Websocket (SSL) running on port ${WS_PORT}`);
+        } else {
+            console.log(`Websocket (non SSL) running on port ${WS_PORT}`);
+        };
+        return true;
+    } catch (err) {
+        console.log('Error in connectController->startWS(): ', err);
+    };
+};
+
+
+
 
 /**
  * @dev The minimum ABI to get ERC20 Token balance
  */
-const minABI = [
+const miniABI = [
     // balanceOf
     {
         "constant": true,
@@ -28,6 +115,72 @@ const minABI = [
 ];
 
 /**
+ * @dev Generic function to execute Ethereum transactions with signature
+ * @return @result: true if transaction was executed successfuly, or false otherwise
+ * @return @error: error description if transaction failed
+ * @return @res: transaction response  
+ * @param params.fromAddress        From account
+ * @param params.fromAddressKey     From private key   
+ * @param params.encodedABI         Contract data 
+ * @param params.contractAddress    Contract address
+ */
+const executeTX = (params: any) => {
+    return new Promise<PromiseResponse>(async (resolve) => {
+
+        // Prepare transaction
+        // remark: added 'pending' to avoid 'Known Transaction' error
+        const nonce = await web3.eth.getTransactionCount(params.fromAddress, 'pending');
+        const tx = {
+            gas: 1500000,
+            gasPrice: '30000000000',
+            from: params.fromAddress,
+            data: params.encodedABI,
+            chainId: params.chainId,
+            to: params.toAddress,
+            nonce: nonce,
+        };
+
+        // Sign transaction
+        web3.eth.accounts.signTransaction(tx, params.fromAddressKey)
+            .then((signed: any) => {
+                // Send transaction
+                web3.eth.sendSignedTransaction(signed.rawTransaction)
+                    .then(async (res: any) => {
+                        console.log('Response: ', res)
+                        resolve({ success: true, error: '', data: res });
+                    })
+                    .catch((err: string) => {
+                        console.log('Error in ethUtils.js (A) -> executeTX(): ', err);
+                        resolve({ success: false, error: err, data: null });
+                    });
+            })
+            .catch((err: string) => {
+                console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
+                resolve({ success: false, error: err, data: null });
+            });
+    });
+};
+
+
+const callBalance = (contractAddress: string, fromAddress: any) => {
+    return new Promise<number>(async (resolve) => {
+        if (contractAddress !== ZERO_ADDRESS) {
+            let contract = new web3.eth.Contract(miniABI, contractAddress);
+            await contract.methods.balanceOf(fromAddress).call()
+                .then(result => {
+                    resolve(web3.utils.fromWei((result), 'ether'));
+                })
+                .catch(err => {
+                    console.log('Error in connectController.ts -> getERC20Balance(): [call]', err);
+                    resolve(0);
+                })
+        } else {
+            resolve(0);
+        };
+    });
+};
+
+/**
  * @dev Retrieves the balance of an ERC20 token contract for a given User
  * @returns {success: boolean, balance: number}
  *          success: 'true' if balance was found / 'false' otherwise
@@ -36,273 +189,385 @@ const minABI = [
  * @param fromAddress User account to retrieve the balance
  */
 const getERC20Balance = async (req: express.Request, res: express.Response) => {
-    const { fromAddress, token } = req.query;
-    let contractAddress = '';
+    const { fromAddress, chainId } = req.query;
 
-    // Get contract address for the target ERC20 token
-    // TODO: contract address will depend on the chain id
-    switch (token) {
-        case 'DAI':
-            contractAddress = '0xad6d458402f60fd3bd25163575031acdce07538d';  // DAI contract @ Ropsten
-            break;
-        case 'UNI':
-            contractAddress = '0x1f9840a85d5af5bf1d1762f925bdaddc4201f984';  // Uniswap contract @ Ropsten
-            break;
-        case 'WETH':
-            contractAddress = '0xc778417e063141139fce010982780140aa0cd5ab'; // wETH contract @ Ropsten
-        default:
-            contractAddress = '0x0000000000000000000000000000000000000000'; // 0x address
-            break;
-    };
-
-    // Call balace function from ERC20 token and send back the amount
-    try {
-        web3 = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
-        let contract = new web3.eth.Contract(minABI, contractAddress);
-
-        await contract.methods.balanceOf(fromAddress).call()
-            .then(result => {
-                res.send({
-                    success: true,
-                    amount: result,
-                });
-            })
-            .catch(err => {
-                console.log('Error in connectController.ts -> getERC20Balance(): [call]', err);
-                res.send({
-                    success: false,
-                    amount: 0,
-                });
-            })
-    } catch (err) {
-        console.log('Error in connectController.ts -> getERC20Balance(): [catch]', err);
+    if (chainId === '3') { // Ropsten
+        const amountDAI = await callBalance(CONTRACT.Ropsten.DAI, fromAddress);
+        const amountUNI = await callBalance(CONTRACT.Ropsten.UNI, fromAddress);
+        const amountWETH = await callBalance(CONTRACT.Ropsten.WETH, fromAddress);
+        const result = {
+            DAI: amountDAI,
+            UNI: amountUNI,
+            WETH: amountWETH,
+        };
         res.send({
-            success: false,
-            amount: 0,
+            success: true,
+            amount: result,
+        });
+    } else { // Unknown network
+        const result = {
+            DAI: 0,
+            UNI: 0,
+            WETH: 0,
+        };
+        res.send({
+            success: true,
+            amount: result,
         });
     };
 };
 
 /**
- * @dev Swap amount from Ethereum to Fabric's User account
- * @returns b
- *          e: f
- * @param c d
+ * @dev Stores a transaction in the database, to be processed afterwards
+ * @param params Relevant transaction fields
  */
-const swapERC20 = async (req: express.Request, res: express.Response) => {
-    const { fromAddress } = req.query;
-    console.log('--- fromAddress: ', fromAddress);
-    res.send(fromAddress);
+const saveTx = async (params: any) => {
+
+    const data = {
+        txHash: params.txHash,
+        publicId: params.publicId,
+        chainId: params.chainId,
+        action: params.action,
+        description: params.description,
+        amount: params.amount,
+        token: params.token,
+        status: params.status,
+        lastUpdate: params.lastUpdate,
+    };
+
+    // Insert into Firestore
+    const res = await db
+        .collection(collections.ethTransactions)
+        .add(data);
 };
 
 /**
- * @dev Withdraw amount from Fabric to Ethereum's User account
- * @returns c
- *          e: f
- * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
- * @param fromAddress User account to retrieve the balance
+ * @dev Receives a transaction from the front-end and stores it in the database
  */
-const withdrawERC20 = async (req: express.Request, res: express.Response) => {
+const send = async (req: express.Request, res: express.Response) => {
+    const body = req.body;
 
+    if (body.action) {
+        await saveTx(body);
+        res.send('OK');
+    } else {
+        res.send('KO');
+    }
+};
+
+/**
+ * @dev Updates the status of a transaction in the database
+ * @param txHash Transaction hash
+ * @param newStatus Transaction status
+ */
+const updateTx = async (txHash: string, newStatus: string) => {
+
+    // Retrieve TX doc
+    const snapshot = await db
+        .collection(collections.ethTransactions)
+        .where('txHash', '==', txHash)
+        .get();
+
+    // Update TX status
+    for (var i in snapshot.docs) {
+        const res = await db
+            .collection(collections.ethTransactions)
+            .doc(snapshot.docs[i].id)
+            .set({ status: newStatus }, { merge: true });
+    };
+};
+
+/**
+ * @dev Sends status of the transaction back to the front-end
+ * @param txHash  Transaction hash
+ * @param publicId User ID
+ * @param action Action performed (relevant in the front-end in case of 'SWAP_APPROVE_ERC20')
+ */
+const sendTxBack = async (txHash: string, publicId: string, action: string) => {
+    // Update TX status in Firestore
+    await updateTx(txHash, 'confirmed');
+    // Remove TX from Queue
+    txQueue = txQueue.filter(elem => elem != txHash);
+    // Send TX confirmation back to user through websocket
+    if (users.get(publicId)) {
+        users.get(publicId).sendUTF(JSON.stringify({
+            txHash: txHash,
+            status: 'OK',
+            action: action,
+        }));
+    };
+};
+
+/**
+ * @dev Check number of confirmations of a transaction in Ethereum
+ * @param txHash  Transaction hash
+ * @param publicId User ID
+ * @return Number of confirmations (for testing, we set to 1 to get results faster)
+ */
+const checkTxConfirmations = async (txHash: string) => {
+    try {
+        // Get transaction details
+        const trx = await web3.eth.getTransaction(txHash);
+
+        // Get current block number
+        const currentBlock = await web3.eth.getBlockNumber();
+
+        // When transaction is unconfirmed, its block number is null.
+        // In this case we return 0 as number of confirmations
+        return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber;
+    } catch (err) {
+        console.log('Error in ConnectController.ts -> checkTxConfirmations(): ', err);
+    };
+};
+
+// Transaction management (Queue system): this avoids to reprocess a transaction
+// that is being handled
+let txQueue = [''];
+
+// Websocket management
+const users = new Map();
+let connection: any;
+let runOnce = false;
+
+/**
+ * @dev Opens a websocket to listen connections from the front-ends. When a User opens
+ * the swap screen in the front-end, automatically sends his/her publicId: this will 
+ * be stored in an array of connections to send back the result of a transaction afterwards
+ */
+const wsListen = () => {
+    try {
+        // Start WS server (only once)
+        runOnce = true;
+        if (startWS()) {
+            wsServer.on('request', (request: any) => {
+                console.log(`Connection established`);
+                // TODO SECURITY: accept only allowed origin
+                connection = request.accept(null, request.origin);
+                let id: string = '';
+                // User sent a ping message (loaded the Swap function)
+                connection.on('message', function (msg: any) {
+                    if (msg.type === 'utf8') {
+                        // Show incoming message
+                        const { publicId, action, message } = JSON.parse(msg.utf8Data);
+                        id = publicId;
+                        // Store connection
+                        if (action === 'ping') {
+                            users.set(publicId, connection);
+                        };
+                    };
+                });
+                // User disconnected: remove connection from array
+                connection.on('close', () => {
+                    users.delete(id);
+                    console.log(`User ${id} disconnected`);
+                });
+                // TODO IMPROVEMENT: check for each User if connection is still 
+                // alive (ping). If not, remove connection from array
+            });
+        };
+    } catch (err) {
+        console.log('Error in connectController -> wsListen(): ', err);
+    };
+};
+
+/**
+ * @dev Cron that checks every X seconds if there is any transaction stored in the
+ * database to be processed. The field 'action' determines whether executing swap, 
+ * approve or withdraw
+ */
+const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
+
+    // Start WS server if not initialized yet
+    (!runOnce) ? wsListen() : null;
+
+    //Retrieve all pending TX from Firestore
+    const snapshot = await db
+        .collection(collections.ethTransactions)
+        .where('status', '==', 'pending')
+        .where('chainId', '==', CHAIN_ID)
+        .get();
+
+    // Process outstanding TX
+    if (!snapshot.empty) {
+        for (let i in snapshot.docs) {
+            const doc = snapshot.docs[i].data();
+            const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+            if (confirmations > 0) {
+                if (!txQueue.includes(doc.txHash)) {
+                    txQueue.push(doc.txHash);
+                    if (doc.action === 'SWAP_APPROVE_ERC20') {
+                        sendTxBack(doc.txHash, doc.publicId, doc.action);
+                    } else {
+                        transfer(doc.publicId, doc.amount, doc.token, doc.txHash, doc.action)
+                    };
+                    /*
+                    switch (doc.action) {
+                        case 'SWAP_TRANSFER_ETH': case 'SWAP_TRANSFER_ERC20':
+                            swap(doc.publicId, doc.amount, doc.token, doc.txHash, doc.action);
+                            break;
+                        case 'SWAP_APPROVE_ERC20':
+                            await sendTxBack(doc.txHash, doc.publicId, doc.action);
+                            break;
+                        case 'WITHDRAW_ERC20': case 'WITHDRAW_ETH':
+                            withdraw(doc.publicId, doc.amount, doc.token, doc.txHash, doc.action);
+                            break;
+                        default:
+                            console.log('Warning in connectController.ts->checkTx: Option not recognized');
+                            break;
+                    };
+                    */
+                };
+            };
+        };
+    };
+});
+
+/**
+ * @dev Swap/Withdraw ETH or ERC20 tokens between Ethereum to Fabric's User account
+ * @param publicId User ID
+ * @param amount Amount to be swapped
+ * @param token Ether (ETH) or coin type (DAI, UNI..)
+ * @param txHash Transaction hash
+ * @param action Action to be performed (swap, approve, withdraw)
+ */
+const transfer = async (
+    publicId: string,
+    amount: string,
+    token: string,
+    txHash: string,
+    action: string) => {
+
+    try {
+        console.log(`** Transfer in Fabric with user ID: ${publicId}, amount: ${amount}, token: ${token}, action: ${action}`);
+        //const response = await swapFab(publicId, amount, token);
+        let response: any;
+        if (action === 'SWAP_TRANSFER_ETH' || action === 'SWAP_TRANSFER_ERC20') {
+            response = await swapFab(publicId, amount, token);
+        } else if (action === 'WITHDRAW_ERC20' || action === 'WITHDRAW_ETH') {
+            response = await withdrawFab(publicId, amount, token);
+        };
+
+        if (response && response.success) {
+            // Update balances in Firestore
+            await updateFirebase(response);
+            // Update TX
+            await sendTxBack(txHash, publicId, action);
+        } else {
+            console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful');
+            if (users.get(publicId)) {
+                users.get(publicId).sendUTF(JSON.stringify({
+                    txHash: txHash,
+                    status: 'KO',
+                }));
+            };
+        };
+    } catch (err) {
+        console.log('Error in connectController.ts->swap(): <probably connection to Fabric is not available', err);
+    };
 };
 
 
 module.exports = {
     getERC20Balance,
-    swapERC20,
-    withdrawERC20,
+    send,
+    checkTx,
 };
 
-/*
-exports.balanceToken = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
-    const userId = body.fromAccount;
-    let web3js: any;
-    web3js = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
-    let tokenContractABI = [{ "inputs": [], "stateMutability": "nonpayable", "type": "constructor" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "owner", "type": "address" }, { "indexed": true, "internalType": "address", "name": "spender", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Approval", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "donation", "type": "address" }], "name": "Donation", "type": "event" }, { "anonymous": false, "inputs": [{ "indexed": true, "internalType": "address", "name": "from", "type": "address" }, { "indexed": true, "internalType": "address", "name": "to", "type": "address" }, { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }], "name": "Transfer", "type": "event" }, { "inputs": [{ "internalType": "address", "name": "owner", "type": "address" }, { "internalType": "address", "name": "spender", "type": "address" }], "name": "allowance", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "approve", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "account", "type": "address" }], "name": "balanceOf", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "decimals", "outputs": [{ "internalType": "uint8", "name": "", "type": "uint8" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "subtractedValue", "type": "uint256" }], "name": "decreaseAllowance", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "spender", "type": "address" }, { "internalType": "uint256", "name": "addedValue", "type": "uint256" }], "name": "increaseAllowance", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "_to", "type": "address" }, { "internalType": "uint256", "name": "_amount", "type": "uint256" }], "name": "mintToken", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [], "name": "name", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "symbol", "outputs": [{ "internalType": "string", "name": "", "type": "string" }], "stateMutability": "view", "type": "function" }, { "inputs": [], "name": "totalSupply", "outputs": [{ "internalType": "uint256", "name": "", "type": "uint256" }], "stateMutability": "view", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transfer", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "to", "type": "address" }, { "internalType": "uint256", "name": "tokens", "type": "uint256" }, { "internalType": "address[]", "name": "donation", "type": "address[]" }, { "internalType": "address", "name": "admin", "type": "address" }], "name": "transferAndDonateTo", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "payable", "type": "function" }, { "inputs": [{ "internalType": "address", "name": "sender", "type": "address" }, { "internalType": "address", "name": "recipient", "type": "address" }, { "internalType": "uint256", "name": "amount", "type": "uint256" }], "name": "transferFrom", "outputs": [{ "internalType": "bool", "name": "", "type": "bool" }], "stateMutability": "nonpayable", "type": "function" }]
-    console.log('Function check');
 
-    let tokenContract = new web3js.eth.Contract(tokenContractABI, "0x1e90FCa11Ad4E257F201fab991Ce306eF47663A4");
+// /**
+//  * @dev Withdraw amount from Fabric to Ethereum's User account
+//  * @returns c
+//  *          e: f
+//  * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
+//  * @param fromAddress User account to retrieve the balance
+//  */
+// const withdrawERC20 = async (req: express.Request, res: express.Response) => {
+//     const body = req.body;
+//     const { chainId, publicId, amount, token, to } = req.body;
+//     console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token, ' to: ', to);
 
-    await tokenContract.methods.balanceOf(userId).call().then(function (result) {
+//     const Contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+//     const amountWei = web3.utils.toWei(String(amount));
 
-        let count_balance = parseInt(result);
-        let rown_bal = count_balance / Math.pow(10, 10);
-        // res.json({status:1,msg:"success",data:{ref_code,wallet_details,usdValue,etherValue,btcValue,   import_wallet_id,rown_bal}});
-        // res.render('front/dashboard',{err_msg,success_msg,ref_code,wallet_details,usdValue,etherValue,btcValue,    import_wallet_id,balance,rown_bal,layout: false,session: req.session,crypto});
-        console.log('Balance ----', rown_bal);
-        res.send({
-            'balanceToken': rown_bal
-        })
-    });
-};
-*/
+//     const params = {
+//         chainId: chainId,
+//         fromAddress: ETH_PRIVI_ADDRESS,
+//         fromAddressKey: ETH_PRIVI_KEY,
+//         encodedABI: Contract.methods.withdrawEther(to, amountWei).encodeABI(),
+//         toAddress: ETH_SWAP_MANAGER_ADDRESS,
+//     };
 
-/*
-//Ethereum withdraw function
-const transferEthWithdraw = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
-    const fromAccount = body.fromAccount;
-    const amount = body.amount;
-    const chainId = body.chainId;
-    const toAccount = body.toAccount;
-    let web3js: any;
-    web3js = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
-    // TODO: [SECURITY] Retrieve PK in a secure way
-    let privateKey1 = 'fa32c34f16b54be767b94aad4f86797bb3966c325c3e0c300b1ea3f4f8d333b6';
-    let senderPrivate = Buffer.from(privateKey1, 'hex');
-    web3js.eth.getTransactionCount(fromAccount, async (err, txCount) => {
+//     const { success, error, data } = await executeTX(params);
+//     console.log('Result tx - success:', success, ' error: ', error, ' data: ', data);
 
-        let estimates_gas = await web3js.eth.estimateGas({ from: fromAccount, to: toAccount, amount: web3js.utils.toWei(amount, 'ether') })
-
-        let gasPrice_bal = await web3js.eth.getGasPrice();
-        let gasPrice = web3js.utils.toHex(gasPrice_bal * 2);
-
-        console.log("gasPrice", gasPrice);
-        let gasLimit = web3js.utils.toHex(estimates_gas * 2);
-
-        let transactionFee_wei = gasPrice * gasLimit;
-        let transactionFee = web3js.utils.fromWei(web3js.utils.toBN(transactionFee_wei), 'ether');
-
-        let nonce = web3js.utils.toHex(txCount)
-        let nonceHex = web3js.utils.toHex(nonce);
-        console.log(gasPrice, "------------", gasLimit)
-        const txObject = {
-            nonce: nonceHex,
-            to: toAccount,
-            value: web3js.utils.toHex(web3js.utils.toWei(amount, 'ether')),
-            gasLimit: gasLimit,
-            gasPrice: gasPrice
-        };
-        console.log('tx obj ', txObject)
-
-        const tx = new Transaction(txObject, { chain: 3, hardfork: 'petersburg' });
-        //const tx = new Tx(txObject,{chain:'ropsten', hardfork: 'petersburg'}).Transaction;
-        //const tx = new Tx(txObject, { chain: 'mainnet', hardfork: 'petersburg' });
-        //const tx = new Tx.Transaction(txObject, { chain: 'mainnet', hardfork: 'petersburg' });
-
-        tx.sign(senderPrivate)
-        //tx.sign('fa32c34f16b54be767b94aad4f86797bb3966c325c3e0c300b1ea3f4f8d333b6')
-
-        const serializedTx = tx.serialize();
-        const raw = '0x' + serializedTx.toString('hex');
-
-        serializedTx.toString('hex')
-
-        // Broadcast the transaction
-        web3js.eth.sendSignedTransaction(raw, (err, txHash) => {
-
-            if (err) {
-                console.log("err", err);
-                // let valid_pass = { success: 0, msg: "Transaction error" };
-                // let valid_trans = JSON.stringify(valid_pass);
-                // console.log(valid_trans);
-                res.send({
-                    tx_hash: "errer occurred!"
-                })
-            }
-            else {
-                console.log('txHash:', txHash, 'transfess', transactionFee);
-                // let valid_pass = { success: 1, msg: 'Your transaction is done successfully.', txHash: txHash, transactionFee: transactionFee };
-                // let valid_trans = JSON.stringify(valid_pass);
-                // console.log(valid_trans);
-                res.send({
-                    tx_hash: txHash
-                })
-            }
-            // Now go check etherscan to see the transaction!
-        })
-    })
-
-};
-*/
+//     (success)
+//         ? res.send('Yeah!!')
+//         : res.send('Shit!');
+// };
 
 
-/*
-const getEthBalance = async (req: express.Request, res: express.Response) => {
-    try {
-
-    } catch (err) {
-        console.log('Error in controllers/lendingController -> repayFunds(): ', err);
-        res.send({ success: false });
-    }
-};
-*/
-
-/*
-//Ethereum Token withdraw function
-exports.transferTokenWithdraw = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
-    const fromAccount = body.fromAccount;
-    const amount = body.amount;
-    const chainId = body.chainId
-    const toAccount = body.toAccount;
-
-    let web3js: any;
-    web3js = new Web3(new Web3.providers.HttpProvider("https://ropsten.infura.io/v3/eda1216d6a374b3b861bf65556944cdb"));
-
-    let tokenContractABI= [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"spender","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"donation","type":"address"}],"name":"Donation","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"spender","type":"address"}],"name":"allowance","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"approve","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"decimals","outputs":[{"internalType":"uint8","name":"","type":"uint8"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"subtractedValue","type":"uint256"}],"name":"decreaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"spender","type":"address"},{"internalType":"uint256","name":"addedValue","type":"uint256"}],"name":"increaseAllowance","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"_to","type":"address"},{"internalType":"uint256","name":"_amount","type":"uint256"}],"name":"mintToken","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"totalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transfer","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokens","type":"uint256"},{"internalType":"address[]","name":"donation","type":"address[]"},{"internalType":"address","name":"admin","type":"address"}],"name":"transferAndDonateTo","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"payable","type":"function"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"address","name":"recipient","type":"address"},{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"transferFrom","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"}]
-    let user1= tokenContractABI;
-    let tokenContract = new web3js.eth.Contract(user1,"0x1e90FCa11Ad4E257F201fab991Ce306eF47663A4");
-
-    // TODO: [SECURITY] Retrieve PK in a secure way
-    let privateKey1 = 'fa32c34f16b54be767b94aad4f86797bb3966c325c3e0c300b1ea3f4f8d333b6';
-    let senderPrivate = Buffer.from(privateKey1, 'hex');
-    let count;
-
-    await tokenContract.methods.balanceOf(fromAccount).call().then(function (result) {
-
-        let weiAmout = amount * 1e10;
-
-    web3js.eth.getTransactionCount(fromAccount, async (err, txCount) => {
-
-        // let gasLimitNew = web3js.eth.getBlock("latest").gasLimit;
-        // console.log("gasLimit: " , gasLimitNew);
 
 
-        let nonce = web3js.utils.toHex(txCount)
+// /**
+//  * @dev Withdraw ETH or ERC20 tokens from Fabric to Ethereum's User account
+//  * @return  status of the withdrwaw process:
+//  *          0: Fabric Failed / 1: Ethereum failed / 2: Fabric & Ethereum succeded
+//  * @param mode 'WITHDRAW_ETH': withdraw ethers / 'WITHDRAW_ERC20': withdraw ERC20 tokens
+//  * @param chainId Blockchain network identifier
+//  * @param publicId User identifier
+//  * @param amount Amount to be withdrawn
+//  * @param token Token name
+//  * @param to Destination address
+//  */
+// const withdraw = async (req: express.Request, res: express.Response) => {
+//     const body = req.body;
+//     const { action, chainId, publicId, amount, token, to } = req.body;
+//     let statusCode = '0';
 
-        const txObject = {
-            "from": fromAccount,
-            "gasPrice": web3js.utils.toHex(2 * 1e9),
-            "gasLimit": web3js.utils.toHex(210000),
-            "to": '0x1e90FCa11Ad4E257F201fab991Ce306eF47663A4',
-            "value": "0x0",
-            "data": tokenContract.methods.transfer(toAccount, amount).encodeABI(),
-            "nonce": nonce
-        };
-        console.log('tx obj ',txObject)
+//     console.log('eeoo publicId: ', publicId, ' amount: ', amount, ' token: ', token,
+//         ' to: ', to, 'action: ', action);
 
-        const tx = new Transaction(txObject,{chain: 3, hardfork: 'petersburg'});
-        //const tx = new Tx(txObject,{chain:'ropsten', hardfork: 'petersburg'}).Transaction;
-        //const tx = new Tx(txObject, { chain: 'mainnet', hardfork: 'petersburg' });
-        //const tx = new Tx.Transaction(txObject, { chain: 'mainnet', hardfork: 'petersburg' });
+//     // ** STEP 1: Withdraw from Fabric **
+//     const response = await withdrawFab(publicId, amount, token);
+//     console.log('** Fab Response: ', response);
+//     if (response && response.success) {
 
-        tx.sign(senderPrivate)
-        //    tx.sign('fa32c34f16b54be767b94aad4f86797bb3966c325c3e0c300b1ea3f4f8d333b6')
+//         // Update balances in Firestore
+//         await updateFirebase(response);
+//         statusCode = '1';
 
-        const serializedTx = tx.serialize();
-        const raw = '0x' + serializedTx.toString('hex');
-        serializedTx.toString('hex')
+//     } else {
+//         console.log('Error in connectController.ts -> withdraw(): Withdraw call in Fabric not successful');
+//     };
 
-        // Broadcast the transaction
-        web3js.eth.sendSignedTransaction(raw, (err, txHash) => {
-            if (err) {
-                console.log("err", err);
-                res.send({
-                    tx_hash: "errer occurred!"
-                })
-            }
-            else {
-                console.log('txHash:', txHash );
-                res.send({
-                    tx_hash: txHash
-                })
-            }
-            // Now go check etherscan to see the transaction!
-        })
-    })
+//     // ** STEP 2: Withdraw from Ethereum **
+//     if (response && response.success) {
 
-    });
-};
-*/
+//         // Convert value into wei
+//         const amountWei = web3.utils.toWei(String(amount));
+
+//         // Get SwapManager contract code
+//         const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+
+//         // Choose method from SwapManager to be called
+//         const method = (action === 'WITHDRAW_ETH')
+//             ? contract.methods.withdrawEther(to, amountWei).encodeABI()
+//             : contract.methods.withdrawERC20Token(token, to, amountWei).encodeABI();
+
+//         // Transaction parameters
+//         const params = {
+//             chainId: chainId,
+//             fromAddress: ETH_PRIVI_ADDRESS,
+//             fromAddressKey: ETH_PRIVI_KEY,
+//             encodedABI: method,
+//             toAddress: ETH_SWAP_MANAGER_ADDRESS,
+//         };
+
+//         // Execute transaction
+//         const { success } = await executeTX(params);
+//         (success) ? statusCode = '2' : null;
+//     };
+
+//     // Send back status code to front-end
+//     res.send(statusCode);
+// };

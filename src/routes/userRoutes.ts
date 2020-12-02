@@ -22,6 +22,19 @@ let upload = multer({
     storage: storage
 });
 
+let storage2 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/badges')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload2 = multer({
+    storage: storage2
+});
+
 // AUTHENTICATION
 router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
@@ -59,7 +72,7 @@ router.post('/connections/unFollowUser', authenticateJWT, userController.unFollo
 
 router.post('/editUser', authenticateJWT, userController.editUser);
 router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), userController.changeUserProfilePhoto);
-router.get('/getPhoto/:userId', authenticateJWT, userController.getPhotoById);
+router.get('/getPhoto/:userId', userController.getPhotoById);
 
 router.post('/addToWaitlist', authenticateJWT, userControllerJS.addToWaitlist);
 router.post('/register', authenticateJWT, userControllerJS.register);
@@ -70,6 +83,8 @@ router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
 
+router.post('/badge/createBadge', authenticateJWT, userController.createBadge);
+router.post('/badge/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
 
 module.exports = router;

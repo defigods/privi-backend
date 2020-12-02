@@ -21,10 +21,13 @@ let upload = multer({
 });
 
 router.post('/changePodPhoto', authenticateJWT, upload.single('image'), podController.changePodPhoto);
-router.get('/FT/getPhoto/:podId', authenticateJWT, podController.getPhotoById);
+router.get('/FT/getPhoto/:podId', podController.getPhotoById);
 
 router.get('/NFT/getPod/:podId', authenticateJWT, podController.getNFTPod);
 router.get('/FT/getPod/:podId', authenticateJWT, podController.getFTPod);
+
+router.get('/NFT/getPodTransactions/:podId', authenticateJWT, podController.getNFTPodTransactions);
+router.get('/FT/getPodTransactions/:podId', authenticateJWT, podController.getFTPodTransactions);
 
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
 router.get('/FT/getMyPods/:userId', authenticateJWT, podController.getMyPodsFT);
@@ -36,20 +39,29 @@ router.get('/FT/getOtherPods/:userId', authenticateJWT, podController.getOtherPo
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFTPodsInfo);
 
-router.post('/initiatePod', authenticateJWT, podController.initiatePOD);
-router.post('/deletePod', authenticateJWT, podController.deletePOD);
-router.post('/investPod', authenticateJWT, podController.investPOD);
-router.post('/swapPod', authenticateJWT, podController.swapPod);
+router.post('/FT/initiatePod', authenticateJWT, podController.initiateFTPOD);
+router.post('/FT/deletePod', authenticateJWT, podController.deleteFTPOD);
+router.post('/FT/investPod', authenticateJWT, podController.investFTPOD);
+router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
 
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
-// NFT backend-blockchain
-router.post('/NFT/initiatePodNFT', authenticateJWT, podController.initiatePodNFT);
+router.get('/FT/getPriceHistory/:podId', authenticateJWT, podController.getFTPodPriceHistory);
+
+// NFT 
+router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);
 router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
 router.post('/NFT/newSellOrder', authenticateJWT, podController.newSellOrder);
 router.post('/NFT/deleteBuyOrder', authenticateJWT, podController.deleteBuyOrder);
 router.post('/NFT/deleteSellOrder', authenticateJWT, podController.deleteSellOrder);
 router.post('/NFT/sellPodNFT', authenticateJWT, podController.sellPodNFT);
 router.post('/NFT/buyPodNFT', authenticateJWT, podController.buyPodNFT);
+router.get('/NFT/getPriceHistory/:podId', authenticateJWT, podController.getNFTPodPriceHistory);
+
+// common functions
+router.post('/inviteRole', authenticateJWT, podController.inviteRole);
+router.post('/replyRoleInvitation', authenticateJWT, podController.replyRoleInvitation);
+router.post('/inviteView', authenticateJWT, podController.inviteView);
+
 module.exports = router;

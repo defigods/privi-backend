@@ -3,13 +3,23 @@ module.exports = {
     wallet: "Wallet",
     walletNFT: "WalletNFT",
     walletFT: "WalletFT",
+    crypto: "CRYPTO",
+    nft: "NFT",
+    ft: "FT",
+    social: "SOCIAL",
     history: "History",
     allTransactions: "AllTransaction",
+    ethTransactions: "EthTransactions",
     waitlist: "Waitlist",
     cloudDatabase: "CloudDatabase",
     priviCredits: "PriviCredits",
     podsFT: "PodsFT",
     podsNFT: "PodsNFT",
+    podTransactions: "PodTransactions",
+    priceOfTheDay: "PriceOfTheDay",
+    priceHistory: "PriceHistory",
+    podRoleInvitation: "PodRoleInvitation",
+    podViewInvitation: "PodViewInvitation",
     liquidityPools: "LiquidityPools",
     insurancePools: "InsurancePools",
     notificaction: "Notification",
@@ -22,6 +32,7 @@ module.exports = {
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
-    stakingRates: "StakingRates", // constant
-    stakingDeposit: "StakingDeposit"
+    stakingRates: "StakingRates",
+    stakingDeposit: "StakingDeposit",
+    badges: "Badges"
 }
