@@ -1164,11 +1164,11 @@ const createIssue = async (req: express.Request, res: express.Response) => {
         let issuesGet = await db.collection(collections.issues).get();
         let id = issuesGet.size;
 
-        if(body) {
+        if(body && body.issue && body.userId && body.item && body.itemType && body.itemId &&
+           body.question && body.answers && body.description) {
             await db.runTransaction(async (transaction) => {
 
-                // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.issues).doc(''+id+1), {
+                transaction.set(db.collection(collections.issues).doc(''+(id+1)), {
                     issue: body.issue,
                     userId: body.userId,
                     date: new Date(),
@@ -1177,8 +1177,9 @@ const createIssue = async (req: express.Request, res: express.Response) => {
                     itemId: body.itemId,
                     responses: [],
                     question: body.question,
-                    answers: [],
+                    answers: body.answers,
                     votes: [],
+                    description: body.description
                 });
             });
             res.send({ success: true, data: {
@@ -1190,13 +1191,14 @@ const createIssue = async (req: express.Request, res: express.Response) => {
                     itemId: body.itemId,
                     responses: [],
                     question: body.question,
-                    answers: [],
+                    answers: body.answers,
                     votes: [],
+                    description: body.description,
                     id: id+1
                 }
             });
         } else {
-            console.log('Error in controllers/userController -> createIssue()', 'No Information');
+            console.log('Error in controllers/userController -> createIssue()', 'Missing Information');
             res.send({ success: false });
         }
     } catch (err) {
@@ -1209,15 +1211,14 @@ const createProposal = async (req: express.Request, res: express.Response) => {
     try{
         let body = req.body;
 
-        let issuesGet = await db.collection(collections.issues).get();
-        let id = issuesGet.size;
+        let proposalsGet = await db.collection(collections.proposals).get();
+        let id = proposalsGet.size;
 
-        if(body) {
+        if(body && body.proposal && body.userId && body.item && body.itemType && body.itemId) {
             await db.runTransaction(async (transaction) => {
 
-                // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.issues).doc(''+id+1), {
-                    issue: body.issue,
+                transaction.set(db.collection(collections.proposals).doc(''+(id+1)), {
+                    proposal: body.proposal,
                     userId: body.userId,
                     date: new Date(),
                     item: body.item,
@@ -1227,7 +1228,7 @@ const createProposal = async (req: express.Request, res: express.Response) => {
                 });
             });
             res.send({ success: true, data: {
-                    issue: body.issue,
+                    proposal: body.proposal,
                     userId: body.userId,
                     date: new Date(),
                     item: body.item,
@@ -1251,10 +1252,28 @@ const responseIssue = async (req: express.Request, res: express.Response) => {
     try{
         let body = req.body;
 
-        if(body) {
+        if(body && body.userId && body.userName && body.response && body.issueId) {
+            const issueRef = db.collection(collections.issues)
+                .doc(body.issueId);
+            const issueGet = await issueRef.get();
+            const issue : any = issueGet.data();
+
+            let response : any = {
+                userId: body.userId,
+                userName: body.userName,
+                response: body.response,
+                date: new Date()
+            }
+
+            issue.responses.push(response);
+
+            await issueRef.update({
+                responses: issue.responses
+            });
+            res.send({ success: true, data: issue });
 
         } else {
-            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
+            console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
             res.send({ success: false });
         }
     } catch (err) {
@@ -1266,10 +1285,28 @@ const responseProposal = async (req: express.Request, res: express.Response) => 
     try{
         let body = req.body;
 
-        if(body) {
+        if(body && body.userId && body.userName && body.response && body.proposalId) {
+            const proposalRef = db.collection(collections.proposals)
+                .doc(body.proposalId);
+            const proposalGet = await proposalRef.get();
+            const proposal : any = proposalGet.data();
+
+            let response : any = {
+                userId: body.userId,
+                userName: body.userName,
+                response: body.response,
+                date: new Date()
+            }
+
+            proposal.responses.push(response);
+
+            await proposalRef.update({
+                responses: proposal.responses
+            });
+            res.send({ success: true, data: proposal });
 
         } else {
-            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
+            console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
             res.send({ success: false });
         }
     } catch (err) {
@@ -1282,7 +1319,18 @@ const voteIssue = async (req: express.Request, res: express.Response) => {
     try{
         let body = req.body;
 
-        if(body) {
+        if(body && body.issueId && body.voteId) {
+            const issueRef = db.collection(collections.issues)
+                .doc(body.issueId);
+            const issueGet = await issueRef.get();
+            const issue : any = issueGet.data();
+
+            issue.votes[body.voteId].push(body.userId)
+
+            await issueRef.update({
+                votes: issue.votes
+            });
+            res.send({ success: true, data: issue });
 
         } else {
             console.log('Error in controllers/userController -> responseIssue()', 'No Information');

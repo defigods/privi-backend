@@ -89,11 +89,11 @@ router.post('/badge/createBadge', authenticateJWT, userController.createBadge);
 router.post('/badge/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
 
-router.post('/governance/createIssue', authenticateJWT, userController.createIssue);
-router.post('/governance/createProposal', authenticateJWT, userController.createProposal);
-router.post('/governance/responseIssue', authenticateJWT, userController.responseIssue);
-router.post('/governance/voteIssue', authenticateJWT, userController.voteIssue);
-router.post('/governance/responseProposal', authenticateJWT, userController.responseProposal);
+router.post('/governance/createIssue', userController.createIssue);
+router.post('/governance/createProposal', userController.createProposal);
+router.post('/governance/responseIssue', userController.responseIssue);
+router.post('/governance/voteIssue', userController.voteIssue);
+router.post('/governance/responseProposal', userController.responseProposal);
 
 
 module.exports = router;
