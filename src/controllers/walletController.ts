@@ -1,5 +1,5 @@
-import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId, getEmailUidMap } from "../functions/functions";
-import {CALLER_KEY} from "../constants/configuration";
+import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId, 
+    isEmail, getEmailUidMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -7,25 +7,30 @@ import coinBalance from "../blockchain/coinBalance.js";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
+import cron from 'node-cron';
+
+require('dotenv').config();
+const apiKey = process.env.API_KEY;
 
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const fromUid = body.fromUid;
-        let toUid = body.toUid;
-        const toEmail = body.toEmail; // in case recipient email is passed instead of uid
+        const to = body.to; // could be email or uid
         const amount = body.amount;
         const token = body.token;
         const type = body.type;
-        if (toEmail) {
-            const emailUidMap = await getUidFromEmail(toEmail);
-            toUid = emailUidMap[toEmail];
+        
+        // convert recipient to uid in case it's given in email
+        let toUid = to;
+        if (isEmail(to)) {
+            const emailUidMap = await getEmailUidMap();
+            toUid = emailUidMap[to];
         }
         if (!toUid) {
-            res.send({ success: true, message: "toUid is required" });
+            res.send({ success: false, message: "'to' argument is required" });
             return;
         }
-
 		// check that fromUid is same as user in jwt
 		if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
 			console.log("error: jwt user is not the same as fromUid ban?");
@@ -35,7 +40,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
-        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, CALLER_KEY);
+        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             let senderName = fromUid;
@@ -70,15 +75,17 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
 
 } 
 
-module.exports.withdraw = async (req: express.Request, res: express.Response) => {
+module.exports.burn = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
+        const type = body.type;
+        const from = body.from;
+        const to = body.to;
         const amount = body.amount;
         const token = body.token;
 
 		// check that publicId is same as user in jwt
-		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+		if (!req.body.priviUser.id || (req.body.priviUser.id != from)) {
 			console.log("error: jwt user is not the same as publicId ban?");
 			res.send({ success: false, message: "jwt user is not the same as publicId" });
 			return;
@@ -86,10 +93,10 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
-        const blockchainRes = await coinBalance.withdraw(publicId, amount, token, timestamp, tid, CALLER_KEY);
+        const blockchainRes = await coinBalance.burn(type, from, to, amount, token, timestamp, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Withdraw - Complete",
+            createNotification(from, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
@@ -107,15 +114,17 @@ module.exports.withdraw = async (req: express.Request, res: express.Response) =>
 
 } 
 
-module.exports.deposit = async (req: express.Request, res: express.Response) => {
+module.exports.mint = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
+        const type = body.type;
+        const from = body.from;
+        const to = body.to;
         const amount = body.amount;
         const token = body.token;
 
         // check that publicId is same as user in jwt
-		if (!req.body.priviUser.id || (req.body.priviUser.id != publicId)) {
+		if (!req.body.priviUser.id || (req.body.priviUser.id != to)) {
 			console.log("error: jwt user is not the same as publicId ban?");
 			res.send({ success: false, message: "jwt user is not the same as publicId" });
 			return;
@@ -123,10 +132,10 @@ module.exports.deposit = async (req: express.Request, res: express.Response) => 
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
-        const blockchainRes = await coinBalance.swap(publicId, amount, token, timestamp, tid, CALLER_KEY);
+        const blockchainRes = await coinBalance.mint(type, from, to, amount, token, timestamp, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Swap - Complete",
+            createNotification(to, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );
@@ -151,45 +160,113 @@ module.exports.deposit = async (req: express.Request, res: express.Response) => 
 module.exports.getBalanceInTokenTypes = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
-        console.log("getBalanceInToken", userId);
-		userId = userId!.toString()
-        const walletSnap = await db.collection(collections.wallet).doc(userId).get()
+        userId = userId!.toString()
+        console.log("------------", userId);
+        const walletSnap = await db.collection(collections.wallet).doc(userId).get();
+        const data = {};
         if (walletSnap.exists) {
             // get Crypto
-            const crypto = {};
             const cryptoSnap = await walletSnap.ref.collection(collections.crypto).get();
             cryptoSnap.forEach((doc) => {
-                crypto[doc.id] = doc.data().Amount;
+                data[doc.id] = {...doc.data(), Name: doc.id, daily_change: 0.23};
             });
             // get ft
-            const ft = {};
-            const ftSnap = await walletSnap.ref.collection(collections.crypto).get();
+            const ftSnap = await walletSnap.ref.collection(collections.ft).get();
             ftSnap.forEach((doc) => {
-                ft[doc.id] = doc.data().Amount;
+                data[doc.id] = {...doc.data(), Name: doc.id, daily_change: 0.23};
             });
             // get nft
-            const nft = {};
-            const nftSnap = await walletSnap.ref.collection(collections.crypto).get();
+            const nftSnap = await walletSnap.ref.collection(collections.nft).get();
             nftSnap.forEach((doc) => {
-                nft[doc.id] = doc.data().Amount;
+                const historySnap = doc.ref.collection(collections.history).get();
+                const history:any[] = [];
+                historySnap.then((snap) => {
+                    snap.forEach((historyDoc) => {
+                        history.push(historyDoc.data());
+                    });
+                })
+                data[doc.id] = {...doc.data(), Name: doc.id, History: history, daily_change: 0.23};
             });
             // get social
-            const social = {};
-            const socialSnap = await walletSnap.ref.collection(collections.crypto).get();
+            const socialSnap = await walletSnap.ref.collection(collections.social).get();
             socialSnap.forEach((doc) => {
-                social[doc.id] = doc.data().Amount;
+                data[doc.id] = {...doc.data(), Name: doc.id, daily_change: 0.23};
             });
-            const data = {
-                crypto: crypto,
-                ft: ft,
-                nft: nft,
-                social: social
-            }
+            console.log("------------", data);
             res.send({ success: true, data: data });
+        } else {
+            console.log("cant find wallet snap");
+            res.send({ success: true, data: {}});
         }
-        
     } catch (err) {
         console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
+        res.send({ success: false });
+    }
+}
+
+/**
+ * Used to get user's balance history in type of token (used to fill the graphs in frontend wallet page)
+ */
+module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res: express.Response) => {
+    try {
+        const data = {};
+        let { userId } = req.query;
+        userId = userId!.toString();
+        // crypto
+        const crytoHistory:any[] = [];
+        const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                crytoHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["crypto"] = crytoHistory;
+        // ft
+        const ftHistory:any[] = [];
+        const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ft).orderBy("date", "asc").get();
+        ftSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                ftHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["ft"] = ftHistory;
+        // crypto
+        const nftHistory:any[] = [];
+        const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nft).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                nftHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["nft"] = nftHistory;
+        // crypto
+        const socialHistory:any[] = [];
+        const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.social).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                socialHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["social"] = socialHistory;
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/userController -> getEmailUidMap()', err);
         res.send({ success: false });
     }
 }
@@ -466,9 +543,78 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
 module.exports.getEmailToUidMap = async (req: express.Request, res: express.Response) => {
     try {
         const data = await getEmailUidMap();
-        res.send({ success: false, data: data });
+        res.send({ success: true, data: data });
     } catch (err) {
         console.log('Error in controllers/userController -> getEmailUidMap()', err);
         res.send({ success: false });
     }
 }
+
+
+///////////////////////////// CRON JOBS //////////////////////////////
+/**
+ * cron job scheduled every day at 00:00, daily saves the users balace sum for each type of tokens (crypto, ft...)
+ */
+exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("********* Wallet saveUserBalanceSum() cron job started *********");
+        const rateOfChange = await getRateOfChange();   // rates of all except nft
+        const walletSnap = await db.collection(collections.wallet).get();
+        walletSnap.forEach(async (userWallet) => {
+            // crypto
+            let cryptoSum = 0; // in usd
+            const cryptoWallet = await userWallet.ref.collection(collections.crypto).get();
+            cryptoWallet.forEach((doc) => {
+                if (rateOfChange[doc.id]) cryptoSum += rateOfChange[doc.id] * doc.data().Amount;
+                else cryptoSum += doc.data().Amount;
+            });
+            userWallet.ref.collection(collections.cryptoHistory).add({
+                date: Date.now(),
+                balance: cryptoSum
+            });
+
+            // ft
+            let ftSum = 0; // in usd
+            const ftWallet = await userWallet.ref.collection(collections.ft).get();
+            ftWallet.forEach((doc) => {
+                if (rateOfChange[doc.id]) ftSum += rateOfChange[doc.id] * doc.data().Amount;
+                else ftSum += doc.data().Amount;
+            });
+            userWallet.ref.collection(collections.ftHistory).add({
+                date: Date.now(),
+                balance: ftSum
+            })
+
+            // nft
+            let nftSum = 0; // in usd
+            const nftWallet = await userWallet.ref.collection(collections.nft).get();
+            nftWallet.forEach(async (doc) => {
+                const fundingToken = doc.data().FundingToken;
+                const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
+                let latestFundingTokenPrice = 1;    // price of fundingToken per NF Token
+                if (nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
+                if (rateOfChange[fundingToken]) nftSum += rateOfChange[fundingToken] * latestFundingTokenPrice * doc.data().Amount; 
+            });
+            userWallet.ref.collection(collections.nftHistory).add({
+                date: Date.now(),
+                balance: nftSum
+            })
+
+            // social
+            let socialSum = 0; // in usd
+            const socialWallet = await userWallet.ref.collection(collections.social).get();
+            socialWallet.forEach((doc) => {
+                if (rateOfChange[doc.id]) socialSum += rateOfChange[doc.id] * doc.data().Amount;
+                else socialSum += doc.data().Amount;
+            });
+            userWallet.ref.collection(collections.socialHistory).add({
+                date: Date.now(),
+                balance: socialSum
+            })
+
+
+        });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> saveUserBalanceSum()', err);
+    }
+});
