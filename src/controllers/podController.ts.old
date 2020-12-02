@@ -1,17 +1,13 @@
 import express, {response} from 'express';
-import podFTProtocol from "../blockchain/podFTProtocol";
+import podProtocol from "../blockchain/podProtocol";
 import nftPodProtocol from "../blockchain/nftPodProtocol";
-import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap, getEmailUidMap, generateUniqueId} from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap, getEmailUidMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
-
-require('dotenv').config();
-//const apiKey = process.env.API_KEY;
-const apiKey = "PRIVI"; // just for now
 
 /////////////////////////// COMMON //////////////////////////////
 
@@ -23,11 +19,11 @@ async function updateCommonFields(body:any, podId:string, isPodFT:boolean) {
     const hashtags = body.Hashtags;
     const isPrivate = body.Private;
     const hasPhoto = body.HasPhoto;
-    const isOpenToAdvertisement = body.IsOpenToAdvertisement; // recently added
-    const dicordChannel = body.DiscordChannel;  // recently added
     const endorsementScore = body.EndorsementScore;
     const trustScore = body.TrustScore;
     const admins = body.Admins;
+    const isOpenToAdvertisement = body.IsOpenToAdvertisement; // recently added
+    const dicordChannel = body.DiscordChannel;  // recently added
     const requiredTokens = body.RequiredTokens; // {$Token: Amount} recently added (maybe handled by blockchain, thus don't need to add it again here)
 
 
@@ -41,8 +37,8 @@ async function updateCommonFields(body:any, podId:string, isPodFT:boolean) {
         Hashtags: hashtags || [],
         Private: isPrivate || false,
         HasPhoto: hasPhoto || false,
-        EndorsementScore: endorsementScore || 0,
-        TrustScore: trustScore || 0,
+        EndorsementScore: endorsementScore || 0.5,
+        TrustScore: trustScore || 0.5,
         Admins: admins || [],
         IsOpenToAdvertisement: isOpenToAdvertisement || false,
         DiscordChannel: dicordChannel || '',
@@ -339,27 +335,16 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         console.log(req.body);
         const body = req.body;
         const creator = body.Creator;
-        const fundingToken = body.FundingToken;
+        const token = body.Token;
         const duration = body.Duration;
         const payments = body.Payments;
         const principal = body.Principal;
         const interest = body.Interest;
-        const liquidationCCR = body.LiquidationCCR;
+        const p_liquidation = body.P_liquidation;
+        const initialSupply = body.InitialSupply;
         const collaterals = body.Collaterals;
-
-        const address = "Px" + generateUniqueId();
-        const amm = body.Amm;
-        const spreadTarget = body.SpreadTarget;
-        const spreadExchange = body.SpreadExchange;
-        const tokenSymbol = body.TokenSymbol;
-        const tokenName = body.TokenName;
-
-        const txnId = generateUniqueId();
-        const caller = apiKey;
-
         const rateOfChange = await getRateOfChange();
-        const blockchainRes = await podFTProtocol.initiatePOD(creator, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName,
-            fundingToken, duration, payments, principal, interest, liquidationCCR, collaterals, rateOfChange, txnId, caller);
+        const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);  // update blockchain res
 
@@ -410,7 +395,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
         const body = req.body;
         const publicId = body.publicId;
         const podId = body.podId;
-        const blockchainRes = await podFTProtocol.deletePod(publicId, podId);
+        const blockchainRes = await podProtocol.deletePod(publicId, podId);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(publicId, "FT Pod - Pod Deleted",
@@ -436,7 +421,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const amount = body.amount;
         const rateOfChange = await getRateOfChange();
-        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, rateOfChange);
+        const blockchainRes = await podProtocol.investPOD(investorId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // add pod transaction (get price from blockchainRes)
@@ -489,7 +474,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const amount = body.amount;
         const rateOfChange = await getRateOfChange();
-        const blockchainRes = await podFTProtocol.swapPOD(investorId, liquidityPoolId, podId, amount, rateOfChange);
+        const blockchainRes = await podProtocol.swapPOD(investorId, liquidityPoolId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             console.log(blockchainRes);
@@ -1403,7 +1388,7 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
             podIdUidMap[doc.id] = doc.data().Creator;
         });
         candidates.forEach(async (podId) => {
-            const blockchainRes = await podFTProtocol.checkPODLiquidation(podId, rateOfChange);
+            const blockchainRes = await podProtocol.checkPODLiquidation(podId, rateOfChange);
             if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
                 updateFirebase(blockchainRes);
                 createNotification(podIdUidMap[podId], "FT Pod - Pod Liquidated",
@@ -1441,7 +1426,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                     const podDay = data.State.POD_Day
                     // payment day
                     if (podDay%step == 0) {
-                        const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
+                        const blockchainRes = await podProtocol.interestPOD(pod.id, rateOfChange);
                         if (blockchainRes && blockchainRes.success) {
                             updateFirebase(blockchainRes);
                             // send notification to interest payer when payment done
@@ -1483,7 +1468,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
 //             podList.push(doc.id);
 //         });
 //         podsSnap.forEach(async (pod) => {
-//             const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
+//             const blockchainRes = await podProtocol.interestPOD(pod.id, rateOfChange);
 //             if (blockchainRes && blockchainRes.success) {
 //                 updateFirebase(blockchainRes);
 //                 const updateWallets = blockchainRes.output.UpdateWallets;

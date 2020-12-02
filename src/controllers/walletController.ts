@@ -10,7 +10,8 @@ import { countDecimals } from "../functions/utilities";
 import cron from 'node-cron';
 
 require('dotenv').config();
-const apiKey = process.env.API_KEY;
+//const apiKey = process.env.API_KEY;
+const apiKey = "PRIVI"; // just for now
 
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {

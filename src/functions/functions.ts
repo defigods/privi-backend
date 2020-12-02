@@ -16,7 +16,8 @@ export async function updateFirebase(blockchainRes) {
         const updateBalances = output.UpdateBalances;   // new added
         const updateTransactions = output.Transactions;   // new added
         const updateLoans = output.UpdateLoans;
-        const updatePods = output.UpdatePods;   // changed 
+        const updatePods = output.UpdatePods;   // changed to new version
+        const updatePodStates = output.UpdatePodStates; // new adaded
         const updatePools = output.UpdatePools;
         const updateInsurance = output.UpdateInsurance;
         // update user
@@ -120,6 +121,18 @@ export async function updateFirebase(blockchainRes) {
                 if (podObj.Royalty) colectionName = collections.podsNFT;    // case NFT
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
+            }
+        }
+        // update pod states
+        if (updatePodStates) {
+            let podId: string = '';
+            let podState: any = {};
+            for ([podId, podState] of Object.entries(updatePodStates)) {
+                // find out NFT or FT
+                let colectionName = collections.podsFT;
+                if (podState.Royalty) colectionName = collections.podsNFT;    // case NFT
+                // with merge flag because pods have more info thats not in blockchain (eg followers)
+                transaction.set(db.collection(colectionName).doc(podId), podState, {merge:true});
             }
         }
         // update pools
