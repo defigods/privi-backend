@@ -1,7 +1,7 @@
-import express, {response} from 'express';
+import express, { response } from 'express';
 import podProtocol from "../blockchain/podProtocol";
 import nftPodProtocol from "../blockchain/nftPodProtocol";
-import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap, getEmailUidMap } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification, getUidNameMap, getEmailUidMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
@@ -12,7 +12,7 @@ import path from 'path';
 /////////////////////////// COMMON //////////////////////////////
 
 // auxiliar function used to update common fields of both NFT and FT pod (name, desc, hashtags..) 
-async function updateCommonFields(body:any, podId:string, isPodFT:boolean) {
+async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
     const name = body.Name;
     const description = body.Description;
     const mainHashtag = body.MainHashtag; // recently added
@@ -54,17 +54,17 @@ async function updateCommonFields(body:any, podId:string, isPodFT:boolean) {
 exports.inviteRole = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const invitationList:any[] = body.invitationList;   
-        let ok:boolean = true;
+        const invitationList: any[] = body.invitationList;
+        let ok: boolean = true;
         for (var i = 0; i < invitationList.length && ok; i++) {
             const obj = invitationList[i];
-            const inviterId:string = obj.inviterId;    // uid
-            const isPodFT:boolean = obj.isPodFT;
-            const podId:string = obj.podId;
-            const invitedUser:string = obj.invitedUser;    // email
-            const role:string = obj.role;
+            const inviterId: string = obj.inviterId;    // uid
+            const isPodFT: boolean = obj.isPodFT;
+            const podId: string = obj.podId;
+            const invitedUser: string = obj.invitedUser;    // email
+            const role: string = obj.role;
 
-            const emailToUid = await getEmailUidMap() ;
+            const emailToUid = await getEmailUidMap();
             const adminSnap = await db.collection(collections.user).doc(inviterId).get();
             if (!adminSnap.exists) ok = false
             const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
@@ -96,7 +96,7 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
                     replied: false,
                     accept: false,
                 })
-            } 
+            }
         }
         if (ok) res.send({ success: true });
         else res.send({ success: false });
@@ -114,9 +114,9 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
 exports.replyRoleInvitation = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId:string = body.userId;
-        const invitationId:string = body.invitationId;  
-        const accept:boolean = body.accept;
+        const userId: string = body.userId;
+        const invitationId: string = body.invitationId;
+        const accept: boolean = body.accept;
         const invitationSnap = await db.collection(collections.user).doc(userId).collection(collections.podRoleInvitation).doc(invitationId).get();
         if (invitationSnap.exists) {
             const invitationData = invitationSnap.data();
@@ -130,16 +130,16 @@ exports.replyRoleInvitation = async (req: express.Request, res: express.Response
                     const podSnap = await db.collection(podCol).doc(podId).get();
                     const podData = podSnap.data();
                     if (podData) {
-                        const currRoleArray:string[] = podData.roles[invitationData.role];  // get current users (array) for this role
+                        const currRoleArray: string[] = podData.roles[invitationData.role];  // get current users (array) for this role
                         if (!currRoleArray.includes(userId)) currRoleArray.push(userId);    // add this new accepted user
                         const rolesMap = "roles." + invitationData.role;    // update
-                        podSnap.ref.update({rolesMap: currRoleArray});
+                        podSnap.ref.update({ rolesMap: currRoleArray });
                     }
                 }
                 // update user invitation (doc)  to replied
-                invitationSnap.ref.update({replied: true, accept: accept});
+                invitationSnap.ref.update({ replied: true, accept: accept });
                 // update pod invitation (doc) to replied
-                db.collection(podCol).doc(podId).collection(collections.podRoleInvitation).doc(invitationId).update({replied: true, accept:accept});
+                db.collection(podCol).doc(podId).collection(collections.podRoleInvitation).doc(invitationId).update({ replied: true, accept: accept });
             }
         }
     } catch (err) {
@@ -157,10 +157,10 @@ exports.replyRoleInvitation = async (req: express.Request, res: express.Response
 exports.inviteView = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId:string = body.userId;
-        const inviterId:string = body.inviterId;
-        const podId:string = body.podId;
-        const isPodFT:boolean = body.isPodFT;
+        const userId: string = body.userId;
+        const inviterId: string = body.inviterId;
+        const podId: string = body.podId;
+        const isPodFT: boolean = body.isPodFT;
         const userSnap = await db.collection(collections.user).doc(userId).get()
         if (userSnap.exists) {
             let url = "https://privibeta.web.app/#/FTPod/" + podId;
@@ -172,10 +172,10 @@ exports.inviteView = async (req: express.Request, res: express.Response) => {
                 url: url,
                 date: Date.now()
             });
-            res.send({success:true});
+            res.send({ success: true });
         } else {
             console.log('Error in controllers/podController -> inviteView(): invited user doesnt exists');
-            res.send({success:false});
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/podController -> inviteView(): ', err);
@@ -190,7 +190,7 @@ exports.inviteView = async (req: express.Request, res: express.Response) => {
  */
 exports.changePodPhoto = async (req: express.Request, res: express.Response) => {
     try {
-        if(req.file) {
+        if (req.file) {
             res.send({ success: true });
         } else {
             console.log('Error in controllers/podController -> changePodPhoto()', "There's no file...");
@@ -211,7 +211,7 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
         console.log(podId);
-        if(podId) {
+        if (podId) {
             const directoryPath = path.join('uploads', 'pods');
             fs.readdir(directoryPath, function (err, files) {
                 //handling error
@@ -229,7 +229,7 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
             // stream the image back by loading the file
             res.setHeader('Content-Type', 'image');
             let raw = fs.createReadStream(path.join('uploads', 'pods', podId + '.png'));
-            raw.on('error', function(err) {
+            raw.on('error', function (err) {
                 console.log(err)
                 res.sendStatus(400);
             });
@@ -275,7 +275,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
             Followers: firebase.firestore.FieldValue.arrayUnion(followerObj)
         });
         res.send({ success: true });
-        
+
     } catch (err) {
         console.log('Error in controllers/podController -> followPod(): ', err);
         res.send({ success: false });
@@ -306,7 +306,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
             numFollowingFTPods: firebase.firestore.FieldValue.increment(-1)
         });
         // update pod
-        const mewFollowerField:any[] = [];
+        const mewFollowerField: any[] = [];
         const podsSnap = await db.collection(podRef).get();
         podsSnap.forEach((doc) => {
             const data = doc.data();
@@ -321,7 +321,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
             Followers: mewFollowerField
         });
         res.send({ success: true });
-        
+
     } catch (err) {
         console.log('Error in controllers/podController -> unfollowPod(): ', err);
         res.send({ success: false });
@@ -364,13 +364,13 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
             });
 
             // Add Pod Id into user myFTPods array
-            if(blockchainRes.output.UpdatePods[0] && blockchainRes.output.UpdatePods[0].Creator) {
+            if (blockchainRes.output.UpdatePods[0] && blockchainRes.output.UpdatePods[0].Creator) {
                 const userRef = db.collection(collections.user)
                     .doc(blockchainRes.output.UpdatePods[0].Creator);
                 const userGet = await userRef.get();
-                const user : any = userGet.data();
+                const user: any = userGet.data();
 
-                let myFTPods : any[] = user.myNFTPods || [];
+                let myFTPods: any[] = user.myNFTPods || [];
                 myFTPods.push(podId)
 
                 await userRef.update({
@@ -382,7 +382,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         }
         else {
             console.log('Error in controllers/podController -> initiatePOD(): success = false.', blockchainRes.message);
-            res.send({ success: false, error: blockchainRes.message});
+            res.send({ success: false, error: blockchainRes.message });
         }
     } catch (err) {
         console.log('Error in controllers/podController -> initiatePOD(): ', err);
@@ -439,7 +439,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             db.collection(collections.podsFT).doc(podId).collection(collections.podTransactions).add({
                 amount: amount,
                 price: price,
-                token: token, 
+                token: token,
                 from: investorId,
                 to: "Pod Pool",
                 date: Date.now(),
@@ -501,13 +501,13 @@ exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
         const userRef = db.collection(collections.user)
             .doc(userId);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
-        let allNFTPods : any[] = await getNFTPods();
+        let allNFTPods: any[] = await getNFTPods();
 
-        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+        let myNFTPods: any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
 
-        res.send({ success: true, data: myNFTPods});
+        res.send({ success: true, data: myNFTPods });
     } catch (err) {
         console.log('Error in controllers/podController -> getMyPods()', err);
         res.send({ success: false });
@@ -520,29 +520,29 @@ exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
         const userRef = db.collection(collections.user)
             .doc(userId);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
-        let allFTPods : any[] = await getFTPods();
+        let allFTPods: any[] = await getFTPods();
 
-        let myFTPods : any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
+        let myFTPods: any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
 
-        res.send({ success: true, data: myFTPods});
+        res.send({ success: true, data: myFTPods });
     } catch (err) {
         console.log('Error in controllers/podController -> getMyPods()', err);
         res.send({ success: false });
     }
 };
 
-const getAllInfoMyPods = (allItemArray, myArray) : Promise<any[]> => {
+const getAllInfoMyPods = (allItemArray, myArray): Promise<any[]> => {
     return new Promise<any[]>((resolve, reject) => {
-        let array : any[] = [];
-        if(myArray && myArray.length > 0) {
+        let array: any[] = [];
+        if (myArray && myArray.length > 0) {
             myArray.forEach((item, i) => {
                 let foundItem = allItemArray.find(allItem => allItem.id === item);
-                if(foundItem)
+                if (foundItem)
                     array.push(foundItem);
 
-                if(myArray.length === i + 1) {
+                if (myArray.length === i + 1) {
                     resolve(array);
                 }
             });
@@ -555,34 +555,34 @@ const getAllInfoMyPods = (allItemArray, myArray) : Promise<any[]> => {
 exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        let allFTPods : any[] = await getFTPods();
+        let allFTPods: any[] = await getFTPods();
 
-        let trendingFTPods : any[] = await countLastWeekPods(allFTPods);
+        let trendingFTPods: any[] = await countLastWeekPods(allFTPods);
 
-        res.send({ success: true, data: trendingFTPods});
+        res.send({ success: true, data: trendingFTPods });
     } catch (err) {
         console.log('Error in controllers/podController -> getTrendingPods()', err);
         res.send({ success: false });
     }
 };
 
-const countLastWeekPods = (allPodsArray) : Promise<any[]> => {
+const countLastWeekPods = (allPodsArray): Promise<any[]> => {
     return new Promise<any[]>((resolve, reject) => {
 
         let lastWeek = new Date();
         let pastDate = lastWeek.getDate() - 7;
         lastWeek.setDate(pastDate);
 
-        if(allPodsArray && allPodsArray.length > 0) {
+        if (allPodsArray && allPodsArray.length > 0) {
             allPodsArray.forEach((item, i) => {
-                if(item.Followers && item.Followers.length > 0) {
-                    let lastWeekFollowers = item.Followers.filter(follower => follower.date._seconds > lastWeek.getTime()/1000);
+                if (item.Followers && item.Followers.length > 0) {
+                    let lastWeekFollowers = item.Followers.filter(follower => follower.date._seconds > lastWeek.getTime() / 1000);
                     item.lastWeekFollowers = lastWeekFollowers.length;
                 } else {
                     item.lastWeekFollowers = 0;
                 }
-                if(allPodsArray.length === i + 1) {
-                    let sortedArray = allPodsArray.sort((a,b) => (a.lastWeekFollowers > b.lastWeekFollowers) ? 1 : ((b.lastWeekFollowers > a.lastWeekFollowers) ? -1 : 0));
+                if (allPodsArray.length === i + 1) {
+                    let sortedArray = allPodsArray.sort((a, b) => (a.lastWeekFollowers > b.lastWeekFollowers) ? 1 : ((b.lastWeekFollowers > a.lastWeekFollowers) ? -1 : 0));
                     let trendingArray = sortedArray.slice(0, 10);
                     resolve(trendingArray);
                 }
@@ -601,13 +601,13 @@ exports.getOtherPodsFT = async (req: express.Request, res: express.Response) => 
         const userRef = db.collection(collections.user)
             .doc(userId);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
-        let allFTPods : any[] = await getFTPods();
+        let allFTPods: any[] = await getFTPods();
 
-        let myFTPods : any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
+        let myFTPods: any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
 
-        let otherFTPods : any[] = await removeSomePodsFromArray(allFTPods, myFTPods);
+        let otherFTPods: any[] = await removeSomePodsFromArray(allFTPods, myFTPods);
 
         res.send({ success: true, data: otherFTPods });
     } catch (err) {
@@ -623,17 +623,18 @@ exports.getAllFTPodsInfo = async (req: express.Request, res: express.Response) =
         const userRef = db.collection(collections.user)
             .doc(userId);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
-        let allFTPods : any[] = await getFTPods();
+        let allFTPods: any[] = await getFTPods();
 
-        let trendingFTPods : any[] = await countLastWeekPods(allFTPods);
+        let trendingFTPods: any[] = await countLastWeekPods(allFTPods);
 
-        let myFTPods : any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
+        let myFTPods: any[] = await getAllInfoMyPods(allFTPods, user.myFTPods);
 
-        let otherFTPods : any[] = await removeSomePodsFromArray(allFTPods, myFTPods);
+        let otherFTPods: any[] = await removeSomePodsFromArray(allFTPods, myFTPods);
 
-        res.send({ success: true, data: {
+        res.send({
+            success: true, data: {
                 myFTPods: myFTPods,
                 otherFTPods: otherFTPods,
                 trendingFTPods: trendingFTPods
@@ -646,18 +647,18 @@ exports.getAllFTPodsInfo = async (req: express.Request, res: express.Response) =
 };
 
 
-const removeSomePodsFromArray = (fullArray, arrayToRemove) : Promise<any[]> => {
+const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
 
-        if(arrayToRemove && arrayToRemove.length !== 0) {
+        if (arrayToRemove && arrayToRemove.length !== 0) {
             arrayToRemove.forEach((item, i) => {
                 let index = fullArray.findIndex(itemFullArray => itemFullArray.id === item.id)
 
-                if(index && index === -1) {
+                if (index && index === -1) {
                     fullArray = fullArray.slice(index, 1);
                 }
 
-                if(arrayToRemove.length === i + 1) {
+                if (arrayToRemove.length === i + 1) {
                     resolve(fullArray)
                 }
             });
@@ -666,13 +667,13 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove) : Promise<any[]> => {
         }
     });
 }
-;
+    ;
 
-const getFTPods = () : Promise<any[]> => {
+const getFTPods = (): Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsFT = await db.collection(collections.podsFT).get();
 
-        let array : any[] = [];
+        let array: any[] = [];
         podsFT.docs.map((doc, i) => {
             array.push(doc.data());
             if (podsFT.docs.length === i + 1) {
@@ -687,11 +688,11 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
         console.log(podId);
-        if(podId) {
+        if (podId) {
             const podRef = db.collection(collections.podsFT)
                 .doc(podId);
             const podGet = await podRef.get();
-            const pod : any = podGet.data();
+            const pod: any = podGet.data();
 
             // also send back pod rate and PC rate
             const val = 0.01; // val by default
@@ -706,7 +707,7 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
                 }
             });
 
-            res.send({ success: true, data: pod})
+            res.send({ success: true, data: pod })
         } else {
             console.log('Error in controllers/podController -> getFTPod()', "There's no pod id...");
             res.send({ success: false });
@@ -720,8 +721,8 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
 exports.getFTPodTransactions = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
-        const txns:any[] = [];
-        if(podId) {
+        const txns: any[] = [];
+        if (podId) {
             const uidNameMap = await getUidNameMap();
             const podTxnSnapshot = await db.collection(collections.podsFT).doc(podId).collection(collections.podTransactions).get();
             podTxnSnapshot.forEach((doc) => {
@@ -736,10 +737,10 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
                 txn.to = to;
                 txns.push(txn);
             });
-            res.send({ success: true, data: txns});
+            res.send({ success: true, data: txns });
         } else {
             console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
-            res.send({ success: false});
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/podController -> getNFTPodTransactions()', err);
@@ -758,8 +759,8 @@ exports.getFTPodPriceHistory = async (req: express.Request, res: express.Respons
         }
         let podId = req.params.podId;
         console.log("getPriceHisotry", podId);
-        const data:any[] = [];
-        if(podId) {
+        const data: any[] = [];
+        if (podId) {
             const priceHistorySnap = await db.collection(collections.podsFT).doc(podId).collection(collections.priceHistory).get();
             priceHistorySnap.forEach((doc) => {
                 data.push(doc.data());
@@ -770,7 +771,7 @@ exports.getFTPodPriceHistory = async (req: express.Request, res: express.Respons
             });
             // sort data by ascending date
             data.sort(comparator);
-            res.send({ success: true, data: data});
+            res.send({ success: true, data: data });
         } else {
             console.log('Error in controllers/podController -> getFTPodTransactions()', "There's no pod id...");
             res.send({ success: false });
@@ -797,23 +798,25 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
         const userRef = db.collection(collections.user)
             .doc(userId);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
-        let allNFTPods : any[] = await getNFTPods();
+        let allNFTPods: any[] = await getNFTPods();
 
-        let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
+        let trendingNFTPods: any[] = await countLastWeekPods(allNFTPods);
 
-        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+        let myNFTPods: any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
 
-        let otherNFTPods : any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
+        let otherNFTPods: any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
 
-        res.send({ success: true, data: {
+        res.send({
+            success: true, data: {
                 myNFTPods: myNFTPods,
                 otherNFTPods: otherNFTPods,
                 trendingNFTPods: trendingNFTPods
             }
         });
-        res.send({ success: true, data: {
+        res.send({
+            success: true, data: {
                 myNFTPods: [],
                 otherNFTPods: [],
                 trendingNFTPods: []
@@ -837,15 +840,15 @@ exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) =>
         const userRef = db.collection(collections.user)
             .doc(userId);
         const userGet = await userRef.get();
-        const user : any = userGet.data();
+        const user: any = userGet.data();
 
-        let allNFTPods : any[] = await getNFTPods();
+        let allNFTPods: any[] = await getNFTPods();
 
-        let myNFTPods : any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+        let myNFTPods: any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
 
-        let otherNFTPods : any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
+        let otherNFTPods: any[] = await removeSomePodsFromArray(allNFTPods, myNFTPods);
 
-        res.send({ success: true, data: otherNFTPods});
+        res.send({ success: true, data: otherNFTPods });
     } catch (err) {
         console.log('Error in controllers/podController -> getOtherPodsNFT()', err);
         res.send({ success: false });
@@ -859,9 +862,9 @@ exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) =>
  */
 exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response) => {
     try {
-        let allNFTPods : any[] = await getNFTPods();
-        let trendingNFTPods : any[] = await countLastWeekPods(allNFTPods);
-        res.send({ success: true, data: trendingNFTPods});
+        let allNFTPods: any[] = await getNFTPods();
+        let trendingNFTPods: any[] = await countLastWeekPods(allNFTPods);
+        res.send({ success: true, data: trendingNFTPods });
     } catch (err) {
         console.log('Error in controllers/podController -> getTrendingPods()', err);
         res.send({ success: false });
@@ -869,11 +872,11 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
 };
 
 // function to get all NFT Pods
-const getNFTPods = () : Promise<any[]> => {
+const getNFTPods = (): Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsNFT = await db.collection(collections.podsNFT).get();
 
-        let array : any[] = [];
+        let array: any[] = [];
         podsNFT.docs.map((doc, i) => {
             array.push(doc.data());
             if (podsNFT.docs.length === i + 1) {
@@ -892,12 +895,12 @@ const getNFTPods = () : Promise<any[]> => {
 exports.getNFTPod = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
-        if(podId) {
+        if (podId) {
             const podRef = db.collection(collections.podsNFT)
                 .doc(podId);
             const podGet = await podRef.get();
-            const pod:any = podGet.data();
-            res.send({ success: true, data: pod})
+            const pod: any = podGet.data();
+            res.send({ success: true, data: pod })
         } else {
             console.log('Error in controllers/podController -> getNFTPod()', "There's no pod id...");
             res.send({ success: false });
@@ -921,21 +924,21 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const creator = body.Creator;
         const token = body.Token;
         const royalty = body.Royalty;
-        const offers = body.Offers; 
-        const isDigital:boolean = body.IsDigital; // recently added
+        const offers = body.Offers;
+        const isDigital: boolean = body.IsDigital; // recently added
         const royaltyFee = body.RoyaltyFee; // recently added
         const redeemable = body.Redeemable; // recently added
         const blockchainRes = await nftPodProtocol.initiatePodNFT(creator, token, royalty, offers);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);   // update blockchain res
+            updateFirebase(blockchainRes);   // update blockchain res
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
             updateCommonFields(body, podId, false); // update common fields
             const podDocRef = db.collection(collections.podsNFT).doc(podId);
             // Royalty Fee only when its a digital NFT
-            if (isDigital) podDocRef.update({RoyaltyFee: royaltyFee});
+            if (isDigital) podDocRef.update({ RoyaltyFee: royaltyFee });
             // Update Fields that only NFT Pods have
-            podDocRef.update({IsDigital: isDigital, Redeemable: redeemable});
+            podDocRef.update({ IsDigital: isDigital, Redeemable: redeemable });
 
             // TODO: set correct notification type
             createNotification(creator, "NFT Pod - Pod Created",
@@ -943,7 +946,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> initiateNFTPod(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -967,17 +970,17 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
         const trader = body.trader;
         const podId = body.podId;
         const amount = body.amount;
-        const price = body.price; 
+        const price = body.price;
         const blockchainRes = await nftPodProtocol.newBuyOrder(podId, trader, amount, price);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);
+            updateFirebase(blockchainRes);
             // TODO: set correct notification type
             createNotification(trader, "NFT Pod - Pod Buy Offer Crated",
                 ` `,
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> newBuyOrder(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -1000,17 +1003,17 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
         const trader = body.trader;
         const podId = body.podId;
         const amount = body.amount;
-        const price = body.price; 
+        const price = body.price;
         const blockchainRes = await nftPodProtocol.newSellOrder(podId, trader, amount, price);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);
+            updateFirebase(blockchainRes);
             // TODO: set correct notification type
             createNotification(trader, "NFT Pod - Pod Sell Offer Crated",
                 ` `,
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> newSellOrder(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -1034,14 +1037,14 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
         const orderId = body.orderId;
         const blockchainRes = await nftPodProtocol.deleteBuyOrder(podId, orderId, trader);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);
+            updateFirebase(blockchainRes);
             // TODO: set correct notification type
             createNotification(trader, "NFT Pod - Pod Buy Offer Deleted",
                 ` `,
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> deleteBuyOrder(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -1065,14 +1068,14 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
         const orderId = body.orderId;
         const blockchainRes = await nftPodProtocol.deleteSellOrder(podId, orderId, trader);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);
+            updateFirebase(blockchainRes);
             // TODO: set correct notification type
             createNotification(trader, "NFT Pod - Pod Sell Offer Deleted",
                 ` `,
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -1097,7 +1100,7 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const blockchainRes = await nftPodProtocol.sellPodNFT(podId, trader, orderId, amount);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);
+            updateFirebase(blockchainRes);
             // add pod transaction
             let buyer = "unknown";
             let price = 0;
@@ -1130,7 +1133,7 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -1155,7 +1158,7 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const blockchainRes = await nftPodProtocol.buyPodNFT(podId, trader, orderId, amount);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebaseNFT(blockchainRes);
+            updateFirebase(blockchainRes);
             // add pod transaction
             let seller = "unknown";
             let price = 0;
@@ -1188,7 +1191,7 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
                 notificationTypes.podCreation
             );
             res.send({ success: true });
-        } 
+        }
         else {
             console.log('Error in controllers/podController -> buyPodNFT(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
@@ -1207,8 +1210,8 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
 exports.getNFTPodTransactions = async (req: express.Request, res: express.Response) => {
     try {
         let podId = req.params.podId;
-        const txns:any[] = [];
-        if(podId) {
+        const txns: any[] = [];
+        if (podId) {
             const uidNameMap = await getUidNameMap();
             const podTxnSnapshot = await db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).get();
             podTxnSnapshot.forEach((doc) => {
@@ -1223,7 +1226,7 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
                 txn.to = to;
                 txns.push(txn);
             });
-            res.send({ success: true, data: txns});
+            res.send({ success: true, data: txns });
         } else {
             console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
             res.send({ success: false });
@@ -1250,8 +1253,8 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
         }
 
         let podId = req.params.podId;
-        const data:any[] = [];
-        if(podId) {
+        const data: any[] = [];
+        if (podId) {
             const priceHistorySnap = await db.collection(collections.podsNFT).doc(podId).collection(collections.priceHistory).get();
             priceHistorySnap.forEach((doc) => {
                 data.push(doc.data());
@@ -1262,7 +1265,7 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
             });
             // sort data by ascending date
             data.sort(comparator);
-            res.send({ success: true, data: data});
+            res.send({ success: true, data: data });
         } else {
             console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
             res.send({ success: false });
@@ -1284,13 +1287,13 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
 exports.inviteRole = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const admin:string = body.admin;
-        const podType:string = body.podType;
-        const podId:string = body.podId;
-        const invitedUser:string = body.invitedUser;
-        const role:string = body.role;
-        let ok:boolean = true;
-        const emailToUid = await getEmailUidMap() ;
+        const admin: string = body.admin;
+        const podType: string = body.podType;
+        const podId: string = body.podId;
+        const invitedUser: string = body.invitedUser;
+        const role: string = body.role;
+        let ok: boolean = true;
+        const emailToUid = await getEmailUidMap();
         const adminSnap = await db.collection(collections.user).doc(emailToUid[admin]).get();
         if (!adminSnap.exists) ok = false
         const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
@@ -1305,12 +1308,12 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
         if (ok) {
             // check if adminId is one of the admins of the pod
             const podData = podSnap.data();
-            if (podData) 
+            if (podData)
 
 
 
-            res.send({ success: true });
-        } 
+                res.send({ success: true });
+        }
         else {
             console.log('Error in controllers/podController -> inviteRole()');
             res.send({ success: false });
@@ -1335,8 +1338,8 @@ exports.updatePodDay = cron.schedule('0 0 * * *', async () => {
             // only update Initiated pods
             if (data && data.State && data.State.Status == 'INITIATED') {
                 let podDay = data.State.Pod_Day;
-                podDay += 1;    
-                pod.ref.update({"State.POD_Day": podDay});
+                podDay += 1;
+                pod.ref.update({ "State.POD_Day": podDay });
             }
         })
     } catch (err) {
@@ -1418,14 +1421,14 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
         podsSnap.forEach(async (pod) => {
             const data = pod.data();
             if (data.State.Status == "INITIATED") {
-                const duration:number = data.Duration;
-                const payments:number = data.Payments;
+                const duration: number = data.Duration;
+                const payments: number = data.Payments;
                 // both duration and payments exists and diferent than 0
                 if (payments && duration) {
-                    const step = parseInt((duration/payments).toString());  // step to int
+                    const step = parseInt((duration / payments).toString());  // step to int
                     const podDay = data.State.POD_Day
                     // payment day
-                    if (podDay%step == 0) {
+                    if (podDay % step == 0) {
                         const blockchainRes = await podProtocol.interestPOD(pod.id, rateOfChange);
                         if (blockchainRes && blockchainRes.success) {
                             updateFirebase(blockchainRes);
@@ -1508,9 +1511,9 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
             let date = Date.now();
             // get lowest price from PriceOfTheDay
             const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get();
-            if (!priceOfTheDaySnap.empty){
+            if (!priceOfTheDaySnap.empty) {
                 priceOfTheDaySnap.forEach((doc) => {
-                    if(doc.data() && doc.data().price < dayLowestPrice) {
+                    if (doc.data() && doc.data().price < dayLowestPrice) {
                         dayLowestPrice = doc.data().price;
                     }
                 });
@@ -1529,7 +1532,7 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
                 pod.ref.collection(collections.priceHistory).add({
                     price: dayLowestPrice,
                     date: date
-                });   
+                });
             }
             // reset (empty) PriceOfTheDay
             priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
@@ -1543,7 +1546,7 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
             const podData = pod.data();
             if (podData) {
                 let orderId = "";
-                let sale:any = null;
+                let sale: any = null;
                 for ([orderId, sale] of Object.entries(podData.OrderBook.Sell)) {
                     if (sale.Price < dayLowestPrice && sale.Amount != 0) dayLowestPrice = sale.Price;
                 }
@@ -1561,7 +1564,8 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
             if (dayLowestPrice != Infinity) {
                 pod.ref.collection(collections.priceHistory).add({
                     price: dayLowestPrice,
-                    date: date}
+                    date: date
+                }
                 );
             }
             // reset (empty) PriceOfTheDay
