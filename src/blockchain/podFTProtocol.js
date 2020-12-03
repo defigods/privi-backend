@@ -1,12 +1,13 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.initiatePOD = async (creatorId, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName, fundingToken, duration, payments, principal, interest, liquidationCCR , collaterals, rateOfChange, txnId, caller) => {
+module.exports.initiatePOD = async (creatorId, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName, fundingToken, duration, frequency, principal, interest, liquidationCCR, date, dateExpiration,
+    collaterals, rateOfChange, txnId, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodAPI + "/initiatePOD", {
         PodInfo: {
             Creator: creatorId,
-            
-            Address: address,
+
+            PodAddress: address,
             AMM: amm,
             SpreadTarget: spreadTarget,
             SpreadExchange: spreadExchange,
@@ -15,12 +16,15 @@ module.exports.initiatePOD = async (creatorId, address, amm, spreadTarget, sprea
             FundingToken: fundingToken,
 
             Duration: duration,
-            Payments: payments,
+            Frequency: frequency,
             Principal: principal,
             Interest: interest,
             LiquidationCCR: liquidationCCR,
+            Date: date,
+            DateExpiration: dateExpiration,
+
+            Collaterals: collaterals,
         },
-        Collaterals: collaterals,
         RateChange: rateOfChange,
         TxnId: txnId,
         Caller: caller
