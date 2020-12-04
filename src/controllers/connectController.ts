@@ -7,12 +7,14 @@ import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance'
 import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
+import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
 require('dotenv').config();
 
+// TODO: this should be the preferred method to get the private key!
 // Get private key for API calls
-const apiKey = process.env.API_KEY;
+//const apiKey = process.env.API_KEY;
 
 // Websocket settings
 const webSocketServer = require('websocket').server;
@@ -66,7 +68,9 @@ const getChainId = () => {
 };
 getChainId();
 
-// Start http & websocket servers
+/**
+ * @notice Start http & websocket servers to interact with the front-end
+ */
 const startWS = () => {
     try {
         // Determine environment (http or https)
@@ -107,28 +111,6 @@ const startWS = () => {
         console.log('Error in connectController->startWS(): ', err);
     };
 };
-
-/**
- * @dev The minimum ABI to get ERC20 Token balance
- */
-const miniABI = [
-    // balanceOf
-    {
-        "constant": true,
-        "inputs": [{ "name": "_owner", "type": "address" }],
-        "name": "balanceOf",
-        "outputs": [{ "name": "balance", "type": "uint256" }],
-        "type": "function"
-    },
-    // decimals
-    {
-        "constant": true,
-        "inputs": [],
-        "name": "decimals",
-        "outputs": [{ "name": "", "type": "uint8" }],
-        "type": "function"
-    }
-];
 
 /**
  * @notice Generic function to execute Ethereum transactions with signature
@@ -177,11 +159,14 @@ const executeTX = (params: any) => {
     });
 };
 
-
+/**
+ * @notice Retrieves the balance of ethers from the User's Ethereum address 
+ * @return balance if the contract call is successful / 0 otherwise
+ */
 const callBalance = (contractAddress: string, fromAddress: any) => {
     return new Promise<number>(async (resolve) => {
         if (contractAddress !== ZERO_ADDRESS) {
-            let contract = new web3.eth.Contract(miniABI, contractAddress);
+            let contract = new web3.eth.Contract(ERC20Balance.abi, contractAddress);
             await contract.methods.balanceOf(fromAddress).call()
                 .then(result => {
                     resolve(web3.utils.fromWei((result), 'ether'));
@@ -197,8 +182,8 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
 };
 
 /**
- * @notice Retrieves the balance of an ERC20 token contract for a given User
- * @returns {success: boolean, balance: number}
+ * @notice Retrieves the balance of all ERC20 token contracts from the User's Ethereum address 
+ * @return {success: boolean, balance: number}
  *          success: 'true' if balance was found / 'false' otherwise
  *          balance: balance amount
  * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
@@ -234,7 +219,9 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
 };
 
 /**
- * @notice Receives a transaction from the front-end and stores it in the database
+ * @notice Receives a transaction from the front-end and:
+ *  - If swap: call function to store TX in the database (to be processed by a chron afterwards)
+ *  - If withdraw: call withdraw function
  */
 const send = async (req: express.Request, res: express.Response) => {
     const body = req.body;
@@ -251,8 +238,8 @@ const send = async (req: express.Request, res: express.Response) => {
 };
 
 /**
- * @notice Stores a transaction in the database, to be processed afterwards
- * @param params Relevant transaction fields
+ * @notice Stores a transaction in the database
+ * @param params Relevant transaction fields to be stored
  */
 const saveTx = async (params: any) => {
 
@@ -281,7 +268,7 @@ const saveTx = async (params: any) => {
 /**
  * @notice Updates the status of a transaction in the database
  * @param txHash Transaction hash
- * @param newStatus Transaction status
+ * @param newStatus New transaction status
  */
 const updateTx = async (txHash: string, newStatus: string) => {
 
@@ -305,8 +292,9 @@ const updateTx = async (txHash: string, newStatus: string) => {
  * @param txHash  Transaction hash
  * @param publicId User ID
  * @param action Action performed (relevant in the front-end in case of 'SWAP_APPROVE_ERC20')
+ * @param random Random generated from the front-end as identifier for a withdraw request
+ * @param status Transaction status (pending, failed)
  */
-// const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
 const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
 
     // Update TX status in Firestore
@@ -333,7 +321,6 @@ const sendTxBack = async (txHash: string, publicId: string, action: string, rand
 /**
  * @notice Check number of confirmations of a transaction in Ethereum
  * @param txHash  Transaction hash
- * @param publicId User ID
  * @return Number of confirmations (for testing, we set to 1 to get results faster)
  */
 const checkTxConfirmations = async (txHash: string) => {
@@ -435,9 +422,11 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
 /**
  * @notice Swap ETH or ERC20 tokens between Ethereum and Fabric's User account
  * @param publicId User ID
+ * @param from origin address
  * @param amount Amount to be swapped
  * @param token Ether (ETH) or coin type (DAI, UNI..)
  * @param txHash Transaction hash
+ * @param random Random generated from the front-end as identifier for a withdraw request
  * @param action Action to be performed (swap ETH or swap ERC20 token)
  */
 const swap = async (
@@ -490,6 +479,16 @@ console.log({
     };
 };
 
+/**
+ * @notice Withdraw ETH or ERC20 tokens between Fabric's and Ethereum's User account
+ * @param publicId User ID
+ * @param from origin address
+ * @param amount Amount to be swapped
+ * @param token Ether (ETH) or coin type (DAI, UNI..)
+ * @param txHash Transaction hash
+ * @param random Random generated from the front-end as identifier for a withdraw request
+ * @param action Action to be performed (swap ETH or swap ERC20 token)
+ */
 const withdraw = async (params: any) => {
 
     // Withdraw in Fabric
