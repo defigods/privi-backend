@@ -1,4 +1,4 @@
-//const FabricAppServerIP = "207.154.215.199";
+// const FabricAppServerIP = "207.154.215.199";
 const FabricAppServerIP = "167.99.245.246";	// for testing
 const port = 4000;
 const blockchainApi = "http://" + FabricAppServerIP + ":" + port + "/api/fabric";
@@ -12,7 +12,7 @@ const blockchainPodNFTPodAPI = "http://" + FabricAppServerIP + ":" + port + "/ap
 
 module.exports = {
 	blockchainApi: blockchainApi,
-	blockchainCoinBalanceAPI : blockchainCoinBalanceAPI,
+	blockchainCoinBalanceAPI: blockchainCoinBalanceAPI,
 	blockchainDataProtocolAPI: blockchainDataProtocolAPI,
 	blockchainTraditionalLendingAPI: blockchainTraditionalLendingAPI,
 	blockchainPriviLendingAPI: blockchainPriviLendingAPI,

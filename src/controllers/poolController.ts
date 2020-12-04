@@ -1,5 +1,5 @@
 import express from 'express';
-import podProtocol from "../blockchain/podProtocol";
+import podProtocol from "../blockchain/podFTProtocol";
 import { updateFirebase, getRateOfChange, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 
