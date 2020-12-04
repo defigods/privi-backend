@@ -16,7 +16,8 @@ export async function updateFirebase(blockchainRes) {
         const updateBalances = output.UpdateBalances;   // new added
         const updateTransactions = output.Transactions;   // new added
         const updateLoans = output.UpdateLoans;
-        const updatePods = output.UpdatePods;   // changed 
+        const updatePods = output.UpdatePods;   // changed
+        const updatePodStates = output.UpdatePodStates; // new adaded
         const updatePools = output.UpdatePools;
         const updateInsurance = output.UpdateInsurance;
         // update user
@@ -45,6 +46,15 @@ export async function updateFirebase(blockchainRes) {
             let loanObj: any = {};
             for ([loanId, loanObj] of Object.entries(updateLoans)) {
                 transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
+            }
+        }
+        // update tokens
+        if (updateTokens) {
+            let key: string = "";
+            let val: any = null;
+            for ([key, val] of Object.entries(updateTokens)) {
+                console.log(key, val)
+                transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
         // update wallet
@@ -89,20 +99,27 @@ export async function updateFirebase(blockchainRes) {
         }
         // update balances
         if (updateBalances) {
-            let key:string = "";
-            let balanceObj:any = null;
+            let key: string = "";
+            let balanceObj: any = null;
             for ([key, balanceObj] of Object.entries(updateBalances)) {
-                const splitted:string[] = key.split(" ");
-                const uid = splitted[0];
-                const token = splitted[1];
-                const tokenType = await identifyTypeOfToken(token);   // token type colection
+                let uid = "";
+                let token = "";
+                let tokenType = "";
+                const splitted: string[] = key.split(" ");
+                uid = splitted[0];
+                token = splitted[1];
+                tokenType = await identifyTypeOfToken(token);   // token type colection
+                if (tokenType == collections.unknown && updateTokens) { // case new token added in the system
+                    const newToken: any = Object.values(updateTokens)[0];
+                    if (newToken.Type) tokenType = newToken.Type;
+                }
                 transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, {merge:true});
             }
         }
         // update transactions (for each txn, save to from's colection and to's colection)
         if (updateTransactions) {
-            let key:string = "";
-            let val:any = null;
+            let key: string = "";
+            let val: any = null;
             for ([key, val] of Object.entries(updateTransactions)) {
                 const from = val.From;
                 const to = val.To;
@@ -119,7 +136,19 @@ export async function updateFirebase(blockchainRes) {
                 let colectionName = collections.podsFT;
                 if (podObj.Royalty) colectionName = collections.podsNFT;    // case NFT
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
-                transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
+                transaction.set(db.collection(colectionName).doc(podId), podObj, { merge: true });
+            }
+        }
+        // update pod states
+        if (updatePodStates) {
+            let podId: string = '';
+            let podState: any = {};
+            for ([podId, podState] of Object.entries(updatePodStates)) {
+                // find out NFT or FT
+                let colectionName = collections.podsFT;
+                if (podState.Royalty) colectionName = collections.podsNFT;    // case NFT
+                // with merge flag because pods have more info thats not in blockchain (eg followers)
+                transaction.set(db.collection(colectionName).doc(podId), podState, { merge: true });
             }
         }
         // update pools
@@ -247,6 +276,7 @@ export async function updateFirebaseNFT(blockchainRes) {
     });
 }
 
+
 // rate of all tokens in ratesOfChange colection (that is all types except nft)
 export async function getRateOfChange() {
     let res = {};
@@ -262,7 +292,7 @@ export async function getRateOfChange() {
 };
 
 export async function getTokensRate2() {
-    const data:{}[] = [];
+    const data: {}[] = [];
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
@@ -398,7 +428,7 @@ export function generateUniqueId() {
     return id;
 }
 
-export function isEmail(email:string) {
+export function isEmail(email: string) {
     const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     return emailRegexp.test(email);
 }
@@ -410,5 +440,5 @@ const identifyTypeOfToken = async function (token:string):Promise<string> {
         if (data) return data.Type;
     }
     return collections.unknown;
-} 
+}
 module.exports.identifyTypeOfToken = identifyTypeOfToken;

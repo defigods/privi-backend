@@ -1,13 +1,18 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-// module.exports.registerWallet = async (publicId) => {
-// 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/registerWallet", {
-// 		PublicId: publicId,
-// 	});
-// 	return blockchainRes.data;
-// };
 
+module.exports.registerToken = async (name, type, symbol, supply, addressId, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/registerToken", {
+		Name: name,
+		Type: type,
+		Symbol: symbol,
+		Supply: supply,
+		AddressId: addressId,
+		Caller: caller,
+	});
+	return blockchainRes.data;
+};
 
 module.exports.transfer = async (from, to, amount, coin, id, date, type, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/transfer", {
@@ -92,4 +97,3 @@ module.exports.multitransfer = async (arrayObj, caller) => {
 	});
 	return blockchainRes.data;
 }
-

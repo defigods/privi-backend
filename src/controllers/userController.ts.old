@@ -6,7 +6,7 @@ import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail, generateUniqueId } from "../functions/functions";
+import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
@@ -19,158 +19,154 @@ const jwt = require('jsonwebtoken');
 const crypto = require("crypto");
 import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates/emailTemplates";
 
-require('dotenv').config();
-//const apiKey = process.env.API_KEY;
-const apiKey = "PRIVI"; // just for now
-
 const emailValidation = async (req: express.Request, res: express.Response) => {
-    let success = false;
-    let message = "";
-    // let message_key = "";
+	let success = false;
+	let message = "";
+	// let message_key = "";
 
-    const validation_slug = req.params.validation_slug;
+	const validation_slug = req.params.validation_slug;
 
-    const decodeValidationSlug = Buffer.from(validation_slug, 'base64').toString('ascii');
-    const split = decodeValidationSlug.split("_");
-    if (split.length == 2) {
-        const uid = split[0];
-        const validationSecret = split[1];
+	const decodeValidationSlug = Buffer.from(validation_slug, 'base64').toString('ascii');
+	const split = decodeValidationSlug.split("_");
+	if (split.length == 2) {
+		const uid = split[0];
+		const validationSecret = split[1];
 
-        // look for user record given uid
+		// look for user record given uid
         const userRef = db.collection(collections.user)
             .doc(uid);
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
-        if (user == null) {
-            message = "user not found";
-            // message_key = "USER_NOT_FOUND";
+		if (user == null) {
+			message = "user not found";
+			// message_key = "USER_NOT_FOUND";
 
-        } else {
-            if (user.isEmailValidated) {
-                message = "user already validated";
-                // message_key = "USER_ALREADY_VALIDATED";
+		} else {
+			if (user.isEmailValidated) {
+				message = "user already validated";
+				// message_key = "USER_ALREADY_VALIDATED";
 
-            } else {
-                if (user.validationSecret == validationSecret) {
-                    // update user
-                    user.isEmailValidated = true;
-                    user.validationSecret = "";
+			} else {
+				if (user.validationSecret == validationSecret) {
+					// update user
+					user.isEmailValidated = true;
+					user.validationSecret = "";
 
-                    db.collection(collections.user).doc(uid).update(user);
+					db.collection(collections.user).doc(uid).update(user);
 
-                    message = "We have successfully verified your email address, please log in here https://privibeta.web.app/";
-                    // message_key = "VALIDATION_SUCCESS";
+					message = "We have successfully verified your email address, please log in here https://privibeta.web.app/";
+					// message_key = "VALIDATION_SUCCESS";
 
-                    success = true;
+					success = true;
 
-                } else {
-                    message = "failed to validate user";
-                    // message_key = "INVALID_VALIDATION_SECRET";
-                }
-            }
-        }
+				} else {
+					message = "failed to validate user";
+					// message_key = "INVALID_VALIDATION_SECRET";
+				}
+			}
+		}
 
-    } else {
-        message = "invalid validation link";
-        // message_key = "INVALID_VALIDATION_LINK";
-    }
+	} else {
+		message = "invalid validation link";
+		// message_key = "INVALID_VALIDATION_LINK";
+	}
 
-    res.setHeader('Content-Type', 'text/html');
-    res.send(message);
+	res.setHeader('Content-Type', 'text/html');
+	res.send(message);
 
 }; // emailValidation
 
 const forgotPassword = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
+	const body = req.body;
 
-    const email = body.email;
-    if (email) {
-        const user = await db.collection(collections.user)
-            .where('email', '==', email)
-            .get();
+	const email = body.email;
+	if (email) {
+		const user = await db.collection(collections.user)
+			.where('email', '==', email)
+			.get();
 
-        if (user.empty) {
-            console.log('not found');
-            res.send({ success: false, message: "user not found" });
+		if (user.empty) {
+			console.log('not found');
+			res.send({ success: false, message: "user not found" });
 
-        } else {
-            // create a temporary password
-            let tempPassword = crypto.randomBytes(8).toString('hex');
-            // console.log("temporary password:", tempPassword);
+		} else {
+			// create a temporary password
+			let tempPassword = crypto.randomBytes(8).toString('hex');
+			// console.log("temporary password:", tempPassword);
 
             const data = user.docs[0].data();
 
-            const salt = await bcrypt.genSalt(10);
-            const hash = await bcrypt.hash(tempPassword, salt);
-            data["temp_password"] = hash;
+			const salt = await bcrypt.genSalt(10);
+			const hash = await bcrypt.hash(tempPassword, salt);
+			data["temp_password"] = hash;
 
-            let expiryDate = new Date();
-            expiryDate.setDate(new Date().getDate() + configuration.FORGOT_PASSWORD_EXPIRY_DAYS);
-            data["temp_password_expiry"] = expiryDate.getTime(); // 1 day temporary password expiry
+			let expiryDate = new Date();
+			expiryDate.setDate(new Date().getDate()+configuration.FORGOT_PASSWORD_EXPIRY_DAYS);
+			data["temp_password_expiry"] = expiryDate.getTime(); // 1 day temporary password expiry
 
-            data["lastUpdate"] = Date.now();
+			data["lastUpdate"] = Date.now();
 
-            // save to db
-            db.collection(collections.user).doc(user.docs[0].id).update(data);
+			// save to db
+			db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-            let successEmail = await sendForgotPasswordEmail(data, tempPassword);
-            if (successEmail) {
-                res.send({ success: true, message: "Temporary password sent to email." });
-            } else {
-                res.send({ success: false, message: "Failed to send temporary password email." });
-            }
-        }
+			let successEmail = await sendForgotPasswordEmail(data, tempPassword);
+			if (successEmail) {
+				res.send({ success: true, message: "Temporary password sent to email." });
+			} else {
+				res.send({ success: false, message: "Failed to send temporary password email." });
+			}
+		}
 
-    } else {
-        console.log('email required');
-        res.send({ success: false, message: "email required" });
-    }
+	} else {
+		console.log('email required');
+		res.send({ success: false, message: "email required" });
+	}
 
 }; // forgotPassword
 
 const resendEmailValidation = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
+	const body = req.body;
 
-    const email = body.email;
-    if (email) {
-        const user = await db.collection(collections.user)
-            .where('email', '==', email)
-            .get();
+	const email = body.email;
+	if (email) {
+		const user = await db.collection(collections.user)
+			.where('email', '==', email)
+			.get();
 
-        if (user.empty) {
-            console.log('not found');
-            res.send({ success: false, message: "user not found" });
+		if (user.empty) {
+			console.log('not found');
+			res.send({ success: false, message: "user not found" });
 
-        } else {
+		} else {
             const data = user.docs[0].data();
 
-            if (data.isEmailValidated) {
-                res.send({ success: false, message: "user already validated" });
+			if (data.isEmailValidated) {
+				res.send({ success: false, message: "user already validated" });
 
-            } else {
-                if (!data.validationSecret) { // no validation secret field
-                    data.validationSecret = crypto.randomBytes(8).toString('hex');
-                    data.isEmailValidated = false;
+			} else {
+				if (!data.validationSecret) { // no validation secret field
+					data.validationSecret = crypto.randomBytes(8).toString('hex');
+					data.isEmailValidated = false;
 
-                    // save to db
-                    db.collection(collections.user).doc(user.docs[0].id).update(data);
-                }
+					// save to db
+					db.collection(collections.user).doc(user.docs[0].id).update(data);
+				}
 
-                data.id = user.docs[0].id;
-                let successEmail = await sendEmailValidation(data, true);
-                if (!successEmail) {
-                    console.log("failed to resend email validation");
-                }
+				data.id = user.docs[0].id;
+				let successEmail = await sendEmailValidation(data, true);
+				if (!successEmail) {
+					console.log("failed to resend email validation");
+				}
 
-                res.send({ success: true, message: "email validation resent" });
-            }
-        }
+				res.send({ success: true, message: "email validation resent" });
+			}
+		}
 
-    } else {
-        console.log('email required');
-        res.send({ success: false, message: "email required" });
-    }
+	} else {
+		console.log('email required');
+		res.send({ success: false, message: "email required" });
+	}
 
 }; // resendEmailValidation
 
@@ -193,72 +189,72 @@ const signIn = async (req: express.Request, res: express.Response) => {
                 console.log('found from email')
                 const data = user.docs[0].data();
 
-                if (!data.isEmailValidated) {
-                    res.send({ isSignedIn: false, userData: {}, message: "please validate your email", message_key: "EMAIL_VALIDATION_REQUIRED" });
+								if (!data.isEmailValidated) {
+                	res.send({ isSignedIn: false, userData: {}, message: "please validate your email", message_key:"EMAIL_VALIDATION_REQUIRED" });
 
-                } else {
-                    let success = false;
+								} else {
+									let success = false;
 
-                    if (data.password == password) { // unencrypted so let's encrypt this password
-                        const salt = await bcrypt.genSalt(10)
-                        const hash = await bcrypt.hash(password, salt);
-                        data["password"] = hash;
+									if (data.password == password) { // unencrypted so let's encrypt this password
+									    const salt = await bcrypt.genSalt(10)
+									  const hash = await bcrypt.hash(password, salt);
+									  data["password"] = hash;
 
-                        db.collection(collections.user).doc(user.docs[0].id).update(data);
+									  db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-                        success = true;
-                        console.log("password encrypted");
+									  success = true;
+									  console.log("password encrypted");
 
-                    } else {
-                        let isSame = await bcrypt.compare(password, data.password);
-                        success = isSame;
+									} else {
+									  let isSame = await bcrypt.compare(password, data.password);
+									  success = isSame;
 
-                        if (!isSame && data.temp_password && (data.temp_password_expiry > Date.now())) { // has temporary password that is not yet expired
-                            isSame = await bcrypt.compare(password, data.temp_password);
-                            success = isSame
+									  if (!isSame && data.temp_password && (data.temp_password_expiry > Date.now())) { // has temporary password that is not yet expired
+									    isSame = await bcrypt.compare(password, data.temp_password);
+									    success = isSame
 
-                            if (isSame) { // let's use the temporary password going forward
-                                const salt = await bcrypt.genSalt(10)
-                                const hash = await bcrypt.hash(password, salt);
-                                data["password"] = hash;
+									    if (isSame) { // let's use the temporary password going forward
+									      const salt = await bcrypt.genSalt(10)
+									      const hash = await bcrypt.hash(password, salt);
+									      data["password"] = hash;
 
-                                // delete temp fields
-                                data["temp_password"] = FieldValue.delete();
-                                // data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
+									      // delete temp fields
+									      data["temp_password"] = FieldValue.delete();
+									      // data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
 
-                                data["lastUpdate"] = Date.now();
+									      data["lastUpdate"] = Date.now();
 
-                                db.collection(collections.user).doc(user.docs[0].id).update(data);
+									      db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-                                console.log("temporary password used");
-                            }
-                        }
-                    }
+									      console.log("temporary password used");
+									    }
+									  }
+									}
 
-                    data.id = user.docs[0].id;
-                    if (success) {
-                        console.log('Login successful');
+									data.id = user.docs[0].id;
+									if (success) {
+										console.log('Login successful');
 
-                        // Generate an access token
-                        let expiryDate = new Date();
-                        expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
+									  // Generate an access token
+									  let expiryDate = new Date();
+									  expiryDate.setDate(new Date().getDate()+configuration.LOGIN_EXPIRY_DAYS);
 
-                        const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat: Date.now(), exp: expiryDate.getTime() }, configuration.JWT_SECRET_STRING);
+									  const accessToken = jwt.sign({ id: data.id, email: data.email, role: data.role, iat:Date.now(), exp:expiryDate.getTime()}, configuration.JWT_SECRET_STRING);
 
-                        res.send({ isSignedIn: true, userData: data, accessToken: accessToken });
+									  res.send({ isSignedIn: true, userData: data, accessToken:accessToken });
 
-                    } else {
-                        console.log('wrong password');
-                        res.send({ isSignedIn: false, userData: {} });
-                        return;
-                    }
-                }
+									} else {
+									  console.log('wrong password');
+									  res.send({ isSignedIn: false, userData: {} });
+									  return;
+									}
+								}
             }
 
         } else {
-            console.log('email and password required');
-            res.send({ isSignedIn: false, userData: {} });
-        }
+					console.log('email and password required');
+					res.send({ isSignedIn: false, userData: {} });
+				}
 
     } catch (err) {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
@@ -295,11 +291,11 @@ const signUp = async (req: express.Request, res: express.Response) => {
         const password = body.password;
         const role = body.role; // role should not be coming from user input?
 
-        if (email == "" || password == "") { // basic requirement validation
-            console.log('email and password required');
-            res.send({ success: false, message: "email and password required" });
-            return;
-        }
+		if (email == "" || password == "") { // basic requirement validation
+			console.log('email and password required');
+			res.send({ success: false, message: "email and password required" });
+			return;
+		}
 
         /*
                 const lastName = body.lastName;
@@ -324,19 +320,18 @@ const signUp = async (req: express.Request, res: express.Response) => {
             return;
         }
 
-        const orgName = "companies";    // hardcoded for now
-        const userPublicId = generateUniqueId();    // now we generate it
-        const caller = apiKey;
-        const blockchainRes = await dataProtocol.registerUser(orgName, userPublicId, role, caller);
+        const blockchainRes = await dataProtocol.register(role);
 
         if (blockchainRes && blockchainRes.success) {
             // Get IDs from blockchain response
-            uid = userPublicId;
+            const output = blockchainRes.output;
+            uid = output.ID;
+            const did = output.DID;
 
-            const salt = await bcrypt.genSalt(10)
-            const hash = await bcrypt.hash(password, salt);
+			const salt = await bcrypt.genSalt(10)
+			const hash = await bcrypt.hash(password, salt);
 
-            const validationSecret = crypto.randomBytes(8).toString('hex');
+			const validationSecret = crypto.randomBytes(8).toString('hex');
 
             // Creates User in DB
             await db.runTransaction(async (transaction) => {
@@ -350,8 +345,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     password: hash,
                     role: role,
 
-                    validationSecret: validationSecret,
-                    isEmailValidated: false,
+					validationSecret: validationSecret,
+					isEmailValidated: false,
 
                     /*
                                         gender: gender,
@@ -365,8 +360,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     */
 
                     lastUpdate: lastUpdate,
-                    endorsementScore: 0.5,
-                    trustScore: 0.5,
+                    endorsementScore: output.UpdateWallets[uid].EndorsementScore,
+                    trustScore: output.UpdateWallets[uid].TrustScore,
                     followings: [],
                     numFollowings: 0,
                     followers: [],
@@ -379,8 +374,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     investedFTPods: [],
                     twitter: '',
                     instagram: '',
-                    facebook: '',
-                    level: 1
+                    facebook: ''
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -392,6 +386,22 @@ const signUp = async (req: express.Request, res: express.Response) => {
                                     location: location
                                 });
                 */
+
+                // wallet
+                const balances = output.UpdateWallets[uid].Balances;
+                for (const [key, value] of Object.entries(balances)) {  // for each token obj
+                    transaction.set(db.collection(collections.wallet).doc(key).collection(collections.user).doc(uid), value);
+                }
+
+                // transaction
+                const history = output.UpdateWallets[uid].Transaction;
+                if (history != null) {
+                    history.forEach(obj => {
+                        transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
+                        //transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
+                        transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
+                    });
+                }
 
             });
 
@@ -405,8 +415,6 @@ const signUp = async (req: express.Request, res: express.Response) => {
             let rate: any = null;
             for ([token, rate] of Object.entries(rateOfChange)) { // build multitransfer array object by looping in rateOfChange
                 // rateOfChange also cointains podTokens, we dont need them
-                const tid = generateUniqueId();
-                const date = Date.now();
                 if (token.length <= 8) {
                     const amount = coinsVal / rateOfChange[token];
                     const transferObj = {
@@ -414,14 +422,12 @@ const signUp = async (req: express.Request, res: express.Response) => {
                         Token: token,
                         From: fromUid,
                         To: uid,
-                        Amount: amount,
-                        Id: tid,
-                        date: date
+                        Amount: amount
                     };
                     arrayMultiTransfer.push(transferObj);
                 }
             }
-            const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer, caller);
+            const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer);
             if (blockchainRes2 && blockchainRes2.success) {
                 console.log('User initial gift sent: 50 USD in each token');
                 updateFirebase(blockchainRes2);
@@ -431,18 +437,18 @@ const signUp = async (req: express.Request, res: express.Response) => {
             }
             // ------------------------------------------------------------------------------------
 
-            // send email validation here
-            let userData = {
-                id: uid,
-                email: email,
-                validationSecret: validationSecret,
-                firstName: firstName,
-            };
+			// send email validation here
+			let userData = {
+				id: uid,
+				email: email,
+				validationSecret: validationSecret,
+				firstName: firstName,
+			};
 
-            let successEmail = await sendEmailValidation(userData, false);
-            if (!successEmail) {
-                console.log("failed to send email validation");
-            }
+			let successEmail = await sendEmailValidation(userData, false);
+			if (!successEmail) {
+				console.log("failed to send email validation");
+			}
 
             res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
 
@@ -468,7 +474,6 @@ interface BasicInfo {
     numFollowers: number,
     numFollowings: number,
     bio: string,
-    level: number,
     twitter: string,
     facebook: string,
     instagram: string
@@ -477,9 +482,8 @@ interface BasicInfo {
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-
         let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: ''};
+            numFollowings: 0, bio: '', twitter: '', instagram: '', facebook: ''};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -490,7 +494,6 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
-            basicInfo.level = userData.level || 1;
             basicInfo.twitter = userData.twitter || '';
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
@@ -965,12 +968,12 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
     try {
-        if (req.file) {
+        if(req.file) {
             const userRef = db.collection(collections.user)
                 .doc(req.file.originalname);
             const userGet = await userRef.get();
-            const user: any = userGet.data();
-            if (user.HasPhoto) {
+            const user : any = userGet.data();
+            if(user.HasPhoto) {
                 await userRef.update({
                     HasPhoto: true
                 });
@@ -991,7 +994,7 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
         console.log(userId);
-        if (userId) {
+        if(userId) {
             const directoryPath = path.join('uploads', 'users');
             fs.readdir(directoryPath, function (err, files) {
                 //handling error
@@ -1009,7 +1012,7 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
             // stream the image back by loading the file
             res.setHeader('Content-Type', 'image');
             let raw = fs.createReadStream(path.join('uploads', 'users', userId + '.png'));
-            raw.on('error', function (err) {
+            raw.on('error', function(err) {
                 console.log(err)
                 res.sendStatus(400);
             });
@@ -1028,17 +1031,17 @@ const getUserList = async (req: express.Request, res: express.Response) => {
     try {
         let filters = req.body;
 
-        if (filters) {
+        if(filters) {
             const userRef = db.collection(collections.user)
                 .doc(filters.userId);
             const userGet = await userRef.get();
-            const user: any = userGet.data();
+            const user : any = userGet.data();
 
             const usersRef = db.collection(collections.user);
-            usersRef.where("endorsementScore", ">", filters.endorsementScore[0] / 100)
-                .where("trustScore", ">", filters.trustScore[0] / 100);
-            usersRef.where("endorsementScore", "<", filters.endorsementScore[1] / 100)
-                .where("trustScore", "<", filters.trustScore[1] / 100)
+            usersRef.where("endorsementScore", ">", filters.endorsementScore[0]/100)
+                .where("trustScore", ">", filters.trustScore[0]/100);
+            usersRef.where("endorsementScore", "<", filters.endorsementScore[1]/100)
+                .where("trustScore", "<", filters.trustScore[1]/100)
                 .orderBy("Followers", "desc")
 
             const usersGet = await usersRef.get();
@@ -1048,30 +1051,30 @@ const getUserList = async (req: express.Request, res: express.Response) => {
                 let data = doc.data();
                 data.id = doc.id;
                 let name = '';
-                if (data.lastName && data.lastName !== '') {
+                if(data.lastName && data.lastName !== '') {
                     name = data.firstName + ' ' + data.lastName;
                 } else {
                     name = data.firstName;
                 }
 
-                if (filters.name === '' || name.startsWith(filters.name)) {
+                if(filters.name === '' || name.startsWith(filters.name)) {
                     arrayUsers.push(data);
                 }
                 if (usersGet.docs.length === i + 1) {
 
-                    if (arrayUsers.length !== 0) {
+                    if(arrayUsers.length !== 0) {
                         arrayUsers.forEach((item, i) => {
-                            if (user.followings && user.followings.length !== 0) {
+                            if(user.followings && user.followings.length !== 0) {
                                 item.isFollowing = user.followings.findIndex(usr => usr === item.id) !== -1;
                             } else {
                                 item.isFollowing = false;
                             }
-                            if (arrayUsers.length === i + 1) {
-                                res.send({ success: true, data: arrayUsers });
+                            if(arrayUsers.length === i + 1) {
+                                res.send({ success: true, data: arrayUsers});
                             }
                         });
                     } else {
-                        res.send({ success: true, data: [] });
+                        res.send({ success: true, data: []});
                     }
                 }
             });
@@ -1086,17 +1089,17 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 };
 
 const createBadge = async (req: express.Request, res: express.Response) => {
-    try {
+    try{
         let body = req.body;
 
-        let badgesGet = await db.collection(collections.badges).get();
+        let badgesGet = await db.collection('collectionName').get();
         let id = badgesGet.size;
 
-        if (body) {
+        if(body) {
             await db.runTransaction(async (transaction) => {
 
                 // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.badges).doc('' + id + 1), {
+                transaction.set(db.collection(collections.badges).doc(''+id+1), {
                     creatorId: body.creatorId,
                     users: [],
                     badgesAvailable: body.badgesAvailable,
@@ -1104,14 +1107,13 @@ const createBadge = async (req: express.Request, res: express.Response) => {
                     hasPhoto: false
                 });
             });
-            res.send({
-                success: true, data: {
+            res.send({ success: true, data: {
                     creatorId: body.userId,
                     users: [],
                     badgesAvailable: body.badgesAvailable,
                     name: body.name,
                     hasPhoto: false,
-                    id: id + 1
+                    id: id+1
                 }
             });
         } else {
@@ -1126,12 +1128,12 @@ const createBadge = async (req: express.Request, res: express.Response) => {
 
 const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
     try {
-        if (req.file) {
+        if(req.file) {
             const badgeRef = db.collection(collections.badges)
                 .doc(req.file.originalname);
             const badgeGet = await badgeRef.get();
-            const badge: any = badgeGet.data();
-            if (badge.HasPhoto) {
+            const badge : any = badgeGet.data();
+            if(badge.HasPhoto) {
                 await badgeRef.update({
                     HasPhoto: true
                 });
@@ -1147,200 +1149,11 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     }
 };
 
-const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
-    let userId = req.params.userId;
-    console.log(userId);
-}
-
-const createIssue = async (req: express.Request, res: express.Response) => {
-    try{
-        let body = req.body;
-
-        let issuesGet = await db.collection(collections.issues).get();
-        let id = issuesGet.size;
-
-        if(body && body.issue && body.userId && body.item && body.itemType && body.itemId &&
-           body.question && body.answers && body.description) {
-            await db.runTransaction(async (transaction) => {
-
-                transaction.set(db.collection(collections.issues).doc(''+(id+1)), {
-                    issue: body.issue,
-                    userId: body.userId,
-                    date: new Date(),
-                    item: body.item,
-                    itemType: body.itemType,
-                    itemId: body.itemId,
-                    responses: [],
-                    question: body.question,
-                    answers: body.answers,
-                    votes: [],
-                    description: body.description
-                });
-            });
-            res.send({ success: true, data: {
-                    issue: body.issue,
-                    userId: body.userId,
-                    date: new Date(),
-                    item: body.item,
-                    itemType: body.itemType,
-                    itemId: body.itemId,
-                    responses: [],
-                    question: body.question,
-                    answers: body.answers,
-                    votes: [],
-                    description: body.description,
-                    id: id+1
-                }
-            });
-        } else {
-            console.log('Error in controllers/userController -> createIssue()', 'Missing Information');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/userController -> createIssue()', err);
-        res.send({ success: false });
-    }
-}
-
-const createProposal = async (req: express.Request, res: express.Response) => {
-    try{
-        let body = req.body;
-
-        let proposalsGet = await db.collection(collections.proposals).get();
-        let id = proposalsGet.size;
-
-        if(body && body.proposal && body.userId && body.item && body.itemType && body.itemId) {
-            await db.runTransaction(async (transaction) => {
-
-                transaction.set(db.collection(collections.proposals).doc(''+(id+1)), {
-                    proposal: body.proposal,
-                    userId: body.userId,
-                    date: new Date(),
-                    item: body.item,
-                    itemType: body.itemType,
-                    itemId: body.itemId,
-                    responses: []
-                });
-            });
-            res.send({ success: true, data: {
-                    proposal: body.proposal,
-                    userId: body.userId,
-                    date: new Date(),
-                    item: body.item,
-                    itemType: body.itemType,
-                    itemId: body.itemId,
-                    responses: [],
-                    id: id+1
-                }
-            });
-        } else {
-            console.log('Error in controllers/userController -> createIssue()', 'No Information');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/userController -> createIssue()', err);
-        res.send({ success: false });
-    }
-}
-
-const responseIssue = async (req: express.Request, res: express.Response) => {
-    try{
-        let body = req.body;
-
-        if(body && body.userId && body.userName && body.response && body.issueId) {
-            const issueRef = db.collection(collections.issues)
-                .doc(body.issueId);
-            const issueGet = await issueRef.get();
-            const issue : any = issueGet.data();
-
-            let response : any = {
-                userId: body.userId,
-                userName: body.userName,
-                response: body.response,
-                date: new Date()
-            }
-
-            issue.responses.push(response);
-
-            await issueRef.update({
-                responses: issue.responses
-            });
-            res.send({ success: true, data: issue });
-
-        } else {
-            console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/userController -> responseIssue()', err);
-        res.send({ success: false });
-    }
-}
-const responseProposal = async (req: express.Request, res: express.Response) => {
-    try{
-        let body = req.body;
-
-        if(body && body.userId && body.userName && body.response && body.proposalId) {
-            const proposalRef = db.collection(collections.proposals)
-                .doc(body.proposalId);
-            const proposalGet = await proposalRef.get();
-            const proposal : any = proposalGet.data();
-
-            let response : any = {
-                userId: body.userId,
-                userName: body.userName,
-                response: body.response,
-                date: new Date()
-            }
-
-            proposal.responses.push(response);
-
-            await proposalRef.update({
-                responses: proposal.responses
-            });
-            res.send({ success: true, data: proposal });
-
-        } else {
-            console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/userController -> responseIssue()', err);
-        res.send({ success: false });
-    }
-}
-
-const voteIssue = async (req: express.Request, res: express.Response) => {
-    try{
-        let body = req.body;
-
-        if(body && body.issueId && body.voteId) {
-            const issueRef = db.collection(collections.issues)
-                .doc(body.issueId);
-            const issueGet = await issueRef.get();
-            const issue : any = issueGet.data();
-
-            issue.votes[body.voteId].push(body.userId)
-
-            await issueRef.update({
-                votes: issue.votes
-            });
-            res.send({ success: true, data: issue });
-
-        } else {
-            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/userController -> responseIssue()', err);
-        res.send({ success: false });
-    }
-}
 
 module.exports = {
-    emailValidation,
-    forgotPassword,
-    resendEmailValidation,
+	emailValidation,
+	forgotPassword,
+	resendEmailValidation,
     signIn,
     signUp,
     getFollowPodsInfo,
@@ -1362,11 +1175,5 @@ module.exports = {
     getPhotoById,
     getUserList,
     createBadge,
-    changeBadgePhoto,
-    getIssuesAndProposals,
-    createIssue,
-    createProposal,
-    responseIssue,
-    voteIssue,
-    responseProposal
+    changeBadgePhoto
 };
