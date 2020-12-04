@@ -47,7 +47,7 @@ export async function updateFirebase(blockchainRes) {
                 uid = splitted[0];
                 token = splitted[1];
                 tokenType = await identifyTypeOfToken(token);   // token type colection                
-                if (tokenType == collections.unknown) {
+                if (tokenType == collections.unknown && updateTokens) { // case new token added in the system
                     const newToken: any = Object.values(updateTokens)[0];
                     if (newToken.Type) tokenType = newToken.Type;
                 }
