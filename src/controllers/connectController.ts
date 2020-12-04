@@ -411,7 +411,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                         sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
                     } else {
                         console.log('publicID:', doc.publicId)
-                        swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action)
+                        swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate)
                     };
                 };
             };
@@ -428,6 +428,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
  * @param txHash Transaction hash
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param action Action to be performed (swap ETH or swap ERC20 token)
+ * @param lastUpdate Date of the swap in Unix timestamp
  */
 const swap = async (
     publicId: string,
@@ -436,27 +437,30 @@ const swap = async (
     token: string,
     txHash: string,
     random: string,
-    action: string) => {
+    action: string,
+    lastUpdate: number) => {
 
     try {
+
+        // console.log({
+        //     From: from,
+        //     To: publicId,
+        //     Type: action,
+        //     Token: token,
+        //     Amount: amount,
+        //     Date: lastUpdate,
+        //     Id: txHash,
+        //     Caller: 'PRIVI'
+        // })
+
         console.log('--> Swap: TX confirmed in Ethereum');
-console.log({
-    From: from,
-    To: publicId,
-    Type: action,
-    Token: token,
-    Amount: amount,
-    Date: new Date(),
-    Id: txHash,
-    Caller: 'PRIVI'
-})
         const response = await swapFab(
             action,
             from,
             publicId,
             amount,
             token,
-            new Date(),
+            lastUpdate,
             txHash,
             'PRIVI'
         );
@@ -465,8 +469,8 @@ console.log({
             console.log('--> Swap: TX confirmed in Fabric: ', response);
 
             // Update balances in Firestore
-            const respUpdateBalance = await updateFirebase(response);
-            console.log('--> Swap: Update Balance in Fabric: ', respUpdateBalance);
+            const resBalance = await updateFirebase(response);
+            console.log('--> Swap: Update of balances in Fabric ', resBalance);
 
             // Update TX
             await sendTxBack(txHash, publicId, action, random, 'OK');
@@ -475,17 +479,18 @@ console.log({
             await sendTxBack(txHash, publicId, action, random, 'KO');
         };
     } catch (err) {
-        console.log('Error in connectController.ts->swap(): <probably connection to Fabric is not available', err);
+        console.log('Error in connectController.ts->swap(): ', err);
     };
 };
 
 /**
  * @notice Withdraw ETH or ERC20 tokens between Fabric's and Ethereum's User account
  * @param publicId User ID
- * @param from origin address
+ * @param to destination address
  * @param amount Amount to be swapped
  * @param token Ether (ETH) or coin type (DAI, UNI..)
  * @param txHash Transaction hash
+ * @param lastUpdate Date of the withdrawal in Unix timestamp
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param action Action to be performed (swap ETH or swap ERC20 token)
  */
@@ -498,18 +503,19 @@ const withdraw = async (params: any) => {
         params.to,
         params.amount,
         params.token,
-        new Date(),
+        params.lastUpdate,
         params.random,
         'PRIVI'
     );
 
     if (response && response.success) {
 
-        console.log('--> Withdraw: TX confirmed in Fabric');
+        console.log('--> Withdraw: TX confirmed in Fabric', response);
 
         // Update balances in Firestore
         // Go ahead with Ethereum even the update of balances fails (no response.success required)
-        await updateFirebase(response);
+        const resBalance = await updateFirebase(response);
+        console.log('--> Withdraw: Update of balances in Fabric ', resBalance);
 
         // Convert value into wei
         const amountWei = web3.utils.toWei(String(params.amount));
@@ -534,18 +540,20 @@ const withdraw = async (params: any) => {
         // Execute transaction to withdraw in Ethereum
         const { success, data } = await executeTX(paramsTX);
         const paramsTx = {
+            publicId: params.publicId,
+            from: params.from,
+            to: params.to,
             txHash: 0,
             random: params.random,
-            publicId: params.publicId,
             chainId: params.chainId,
             action: params.action,
-            description: params.description,
-            amount: params.amount,
             token: params.token,
+            amount: params.amount,
+            description: params.description,
             status: 'pending',
             lastUpdate: params.lastUpdate,
         };
-
+        console.log('params to be saved in firestore: ', paramsTx)
         // Send back transaction result to front-end
         if (success) {
             console.log('--> Withdraw: TX confirmed in Ethereum');
