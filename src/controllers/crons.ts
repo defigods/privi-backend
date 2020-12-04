@@ -7,8 +7,8 @@ const walletController = require('./walletController');
 const managePRIVIcredits = priviCreditController.managePRIVIcredits;
 const payInterest = lendingController.payInterest;
 const checkLiquidation = lendingController.checkLiquidation;
-const podCheckLiquidation = podController.checkLiquidation;
-const podPayInterest = podController.payInterest;
+// const podCheckLiquidation = podController.checkLiquidation;
+// const podPayInterest = podController.payInterest;
 const nftManagePriceHistory = podController.managePriceHistory;
 const checkTx = connectController.checkTx;
 const saveUserBalanceSum = walletController.saveUserBalanceSum;
@@ -19,8 +19,8 @@ module.exports = {
     managePRIVIcredits,
     payInterest,
     checkLiquidation,
-    podCheckLiquidation,
-    podPayInterest,
+    // podCheckLiquidation,
+    // podPayInterest,
     nftManagePriceHistory,
     checkTx,
     saveUserBalanceSum,
