@@ -504,6 +504,25 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     }
 }
 
+const getLoginInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+
+        const userSnap = await db.collection(collections.user).doc(userId).get();
+        const userData = userSnap.data();
+        if (userData !== undefined) {
+            // update return data
+            userData.id = userSnap.id;
+            res.send({ success: true, data: userData });
+        }
+        else res.send({ success: false });
+
+    } catch (err) {
+        console.log('Error in controllers/profile -> getBasicInfo()', err);
+        res.send({ success: false });
+    }
+}
+
 /*exports.changeProfilePhoto = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -1359,6 +1378,7 @@ module.exports = {
     changeUserProfilePhoto,
     getSocialTokens,
     getBasicInfo,
+    getLoginInfo,
     getPhotoById,
     getUserList,
     createBadge,

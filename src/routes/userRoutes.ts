@@ -44,6 +44,7 @@ router.get('/email_validation/:validation_slug', userController.emailValidation)
 router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
+router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);

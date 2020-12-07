@@ -15,6 +15,7 @@ const lendingRoutes = require('../routes/lendingRoutes');
 const walletRoutes = require('../routes/walletRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
 const priviCreditRoutes = require('../routes/priviCreditRoutes');
+const priviDataRoutes = require('../routes/priviDataRoutes');
 const poolRoutes = require('../routes/poolRoutes');
 const ethereumRoutes = require('../routes/ethereumRoutes');
 
@@ -55,6 +56,7 @@ export const startServer = (env: Env) => {
   app.use('/priviCredit', priviCreditRoutes);
   app.use('/liquidityPool', poolRoutes);
   app.use('/ethereum', ethereumRoutes);
+  app.use('/privi-data', priviDataRoutes);
 
   // start all cron jobs
   let name: string;

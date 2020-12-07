@@ -44,5 +44,6 @@ module.exports = {
     stakingDeposit: "StakingDeposit",
     badges: "Badges",
     issues: "Issues",
-    proposals: "Proposals"
+    proposals: "Proposals",
+    campaigns: "Campaigns"
 }
