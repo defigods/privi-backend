@@ -42,12 +42,15 @@ router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFT
 router.post('/FT/initiatePod', authenticateJWT, podController.initiateFTPOD);
 router.post('/FT/deletePod', authenticateJWT, podController.deleteFTPOD);
 router.post('/FT/investPod', authenticateJWT, podController.investFTPOD);
+router.post('/FT/sellPod', authenticateJWT, podController.sellFTPOD);
 router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
 
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
 router.get('/FT/getPriceHistory/:podId', authenticateJWT, podController.getFTPodPriceHistory);
+router.post('/FT/getPodTokenAmount', authenticateJWT, podController.getPodTokenAmount);
+router.post('/FT/getFundingTokenAmount', authenticateJWT, podController.getFundingTokenAmount);
 
 // NFT 
 router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);

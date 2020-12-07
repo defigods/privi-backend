@@ -592,15 +592,40 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
     const body = req.body;
     const userId = body.userId;
     const token = body.token;
-    const tokenWalletSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
-    if (tokenWalletSnap.exists) {
-        const data = tokenWalletSnap.data();
-        if (data) {
-            const balance = data.Amount;
-            if (balance) res.send({ success: true, data: balance });
-            else res.send({ success: false });
+    const userWalletSnap = await db.collection(collections.wallet).doc(userId).get();
+    if (userWalletSnap.exists && token) {
+        let balance = 0;
+        // crypto
+        const crypto = await userWalletSnap.ref.collection(collections.crypto).doc(token).get();
+        if (crypto.exists) {
+            const data: any = crypto.data();
+            balance = data.Amount;
         }
-        else res.send({ success: false });
+        // pod ft
+        if (!balance) {
+            const ft = await userWalletSnap.ref.collection(collections.ft).doc(token).get();
+            if (ft.exists) {
+                const data: any = ft.data();
+                balance = data.Amount;
+            }
+        }
+        // pod nft
+        if (!balance) {
+            const nft = await userWalletSnap.ref.collection(collections.nft).doc(token).get();
+            if (nft.exists) {
+                const data: any = nft.data();
+                balance = data.Amount;
+            }
+        }
+        // social
+        if (!balance) {
+            const social = await userWalletSnap.ref.collection(collections.social).doc(token).get();
+            if (social.exists) {
+                const data: any = social.data();
+                balance = data.Amount;
+            }
+        }
+        res.send({ success: true, data: balance });
     }
     else res.send({ success: false });
 }

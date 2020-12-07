@@ -42,11 +42,11 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
         Hashtags: hashtags || [],
         Private: isPrivate || false,
         HasPhoto: hasPhoto || false,
-        EndorsementScore: endorsementScore || 0,
-        TrustScore: trustScore || 0,
+        EndorsementScore: endorsementScore || 0.5,
+        TrustScore: trustScore || 0.5,
         Admins: admins || [],
         DiscordId: dicordId || '',
-        requiredTokens: requiredTokens || {},
+        RequiredTokens: requiredTokens || {},
         Advertising: advertising || true,
         EthereumAddress: ethereumAddr || ''
     }, { merge: true })
@@ -483,36 +483,42 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         const investorId = body.investorId;
         const podId = body.podId;
         const amount = body.amount;
-        const rateOfChange = await getRateOfChange();
-        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, rateOfChange);
+
+        const date = Date.now();
+        const txnId = generateUniqueId();
+        const caller = apiKey;
+        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, date, txnId, caller);
         if (blockchainRes && blockchainRes.success) {
+            const podTokenToReceive = await getPodTokenAmountAux(podId, amount);
+            const fundingTokenPerPodToken = amount / podTokenToReceive;
             updateFirebase(blockchainRes);
-            // add pod transaction (get price from blockchainRes)
-            let price = 0;
-            let token = "unknown";
+
+            // add txn to pod
+            let txObj = {};
             const output = blockchainRes.output;
-            const updateWallets = output.UpdateWallets;
-            const transactions = updateWallets[investorId].Transaction;
-            transactions.forEach(tx => {
-                if (tx.From == investorId) {
-                    price = tx.Amount;
-                    token = tx.Token;
-                }
-            });
-            db.collection(collections.podsFT).doc(podId).collection(collections.podTransactions).add({
-                amount: amount,
-                price: price,
-                token: token,
-                from: investorId,
-                to: "Pod Pool",
-                date: Date.now(),
-                guarantor: "None"
-            })
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == podId || obj.To == podId) txObj = obj;
+            }
+            const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+            podSnap.ref.collection(collections.podTransactions).add(txObj)
             // add to PriceOf the day 
-            db.collection(collections.podsFT).doc(podId).collection(collections.priceOfTheDay).add({
-                price: price,
+            podSnap.ref.collection(collections.priceOfTheDay).add({
+                price: fundingTokenPerPodToken,
                 date: Date.now()
             })
+            // add new investor entry
+            const data: any = podSnap.data();
+            let newInvestors = {};
+            if (data.Investors) newInvestors = data.Investors;
+
+            if (newInvestors[investorId]) newInvestors[investorId] += amount;
+            else newInvestors[investorId] = amount;
+            podSnap.ref.update({ Investors: newInvestors });
+
+
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
@@ -525,6 +531,65 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/podController -> investPOD(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const investorId = body.investorId;
+        const podId = body.podId;
+        const amount = body.amount;
+
+        const date = Date.now();
+        const txnId = generateUniqueId();
+        const caller = apiKey;
+        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, date, txnId, caller);
+        if (blockchainRes && blockchainRes.success) {
+            const fundingTokenToReceive = await getFundingTokenAmountAux(podId, amount);
+            const fundingTokenPerPodToken = fundingTokenToReceive / amount;
+            updateFirebase(blockchainRes);
+
+            // add txn to pod
+            let txObj = {};
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == podId || obj.To == podId) txObj = obj;
+            }
+            const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+            podSnap.ref.collection(collections.podTransactions).add(txObj)
+            // add to PriceOf the day 
+            podSnap.ref.collection(collections.priceOfTheDay).add({
+                price: fundingTokenPerPodToken,
+                date: Date.now()
+            })
+            // delete investor entry
+            const data: any = podSnap.data();
+            let newInvestors = {};
+            if (data.Investors) newInvestors = data.Investors;
+
+            if (newInvestors[investorId]) {
+                newInvestors[investorId] -= amount;
+                if (newInvestors[investorId] <= 0) delete newInvestors[investorId];
+            }
+            podSnap.ref.update({ Investors: newInvestors });
+
+            createNotification(investorId, "FT Pod - Pod Token Sold",
+                ` `,
+                notificationTypes.podInvestment
+            );
+            res.send({ success: true });
+        }
+        else {
+            console.log('Error in controllers/podController -> sellFTPOD(): success = false.', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> sellFTPOD(): ', err);
         res.send({ success: false });
     }
 };
@@ -553,6 +618,76 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/podController -> swapPod(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// calculate the pod tokens to receive when inverting 'investment' amount of founding token
+const getPodTokenAmountAux = async (podId, investment) => {
+    let price = NaN;
+    const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+    const data = podSnap.data();
+    if (data) {
+        const amm = data.AMM;
+        const supplyReleased = data.SupplyReleased;
+        switch (amm) {
+            case "QUADRATIC":
+                const term = 3 * investment + Math.pow(supplyReleased, 3);
+                price = Math.pow(term, 1. / 3) - supplyReleased;
+                if (price < 0) price = NaN;
+                break;
+        }
+    }
+    return price;
+}
+// get pod price for API
+exports.getPodTokenAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const podId = body.podId;
+        const amount = body.amount;
+        const price = await getPodTokenAmountAux(podId, amount);
+        res.send({ success: true, data: price });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getPodTokenAmount(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// calculates the integral of AMM curve
+const integral = (amm, upperBound, lowerBound) => {
+    let res = NaN;
+    switch (amm) {
+        case "QUADRATIC":
+            res = Math.pow(upperBound, 3) - Math.pow(lowerBound, 3);
+            res /= 3;
+            if (res < 0) res = NaN
+    }
+    return res;
+}
+
+// get the funding token amount to receive if selling 'amount' of pod tokens
+const getFundingTokenAmountAux = async (podId, amount) => {
+    let fundingTokenAmount = NaN;
+    const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+    const data = podSnap.data();
+    if (data) {
+        const supplyReleased = data.SupplyReleased;
+        const amm = data.AMM;
+        fundingTokenAmount = integral(amm, supplyReleased + amount, supplyReleased);
+    }
+    return fundingTokenAmount;
+}
+// get funding tokens for API
+exports.getFundingTokenAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const podId = body.podId;
+        const amount = body.amount;
+        const price = await getFundingTokenAmountAux(podId, amount);
+        res.send({ success: true, data: price });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getFundingTokenAmount(): ', err);
         res.send({ success: false });
     }
 };
@@ -760,11 +895,11 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
             // also send back pod rate and PC rate
             const val = 0.01; // val by default
             pod.rates = {};
-            pod.rates.PC = val;
+            pod.rates[pod.FundingToken] = val;
             pod.rates[podId] = val;
             const rateSnap = await db.collection(collections.rates).get();
             rateSnap.forEach((doc) => {
-                if (doc.id == "PC" || doc.id == podId) { // only need these two
+                if (doc.id == pod.FundingToken || doc.id == podId) { // only need these two
                     const rate = doc.data().rate;
                     pod.rates[doc.id] = rate;
                 }
@@ -821,7 +956,6 @@ exports.getFTPodPriceHistory = async (req: express.Request, res: express.Respons
             return 0;
         }
         let podId = req.params.podId;
-        console.log("getPriceHisotry", podId);
         const data: any[] = [];
         if (podId) {
             const priceHistorySnap = await db.collection(collections.podsFT).doc(podId).collection(collections.priceHistory).get();
@@ -1443,83 +1577,83 @@ async function getPodList() {
 /**
  * cron job scheduled every 5 min, checks the liquidation of each pod (that is ccr below required level)
  */
-exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
-    try {
-        console.log("********* Pod checkLiquidation() cron job started *********");
-        const rateOfChange = await getRateOfChange();
-        const candidates = await getPodList();
-        const podIdUidMap = {}; // maps podId to creatorId, used to notify creator when pod liquidated
-        const podsSnap = await db.collection(collections.podsFT).get();
-        podsSnap.forEach((doc) => {
-            podIdUidMap[doc.id] = doc.data().Creator;
-        });
-        candidates.forEach(async (podId) => {
-            const blockchainRes = await podFTProtocol.checkPODLiquidation(podId, rateOfChange);
-            if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
-                updateFirebase(blockchainRes);
-                createNotification(podIdUidMap[podId], "FT Pod - Pod Liquidated",
-                    ` `,
-                    notificationTypes.podLiquidationFunds
-                );
-            } else {
-                console.log('Error in controllers/podController -> checkLiquidation().', podId, blockchainRes.message);
-            }
-        });
-        console.log("--------- Pod checkLiquidation() finished ---------");
-    } catch (err) {
-        console.log('Error in controllers/podController -> checkLiquidation()', err);
-    }
-});
+// exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
+//     try {
+//         console.log("********* Pod checkLiquidation() cron job started *********");
+//         const rateOfChange = await getRateOfChange();
+//         const candidates = await getPodList();
+//         const podIdUidMap = {}; // maps podId to creatorId, used to notify creator when pod liquidated
+//         const podsSnap = await db.collection(collections.podsFT).get();
+//         podsSnap.forEach((doc) => {
+//             podIdUidMap[doc.id] = doc.data().Creator;
+//         });
+//         candidates.forEach(async (podId) => {
+//             const blockchainRes = await podFTProtocol.checkPODLiquidation(podId, rateOfChange);
+//             if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
+//                 updateFirebase(blockchainRes);
+//                 createNotification(podIdUidMap[podId], "FT Pod - Pod Liquidated",
+//                     ` `,
+//                     notificationTypes.podLiquidationFunds
+//                 );
+//             } else {
+//                 console.log('Error in controllers/podController -> checkLiquidation().', podId, blockchainRes.message);
+//             }
+//         });
+//         console.log("--------- Pod checkLiquidation() finished ---------");
+//     } catch (err) {
+//         console.log('Error in controllers/podController -> checkLiquidation()', err);
+//     }
+// });
 
 
 /**
  * cron job scheduled every day at 00:00, calculate if its a payment day for a pod.
  * For each candidate pod call blockchain/payInterest function
  */
-exports.payInterest = cron.schedule('0 0 * * *', async () => {
-    try {
-        console.log("********* Pod payInterest() cron job started *********");
-        const rateOfChange = await getRateOfChange();
-        const podsSnap = await db.collection(collections.podsFT).get();
-        podsSnap.forEach(async (pod) => {
-            const data = pod.data();
-            if (data.State.Status == "INITIATED") {
-                const duration: number = data.Duration;
-                const payments: number = data.Payments;
-                // both duration and payments exists and diferent than 0
-                if (payments && duration) {
-                    const step = parseInt((duration / payments).toString());  // step to int
-                    const podDay = data.State.POD_Day
-                    // payment day
-                    if (podDay % step == 0) {
-                        const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
-                        if (blockchainRes && blockchainRes.success) {
-                            updateFirebase(blockchainRes);
-                            // send notification to interest payer when payment done
-                            const updateWallets = blockchainRes.output.UpdateWallets;
-                            let uid: string = "";
-                            let walletObj: any = null;
-                            for ([uid, walletObj] of Object.entries(updateWallets)) {
-                                if (walletObj["Transaction"].length > 0) {
-                                    createNotification(uid, "FT Pod - Interest Payment",
-                                        ` `,
-                                        notificationTypes.traditionalInterest
-                                    );
-                                }
-                            }
-                            console.log("--------- Pod payInterest() finished ---------");
-                        }
-                        else {
-                            console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
-                        }
-                    }
-                }
-            }
-        })
-    } catch (err) {
-        console.log('Error in controllers/podController -> payInterest()', err);
-    }
-});
+// exports.payInterest = cron.schedule('0 0 * * *', async () => {
+//     try {
+//         console.log("********* Pod payInterest() cron job started *********");
+//         const rateOfChange = await getRateOfChange();
+//         const podsSnap = await db.collection(collections.podsFT).get();
+//         podsSnap.forEach(async (pod) => {
+//             const data = pod.data();
+//             if (data.State.Status == "INITIATED") {
+//                 const duration: number = data.Duration;
+//                 const payments: number = data.Payments;
+//                 // both duration and payments exists and diferent than 0
+//                 if (payments && duration) {
+//                     const step = parseInt((duration / payments).toString());  // step to int
+//                     const podDay = data.State.POD_Day
+//                     // payment day
+//                     if (podDay % step == 0) {
+//                         const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
+//                         if (blockchainRes && blockchainRes.success) {
+//                             updateFirebase(blockchainRes);
+//                             // send notification to interest payer when payment done
+//                             const updateWallets = blockchainRes.output.UpdateWallets;
+//                             let uid: string = "";
+//                             let walletObj: any = null;
+//                             for ([uid, walletObj] of Object.entries(updateWallets)) {
+//                                 if (walletObj["Transaction"].length > 0) {
+//                                     createNotification(uid, "FT Pod - Interest Payment",
+//                                         ` `,
+//                                         notificationTypes.traditionalInterest
+//                                     );
+//                                 }
+//                             }
+//                             console.log("--------- Pod payInterest() finished ---------");
+//                         }
+//                         else {
+//                             console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
+//                         }
+//                     }
+//                 }
+//             }
+//         })
+//     } catch (err) {
+//         console.log('Error in controllers/podController -> payInterest()', err);
+//     }
+// });
 
 
 /**

@@ -40,12 +40,26 @@ module.exports.deletePod = async (publicId, podId) => {
     return blockchainRes.data;
 };
 
-module.exports.investPOD = async (investorId, podId, amount, rateOfChange) => {
+module.exports.investPOD = async (investorId, podId, amount, date, txnId, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodAPI + "/investPOD", {
-        InvestorId: investorId,
-        PodId: podId,
+        Investor: investorId,
+        PodAddress: podId,
         Amount: amount,
-        RateChange: rateOfChange
+        Date: date,
+        TxnId: txnId,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
+
+module.exports.sellPOD = async (investorId, podId, amount, date, txnId, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodAPI + "/sellPodToken", {
+        Investor: investorId,
+        PodAddress: podId,
+        Amount: amount,
+        Date: date,
+        TxnId: txnId,
+        Caller: caller
     });
     return blockchainRes.data;
 };
