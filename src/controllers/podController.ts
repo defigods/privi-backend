@@ -556,7 +556,7 @@ exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
     }
 };
 
-const getAllInfoMyPods = (allItemArray, myArray): Promise<any[]> => {
+const getAllInfoMyPods = exports.getAllInfoMyPods = (allItemArray, myArray): Promise<any[]> => {
     return new Promise<any[]>((resolve, reject) => {
         let array: any[] = [];
         if (myArray && myArray.length > 0) {
@@ -689,10 +689,9 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
             resolve(fullArray)
         }
     });
-}
-    ;
+};
 
-const getFTPods = (): Promise<any[]> => {
+const getFTPods = exports.getFTPods = () : Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsFT = await db.collection(collections.podsFT).get();
 
@@ -895,7 +894,7 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
 };
 
 // function to get all NFT Pods
-const getNFTPods = (): Promise<any[]> => {
+const getNFTPods = exports.getNFTPods = (): Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsNFT = await db.collection(collections.podsNFT).get();
 
