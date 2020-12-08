@@ -4,6 +4,7 @@ import collections from "../firebase/collections";
 import axios from "axios";
 
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
+const uuid = require('uuid');
 
 
 // updates multiple firebase collection according to blockchain response
@@ -250,8 +251,9 @@ export async function getUidNameMap() {
 }
 
 export function generateUniqueId() {
-    const id = xid.next();
-    return id;
+    // const id = xid.next();
+    // return id;
+    return 'Px' + uuid.v4();
 }
 
 export function isEmail(email: string) {

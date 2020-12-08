@@ -20,6 +20,7 @@ module.exports = {
     podTransactions: "PodTransactions",
     priceOfTheDay: "PriceOfTheDay",
     priceHistory: "PriceHistory",
+    supplyHisotry: "SupplyHistory",
     podRoleInvitation: "PodRoleInvitation",
     podViewInvitation: "PodViewInvitation",
     liquidityPools: "LiquidityPools",

@@ -622,6 +622,8 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
     }
 };
 
+// ------------------------ Price Calculations -----------------------------
+
 // calculate the pod tokens to receive when inverting 'investment' amount of founding token
 const getPodTokenAmountAux = async (podId, investment) => {
     let price = NaN;
@@ -661,7 +663,8 @@ const integral = (amm, upperBound, lowerBound) => {
         case "QUADRATIC":
             res = Math.pow(upperBound, 3) - Math.pow(lowerBound, 3);
             res /= 3;
-            if (res < 0) res = NaN
+            if (res < 0) res = NaN;
+            break;
     }
     return res;
 }
@@ -691,6 +694,38 @@ exports.getFundingTokenAmount = async (req: express.Request, res: express.Respon
         res.send({ success: false });
     }
 };
+
+
+// get market price of the pod (used for price history graph)
+const getMarketPriceAux = (amm, supplyReleased) => {
+    let price = NaN;
+    switch (amm) {
+        case "QUADRATIC":
+            price = Math.pow(supplyReleased, 2);
+            break;
+    }
+    return price;
+}
+// get funding tokens for API
+exports.getMarketPrice = async (req: express.Request, res: express.Response) => {
+    try {
+        const podId = req.params.podId;
+        const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+        const data = podSnap.data();
+        let price = NaN;
+        if (data) {
+            const supplyReleased = data.SupplyReleased;
+            const amm = data.AMM;
+            price = getMarketPriceAux(amm, supplyReleased);
+        }
+        res.send({ success: true, data: price });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getFundingTokenAmount(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// ----------------------------------------------------------------------------------
 
 
 exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
@@ -946,7 +981,7 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
     }
 };
 
-// get price from history and today price colections, merge, sort (by ascending date) and return this data
+// get price history and today prices, merged and sorted (by ascending date)
 exports.getFTPodPriceHistory = async (req: express.Request, res: express.Response) => {
     try {
         // comparator function used to sort by ascending date
@@ -975,6 +1010,34 @@ exports.getFTPodPriceHistory = async (req: express.Request, res: express.Respons
         }
     } catch (err) {
         console.log('Error in controllers/podController -> getFTPodTransactions()', err);
+        res.send({ success: false });
+    }
+};
+// get supply history merged sorted by ascending date
+exports.getFTPodSupplyHistory = async (req: express.Request, res: express.Response) => {
+    try {
+        // comparator function used to sort by ascending date
+        const comparator = (a, b) => {
+            if (a.date > b.date) return 1;
+            if (b.date > a.date) return -1;
+            return 0;
+        }
+        let podId = req.params.podId;
+        const data: any[] = [];
+        if (podId) {
+            const priceHistorySnap = await db.collection(collections.podsFT).doc(podId).collection(collections.supplyHisotry).get();
+            priceHistorySnap.forEach((doc) => {
+                data.push(doc.data());
+            });
+            // sort data by ascending date
+            data.sort(comparator);
+            res.send({ success: true, data: data });
+        } else {
+            console.log('Error in controllers/podController -> getFTPodSupplyHistory()', "There's no pod id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> getFTPodSupplyHistory()', err);
         res.send({ success: false });
     }
 };
@@ -1666,71 +1729,62 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
         // FT
         let podsSnap = await db.collection(collections.podsFT).get();
         podsSnap.forEach(async (pod) => {
-            let dayLowestPrice = Infinity;
-            let date = Date.now();
-            // get lowest price from PriceOfTheDay
-            const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get();
-            if (!priceOfTheDaySnap.empty) {
-                priceOfTheDaySnap.forEach((doc) => {
-                    if (doc.data() && doc.data().price < dayLowestPrice) {
-                        dayLowestPrice = doc.data().price;
-                    }
-                });
-            }
-            // get price for nearest (date) price history, to use in case that have no sale offers today.
-            if (dayLowestPrice == Infinity) {
-                const priceHistorySnap = await pod.ref.collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
-                if (priceHistorySnap.docs.length) {
-                    const data = priceHistorySnap.docs[0].data();
-                    dayLowestPrice = data.price;
-                    date = data.date;
-                }
-            }
-            // add this new price and date to PriceHistory colection
-            if (dayLowestPrice != Infinity) {
+            const date = Date.now();
+            const podData: any = pod.data();
+            const supplyReleased = podData.SupplyReleased;
+            const amm = podData.AMM;
+            if (supplyReleased != undefined && amm != undefined) {
+                // add price to price history
+                const price = getMarketPriceAux(amm, supplyReleased);
                 pod.ref.collection(collections.priceHistory).add({
-                    price: dayLowestPrice,
+                    price: price,
+                    date: date
+                });
+                // add to supply history
+                pod.ref.collection(collections.supplyHisotry).add({
+                    supply: supplyReleased,
                     date: date
                 });
             }
             // reset (empty) PriceOfTheDay
+            const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get();
             priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
         })
         // NFT
-        podsSnap = await db.collection(collections.podsNFT).get();
-        podsSnap.forEach(async (pod) => {
-            let dayLowestPrice = Infinity;
-            let date = Date.now();
-            // get lowest price from Sales Book 
-            const podData = pod.data();
-            if (podData) {
-                let orderId = "";
-                let sale: any = null;
-                for ([orderId, sale] of Object.entries(podData.OrderBook.Sell)) {
-                    if (sale.Price < dayLowestPrice && sale.Amount != 0) dayLowestPrice = sale.Price;
-                }
-            }
-            // get price for nearest (date) price history, to use in case that have no sale offers today.
-            if (dayLowestPrice == Infinity) {
-                const priceHistorySnap = await pod.ref.collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
-                if (priceHistorySnap.docs.length) {
-                    const data = priceHistorySnap.docs[0].data();
-                    dayLowestPrice = data.price;
-                    date = data.date;
-                }
-            }
-            // add this new price and date to PriceHistory colection
-            if (dayLowestPrice != Infinity) {
-                pod.ref.collection(collections.priceHistory).add({
-                    price: dayLowestPrice,
-                    date: date
-                }
-                );
-            }
-            // reset (empty) PriceOfTheDay
-            const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get()
-            priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
-        });
+        // podsSnap = await db.collection(collections.podsNFT).get();
+        // podsSnap.forEach(async (pod) => {
+        //     let dayLowestPrice = Infinity;
+        //     let date = Date.now();
+        //     // get lowest price from Sales Book 
+        //     const podData = pod.data();
+        //     if (podData) {
+        //         let orderId = "";
+        //         let sale: any = null;
+        //         for ([orderId, sale] of Object.entries(podData.OrderBook.Sell)) {
+        //             if (sale.Price < dayLowestPrice && sale.Amount != 0) dayLowestPrice = sale.Price;
+        //         }
+        //     }
+        //     // get price for nearest (date) price history, to use in case that have no sale offers today.
+        //     if (dayLowestPrice == Infinity) {
+        //         const priceHistorySnap = await pod.ref.collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
+        //         if (priceHistorySnap.docs.length) {
+        //             const data = priceHistorySnap.docs[0].data();
+        //             dayLowestPrice = data.price;
+        //             date = data.date;
+        //         }
+        //     }
+        //     // add this new price and date to PriceHistory colection
+        //     if (dayLowestPrice != Infinity) {
+        //         pod.ref.collection(collections.priceHistory).add({
+        //             price: dayLowestPrice,
+        //             date: date
+        //         }
+        //         );
+        //     }
+        //     // reset (empty) PriceOfTheDay
+        //     const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get()
+        //     priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
+        // });
         console.log("--------- Pod managePriceHistory() finished ---------");
     } catch (err) {
         console.log('Error in controllers/podController -> managePriceHistory()', err);
