@@ -7,7 +7,6 @@ import express from 'express';
 // const currencySymbol = require("currency-symbol");
 // import { countDecimals } from "../functions/utilities";
 
-
 const categoryListHelper = async () => {
   const data: {}[] = [];
 
@@ -39,6 +38,7 @@ module.exports.categoryList = async (req: express.Request, res: express.Response
 
 } // categoryList
 
+/*
 module.exports.commentCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -129,61 +129,9 @@ module.exports.commentDelete = async (req: express.Request, res: express.Respons
 		res.send({ success: false, message: "commentId required" });
 	}
 
-
 } // commentDelete
 
-module.exports.postCreate = async (req: express.Request, res: express.Response) => {
-  try {
-    const body = req.body;
 
-    const categoryId = body.categoryId;
-    const subject = body.subject;
-    const content = body.content;
-
-    let forumPostGet = await db.collection(collections.forumPost).get();
-    let newId = forumPostGet.size + 1;
-
-    if (categoryId && subject && content) {
-
-      await db.runTransaction(async (transaction) => {
-
-        // no check if firestore insert works? TODO
-        transaction.set(db.collection(collections.forumPost).doc('' + newId), {
-          categoryId: categoryId,
-          subject: subject,
-          content: content,
-          createdBy: req.body.priviUser.id,
-          countComments: 0,
-          lastComment: Date.now(),
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        });
-      });
-      res.send({
-        success: true, data: {
-          id: newId,
-		  categoryId: categoryId,
-          subject: subject,
-          content: content,
-          createdBy: req.body.priviUser.id,
-          countComments: 0,
-          lastComment: Date.now(),
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-        }
-      });
-
-    } else {
-      console.log('parameters required');
-      res.send({ success: false, message: "parameters required" });
-    }
-
-  } catch (err) {
-    console.log('Error in controllers/postController -> postCreate()', err);
-    res.send({ success: false });
-  }
-
-} // postCreate
 
 module.exports.postDelete = async (req: express.Request, res: express.Response) => {
 	const postId = req.params.postId;
@@ -340,3 +288,424 @@ module.exports.postView = async (req: express.Request, res: express.Response) =>
 	}
 
 } // postView
+
+
+
+module.exports.postComments = async (req: express.Request, res: express.Response) => {
+	const postId = req.params.postId;
+	const postType = req.params.postType;
+
+	const data = {};
+
+	const cats: {}[] = await categoryListHelper();
+	let catsMap = {};
+	for (const c of cats) {
+		catsMap[c["categoryId"]] = c["name"];
+	}
+	let userIdNameMap = {};
+  	let userIdHasPhotoMap = {};
+
+	if (postId) {
+		try {
+			// comments
+			const comments: {}[] = [];
+			const commentsSnap = await db.collection(collections.forumComment)
+				.where("postId", "==", postId)
+				.where("postType", "==", postType)
+				.orderBy("createdAt", "asc")
+				.get();
+			
+			for (const doc of commentsSnap.docs) {
+				let name = "";
+                let createdByHasPhoto = false;
+				if (!userIdNameMap[doc.data().createdBy]) { // not in array cache
+					const userSnap = await db.collection(collections.user).doc(doc.data().createdBy).get();
+					const userData = userSnap.data();
+					if (userData) {
+						name = (userData.firstName? userData.firstName : "") + (userData.lastName? " " + userData.lastName : "");
+                        createdByHasPhoto = userData.HasPhoto;
+
+                        userIdNameMap[doc.data().createdBy] = name;
+                        userIdHasPhotoMap[doc.data().createdBy] = createdByHasPhoto;
+					}
+				} else {
+				    name = userIdNameMap[doc.data().createdBy];
+				    createdByHasPhoto = userIdHasPhotoMap[doc.data().createdBy];
+				}
+
+				comments.push({ commentId: doc.id, postId: postId, postType: postType, content: doc.data().content, createdBy: doc.data().createdBy, createdByName: name, createdByHasPhoto: createdByHasPhoto, createdAt: doc.data().createdAt, createdAtFormat:formatDate(new Date(doc.data().createdAt)), });
+			}
+			
+			data["comments"] = comments;
+			
+			res.send({ success: true, data: data });
+		
+		} catch (err) {
+			console.log('Error in controllers/forumController -> postComments()', err);
+			res.send({ success: false });
+		}
+
+	} else {
+		console.log('postId required');
+		res.send({ success: false, message: "postId required" });
+	}
+
+} // postComments
+
+module.exports.commentCreate = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    const content = body.content;
+    const postId = body.postId;
+    const postType = body.postType;
+
+    let forumCommentGet = await db.collection(collections.forumComment).get();
+    let newId = forumCommentGet.size + 1;
+
+    if (content && postId && postType) {
+		await db.runTransaction(async (transaction) => {
+
+			transaction.set(db.collection(collections.forumComment).doc('' + newId), {
+				postId: postId,
+				postType: postType,
+				content: content,
+				createdBy: req.body.priviUser.id,
+				createdAt: Date.now(),
+				updatedAt: Date.now(),
+			});
+		});
+
+		res.send({
+			success: true, 
+			data: {
+				postId: postId,
+				postType: postType,
+				content: content,
+				createdBy: req.body.priviUser.id,
+				id: newId
+			}
+		});
+
+    } else {
+      console.log('parameters required');
+      res.send({ success: false, message: "parameters required" });
+    }
+
+  } catch (err) {
+    console.log('Error in controllers/postController -> commentCreate()', err);
+    res.send({ success: false });
+  }
+
+} // commentCreate
+*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module.exports.postCreate = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    const subject = body.subject;
+    const content = body.content;
+    const linkId = body.linkId;
+    const postType = body.postType;
+    let categoryId = body.categoryId? body.categoryId : null;
+
+    if (postType == "cp") { // hard coded post category id
+        categoryId = 5; // credit pool
+    }
+
+    let forumPostGet = await db.collection(collections.forumPost).get();
+    let newId = forumPostGet.size + 1;
+
+    if (subject && content) {
+
+      await db.runTransaction(async (transaction) => {
+        transaction.set(db.collection(collections.forumPost).doc('' + newId), {
+          subject: subject,
+          content: content,
+
+          categoryId: categoryId,
+          postType: postType,
+          linkId: linkId,
+
+          createdBy: req.body.priviUser.id,
+          countComments: 0,
+          lastComment: Date.now(),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        });
+      });
+      res.send({
+        success: true, data: {
+          id: newId,
+          subject: subject,
+          content: content,
+
+          categoryId: categoryId,
+          postType: postType,
+          linkId: linkId,
+
+          createdBy: req.body.priviUser.id,
+          countComments: 0,
+          lastComment: Date.now(),
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }
+      });
+
+    } else {
+      console.log('parameters required');
+      res.send({ success: false, message: "parameters required" });
+    }
+
+  } catch (err) {
+    console.log('Error in controllers/postController -> postCreate()', err);
+    res.send({ success: false });
+  }
+
+} // postCreate
+
+module.exports.postListByLink = async (req: express.Request, res: express.Response) => {
+    const linkId = req.params.linkId;
+    const postType = req.params.postType;
+
+  const data: {}[] = [];
+
+  const cats: {}[] = await categoryListHelper();
+  let catsMap = {};
+  for (const c of cats) {
+    catsMap[c["categoryId"]] = c["name"];
+  }
+  let userIdNameMap = {};
+  let userIdHasPhotoMap = {};
+
+  try {
+    const postsSnap = await db.collection(collections.forumPost)
+		.where("linkId", "==", linkId)
+        .where("postType", "==", postType)
+      .orderBy("lastComment", "desc")
+      .get();
+
+    for (const doc of postsSnap.docs) {
+      let categoryName = catsMap[doc.data().categoryId]? catsMap[doc.data().categoryId] : "";
+      let name = "";
+		let createdByHasPhoto = false;
+		if (!userIdNameMap[doc.data().createdBy]) { // not in array cache
+			const userSnap = await db.collection(collections.user).doc(doc.data().createdBy).get();
+			const userData = userSnap.data();
+			if (userData) {
+				name = (userData.firstName? userData.firstName : "") + (userData.lastName? " " + userData.lastName : "");
+				createdByHasPhoto = userData.HasPhoto;
+
+				userIdNameMap[doc.data().createdBy] = name;
+				userIdHasPhotoMap[doc.data().createdBy] = createdByHasPhoto;
+			}
+		} else {
+			name = userIdNameMap[doc.data().createdBy];
+			createdByHasPhoto = userIdHasPhotoMap[doc.data().createdBy];
+		}
+
+      data.push({ id: doc.id, categoryId: doc.data().categoryId, categoryName:categoryName, linkId:linkId, postType:postType, content: doc.data().content, subject: doc.data().subject, createdBy: doc.data().createdBy, createdByName: name, createdByHasPhoto:createdByHasPhoto, createdAt: doc.data().createdAt, createdAtFormat:formatDate(new Date(doc.data().createdAt)), lastComment: doc.data().lastComment, lastCommentFormat:formatDate(new Date(doc.data().lastComment)), countComments:doc.data().countComments});
+    }
+
+	res.send({ success: true, data: data });
+
+  } catch (err) {
+    console.log('Error in controllers/forumController -> postListByLink()', err);
+	res.send({ success: false });
+  }
+
+} // postListByLink
+
+module.exports.postView = async (req: express.Request, res: express.Response) => {
+	const postId = req.params.postId;
+	const data = {};
+
+	const cats: {}[] = await categoryListHelper();
+	let catsMap = {};
+	for (const c of cats) {
+		catsMap[c["categoryId"]] = c["name"];
+	}
+	let userIdNameMap = {};
+    let userIdHasPhotoMap = {};
+
+	if (postId) {
+		try {
+			const postSnap = await db.collection(collections.forumPost).doc(postId).get();
+			const postData = postSnap.data();
+
+			if (postData) {
+				let categoryName = catsMap[postData.categoryId]? catsMap[postData.categoryId] : "";
+                let name = "";
+		        let createdByHasPhoto = false;
+		        if (!userIdNameMap[postData.createdBy]) { // not in array cache
+			        const userSnap = await db.collection(collections.user).doc(postData.createdBy).get();
+			        const userData = userSnap.data();
+			        if (userData) {
+				        name = (userData.firstName? userData.firstName : "") + (userData.lastName? " " + userData.lastName : "");
+				        createdByHasPhoto = userData.HasPhoto;
+
+				        userIdNameMap[postData.createdBy] = name;
+				        userIdHasPhotoMap[postData.createdBy] = createdByHasPhoto;
+			        }
+		        } else {
+			        name = userIdNameMap[postData.createdBy];
+			        createdByHasPhoto = userIdHasPhotoMap[postData.createdBy];
+		        }
+
+				data["post"] = { id: postId, categoryId: postData.categoryId, categoryName:categoryName, linkId:postData.linkId, postType:postData.postType, content: postData.content, subject: postData.subject, createdBy: postData.createdBy, createdByName: name, createdByHasPhoto:createdByHasPhoto, createdAt: postData.createdAt, createdAtFormat:formatDate(new Date(postData.createdAt)), lastComment: postData.lastComment, lastCommentFormat:formatDate(new Date(postData.lastComment)), countComments:postData.countComments};
+
+				// comments
+				const comments: {}[] = [];
+				const commentsSnap = await db.collection(collections.forumComment)
+					.where("postId", "==", postId)
+					.orderBy("createdAt", "asc")
+					.get();
+				
+				for (const doc of commentsSnap.docs) {
+					let name = "";
+		            let createdByHasPhoto = false;
+		            if (!userIdNameMap[postData.createdBy]) { // not in array cache
+			            const userSnap = await db.collection(collections.user).doc(postData.createdBy).get();
+			            const userData = userSnap.data();
+			            if (userData) {
+				            name = (userData.firstName? userData.firstName : "") + (userData.lastName? " " + userData.lastName : "");
+				            createdByHasPhoto = userData.HasPhoto;
+
+				            userIdNameMap[postData.createdBy] = name;
+				            userIdHasPhotoMap[postData.createdBy] = createdByHasPhoto;
+			            }
+		            } else {
+			            name = userIdNameMap[postData.createdBy];
+			            createdByHasPhoto = userIdHasPhotoMap[postData.createdBy];
+		            }
+
+					comments.push({ id: doc.id, postId: postId, content: doc.data().content, createdBy: doc.data().createdBy, createdByName: name, createdByHasPhoto:createdByHasPhoto, createdAt: doc.data().createdAt, createdAtFormat:formatDate(new Date(doc.data().createdAt)), });
+				}
+				
+				data["comments"] = comments;
+				
+				res.send({ success: true, data: data });
+					
+			} else {
+				console.log('post not found');
+				res.status(404);
+				res.send({ success: false, message: "post not found" });
+			}
+		
+		} catch (err) {
+			console.log('Error in controllers/forumController -> postView()', err);
+			res.send({ success: false });
+		}
+
+	} else {
+		console.log('postId required');
+		res.send({ success: false, message: "postId required" });
+	}
+
+} // postView
+
+module.exports.commentCreate = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    const postId = body.postId;
+    const content = body.content;
+
+    let forumCommentGet = await db.collection(collections.forumComment).get();
+    let newId = forumCommentGet.size + 1;
+
+    if (postId && content) {
+		const postSnap = await db.collection(collections.forumPost).doc(postId).get();
+		const postData = postSnap.data();
+
+		if (postData) {
+			await db.runTransaction(async (transaction) => {
+
+				// no check if firestore insert works? TODO
+				transaction.set(db.collection(collections.forumComment).doc('' + newId), {
+					postId: postId,
+					content: content,
+					createdBy: req.body.priviUser.id,
+					createdAt: Date.now(),
+					updatedAt: Date.now(),
+				});
+			});
+      
+			// update post
+			postData.lastComment = Date.now();
+			postData.countComments = postData.countComments + 1;
+      
+			db.collection(collections.forumPost).doc(postId).update(postData);
+      
+			res.send({
+				success: true, 
+				data: {
+					postId: postId,
+					content: content,
+					createdBy: req.body.priviUser.id,
+					id: newId
+				}
+			});
+
+		} else {
+			console.log('post not found');
+			res.status(404);
+			res.send({ success: false, message: "post not found" });
+		}
+
+    } else {
+      console.log('parameters required');
+      res.send({ success: false, message: "parameters required" });
+    }
+
+  } catch (err) {
+    console.log('Error in controllers/postController -> commentCreate()', err);
+    res.send({ success: false });
+  }
+
+} // commentCreate
+
