@@ -102,11 +102,11 @@ exports.protectLiquidityPool = async (req: express.Request, res: express.Respons
     try {
         const body = req.body;
         const poolToken = body.poolToken;
-        const PoolSpread = body.PoolSpread;
-        const Date = body.Date;
+        const poolSpread = body.PoolSpread;
+        const date = body.Date;
         const caller = apiKey;
 
-        const blockchainRes = await podProtocol.protectLiquidityPool(poolToken, PoolSpread, Date, caller);
+        const blockchainRes = await podProtocol.protectLiquidityPool(poolToken, poolSpread, date, caller);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(poolToken, "Liquidity Pool - Pool protected",
@@ -185,8 +185,8 @@ exports.getLiquidityPoolState = async (req: express.Request, res: express.Respon
 exports.getLiquidityDeposits = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const Address = body.Address;
-        const depositSnap = await db.collection(collections.liquidityPools).doc(Address).get();
+        const address = body.Address;
+        const depositSnap = await db.collection(collections.liquidityPools).doc(address).get();
         const depositData = depositSnap.data();
 
         if (depositData) {

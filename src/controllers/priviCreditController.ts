@@ -193,11 +193,11 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const date = body.date;
         const txnId = body.txnId;
-        const collaterals = body.collaterals;
-        const rateChange = body.rateChange;
+        const ethCollateral = body.ethCollateral;
+        const ethRateChange = body.ethRateChange;
         const caller = apiKey;
 
-        const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, date, txnId, collaterals, rateChange, caller);
+        const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, date, txnId, ethCollateral, ethRateChange, caller);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(address, "Privi Credit - Loan Borrowed",
