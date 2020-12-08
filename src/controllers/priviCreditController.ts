@@ -71,7 +71,7 @@ exports.getUserBorrowings = async (req: express.Request, res: express.Response) 
             res.send({ success: true, data: userBorrowings });
         }
     } catch (err) {
-        console.log('Error in controllers/priviCredit -> getUserLendings(): ', err);
+        console.log('Error in controllers/priviCredit -> getUserBorrowings(): ', err);
         res.send({ success: false });
     }
 };
@@ -88,7 +88,7 @@ exports.getCreditBorrowers = async (req: express.Request, res: express.Response)
             res.send({ success: true, data: creditBorrowers });
         }
     } catch (err) {
-        console.log('Error in controllers/priviCredit -> getPRIVICreditInfo(): ', err);
+        console.log('Error in controllers/priviCredit -> getCreditBorrowers(): ', err);
         res.send({ success: false });
     }
 };
@@ -105,7 +105,7 @@ exports.getCreditLenders = async (req: express.Request, res: express.Response) =
             res.send({ success: true, data: creditLenders });
         }
     } catch (err) {
-        console.log('Error in controllers/priviCredit -> getPRIVICreditInfo(): ', err);
+        console.log('Error in controllers/priviCredit -> getCreditLenders(): ', err);
         res.send({ success: false });
     }
 };
