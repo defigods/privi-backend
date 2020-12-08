@@ -32,7 +32,21 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
                     memberOfPods: body.memberOfPods,
                     memberOfCommunities: body.memberOfCommunities,
                     admins: body.admins,
-                    users: body.users
+                    users: body.users,
+                    spent: 0,
+                    dailySpent: 0,
+                    weeklySpent: 0,
+                    itemType: '',
+                    itemId: '',
+                    numImpressions: 0,
+                    last30DaysImpressions: [],
+                    last12MonthImpressions: [],
+                    numUsers: 0,
+                    last30DaysUsers: [],
+                    last12MonthUsers: [],
+                    numClicks: 0,
+                    last30DaysClicks: [],
+                    last12MonthClicks: []
                 });
                 res.send({ success: true,
                     data:  {
@@ -54,7 +68,21 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
                         memberOfPods: body.memberOfPods,
                         memberOfCommunities: body.memberOfCommunities,
                         admins: body.admins,
-                        users: body.users
+                        users: body.users,
+                        spent: 0,
+                        dailySpent: 0,
+                        weeklySpent: 0,
+                        itemType: '',
+                        itemId: '',
+                        numImpressions: 0,
+                        last30DaysImpressions: [],
+                        last12MonthImpressions: [],
+                        numUsers: 0,
+                        last30DaysUsers: [],
+                        last12MonthUsers: [],
+                        numClicks: 0,
+                        last30DaysClicks: [],
+                        last12MonthClicks: []
                     }})
             });
         } else {
@@ -69,7 +97,51 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
 
 const getInfo = async (req: express.Request, res: express.Response) => {
     try {
+        let podId = req.params.podId;
 
+        const campaignsGet = await db.collection(collections.campaigns).get();
+        const campaigns : any[] = [];
+        campaignsGet.docs.map(doc => campaigns.push(doc.data()))
+
+        const activeCampaigns = campaigns.filter((item, i) => {
+            let startDate = new Date(item.dateStart);
+            let expirationDate = new Date(item.dateExpiration);
+            let now = new Date();
+            return(item.creator === podId && startDate.getTime() > now.getTime() && expirationDate.getTime() < now.getTime());
+        });
+
+        let totalSpent = 0;
+        let podsStarted = 0;
+        let creditStarted = 0;
+        let communitiesStarted = 0;
+        let governanceGroup = 0;
+        activeCampaigns.forEach((campaign, i) => {
+            totalSpent += campaign.spent;
+            switch (campaign.itemType) {
+                case 'Pod':
+                    podsStarted += 1;
+                    break;
+                case 'Credit':
+                    creditStarted += 1;
+                    break;
+                case 'Community':
+                    communitiesStarted += 1;
+                    break;
+                case 'Governance':
+                    governanceGroup += 1;
+                    break;
+            }
+        });
+
+        res.send({ success: true, data: {
+                activeCampaigns: activeCampaigns.length,
+                totalSpent: totalSpent,
+                podsStarted: podsStarted,
+                creditStarted: creditStarted,
+                communitiesStarted: communitiesStarted,
+                governanceGroup: governanceGroup
+            }
+        });
     } catch (err) {
         console.log('Error in controllers/priviDataController -> getInfo(): ', err);
         res.send({ success: false });
