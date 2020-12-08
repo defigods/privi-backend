@@ -13,6 +13,8 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
 
             await db.runTransaction(async (transaction) => {
 
+                let date = new Date();
+                let dateMonth = new Date();
                 transaction.set(db.collection(collections.campaigns).doc(''+(id+1)), {
                     name: body.name,
                     text: body.text,
@@ -39,17 +41,395 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
                     itemType: '',
                     itemId: '',
                     numImpressions: 0,
-                    last30DaysImpressions: [],
-                    last12MonthImpressions: [],
+                    last30DaysImpressions: [{
+                        impressions: 0,
+                        date: date
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }],
+                    last12MonthImpressions: [{
+                        impressions: 0,
+                        date: dateMonth
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        impressions: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }],
                     numUsers: 0,
-                    last30DaysUsers: [],
-                    last12MonthUsers: [],
+                    last30DaysUsers: [{
+                        users: 0,
+                        date: date
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }],
+                    last12MonthUsers: [{
+                        users: 0,
+                        date: dateMonth
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        users: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }],
                     numClicks: 0,
-                    last30DaysClicks: [],
-                    last12MonthClicks: []
+                    last30DaysClicks: [{
+                        clicks: 0,
+                        date: date
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setDate(date.getDate() - 1)
+                    }],
+                    last12MonthClicks: [{
+                        clicks: 0,
+                        date: dateMonth
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }, {
+                        clicks: 0,
+                        date: date.setMonth(date.getMonth() - 1)
+                    }]
                 });
                 res.send({ success: true,
-                    data:  {
+                    data: {
                         name: body.name,
                         text: body.text,
                         dateStart: body.dateStart,
@@ -75,14 +455,392 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
                         itemType: '',
                         itemId: '',
                         numImpressions: 0,
-                        last30DaysImpressions: [],
-                        last12MonthImpressions: [],
+                        last30DaysImpressions: [{
+                            impressions: 0,
+                            date: date
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }],
+                        last12MonthImpressions: [{
+                            impressions: 0,
+                            date: dateMonth
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            impressions: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }],
                         numUsers: 0,
-                        last30DaysUsers: [],
-                        last12MonthUsers: [],
+                        last30DaysUsers: [{
+                            users: 0,
+                            date: date
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }],
+                        last12MonthUsers: [{
+                            users: 0,
+                            date: dateMonth
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            users: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }],
                         numClicks: 0,
-                        last30DaysClicks: [],
-                        last12MonthClicks: []
+                        last30DaysClicks: [{
+                            clicks: 0,
+                            date: date
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setDate(date.getDate() - 1)
+                        }],
+                        last12MonthClicks: [{
+                            clicks: 0,
+                            date: dateMonth
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }, {
+                            clicks: 0,
+                            date: date.setMonth(date.getMonth() - 1)
+                        }]
                     }})
             });
         } else {
