@@ -31,7 +31,7 @@ module.exports = {
     podBurningToken: "POD_burning_token",
     liquidityPoolCreation: "liquidity_pool_creation",
     liquidityPoolProvide: "liquidity_pool_provide",
-    liquidityPoolWithdraw: "liquidity_pool_withdraw",
-    liquidityPoolFeeWithdraw: "liquidity_pool_fee_withdraw",
-    liquidityPoolSwapFee: "liquidity_pool_swap_fee"
+    liquidityPoolSwap: "liquidity_pool_swap",
+    liquidityPoolProtect: "liquidity_pool_protect",
+    liquidityPoolList: "liquidity_pool_list"
 }

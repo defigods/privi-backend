@@ -23,19 +23,19 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
     const hashtags = body.Hashtags;
     const isPrivate = body.Private;
     const hasPhoto = body.HasPhoto;
-    const isOpenToAdvertisement = body.IsOpenToAdvertisement; // recently added
-    const dicordId = body.DiscordId;  // recently added
+    const dicordId = body.DiscordID;  // recently added
     const endorsementScore = body.EndorsementScore;
     const trustScore = body.TrustScore;
     const admins = body.Admins;
     const requiredTokens = body.RequiredTokens; // {$Token: Amount} recently added (maybe handled by blockchain, thus don't need to add it again here)
     const advertising = body.Advertising;
+    const ethereumAddr = body.EthereumContractAddress;
 
 
     let podRef = db.collection(collections.podsFT).doc(podId);
     if (!isPodFT) podRef = db.collection(collections.podsNFT).doc(podId);
 
-    podRef.update({
+    podRef.set({
         Name: name || '',
         Description: description || '',
         MainHashtag: mainHashtag || '',
@@ -45,11 +45,11 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
         EndorsementScore: endorsementScore || 0,
         TrustScore: trustScore || 0,
         Admins: admins || [],
-        IsOpenToAdvertisement: isOpenToAdvertisement || false,
         DiscordId: dicordId || '',
         requiredTokens: requiredTokens || {},
-        Advertising: advertising
-    })
+        Advertising: advertising || true,
+        EthereumAddress: ethereumAddr || ''
+    }, { merge: true })
 }
 
 /**
@@ -262,23 +262,46 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const podType = body.podType; // FT or NFT
 
-        const userRef = db.collection(collections.user)
-            .doc(userId);
+        // update user
+        const userSnap = await db.collection(collections.user)
+            .doc(userId).get();
         let podRef = collections.podsFT;
         if (podType == "NFT") podRef = collections.podsNFT;
 
-        const followerObj = {
+        let followingPodsFieldName = "followingFTPods";
+        let numFollowingPodsFieldName = "numFollowingFTPods";
+        if (podType == "NFT") {
+            followingPodsFieldName = "followingNFTPods";
+            numFollowingPodsFieldName = "numFollowingNFTPods";
+        }
+
+        let followingPods: string[] = [];
+        let numFollowingPods = 0;
+        const userData = userSnap.data();
+
+        if (userData && userData[followingPodsFieldName]) followingPods = userData[followingPodsFieldName];
+        if (userData && userData[numFollowingPodsFieldName]) numFollowingPods = userData[numFollowingPodsFieldName];
+        followingPods.push(podId);
+        numFollowingPods += 1;
+
+        const userUpdateObj = {};
+        userUpdateObj[followingPodsFieldName] = followingPods;
+        userUpdateObj[numFollowingPodsFieldName] = numFollowingPods;
+
+        userSnap.ref.update(userUpdateObj);
+
+        // update pod
+        const podSnap = await db.collection(podRef).doc(podId).get();
+        let followerArray: any[] = [];
+        const podData = podSnap.data();
+        if (podData && podData.Followers) followerArray = podData.Followers;
+        followerArray.push({
             date: Date.now(),
             id: userId
-        }
-        // update user
-        userRef.update({
-            followingFTPods: firebase.firestore.FieldValue.arrayUnion(podId),
-            numFollowingFTPods: firebase.firestore.FieldValue.increment(1)
-        });
-        // update pod
-        db.collection(podRef).doc(podId).update({
-            Followers: firebase.firestore.FieldValue.arrayUnion(followerObj)
+        })
+
+        podSnap.ref.update({
+            Followers: followerArray
         });
         res.send({ success: true });
 
@@ -301,30 +324,48 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const podType = body.podType; // FT or NFT
 
-        const userRef = db.collection(collections.user)
-            .doc(userId);
+        // update user
+        const userSnap = await db.collection(collections.user)
+            .doc(userId).get();
         let podRef = collections.podsFT;
         if (podType == "NFT") podRef = collections.podsNFT;
 
-        // update user
-        userRef.update({
-            followingFTPods: firebase.firestore.FieldValue.arrayRemove(podId),
-            numFollowingFTPods: firebase.firestore.FieldValue.increment(-1)
-        });
-        // update pod
-        const mewFollowerField: any[] = [];
-        const podsSnap = await db.collection(podRef).get();
-        podsSnap.forEach((doc) => {
-            const data = doc.data();
-            const followers = data.Followers;
-            if (followers) {
-                followers.forEach((follower) => {
-                    if (follower.id && follower.id != userId) mewFollowerField.push(follower);
-                })
-            }
+        let followingPodsFieldName = "followingFTPods";
+        let numFollowingPodsFieldName = "numFollowingFTPods";
+        if (podType == "NFT") {
+            followingPodsFieldName = "followingNFTPods";
+            numFollowingPodsFieldName = "numFollowingNFTPods";
+        }
+
+        let followingPods: string[] = [];
+        let numFollowingPods = 0;
+        const userData = userSnap.data();
+
+        if (userData && userData[followingPodsFieldName]) followingPods = userData[followingPodsFieldName];
+        if (userData && userData[numFollowingPodsFieldName]) numFollowingPods = userData[numFollowingPodsFieldName];
+        followingPods = followingPods.filter((val, index, arr) => {
+            return val !== podId;
         })
-        db.collection(podRef).doc(podId).update({
-            Followers: mewFollowerField
+        numFollowingPods -= 1;
+
+        const userUpdateObj = {};
+        userUpdateObj[followingPodsFieldName] = followingPods;
+        userUpdateObj[numFollowingPodsFieldName] = numFollowingPods;
+
+        console.log(userUpdateObj);
+        userSnap.ref.update(userUpdateObj);
+
+        // update pod
+        const podSnap = await db.collection(podRef).doc(podId).get();
+        let followerArray: any[] = [];
+        const podData = podSnap.data();
+        if (podData && podData.Followers) followerArray = podData.Followers;
+        followerArray = followerArray.filter((val, index, arr) => {
+            return val.id && val.id !== userId;
+        })
+
+        podSnap.ref.update({
+            Followers: followerArray
         });
         res.send({ success: true });
 
@@ -338,75 +379,74 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
 
 exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
     try {
-        console.log(req.body);
-        res.send({ success: false });
         const body = req.body;
         const creator = body.Creator;
-        const fundingToken = body.FundingToken;
+        const fundingToken = body.Token;
         const duration = body.Duration;
         const frequency = body.Frequency.toUpperCase();
         const principal = body.Principal;
-        const interest = body.Interest;
-        const liquidationCCR = body.P_liquidation;
+        const interest = Number(body.Interest.toString()) / 100;
+        const liquidationCCR = Number(body.P_liquidation.toString()) / 100;
         const collaterals = body.Collaterals;
 
         const address = "Px" + generateUniqueId();
         const amm = body.Amm.toUpperCase();;
-        const spreadTarget = body.SpreadTarget;
-        const spreadExchange = body.SpreadExchange;
+        const spreadTarget = Number(body.TargetSpread.toString()) / 100;
+        const spreadExchange = Number(body.ExchangeSpread.toString()) / 100;
         const tokenSymbol = body.TokenSymbol;
         const tokenName = body.TokenName;
 
-        const date = body.Date;
+        const date = body.StartDate;
         const expirationDate = body.ExpirationDate;
         const interestDue = body.InterestDue;
 
         const txnId = generateUniqueId();
         const caller = apiKey;
 
-        // const rateOfChange = await getRateOfChange();
-        // const blockchainRes = await podFTProtocol.initiatePOD(creator, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName,
-        //     fundingToken, duration, frequency, principal, interest, liquidationCCR, date, expirationDate, collaterals, rateOfChange, txnId, caller);
-        // if (blockchainRes && blockchainRes.success) {
-        //     updateFirebase(blockchainRes);  // update blockchain res
+        const rateOfChange = await getRateOfChange();
+        const blockchainRes = await podFTProtocol.initiatePOD(creator, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName,
+            fundingToken, duration, frequency, principal, interest, liquidationCCR, date, expirationDate, collaterals, rateOfChange, txnId, caller);
+        if (blockchainRes && blockchainRes.success) {
+            console.log(blockchainRes.output);
+            const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
+            await updateFirebase(blockchainRes);  // update blockchain res
+            await updateCommonFields(body, podId, true); // update common fields
 
-        //     const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
-        //     updateCommonFields(body, podId, true); // update common fields
-        //     db.collection(collections.podsFT).doc(podId).update({InterstDue: interestDue});
+            db.collection(collections.podsFT).doc(podId).set({ InterstDue: interestDue }, { merge: true });
 
-        //     createNotification(creator, "FT Pod - Pod Created",
-        //         ` `,
-        //         notificationTypes.podCreation
-        //     );
-        //     // Create Pod Rate Doc
-        //     const newPodRate = 0.01;
-        //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
-        //     db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
-        //         rateUSD: newPodRate,
-        //         timestamp: Date.now()
-        //     });
+            createNotification(creator, "FT Pod - Pod Created",
+                ` `,
+                notificationTypes.podCreation
+            );
+            // Create Pod Rate Doc
+            const newPodRate = 0.01;
+            db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
+            db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
+                rateUSD: newPodRate,
+                timestamp: Date.now()
+            });
 
-        //     // Add Pod Id into user myFTPods array
-        //     if (blockchainRes.output.UpdatePods[0] && blockchainRes.output.UpdatePods[0].Creator) {
-        //         const userRef = db.collection(collections.user)
-        //             .doc(blockchainRes.output.UpdatePods[0].Creator);
-        //         const userGet = await userRef.get();
-        //         const user: any = userGet.data();
+            // Add Pod Id into user myFTPods array
+            if (blockchainRes.output.UpdatePods[0] && blockchainRes.output.UpdatePods[0].Creator) {
+                const userRef = db.collection(collections.user)
+                    .doc(blockchainRes.output.UpdatePods[0].Creator);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
 
-        //         let myFTPods: any[] = user.myNFTPods || [];
-        //         myFTPods.push(podId)
+                let myFTPods: any[] = user.myNFTPods || [];
+                myFTPods.push(podId)
 
-        //         await userRef.update({
-        //             myFTPods: myFTPods
-        //         });
-        //     }
+                await userRef.update({
+                    myFTPods: myFTPods
+                });
+            }
 
-        //     res.send({ success: true, data: podId });
-        // }
-        // else {
-        //     console.log('Error in controllers/podController -> initiatePOD(): success = false.', blockchainRes.message);
-        //     res.send({ success: false, error: blockchainRes.message });
-        // }
+            res.send({ success: true, data: podId });
+        }
+        else {
+            console.log('Error in controllers/podController -> initiatePOD(): success = false.', blockchainRes.message);
+            res.send({ success: false, error: blockchainRes.message });
+        }
     } catch (err) {
         console.log('Error in controllers/podController -> initiateFTPOD(): ', err);
         res.send({ success: false });
@@ -1480,44 +1520,6 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
         console.log('Error in controllers/podController -> payInterest()', err);
     }
 });
-// /**
-//  * cron job scheduled every day at 00:00, calcula if its a payment day
-//  * for each pod candidate to interest payment call blockchain/payInterest function
-//  */
-// exports.payInterest = cron.schedule('0 0 * * *', async () => {
-//     try {
-//         console.log("********* Pod payInterest() cron job started *********");
-//         const rateOfChange = await getRateOfChange();
-//         const podList: string[] = [];
-//         const podsSnap = await db.collection(collections.podsFT).get();
-//         podsSnap.forEach((doc) => {
-//             podList.push(doc.id);
-//         });
-//         podsSnap.forEach(async (pod) => {
-//             const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
-//             if (blockchainRes && blockchainRes.success) {
-//                 updateFirebase(blockchainRes);
-//                 const updateWallets = blockchainRes.output.UpdateWallets;
-//                 let uid: string = "";
-//                 let walletObj: any = null;
-//                 for ([uid, walletObj] of Object.entries(updateWallets)) {
-//                     if (walletObj["Transaction"].length > 0) {
-//                         createNotification(uid, "FT Pod - Interest Payment",
-//                             ` `,
-//                             notificationTypes.traditionalInterest
-//                         );
-//                     }
-//                 }
-//                 console.log("--------- Pod payInterest() finished ---------");
-//             }
-//             else {
-//                 console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
-//             }
-//         })
-//     } catch (err) {
-//         console.log('Error in controllers/podController -> payInterest()', err);
-//     }
-// });
 
 
 /**

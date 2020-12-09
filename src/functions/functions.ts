@@ -31,7 +31,6 @@ export async function updateFirebase(blockchainRes) {
             let key: string = "";
             let val: any = null;
             for ([key, val] of Object.entries(updateTokens)) {
-                console.log(key, val)
                 transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
@@ -47,10 +46,11 @@ export async function updateFirebase(blockchainRes) {
                 uid = splitted[0];
                 token = splitted[1];
                 tokenType = await identifyTypeOfToken(token);   // token type colection                
-                if (tokenType == collections.unknown) {
+                if (tokenType == collections.unknown && updateTokens) { // case new token added in the system
                     const newToken: any = Object.values(updateTokens)[0];
-                    if (newToken.Type) tokenType = newToken.Type;
+                    if (newToken.TokenType) tokenType = newToken.TokenType;
                 }
+                console.log(uid, token, tokenType);
                 transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, { merge: true });
             }
         }
@@ -99,7 +99,7 @@ export async function updateFirebase(blockchainRes) {
 }
 
 
-// rate of all tokens in ratesOfChange colection (that is all types except nft)
+// rate of all tokens in ratesOfChange colection (that is all types except nft) as {}
 export async function getRateOfChange() {
     let res = {};
     const ratesQuery = await db.collection(collections.rates).get();
@@ -109,12 +109,14 @@ export async function getRateOfChange() {
     }
     // still don't have these Token conversion rates in firebase, so we add them manually
     res["BC"] = 1;
-    res["DC"] = 0.1;
+    res["DC"] = res["PC"];
     return res;
 };
 
+// rate of all tokens in ratesOfChange colection (that is all types except nft) as []
 export async function getTokensRate2() {
     const data: {}[] = [];
+    let dcRate = 0.014;
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
@@ -122,9 +124,11 @@ export async function getTokensRate2() {
             const token = doc.id;
             const rate = doc.data().rate;
             if (name) data.push({ token: token, name: name, rate: rate });
+
+            if (token == "PC") dcRate = rate;
         }
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: data["BC"].rate });
+        data.push({ token: "DC", name: "Data Coin", rate: dcRate });   // DC same rate as PC for now
 
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
@@ -259,7 +263,7 @@ const identifyTypeOfToken = async function (token: string): Promise<string> {
     const tokenSnap = await db.collection(collections.tokens).doc(token).get();
     if (tokenSnap.exists) {
         const data = tokenSnap.data();
-        if (data) return data.Type;
+        if (data) return data.TokenType;
     }
     return collections.unknown;
 }
