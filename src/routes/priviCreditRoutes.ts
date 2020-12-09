@@ -13,5 +13,7 @@ router.post('/getCreditLenders', authenticateJWT, priviCreditController.getCredi
 router.post('/initiatePriviCredit', authenticateJWT, priviCreditController.initiatePriviCredit);
 router.post('/depositFunds', authenticateJWT, priviCreditController.depositFunds);
 router.post('/borrowFunds', authenticateJWT, priviCreditController.borrowFunds);
+router.post('/getPriviCredits', authenticateJWT, priviCreditController.getPriviCredits);
+
 
 module.exports = router;

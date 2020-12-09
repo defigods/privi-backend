@@ -216,6 +216,25 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
     }
 };
 
+///////////////////////////// GETS //////////////////////////////
+
+exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
+    try {
+        const resData: {}[] = [];
+        const creditsSnap = await db.collection(collections.priviCredits).get();
+        creditsSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                resData.push(data);
+            }
+        });
+        res.send({ success: true, data: resData });
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> getPriviCredits(): ', err);
+        res.send({ success: false });
+    }
+};
+
 /////////////////////////// CRON JOBS //////////////////////////////
 
 // scheduled every day at 00:00
