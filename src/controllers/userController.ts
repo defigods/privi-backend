@@ -293,7 +293,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
         const currency = body.currency;
         const email = body.email;
         const password = body.password;
-        const role = body.role; // role should not be coming from user input?
+
+        // const role = body.role; // role should not be coming from user input?
+		const role = "USER";
 
         if (email == "" || password == "") { // basic requirement validation
             console.log('email and password required');

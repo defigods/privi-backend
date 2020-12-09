@@ -46,4 +46,7 @@ module.exports = {
     issues: "Issues",
     proposals: "Proposals",
     campaigns: "Campaigns"
+    forumCategory: "ForumCategory",
+    forumPost: "ForumPost",
+	forumComment: "ForumComment",
 }
