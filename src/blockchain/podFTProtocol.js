@@ -153,4 +153,15 @@ module.exports.getLiquidityProviders = async (poolToken) => {
     return blockchainRes.data;
 };
 
+module.exports.swapPOD = async (investorId, liquidityPoolId, podId, amount, rateOfChange) => {
+    let blockchainRes = await axios.post(api.blockchainPodAPI + "/swapPOD", {
+        InvestorId: investorId,
+        LiqPoolId: liquidityPoolId,
+        PodId: podId,
+        Amount: amount,
+        RateChange: rateOfChange,
+        Type: "CRYPTO"
+    });
+    return blockchainRes.data;
+};
 
