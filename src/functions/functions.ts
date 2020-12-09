@@ -17,8 +17,10 @@ export async function updateFirebase(blockchainRes) {
         const updateLoans = output.UpdateLoans;
         const updatePods = output.UpdatePods;   // changed to new version
         const updatePodStates = output.UpdatePodStates; // new adaded
-        const updatePools = output.UpdatePools;
-        const updateInsurance = output.UpdateInsurance;
+        const updateInsurancePools = output.UpdateInsurancePools;
+        const updateInsuranceStates = output.UpdateInsuranceStates;
+        const updateInsuranceInvestors = output.UpdateInsuranceInvestors;
+        const updateInsuranceClients = output.UpdateInsuranceClients;
         // update loan
         if (updateLoans) {
             let loanId: string = "";
@@ -90,11 +92,45 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(colectionName).doc(podId), podState, { merge: true });
             }
         }
-        // update pools
-        if (updatePools) {
+        // update insurance pools
+        if (updateInsurancePools) {
+            let insuranceId: string = '';
+            let insuranceState: any = {};
+            for ([insuranceId, insuranceState] of Object.entries(updateInsurancePools)) {
+                transaction.set(db.collection(collections.insurancePools).doc(insuranceId), insuranceState, { merge: true });
+            }
         }
-        // update insurance
-        if (updateInsurance) {
+        // update insurance states
+        if (updateInsuranceStates) {
+            let insuranceId: string = '';
+            let insuranceState: any = {};
+            for ([insuranceId, insuranceState] of Object.entries(updateInsuranceStates)) {
+                transaction.set(db.collection(collections.insurancePools).doc(insuranceId), insuranceState, { merge: true });
+            }
+        }
+        // update insurance investors
+        if (updateInsuranceInvestors) {
+            let insuranceId: string = '';
+            let investorObj: any = {};
+            for ([insuranceId, investorObj] of Object.entries(updateInsuranceInvestors)) {
+                const investorMapField = "Investors." + investorObj.InvestorAddress;
+                const updateObj = {
+                    investorMapField: investorObj
+                }
+                transaction.set(db.collection(collections.insurancePools).doc(insuranceId), updateObj, { merge: true });
+            }
+        }
+        // update insurance clients
+        if (updateInsuranceClients) {
+            let insuranceId: string = '';
+            let clientObj: any = {};
+            for ([insuranceId, clientObj] of Object.entries(updateInsuranceInvestors)) {
+                const clientMapField = "Investors." + clientObj.ClientAddress;
+                const updateObj = {
+                    clientMapField: clientObj
+                }
+                transaction.set(db.collection(collections.insurancePools).doc(insuranceId), updateObj, { merge: true });
+            }
         }
     });
 }

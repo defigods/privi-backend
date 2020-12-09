@@ -1,10 +1,10 @@
 import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
-import nftPodProtocol from "../blockchain/nftPodProtocol";
+import podNFTProtocol from "../blockchain/podNFTProtocol";
 import { updateFirebase, getRateOfChange, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
-import { db, firebase } from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
@@ -401,11 +401,10 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         const interestDue = body.InterestDue;
 
         const txnId = generateUniqueId();
-        const caller = apiKey;
 
         const rateOfChange = await getRateOfChange();
         const blockchainRes = await podFTProtocol.initiatePOD(creator, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName,
-            fundingToken, duration, frequency, principal, interest, liquidationCCR, date, expirationDate, collaterals, rateOfChange, txnId, caller);
+            fundingToken, duration, frequency, principal, interest, liquidationCCR, date, expirationDate, collaterals, rateOfChange, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             console.log(blockchainRes.output);
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
@@ -486,8 +485,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
 
         const date = Date.now();
         const txnId = generateUniqueId();
-        const caller = apiKey;
-        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, date, txnId, caller);
+        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const podTokenToReceive = await getPodTokenAmountAux(podId, amount);
             const fundingTokenPerPodToken = amount / podTokenToReceive;
@@ -544,8 +542,7 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
 
         const date = Date.now();
         const txnId = generateUniqueId();
-        const caller = apiKey;
-        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, date, txnId, caller);
+        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const fundingTokenToReceive = await getFundingTokenAmountAux(podId, amount);
             const fundingTokenPerPodToken = fundingTokenToReceive / amount;
@@ -787,7 +784,6 @@ const getAllInfoMyPods = (allItemArray, myArray): Promise<any[]> => {
 
 exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) => {
     try {
-        let userId = req.params.userId;
         let allFTPods: any[] = await getFTPods();
 
         let trendingFTPods: any[] = await countLastWeekPods(allFTPods);
@@ -799,6 +795,7 @@ exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) 
     }
 };
 
+// filtering the top 10 pods with most followers
 const countLastWeekPods = (allPodsArray): Promise<any[]> => {
     return new Promise<any[]>((resolve, reject) => {
 
@@ -1188,7 +1185,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const isDigital: boolean = body.IsDigital; // recently added
         const royaltyFee = body.RoyaltyFee; // recently added
         const redeemable = body.Redeemable; // recently added
-        const blockchainRes = await nftPodProtocol.initiatePodNFT(creator, token, royalty, offers);
+        const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, token, royalty, offers);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);   // update blockchain res
@@ -1231,7 +1228,7 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const amount = body.amount;
         const price = body.price;
-        const blockchainRes = await nftPodProtocol.newBuyOrder(podId, trader, amount, price);
+        const blockchainRes = await podNFTProtocol.newBuyOrder(podId, trader, amount, price);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // TODO: set correct notification type
@@ -1264,7 +1261,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const amount = body.amount;
         const price = body.price;
-        const blockchainRes = await nftPodProtocol.newSellOrder(podId, trader, amount, price);
+        const blockchainRes = await podNFTProtocol.newSellOrder(podId, trader, amount, price);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // TODO: set correct notification type
@@ -1295,7 +1292,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
         const trader = body.trader;
         const podId = body.podId;
         const orderId = body.orderId;
-        const blockchainRes = await nftPodProtocol.deleteBuyOrder(podId, orderId, trader);
+        const blockchainRes = await podNFTProtocol.deleteBuyOrder(podId, orderId, trader);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // TODO: set correct notification type
@@ -1326,7 +1323,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
         const trader = body.trader;
         const podId = body.podId;
         const orderId = body.orderId;
-        const blockchainRes = await nftPodProtocol.deleteSellOrder(podId, orderId, trader);
+        const blockchainRes = await podNFTProtocol.deleteSellOrder(podId, orderId, trader);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // TODO: set correct notification type
@@ -1358,7 +1355,7 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const orderId = body.orderId;
         const amount = body.amount;
-        const blockchainRes = await nftPodProtocol.sellPodNFT(podId, trader, orderId, amount);
+        const blockchainRes = await podNFTProtocol.sellPodNFT(podId, trader, orderId, amount);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // add pod transaction
@@ -1416,7 +1413,7 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
         const podId = body.podId;
         const orderId = body.orderId;
         const amount = body.amount;
-        const blockchainRes = await nftPodProtocol.buyPodNFT(podId, trader, orderId, amount);
+        const blockchainRes = await podNFTProtocol.buyPodNFT(podId, trader, orderId, amount);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // add pod transaction
