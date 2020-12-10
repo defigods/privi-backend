@@ -14,6 +14,7 @@ import cron from 'node-cron';
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI"; // just for now
+const notificationsController = require('./notificationsController');
 
 // Should be called each time the blockchain restarts (or we resert firestore) to register all the crypto tokens to the system
 // as well as adding this tokens info (type, supply..etc) to firestore
@@ -101,11 +102,38 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
                     `You have succesfully send ${amount} ${token} to ${receiverName}!`,
                     notificationTypes.transferSend
                 );
+                await notificationsController.addNotification({
+                    userId: senderSnap.id,
+                    notification: {
+                        type: 8,
+                        itemId: receiverSnap.id,
+                        follower: receiverName,
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+
                 // notification to receiver
                 createNotification(fromUid, "Transfer - Received",
                     `You have succesfully received ${amount} ${token} from ${senderName}!`,
                     notificationTypes.transferReceive
                 );
+                await notificationsController.addNotification({
+                    userId: receiverSnap.id,
+                    notification: {
+                        type: 7,
+                        itemId: senderSnap.id,
+                        follower: senderName,
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
             }
             res.send({ success: true });
         } else {
@@ -144,8 +172,20 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
+            await notificationsController.addNotification({
+                userId: from,
+                notification: {
+                    type: 10,
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
-
         } else {
             console.log('Error in controllers/walletController -> withdraw()');
             res.send({ success: false });
@@ -183,6 +223,19 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );
+            await notificationsController.addNotification({
+                userId: from,
+                notification: {
+                    type: 9,
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         } else {
             console.log('Error in controllers/walletController -> mint()', blockchainRes);

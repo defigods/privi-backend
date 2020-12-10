@@ -6,6 +6,8 @@ import cron from 'node-cron';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
 
+const notificationsController = require('./notificationsController');
+
 exports.initiateCredit = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -27,6 +29,39 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                 `You have successfully created a new PRIVI Credit. ${amount} ${token} has been added to the PRIVI Credit Pool!`,
                 notificationTypes.priviCreditCreated
             );
+
+            const userSnap = await db.collection(collections.user).doc(creator).get();
+            const userData: any  = userSnap.data();
+            await notificationsController.addNotification({
+                userId: creator,
+                notification: {
+                    type: 16,
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 34,
+                        itemId: item.user,
+                        follower: '',
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+            })
+
+
             const updateLoans = blockchainRes.output.UpdateLoans;
             const loanIds: string[] = Object.keys(updateLoans);
             const id = loanIds[0];

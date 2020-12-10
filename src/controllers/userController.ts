@@ -21,6 +21,8 @@ import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
+const notificationsController = require('./notificationsController');
+
 const apiKey = "PRIVI"; // just for now
 
 const emailValidation = async (req: express.Request, res: express.Response) => {
@@ -382,7 +384,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     twitter: '',
                     instagram: '',
                     facebook: '',
-                    level: 1
+                    level: 1,
+                    notifications: []
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -734,24 +737,30 @@ const followUser = async (req: express.Request, res: express.Response) => {
         const userToFollowGet = await userToFollowRef.get();
         const userToFollowData: any = userToFollowGet.data();
 
-        let alreadyFollowing = user.followings.find((item) => item === userToFollow.id);
-        if (!alreadyFollowing) {
-            user.followings.push(userToFollow.id);
-        }
-
         let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
         if (!alreadyFollower) {
-            userToFollowData.followers.push(body.user.id);
+            userToFollowData.followers.push({
+                user: body.user.id,
+                accepted: false
+            });
         }
-        userToFollowData.numFollowers = userToFollowData.followers.length;
 
         await userToFollowRef.update({
-            followers: userToFollowData.followers,
-            numFollowers: userToFollowData.numFollowers
+            followers: userToFollowData.followers
         });
-        await userRef.update({
-            followings: user.followings,
-            numFollowings: user.followings.length
+
+        await notificationsController.addNotification({
+            userId: userToFollow.id,
+            notification: {
+                type: 1,
+                itemId: body.user.id,
+                follower: user.firstName,
+                pod: '',
+                comment: '',
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+            }
         });
         res.send({ success: true, data: userToFollowData });
     } catch (err) {
@@ -760,12 +769,116 @@ const followUser = async (req: express.Request, res: express.Response) => {
     }
 };
 
+const acceptFollowUser = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let userToAcceptFollow = body.userToAcceptFollow;
+
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        const userToAcceptRef = db.collection(collections.user)
+            .doc(userToAcceptFollow.id);
+        const userToAcceptGet = await userToAcceptRef.get();
+        const userToAcceptData: any = userToAcceptGet.data();
+
+        let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToAcceptFollow.id);
+        if (!alreadyFollowerIndex && alreadyFollowerIndex !== -1) {
+            user.followers[alreadyFollowerIndex] = {
+                user: userToAcceptFollow.id,
+                accepted: true
+            }
+        }
+
+        let followersAccepted = user.followers.filter((item) => item.accepted === true);
+        user.numFollowers = followersAccepted.length;
+
+        await userRef.update({
+            followers: user.followers,
+            numFollowers: user.numFollowers
+        });
+
+
+        let alreadyFollowing = userToAcceptData.followings.find((item) => item === body.user.id);
+        if (!alreadyFollowing) {
+            userToAcceptData.followings.push(body.user.id);
+        }
+
+        await userToAcceptRef.update({
+            followings: userToAcceptData.followers,
+            numFollowings: userToAcceptData.followers.length
+        });
+
+        await notificationsController.addNotification({
+            userId: userToAcceptFollow.id,
+            notification: {
+                type: 5,
+                itemId: body.user.id,
+                follower: user.firstName,
+                pod: '',
+                comment: '',
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+            }
+        });
+
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
+        res.send({ success: false });
+    }
+};
+
+const declineFollowUser = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let userToDeclineFollow = body.userToDeclineFollow;
+
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToDeclineFollow.id);
+        if (!alreadyFollowerIndex && alreadyFollowerIndex !== -1) {
+            user.followers.splice(alreadyFollowerIndex, 1);
+        }
+
+        let followersAccepted = user.followers.filter((item) => item.accepted === true);
+        user.numFollowers = followersAccepted.length;
+
+        await userRef.update({
+            followers: user.followers,
+            numFollowers: user.numFollowers
+        });
+
+        await notificationsController.addNotification({
+            userId: userToDeclineFollow.id,
+            notification: {
+                type: 6,
+                itemId: body.user.id,
+                follower: user.firstName,
+                pod: '',
+                comment: '',
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+            }
+        });
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
+        res.send({ success: false });
+    }
+};
+
 const unFollowUser = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
         let userToUnFollow = body.userToUnFollow;
-
-        console.log(body.user.id, userToUnFollow)
 
         const userRef = db.collection(collections.user)
             .doc(body.user.id);
@@ -777,12 +890,10 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
         const userToUnFollowGet = await userToUnFollowRef.get();
         const userToUnFollowData: any = userToUnFollowGet.data();
 
-        let newFollowings = user.followings.filter(item => item != userToUnFollow.id)
+        let newFollowings = user.followings.filter(item => item.user != userToUnFollow.id)
 
-        let newFollowers = userToUnFollowData.followers.filter((item) => item !== body.user.id);
+        let newFollowers = userToUnFollowData.followers.filter((item) => item.user !== body.user.id);
 
-        console.log(userToUnFollowData.followers);
-        console.log(newFollowers);
         userToUnFollowData.numFollowers = newFollowers.length;
 
         await userToUnFollowRef.update({
@@ -794,7 +905,7 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
             numFollowings: newFollowings.length
         });
 
-        res.send({ success: true, data: userToUnFollowData });
+        res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
         res.send({ success: false });
@@ -1390,5 +1501,7 @@ module.exports = {
     createProposal,
     responseIssue,
     voteIssue,
-    responseProposal
+    responseProposal,
+    acceptFollowUser,
+    declineFollowUser
 };

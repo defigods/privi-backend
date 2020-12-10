@@ -5,6 +5,7 @@ import notificationTypes from "../constants/notificationType";
 import collections, { stakingDeposit } from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
+const notificationsController = require('./notificationsController');
 
 // user stakes in a token
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
@@ -38,6 +39,20 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.unstaking
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 28,
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+
             res.send({ success: true });
         }
         else {
@@ -79,6 +94,19 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                     ` `,
                     notificationTypes.unstaking
                 );
+                await notificationsController.addNotification({
+                    userId: publicId,
+                    notification: {
+                        type: 29,
+                        itemId: token,
+                        follower: '',
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: 0,
+                        onlyInformation: false,
+                    }
+                });
                 res.send({ success: true });
             }
             else {
