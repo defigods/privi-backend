@@ -112,6 +112,7 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
     }
 }
 
+
 /**
  * Invited users (by pod admins) can accept or decline the role invitation, then this invitation pass to be replied
  * @param req {userId, invitationId, accept}. userId is the uid of the user, invitationId the doc id of the invitation, accept is a boolean
@@ -722,27 +723,6 @@ exports.getMarketPrice = async (req: express.Request, res: express.Response) => 
     }
 };
 
-// ----------------------------------------------------------------------------------
-
-
-exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
-    try {
-        let userId = req.params.userId;
-        const userRef = db.collection(collections.user)
-            .doc(userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
-
-        let allNFTPods: any[] = await getNFTPods();
-
-        let myNFTPods: any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
-
-        res.send({ success: true, data: myNFTPods });
-    } catch (err) {
-        console.log('Error in controllers/podController -> getMyPods()', err);
-        res.send({ success: false });
-    }
-};
 
 exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
     try {
@@ -1085,6 +1065,25 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
     }
 };
 
+exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let allNFTPods: any[] = await getNFTPods();
+
+        let myNFTPods: any[] = await getAllInfoMyPods(allNFTPods, user.myNFTPods);
+
+        res.send({ success: true, data: myNFTPods });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getMyPods()', err);
+        res.send({ success: false });
+    }
+};
+
 /**
  * Get others NFT pods, that is all pods which are not created by the user
  * @param req {userId as params}. 
@@ -1184,7 +1183,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const offers = body.Offers;
         const isDigital: boolean = body.IsDigital; // recently added
         const royaltyFee = body.RoyaltyFee; // recently added
-        const redeemable = body.Redeemable; // recently added
+        const redeemable = body.Redeemable; // recently added 
         const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, token, royalty, offers);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
@@ -1534,54 +1533,9 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
 };
 
 
-/////////////////////////// COMMON //////////////////////////////
-
-/**
- * Pod creator/admin invites some user to assume some role of the pod
- * @param req {admin, podType, podId, invitedUser, role}. podType in ["NF", "NFT"], admin and invitedUser are emails
- * @param res {success}. success: boolean that indicates if the opreaction is performed.
- */
-exports.inviteRole = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const admin: string = body.admin;
-        const podType: string = body.podType;
-        const podId: string = body.podId;
-        const invitedUser: string = body.invitedUser;
-        const role: string = body.role;
-        let ok: boolean = true;
-        const emailToUid = await getEmailUidMap();
-        const adminSnap = await db.collection(collections.user).doc(emailToUid[admin]).get();
-        if (!adminSnap.exists) ok = false
-        const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
-        if (!invitedSnap.exists) ok = false
-        if (!["NFT, FT"].includes(podType)) ok = false
-        let podSnap;
-        if (podType == "FT") {
-            podSnap = await db.collection(collections.podsFT).doc(podId).get();
-        } else {
-            podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-        }
-        if (ok) {
-            // check if adminId is one of the admins of the pod
-            const podData = podSnap.data();
-            if (podData)
-
-
-
-                res.send({ success: true });
-        }
-        else {
-            console.log('Error in controllers/podController -> inviteRole()');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/podController -> inviteRole(): ', err);
-        res.send({ success: false });
-    }
-}
-
+//////////////////////////////////////////////////////////////
 /////////////////////////// CRON JOBS //////////////////////////////
+//////////////////////////////////////////////////////////////
 
 /** 
  * Cron to daily update the PodDay field when the pod is in 'Initiated' Status

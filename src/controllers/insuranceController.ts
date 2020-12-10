@@ -1,6 +1,6 @@
 import express, { response } from 'express';
 import insurance from "../blockchain/insurance";
-import { updateFirebase, getRateOfChange, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId } from "../functions/functions";
+import { updateFirebase, getRateOfChange, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, filterTrending } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections, { insurancePools } from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -142,27 +142,6 @@ exports.getAllInsurancePools = async (req: express.Request, res: express.Respons
         console.log('Error in controllers/lendingController -> unsubscribeInsurancePool(): ', err);
         res.send({ success: false });
     }
-};
-
-// filtering the top 10 insurnaces with most followers
-const filterTrending = (allInsurnaces) => {
-    let lastWeek = new Date();
-    let pastDate = lastWeek.getDate() - 7;
-    lastWeek.setDate(pastDate);
-
-    allInsurnaces.forEach((item, i) => {
-        if (item.Followers && item.Followers.length > 0) {
-            let lastWeekFollowers = item.Followers.filter(follower => follower.date._seconds > lastWeek.getTime() / 1000);
-            item.lastWeekFollowers = lastWeekFollowers.length;
-        } else {
-            item.lastWeekFollowers = 0;
-        }
-        if (allInsurnaces.length === i + 1) {
-            let sortedArray = allInsurnaces.sort((a, b) => (a.lastWeekFollowers > b.lastWeekFollowers) ? 1 : ((b.lastWeekFollowers > a.lastWeekFollowers) ? -1 : 0));
-            let trendingArray = sortedArray.slice(0, 10);
-            return trendingArray;
-        }
-    })
 };
 
 /////////////////////////// NFT //////////////////////////////

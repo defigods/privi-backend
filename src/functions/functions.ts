@@ -11,24 +11,25 @@ const uuid = require('uuid');
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
     await db.runTransaction(async (transaction) => {
-        const updateTokens = output.UpdateTokens;   // new added
-        const updateBalances = output.UpdateBalances;   // new added
-        const updateTransactions = output.Transactions;   // new added
-        const updateLoans = output.UpdateLoans;
-        const updatePods = output.UpdatePods;   // changed to new version
-        const updatePodStates = output.UpdatePodStates; // new adaded
+        console.log(output);
+        const updateTokens = output.UpdateTokens;
+        const updateBalances = output.UpdateBalances;
+        const updateTransactions = output.Transactions;
+        // Pods 
+        const updatePods = output.UpdatePods;
+        const updatePodStates = output.UpdatePodStates;
+        // Insurance
         const updateInsurancePools = output.UpdateInsurancePools;
         const updateInsuranceStates = output.UpdateInsuranceStates;
         const updateInsuranceInvestors = output.UpdateInsuranceInvestors;
         const updateInsuranceClients = output.UpdateInsuranceClients;
         // update loan
-        if (updateLoans) {
-            let loanId: string = "";
-            let loanObj: any = {};
-            for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj);
-            }
-        }
+        const updateLenders = output.UpdateLenders;
+        const updateBorrowers = output.UpdateBorrowers;
+        const updatedCreditInfo = output.UpdatedCreditInfo;
+        const updatedCreditState = output.UpdatedCreditState;
+        const updatedCreditRequirement = output.UpdatedCreditRequirement;
+
         // update tokens
         if (updateTokens) {
             let key: string = "";
@@ -53,7 +54,6 @@ export async function updateFirebase(blockchainRes) {
                     const newToken: any = Object.values(updateTokens)[0];
                     if (newToken.TokenType) tokenType = newToken.TokenType;
                 }
-                console.log(uid, token, tokenType);
                 transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, { merge: true });
             }
         }
@@ -113,11 +113,8 @@ export async function updateFirebase(blockchainRes) {
             let insuranceId: string = '';
             let investorObj: any = {};
             for ([insuranceId, investorObj] of Object.entries(updateInsuranceInvestors)) {
-                const investorMapField = "Investors." + investorObj.InvestorAddress;
-                const updateObj = {
-                    investorMapField: investorObj
-                }
-                transaction.set(db.collection(collections.insurancePools).doc(insuranceId), updateObj, { merge: true });
+                const investorId = investorObj.InvestorAddress;
+                transaction.set(db.collection(collections.insurancePools).doc(insuranceId).collection(collections.insuranceInvestors).doc(investorId), investorObj, { merge: true });
             }
         }
         // update insurance clients
@@ -125,11 +122,53 @@ export async function updateFirebase(blockchainRes) {
             let insuranceId: string = '';
             let clientObj: any = {};
             for ([insuranceId, clientObj] of Object.entries(updateInsuranceInvestors)) {
-                const clientMapField = "Investors." + clientObj.ClientAddress;
-                const updateObj = {
-                    clientMapField: clientObj
-                }
-                transaction.set(db.collection(collections.insurancePools).doc(insuranceId), updateObj, { merge: true });
+                const clientId = clientObj.ClientAddress;
+                transaction.set(db.collection(collections.insurancePools).doc(insuranceId).collection(collections.insuranceClients).doc(clientId), clientObj, { merge: true });
+            }
+        }
+        // update lender (in both User and PriviCredit colection)
+        if (updateLenders) {
+            let creditId: string = '';
+            let lenderObj: any = {};
+            for ([creditId, lenderObj] of Object.entries(updateLenders)) {
+                const lenderId = lenderObj.LenderAddress;
+                transaction.set(db.collection(collections.priviCredits).doc(creditId).collection(collections.priviCreditsLending).doc(lenderId), lenderObj, { merge: true });
+                transaction.set(db.collection(collections.user).doc(lenderId).collection(collections.priviCreditsLending).doc(creditId), lenderObj, { merge: true });
+            }
+        }
+        // update borrower (in both User and PriviCredit colection)
+        if (updateBorrowers) {
+            let creditId: string = '';
+            let borrowerObj: any = {};
+            for ([creditId, borrowerObj] of Object.entries(updateBorrowers)) {
+                const borrowerId = borrowerObj.BorrowerAddress;
+                transaction.set(db.collection(collections.priviCredits).doc(creditId).collection(collections.priviCreditsBorrowing).doc(borrowerId), borrowerObj, { merge: true });
+                transaction.set(db.collection(collections.user).doc(borrowerId).collection(collections.priviCreditsBorrowing).doc(creditId), borrowerObj, { merge: true });
+            }
+        }
+        // update credit info
+        if (updatedCreditInfo) {
+            console.log(updatedCreditInfo)
+            let creditId: string = '';
+            let creditObj: any = {};
+            for ([creditId, creditObj] of Object.entries(updatedCreditInfo)) {
+                transaction.set(db.collection(collections.priviCredits).doc(creditId), creditObj, { merge: true });
+            }
+        }
+        // update credit state
+        if (updatedCreditState) {
+            let creditId: string = '';
+            let creditObj: any = {};
+            for ([creditId, creditObj] of Object.entries(updatedCreditState)) {
+                transaction.set(db.collection(collections.priviCredits).doc(creditId), creditObj, { merge: true });
+            }
+        }
+        // update credit requirements
+        if (updatedCreditRequirement) {
+            let creditId: string = '';
+            let creditObj: any = {};
+            for ([creditId, creditObj] of Object.entries(updatedCreditRequirement)) {
+                transaction.set(db.collection(collections.priviCredits).doc(creditId), creditObj, { merge: true });
             }
         }
     });
@@ -306,3 +345,24 @@ const identifyTypeOfToken = async function (token: string): Promise<string> {
     return collections.unknown;
 }
 module.exports.identifyTypeOfToken = identifyTypeOfToken;
+
+export function filterTrending(allElems) {
+    let trendingArray = [];
+    let lastWeek = new Date();
+    let pastDate = lastWeek.getDate() - 7;
+    lastWeek.setDate(pastDate);
+
+    allElems.forEach((item, i) => {
+        if (item.Followers && item.Followers.length > 0) {
+            let lastWeekFollowers = item.Followers.filter(follower => follower.date._seconds > lastWeek.getTime() / 1000);
+            item.lastWeekFollowers = lastWeekFollowers.length;
+        } else {
+            item.lastWeekFollowers = 0;
+        }
+        if (allElems.length === i + 1) {
+            let sortedArray = allElems.sort((a, b) => (a.lastWeekFollowers > b.lastWeekFollowers) ? 1 : ((b.lastWeekFollowers > a.lastWeekFollowers) ? -1 : 0));
+            trendingArray = sortedArray.slice(0, 10);
+        }
+    });
+    return trendingArray;
+};
