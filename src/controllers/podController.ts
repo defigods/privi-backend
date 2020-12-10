@@ -393,7 +393,23 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                 amount: '',
                 onlyInformation: false,
             }
-        });*/
+        });
+        userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 39,
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
+            });
+        */
         //     // Create Pod Rate Doc
         //     const newPodRate = 0.01;
         //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
@@ -438,6 +454,8 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
 
         const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
         const podData : any = podSnap.data();
+        const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
+        const userData : any = userSnap.data();
 
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -457,6 +475,37 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
                     amount: '',
                     onlyInformation: false,
                 }
+            });
+
+            podData.Followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.id,
+                    notification: {
+                        type: 39,
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
+            });
+            userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 39,
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
             });
             res.send({ success: true });
         }
@@ -513,20 +562,48 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             );
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
             const podData : any = podSnap.data();
-            const podSnap = await db.collection(collections.).doc(investorId).get();
-            const podData : any = podSnap.data();
+            const investorSnap = await db.collection(collections.user).doc(investorId).get();
+            const investorData : any = investorSnap.data();
             await notificationsController.addNotification({
-                userId: podData.Creator,
+                userId: investorId,
                 notification: {
-                    type: 10,
-                    itemId: investorId,
+                    type: 11,
+                    itemId: podId,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: '',
-                    amount: '',
+                    token: token,
+                    amount: amount,
                     onlyInformation: false,
                 }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 12,
+                    itemId: investorId,
+                    follower: investorData.name,
+                    pod: podData.Name,
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            podData.Followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.id,
+                    notification: {
+                        type: 42,
+                        itemId: investorId,
+                        follower: investorData.name,
+                        pod: podData.Name,
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
             });
             res.send({ success: true });
         }
@@ -556,6 +633,70 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podSwapGive
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            const investorSnap = await db.collection(collections.user).doc(investorId).get();
+            const investorData : any = investorSnap.data();
+            await notificationsController.addNotification({
+                userId: investorId,
+                notification: {
+                    type: 14,
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: 0,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 13,
+                    itemId: investorId,
+                    follower: investorData.name,
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            if(podData.Investors && podData.size !== 0) {
+                let investorsId : any[] = [ ...podData.Investors.keys() ];
+                investorsId.forEach(async (item, i) => {
+                    await notificationsController.addNotification({
+                        userId: item,
+                        notification: {
+                            type: 16,
+                            itemId: podId,
+                            follower: investorData.name,
+                            pod: podData.Name,
+                            comment: '',
+                            token: '',
+                            amount: amount,
+                            onlyInformation: false,
+                        }
+                    });
+                })
+            }
+            investorData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 15,
+                        itemId: podId,
+                        follower: investorData.name,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+            });
+
             res.send({ success: true });
         }
         else {
@@ -1018,6 +1159,39 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                 ` `,
                 notificationTypes.podCreation
             );
+
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
+            const userData : any = userSnap.data();
+            await notificationsController.addNotification({
+                userId: creator,
+                notification: {
+                    type: 9,
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 39,
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
+            });
             res.send({ success: true });
         }
         else {
@@ -1052,6 +1226,34 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 17,
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 18,
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1085,6 +1287,34 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 19,
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 20,
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
