@@ -49,8 +49,8 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 34,
-                        itemId: item.user,
+                        type: 39,
+                        itemId: creator,
                         follower: '',
                         pod: '',
                         comment: '',
@@ -60,7 +60,6 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                     }
                 });
             })
-
 
             const updateLoans = blockchainRes.output.UpdateLoans;
             const loanIds: string[] = Object.keys(updateLoans);
@@ -98,6 +97,38 @@ exports.modifyParameters = async (req: express.Request, res: express.Response) =
                 `The modifications of your loan has been performed successfully`,
                 notificationTypes.priviCreditCreated
             );
+
+            const userSnap = await db.collection(collections.user).doc(creator).get();
+            const userData: any  = userSnap.data();
+            await notificationsController.addNotification({
+                userId: creator,
+                notification: {
+                    type: 17,
+                    itemId: loanId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: loanId,
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });
+            userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 43,
+                        itemId: creator,
+                        follower: '',
+                        pod: '',
+                        comment: '',
+                        token: loanId,
+                        amount: 0,
+                        onlyInformation: false,
+                    }
+                });
+            })
+
             res.send({ success: true });
         }
         else {
@@ -124,6 +155,25 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
                 notificationTypes.priviCreditBorrowed
             );
+
+            const priviCreditSnap = await db.collection(collections.priviCredits).doc(loanId).get();
+            const priviCreditData: any  = priviCreditSnap.data();
+            const userSnap = await db.collection(collections.user).doc(borrowerId).get();
+            const userData: any  = userSnap.data();
+            await notificationsController.addNotification({
+                userId: priviCreditData.Creator,
+                notification: {
+                    type: 18,
+                    itemId: loanId,
+                    follower: borrowerId,
+                    pod: '',
+                    comment: '',
+                    token: loanId,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+
             res.send({ success: true });
         }
         else {
@@ -150,6 +200,20 @@ exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
                 `You have succesfully withdrawn ${amount} Coins of your Privi Credit loan`,
                 notificationTypes.priviCreditWithdrawn
             );
+
+            await notificationsController.addNotification({
+                userId: lenderId,
+                notification: {
+                    type: 23,
+                    itemId: loanId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: loanId,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -175,6 +239,19 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
                 notificationTypes.priviCreditDeposited
             );
+            await notificationsController.addNotification({
+                userId: lenderId,
+                notification: {
+                    type: 24,
+                    itemId: loanId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: loanId,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -202,6 +279,19 @@ exports.assumeRisk = async (req: express.Request, res: express.Response) => {
                 `You have assumed ${riskPct * 100}% risk of the loan`,
                 notificationTypes.priviCreditRiskAssumed
             );
+            await notificationsController.addNotification({
+                userId: provierId,
+                notification: {
+                    type: 25,
+                    itemId: loanId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: loanId,
+                    amount: riskPct,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -253,6 +343,19 @@ exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {
                         ` `,
                         notificationTypes.priviCreditInterest
                     );
+                    await notificationsController.addNotification({
+                        userId: uid,
+                        notification: {
+                            type: 25,
+                            itemId: uid,
+                            follower: '',
+                            pod: '',
+                            comment: '',
+                            token: '',
+                            amount: 0,
+                            onlyInformation: false,
+                        }
+                    });
                 }
             }
         }

@@ -9,6 +9,8 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 
+const notificationsController = require('./notificationsController');
+
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI"; // just for now
@@ -378,6 +380,20 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         //         ` `,
         //         notificationTypes.podCreation
         //     );
+
+        /*await notificationsController.addNotification({
+            userId: creator,
+            notification: {
+                type: 9,
+                itemId: podName,
+                follower: '',
+                pod: '',
+                comment: '',
+                token: fundingToken,
+                amount: '',
+                onlyInformation: false,
+            }
+        });*/
         //     // Create Pod Rate Doc
         //     const newPodRate = 0.01;
         //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
@@ -419,12 +435,29 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
         const publicId = body.publicId;
         const podId = body.podId;
         const blockchainRes = await podFTProtocol.deletePod(publicId, podId);
+
+        const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+        const podData : any = podSnap.data();
+
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(publicId, "FT Pod - Pod Deleted",
                 ` `,
                 notificationTypes.podDeletion
             );
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 10,
+                    itemId: podData.Creator,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -473,10 +506,28 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 price: price,
                 date: Date.now()
             })
+
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            const podSnap = await db.collection(collections.).doc(investorId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 10,
+                    itemId: investorId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {

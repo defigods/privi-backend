@@ -2,6 +2,10 @@ import express from 'express';
 import podProtocol from "../blockchain/podFTProtocol";
 import { updateFirebase, getRateOfChange, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
+import {db} from "../firebase/firebase";
+import collections from '../firebase/collections';
+
+const notificationsController = require('./notificationsController');
 
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {
     try {
@@ -22,6 +26,19 @@ exports.createLiquidityPool = async (req: express.Request, res: express.Response
                 ` `,
                 notificationTypes.liquidityPoolCreation
             );
+            await notificationsController.addNotification({
+                userId: creatorId,
+                notification: {
+                    type: 45,
+                    itemId: '', //Liquidity pool id
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -47,6 +64,21 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
                 ` `,
                 notificationTypes.liquidityPoolProvide
             );
+            const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
+            const liquidityPoolData : any = liquidityPoolSnap.data();
+            await notificationsController.addNotification({
+                userId: liquidityPoolData.CreatorId,
+                notification: {
+                    type: 45,
+                    itemId: liquidityPoolId,
+                    follower: providerId,
+                    pod: '',
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -73,6 +105,21 @@ exports.withdrawLiquidity = async (req: express.Request, res: express.Response) 
                 ` `,
                 notificationTypes.liquidityPoolWithdraw
             );
+            const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
+            const liquidityPoolData : any = liquidityPoolSnap.data();
+            await notificationsController.addNotification({
+                userId: liquidityPoolData.CreatorId,
+                notification: {
+                    type: 47,
+                    itemId: liquidityPoolId,
+                    follower: providerId,
+                    pod: '',
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {

@@ -42,7 +42,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
-                    type: 28,
+                    type: 33,
                     itemId: token,
                     follower: '',
                     pod: '',
@@ -97,7 +97,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                 await notificationsController.addNotification({
                     userId: publicId,
                     notification: {
-                        type: 29,
+                        type: 34,
                         itemId: token,
                         follower: '',
                         pod: '',
