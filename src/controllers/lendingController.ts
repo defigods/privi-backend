@@ -7,6 +7,9 @@ import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import { restart } from 'pm2';
+import path from 'path';
+
+const notificationsController = require('./notificationsController');
 
 module.exports.getUserLoans = async (req: express.Request, res: express.Response) => {
     try {
@@ -73,6 +76,19 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.priviCreditCreated
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 68,
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -98,6 +114,19 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                 ` `,
                 notificationTypes.traditionalDepositCollateral
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 69,
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -124,6 +153,19 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                 ` `,
                 notificationTypes.traditionalWithdrawCollateral
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 70,
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -149,6 +191,19 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.traditionalRepay
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 70,
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -224,6 +279,19 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.staking
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 46,
+                    itemId: publicId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -259,6 +327,19 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.unstaking
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 48,
+                    itemId: publicId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -358,6 +439,19 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
                         ` `,
                         notificationTypes.traditionalLiquidation
                     );
+                    await notificationsController.addNotification({
+                        userId: uid,
+                        notification: {
+                            type: 71,
+                            itemId: uid,
+                            follower: '',
+                            pod: '',
+                            comment: '',
+                            token: token,
+                            amount: 0,
+                            onlyInformation: false,
+                        }
+                    });
                 } else {
                     console.log('Error in controllers/lendingController -> checkLiquidation().', uid, token, blockchainRes.message);
                 }
@@ -389,6 +483,19 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                         ` `,
                         notificationTypes.traditionalInterest
                     );
+                    await notificationsController.addNotification({
+                        userId: uid,
+                        notification: {
+                            type: 72,
+                            itemId: uid,
+                            follower: '',
+                            pod: '',
+                            comment: '',
+                            token: '',
+                            amount: 0,
+                            onlyInformation: false,
+                        }
+                    });
                 }
             }
             console.log("--------- Traditional lending payInterest() finished ---------");

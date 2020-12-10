@@ -50,6 +50,7 @@ router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
 router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.getFollowingUserInfo);
 router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
+router.get('/wall/getNotifications/:userId', authenticateJWT, userController.getNotifications);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);

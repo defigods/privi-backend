@@ -476,7 +476,8 @@ interface BasicInfo {
     level: number,
     twitter: string,
     facebook: string,
-    instagram: string
+    instagram: string,
+    notifications: any[]
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -484,7 +485,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: ''};
+            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -499,6 +500,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.twitter = userData.twitter || '';
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
+            basicInfo.notifications = userData.notifications || '';
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
@@ -612,6 +614,18 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
         res.send({ success: true, data: actions });
     } catch (err) {
         console.log('Error in controllers/profile -> getOwnInfo()', err);
+        res.send({ success: false });
+    }
+}
+const getNotifications = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+        const userSnap = await db.collection(collections.user).doc(userId).get();
+        const userData : any = userSnap.data();
+        res.send({ success: true, data: userData.notifications });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getNotifications()', err);
         res.send({ success: false });
     }
 }
@@ -1503,5 +1517,6 @@ module.exports = {
     voteIssue,
     responseProposal,
     acceptFollowUser,
-    declineFollowUser
+    declineFollowUser,
+    getNotifications
 };
