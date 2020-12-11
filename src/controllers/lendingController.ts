@@ -80,6 +80,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 userId: publicId,
                 notification: {
                     type: 68,
+                    typeItemId: 'token',
                     itemId: '',
                     follower: '',
                     pod: '',
@@ -118,6 +119,7 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                 userId: publicId,
                 notification: {
                     type: 69,
+                    typeItemId: 'token',
                     itemId: '',
                     follower: '',
                     pod: '',
@@ -157,6 +159,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                 userId: publicId,
                 notification: {
                     type: 70,
+                    typeItemId: 'token',
                     itemId: '',
                     follower: '',
                     pod: '',
@@ -195,6 +198,7 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
                 userId: publicId,
                 notification: {
                     type: 70,
+                    typeItemId: 'token',
                     itemId: '',
                     follower: '',
                     pod: '',
@@ -283,6 +287,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 userId: publicId,
                 notification: {
                     type: 46,
+                    typeItemId: 'user',
                     itemId: publicId,
                     follower: '',
                     pod: '',
@@ -331,6 +336,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                 userId: publicId,
                 notification: {
                     type: 48,
+                    typeItemId: 'user',
                     itemId: publicId,
                     follower: '',
                     pod: '',
@@ -443,6 +449,7 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
                         userId: uid,
                         notification: {
                             type: 71,
+                            typeItemId: 'user',
                             itemId: uid,
                             follower: '',
                             pod: '',
@@ -487,6 +494,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                         userId: uid,
                         notification: {
                             type: 72,
+                            typeItemId: 'user',
                             itemId: uid,
                             follower: '',
                             pod: '',

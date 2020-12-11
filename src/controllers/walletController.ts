@@ -106,6 +106,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
                     userId: senderSnap.id,
                     notification: {
                         type: 8,
+                        typeItemId: 'user',
                         itemId: receiverSnap.id,
                         follower: receiverName,
                         pod: '',
@@ -125,6 +126,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
                     userId: receiverSnap.id,
                     notification: {
                         type: 7,
+                        typeItemId: 'user',
                         itemId: senderSnap.id,
                         follower: senderName,
                         pod: '',
@@ -176,6 +178,7 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                 userId: from,
                 notification: {
                     type: 10,
+                    typeItemId: 'token',
                     itemId: token,
                     follower: '',
                     pod: '',
@@ -227,6 +230,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                 userId: from,
                 notification: {
                     type: 9,
+                    typeItemId: 'token',
                     itemId: token,
                     follower: '',
                     pod: '',

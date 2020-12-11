@@ -43,6 +43,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 userId: publicId,
                 notification: {
                     type: 33,
+                    typeItemId: 'token',
                     itemId: token,
                     follower: '',
                     pod: '',
@@ -98,6 +99,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                     userId: publicId,
                     notification: {
                         type: 34,
+                        typeItemId: 'token',
                         itemId: token,
                         follower: '',
                         pod: '',

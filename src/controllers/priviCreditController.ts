@@ -36,6 +36,7 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                 userId: creator,
                 notification: {
                     type: 16,
+                    typeItemId: 'token',
                     itemId: token,
                     follower: '',
                     pod: '',
@@ -50,6 +51,7 @@ exports.initiateCredit = async (req: express.Request, res: express.Response) => 
                     userId: item.user,
                     notification: {
                         type: 39,
+                        typeItemId: 'user',
                         itemId: creator,
                         follower: '',
                         pod: '',
@@ -104,6 +106,7 @@ exports.modifyParameters = async (req: express.Request, res: express.Response) =
                 userId: creator,
                 notification: {
                     type: 17,
+                    typeItemId: 'token',
                     itemId: loanId,
                     follower: '',
                     pod: '',
@@ -118,6 +121,7 @@ exports.modifyParameters = async (req: express.Request, res: express.Response) =
                     userId: item.user,
                     notification: {
                         type: 43,
+                        typeItemId: 'user',
                         itemId: creator,
                         follower: '',
                         pod: '',
@@ -164,6 +168,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 userId: priviCreditData.Creator,
                 notification: {
                     type: 18,
+                    typeItemId: 'token',
                     itemId: loanId,
                     follower: borrowerId,
                     pod: '',
@@ -205,6 +210,7 @@ exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
                 userId: lenderId,
                 notification: {
                     type: 23,
+                    typeItemId: 'token',
                     itemId: loanId,
                     follower: '',
                     pod: '',
@@ -243,6 +249,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 userId: lenderId,
                 notification: {
                     type: 24,
+                    typeItemId: 'token',
                     itemId: loanId,
                     follower: '',
                     pod: '',
@@ -283,6 +290,7 @@ exports.assumeRisk = async (req: express.Request, res: express.Response) => {
                 userId: provierId,
                 notification: {
                     type: 25,
+                    typeItemId: 'token',
                     itemId: loanId,
                     follower: '',
                     pod: '',
@@ -347,6 +355,7 @@ exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {
                         userId: uid,
                         notification: {
                             type: 25,
+                            typeItemId: 'user',
                             itemId: uid,
                             follower: '',
                             pod: '',

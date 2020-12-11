@@ -30,6 +30,7 @@ exports.createLiquidityPool = async (req: express.Request, res: express.Response
                 userId: creatorId,
                 notification: {
                     type: 45,
+                    typeItemId: '',
                     itemId: '', //Liquidity pool id
                     follower: '',
                     pod: '',
@@ -111,6 +112,7 @@ exports.withdrawLiquidity = async (req: express.Request, res: express.Response) 
                 userId: liquidityPoolData.CreatorId,
                 notification: {
                     type: 47,
+                    typeItemId: 'user',
                     itemId: liquidityPoolId,
                     follower: providerId,
                     pod: '',

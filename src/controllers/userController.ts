@@ -767,6 +767,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
             userId: userToFollow.id,
             notification: {
                 type: 1,
+                typeItemId: 'user',
                 itemId: body.user.id,
                 follower: user.firstName,
                 pod: '',
@@ -829,6 +830,7 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
             userId: userToAcceptFollow.id,
             notification: {
                 type: 5,
+                typeItemId: 'user',
                 itemId: body.user.id,
                 follower: user.firstName,
                 pod: '',
@@ -873,6 +875,7 @@ const declineFollowUser = async (req: express.Request, res: express.Response) =>
             userId: userToDeclineFollow.id,
             notification: {
                 type: 6,
+                typeItemId: 'user',
                 itemId: body.user.id,
                 follower: user.firstName,
                 pod: '',

@@ -3,13 +3,15 @@ import collections from '../firebase/collections';
 
 interface Notification {
     type: number,
+    typeItemId: string,
     itemId: string,
     follower: string,
     pod: string,
     comment: string,
     token: string,
     amount: number,
-    onlyInformation: boolean
+    onlyInformation: boolean,
+    date: number
 }
 
 const addNotification = async (object: any) => {
@@ -21,6 +23,7 @@ const addNotification = async (object: any) => {
 
         let notification : Notification = {
             type: object.notification.type,
+            typeItemId: object.notification.typeItemId,
             itemId: object.notification.itemId,
             follower: object.notification.follower,
             pod: object.notification.pod,
@@ -28,6 +31,7 @@ const addNotification = async (object: any) => {
             token: object.notification.token,
             amount: object.notification.amount,
             onlyInformation: object.notification.onlyInformation,
+            date: Date.now()
         }
 
         if(user.notifications) {
