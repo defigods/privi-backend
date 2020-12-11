@@ -17,12 +17,7 @@ export async function updateFirebase(blockchainRes) {
         const updateTokens = output.UpdateTokens;
         const updateBalances = output.UpdateBalances;
         const updateTransactions = output.Transactions;
-<<<<<<< HEAD
         // Pods FT
-=======
-        const updateLoans = output.UpdateLoans;
-        // Pods
->>>>>>> ec678052f1542a496afeb3a06189b2d8ba12a5a6
         const updatePods = output.UpdatePods;
         const updatePodStates = output.UpdatePodStates;
         // Insurance
@@ -32,6 +27,13 @@ export async function updateFirebase(blockchainRes) {
         const updateInsuranceClients = output.UpdateInsuranceClients;
         const updatePools = output.UpdatePools;
         const updateInsurance = output.UpdateInsurance;
+        // update loan
+        const updateLenders = output.UpdateLenders;
+        const updateBorrowers = output.UpdateBorrowers;
+        const updatedCreditInfo = output.UpdatedCreditInfo;
+        const updatedCreditState = output.UpdatedCreditState;
+        const updatedCreditRequirement = output.UpdatedCreditRequirement;
+
         // update user
         if (updateUser) {
             let uid: string = '';
@@ -52,12 +54,6 @@ export async function updateFirebase(blockchainRes) {
                 }
             }
         }
-        // update loan
-        const updateLenders = output.UpdateLenders;
-        const updateBorrowers = output.UpdateBorrowers;
-        const updatedCreditInfo = output.UpdatedCreditInfo;
-        const updatedCreditState = output.UpdatedCreditState;
-        const updatedCreditRequirement = output.UpdatedCreditRequirement;
         // update tokens
         if (updateTokens) {
             let key: string = "";
@@ -73,20 +69,20 @@ export async function updateFirebase(blockchainRes) {
             for ([uid, walletObj] of Object.entries(updateWallets)) {
                 // balances
                 const balances = walletObj.Balances;
-                let token:string = '';
+                let token: string = '';
                 let value: any = null;
                 for ([token, value] of Object.entries(balances)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // balances ft
                 const balancesFT = walletObj.BalancesFT;
                 for ([token, value] of Object.entries(balancesFT)) {
-                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // balances nft
                 const balancesNFT = walletObj.BalancesNFT;
                 for ([token, value] of Object.entries(balancesNFT)) {
-                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // transactions
                 const history = walletObj.Transaction;
@@ -100,8 +96,8 @@ export async function updateFirebase(blockchainRes) {
         }
         // update tokens
         if (updateTokens) {
-            let key:string = "";
-            let val:any = null;
+            let key: string = "";
+            let val: any = null;
             for ([key, val] of Object.entries(updateTokens)) {
                 transaction.set(db.collection(collections.tokens).doc(key), val);
             }
@@ -122,7 +118,7 @@ export async function updateFirebase(blockchainRes) {
                     const newToken: any = Object.values(updateTokens)[0];
                     if (newToken.TokenType) tokenType = newToken.TokenType;
                 }
-                transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, {merge:true});
+                transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, { merge: true });
             }
         }
         // update transactions (for each txn, save to from's colection and to's colection)
@@ -165,7 +161,7 @@ export async function updateFirebase(blockchainRes) {
             let poolId: string = '';
             let poolObj: any = {};
             for ([poolId, poolObj] of Object.entries(updatePools)) {
-                transaction.set(db.collection(collections.liquidityPools).doc(poolId), poolObj, {merge:true}); // to be deleted later
+                transaction.set(db.collection(collections.liquidityPools).doc(poolId), poolObj, { merge: true }); // to be deleted later
             }
         }
         // TODO: update insurance
@@ -273,10 +269,10 @@ export async function updateFirebaseNFT(blockchainRes) {
             for ([uid, walletObj] of Object.entries(updateWallets)) {
                 // balances
                 const balances = walletObj.Balances;
-                let token:string = '';
-                let value:any = null;
+                let token: string = '';
+                let value: any = null;
                 for ([token, value] of Object.entries(balances)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // transactions
                 const history = walletObj.Transaction;
@@ -293,7 +289,7 @@ export async function updateFirebaseNFT(blockchainRes) {
             let loanId: string = "";
             let loanObj: any = {};
             for ([loanId, loanObj] of Object.entries(updateLoans)) {
-                transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj, {merge:true});
+                transaction.set(db.collection(collections.priviCredits).doc(loanId), loanObj, { merge: true });
             }
         }
         // update wallet
@@ -302,20 +298,20 @@ export async function updateFirebaseNFT(blockchainRes) {
                 const uid = walletObj.PublicId;
                 // balances
                 const balances = walletObj.Balances;
-                let token:string = '';
-                let value:any = null;
+                let token: string = '';
+                let value: any = null;
                 for ([token, value] of Object.entries(balances)) {
-                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.wallet).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // balances ft
                 const balancesFT = walletObj.BalancesFT;
                 for ([token, value] of Object.entries(balancesFT)) {
-                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.walletFT).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // balances nft
                 const balancesNFT = walletObj.BalancesNFT;
                 for ([token, value] of Object.entries(balancesNFT)) {
-                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value, {merge:true});
+                    transaction.set(db.collection(collections.walletNFT).doc(token).collection(collections.user).doc(uid), value, { merge: true });
                 }
                 // transactions
                 const history = walletObj.Transaction;
@@ -327,16 +323,16 @@ export async function updateFirebaseNFT(blockchainRes) {
                 }
             });
         }
-         // update balances
-         if (updateBalances) {
-            let key:string = "";
-            let balanceObj:any = null;
+        // update balances
+        if (updateBalances) {
+            let key: string = "";
+            let balanceObj: any = null;
             for ([key, balanceObj] of Object.entries(updateBalances)) {
-                const splitted:string[] = key.split(" ");
+                const splitted: string[] = key.split(" ");
                 const uid = splitted[0];
                 const token = splitted[1];
                 const tokenType = await identifyTypeOfToken(token);   // token type colection
-                db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token).set(balanceObj, {merge:true})
+                db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token).set(balanceObj, { merge: true })
             }
         }
         // update pods (FT and NFT)
@@ -346,7 +342,7 @@ export async function updateFirebaseNFT(blockchainRes) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
                 if (podObj.Royalty !== undefined) colectionName = collections.podsNFT;    // case NFT
-                transaction.set(db.collection(colectionName).doc(podId), podObj, {merge:true});
+                transaction.set(db.collection(colectionName).doc(podId), podObj, { merge: true });
             });
         }
         // update pools
@@ -354,7 +350,7 @@ export async function updateFirebaseNFT(blockchainRes) {
             let poolId: string = '';
             let poolObj: any = {};
             for ([poolId, poolObj] of Object.entries(updatePools)) {
-                transaction.set(db.collection(collections.liquidityPools).doc(poolId), poolObj, {merge:true}); // to be deleted later
+                transaction.set(db.collection(collections.liquidityPools).doc(poolId), poolObj, { merge: true }); // to be deleted later
             }
         }
         // TODO: update insurance
@@ -526,7 +522,7 @@ export function isEmail(email: string) {
     return emailRegexp.test(email);
 }
 
-const identifyTypeOfToken = async function (token:string):Promise<string> {
+const identifyTypeOfToken = async function (token: string): Promise<string> {
     const tokenSnap = await db.collection(collections.tokens).doc(token).get();
     if (tokenSnap.exists) {
         const data = tokenSnap.data();
