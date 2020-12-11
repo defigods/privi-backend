@@ -432,13 +432,15 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            const userSnap = await db.collection(collections.user).doc(creator).get();
+            const userData: any  = userSnap.data();
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
                     type: 9,
-                    itemId: podName,
+                    itemId: podId,
                     follower: '',
-                    pod: '',
+                    pod: podId,
                     comment: '',
                     token: fundingToken,
                     amount: '',
@@ -450,9 +452,9 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                         userId: item.user,
                         notification: {
                             type: 39,
-                            itemId: podData.Creator,
-                            follower: podData.Creator,
-                            pod: podData.Name,
+                            itemId: creator,
+                            follower: creator,
+                            pod: podId,
                             comment: '',
                             token: '',
                             amount: '',
@@ -612,12 +614,10 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             else newInvestors[investorId] = amount;
             podSnap.ref.update({ Investors: newInvestors });
 
-
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
             );
-            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
             const podData : any = podSnap.data();
             const investorSnap = await db.collection(collections.user).doc(investorId).get();
             const investorData : any = investorSnap.data();
@@ -630,7 +630,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: token,
+                    token: '',
                     amount: amount,
                     onlyInformation: false,
                 }
@@ -644,7 +644,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     follower: investorData.name,
                     pod: podData.Name,
                     comment: '',
-                    token: token,
+                    token: '',
                     amount: amount,
                     onlyInformation: false,
                 }
@@ -659,7 +659,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                         follower: investorData.name,
                         pod: podData.Name,
                         comment: '',
-                        token: token,
+                        token: '',
                         amount: amount,
                         onlyInformation: false,
                     }

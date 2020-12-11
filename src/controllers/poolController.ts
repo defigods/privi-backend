@@ -27,7 +27,7 @@ exports.createLiquidityPool = async (req: express.Request, res: express.Response
                 ` `,
                 notificationTypes.liquidityPoolCreation
             );
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: creatorId,
                 notification: {
                     type: 45,
@@ -40,7 +40,7 @@ exports.createLiquidityPool = async (req: express.Request, res: express.Response
                     amount: 0,
                     onlyInformation: false,
                 }
-            });
+            });*/
             res.send({ success: true });
         }
         else {
@@ -70,21 +70,21 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
                 ` `,
                 notificationTypes.liquidityPoolProvide
             );
-            const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
+            /*const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
             const liquidityPoolData : any = liquidityPoolSnap.data();
             await notificationsController.addNotification({
                 userId: liquidityPoolData.CreatorId,
                 notification: {
                     type: 45,
-                    itemId: liquidityPoolId,
-                    follower: providerId,
+                    itemId: liquidityProviderAddress,
+                    follower: '',
                     pod: '',
                     comment: '',
                     token: '',
                     amount: 0,
                     onlyInformation: false,
                 }
-            });
+            });*/
             res.send({ success: true });
         }
         else {
@@ -168,7 +168,7 @@ exports.listLiquidityPool = async (req: express.Request, res: express.Response) 
                 ` `,
                 notificationTypes.liquidityPoolList
             );
-            const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
+            /*const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
             const liquidityPoolData : any = liquidityPoolSnap.data();
             await notificationsController.addNotification({
                 userId: liquidityPoolData.CreatorId,
@@ -183,7 +183,7 @@ exports.listLiquidityPool = async (req: express.Request, res: express.Response) 
                     amount: 0,
                     onlyInformation: false,
                 }
-            });
+            });*/
             res.send({ success: true });
         }
         else {

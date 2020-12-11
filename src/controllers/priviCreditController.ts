@@ -8,7 +8,6 @@ import collections from '../firebase/collections';
 
 const notificationsController = require('./notificationsController');
 
-exports.initiateCredit = async (req: express.Request, res: express.Response) => {
 require('dotenv').config();
 const apiKey = "PRIVI"; // just for now
 
@@ -66,7 +65,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
 
             // return new created credit id to FE
             const updateCredit = blockchainRes.output.UpdatedCreditInfo;
-            const loanIds: string[] = Object.keys(updateCredit);
+            let loanIds: string[] = Object.keys(updateCredit);
 
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any  = userSnap.data();
@@ -75,12 +74,12 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 notification: {
                     type: 16,
                     typeItemId: 'token',
-                    itemId: token,
+                    itemId: creditAddress,
                     follower: '',
                     pod: '',
                     comment: '',
-                    token: token,
-                    amount: amount,
+                    token: creditName,
+                    amount: '',
                     onlyInformation: false,
                 }
             });
@@ -94,15 +93,15 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                         follower: '',
                         pod: '',
                         comment: '',
-                        token: token,
-                        amount: amount,
+                        token: creditName,
+                        amount: '',
                         onlyInformation: false,
                     }
                 });
             })
 
             const updateLoans = blockchainRes.output.UpdateLoans;
-            const loanIds: string[] = Object.keys(updateLoans);
+            loanIds = Object.keys(updateLoans);
             const id = loanIds[0];
             res.send({ success: true, data: { id: id, date: date } });
         }
@@ -134,18 +133,18 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 notificationTypes.priviCreditDeposited
             );
 
-            const userSnap = await db.collection(collections.user).doc(creator).get();
+            const userSnap = await db.collection(collections.user).doc(address).get();
             const userData: any  = userSnap.data();
             await notificationsController.addNotification({
-                userId: creator,
+                userId: address,
                 notification: {
                     type: 17,
                     typeItemId: 'token',
-                    itemId: loanId,
+                    itemId: '',
                     follower: '',
                     pod: '',
                     comment: '',
-                    token: loanId,
+                    token: '',
                     amount: 0,
                     onlyInformation: false,
                 }
@@ -156,11 +155,11 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                     notification: {
                         type: 43,
                         typeItemId: 'user',
-                        itemId: creator,
+                        itemId: address,
                         follower: '',
                         pod: '',
                         comment: '',
-                        token: loanId,
+                        token: '',
                         amount: 0,
                         onlyInformation: false,
                     }
@@ -199,20 +198,20 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 notificationTypes.priviCreditBorrowed
             );
 
-            const priviCreditSnap = await db.collection(collections.priviCredits).doc(loanId).get();
+            const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
             const priviCreditData: any  = priviCreditSnap.data();
-            const userSnap = await db.collection(collections.user).doc(borrowerId).get();
+            const userSnap = await db.collection(collections.user).doc(address).get();
             const userData: any  = userSnap.data();
             await notificationsController.addNotification({
                 userId: priviCreditData.Creator,
                 notification: {
                     type: 18,
                     typeItemId: 'token',
-                    itemId: loanId,
-                    follower: borrowerId,
+                    itemId: creditAddress,
+                    follower: '',
                     pod: '',
                     comment: '',
-                    token: loanId,
+                    token: creditAddress,
                     amount: amount,
                     onlyInformation: false,
                 }
@@ -392,7 +391,7 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
         });
     } catch (err) {
         console.log('Error in controllers/priviCredit -> getPriviCredits(): ', err);
-        res.send({ success: false });
+        res.send({success: false});
     }
 };
 
