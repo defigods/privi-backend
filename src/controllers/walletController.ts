@@ -14,6 +14,7 @@ import cron from 'node-cron';
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI"; // just for now
+const notificationsController = require('./notificationsController');
 
 // Should be called each time the blockchain restarts (or we resert firestore) to register all the crypto tokens to the system
 // as well as adding this tokens info (type, supply..etc) to firestore
@@ -101,11 +102,40 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
                     `You have succesfully send ${amount} ${token} to ${receiverName}!`,
                     notificationTypes.transferSend
                 );
+                await notificationsController.addNotification({
+                    userId: senderSnap.id,
+                    notification: {
+                        type: 8,
+                        typeItemId: 'user',
+                        itemId: receiverSnap.id,
+                        follower: receiverName,
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+
                 // notification to receiver
                 createNotification(fromUid, "Transfer - Received",
                     `You have succesfully received ${amount} ${token} from ${senderName}!`,
                     notificationTypes.transferReceive
                 );
+                await notificationsController.addNotification({
+                    userId: receiverSnap.id,
+                    notification: {
+                        type: 7,
+                        typeItemId: 'user',
+                        itemId: senderSnap.id,
+                        follower: senderName,
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
             }
             res.send({ success: true });
         } else {
@@ -144,8 +174,21 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
+            await notificationsController.addNotification({
+                userId: from,
+                notification: {
+                    type: 10,
+                    typeItemId: 'token',
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
-
         } else {
             console.log('Error in controllers/walletController -> withdraw()');
             res.send({ success: false });
@@ -183,6 +226,20 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );
+            await notificationsController.addNotification({
+                userId: from,
+                notification: {
+                    type: 9,
+                    typeItemId: 'token',
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         } else {
             console.log('Error in controllers/walletController -> mint()', blockchainRes);
@@ -242,6 +299,73 @@ module.exports.getBalanceInTokenTypes = async (req: express.Request, res: expres
         }
     } catch (err) {
         console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
+        res.send({ success: false });
+    }
+}
+
+/**
+ * Used to get user's balance history in type of token (used to fill the graphs in frontend wallet page)
+ */
+module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res: express.Response) => {
+    try {
+        const data = {};
+        let { userId } = req.query;
+        userId = userId!.toString();
+        // crypto
+        const crytoHistory:any[] = [];
+        const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                crytoHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["crypto"] = crytoHistory;
+        // ft
+        const ftHistory:any[] = [];
+        const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ft).orderBy("date", "asc").get();
+        ftSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                ftHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["ft"] = ftHistory;
+        // crypto
+        const nftHistory:any[] = [];
+        const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nft).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                nftHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["nft"] = nftHistory;
+        // crypto
+        const socialHistory:any[] = [];
+        const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.social).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                socialHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["social"] = socialHistory;
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/userController -> getEmailUidMap()', err);
         res.send({ success: false });
     }
 }

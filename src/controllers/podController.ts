@@ -9,6 +9,8 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 
+const notificationsController = require('./notificationsController');
+
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI"; // just for now
@@ -414,10 +416,50 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 
             db.collection(collections.podsFT).doc(podId).set({ InterstDue: interestDue }, { merge: true });
 
+        //     createNotification(creator, "FT Pod - Pod Created",
+        //         ` `,
+        //         notificationTypes.podCreation
+        //     );
+
+        //     // Create Pod Rate Doc
+        //     const newPodRate = 0.01;
+        //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
+        //     db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
+        //         rateUSD: newPodRate,
+        //         timestamp: Date.now()
+        //     });
             createNotification(creator, "FT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
             );
+            await notificationsController.addNotification({
+                userId: creator,
+                notification: {
+                    type: 9,
+                    itemId: podName,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: fundingToken,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            userData.followers.forEach(async (item, i) => {
+                    await notificationsController.addNotification({
+                        userId: item.user,
+                        notification: {
+                            type: 39,
+                            itemId: podData.Creator,
+                            follower: podData.Creator,
+                            pod: podData.Name,
+                            comment: '',
+                            token: '',
+                            amount: '',
+                            onlyInformation: false,
+                        }
+                    });
+                });
             // Create Pod Rate Doc
             const newPodRate = 0.01;
             db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
@@ -459,12 +501,65 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
         const publicId = body.publicId;
         const podId = body.podId;
         const blockchainRes = await podFTProtocol.deletePod(publicId, podId);
+
+        const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+        const podData : any = podSnap.data();
+        const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
+        const userData : any = userSnap.data();
+
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(publicId, "FT Pod - Pod Deleted",
                 ` `,
                 notificationTypes.podDeletion
             );
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 10,
+                    typeItemId: 'user',
+                    itemId: podData.Creator,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+
+            podData.Followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.id,
+                    notification: {
+                        type: 39,
+                        typeItemId: 'user',
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
+            });
+            userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 39,
+                        typeItemId: 'user',
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
+            });
             res.send({ success: true });
         }
         else {
@@ -522,6 +617,54 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podInvestment
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            const investorSnap = await db.collection(collections.user).doc(investorId).get();
+            const investorData : any = investorSnap.data();
+            await notificationsController.addNotification({
+                userId: investorId,
+                notification: {
+                    type: 11,
+                    typeItemId: 'user',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 12,
+                    typeItemId: 'user',
+                    itemId: investorId,
+                    follower: investorData.name,
+                    pod: podData.Name,
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            podData.Followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.id,
+                    notification: {
+                        type: 42,
+                        typeItemId: 'user',
+                        itemId: investorId,
+                        follower: investorData.name,
+                        pod: podData.Name,
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+            });
             res.send({ success: true });
         }
         else {
@@ -560,7 +703,7 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             }
             const podSnap = await db.collection(collections.podsFT).doc(podId).get();
             podSnap.ref.collection(collections.podTransactions).add(txObj)
-            // add to PriceOf the day 
+            // add to PriceOf the day
             podSnap.ref.collection(collections.priceOfTheDay).add({
                 price: fundingTokenPerPodToken,
                 date: Date.now()
@@ -608,6 +751,74 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podSwapGive
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            const investorSnap = await db.collection(collections.user).doc(investorId).get();
+            const investorData : any = investorSnap.data();
+            await notificationsController.addNotification({
+                userId: investorId,
+                notification: {
+                    type: 14,
+                    typeItemId: 'user',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: 0,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 13,
+                    typeItemId: 'user',
+                    itemId: investorId,
+                    follower: investorData.name,
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+            if(podData.Investors && podData.size !== 0) {
+                let investorsId : any[] = [ ...podData.Investors.keys() ];
+                investorsId.forEach(async (item, i) => {
+                    await notificationsController.addNotification({
+                        userId: item,
+                        notification: {
+                            type: 16,
+                            typeItemId: 'user',
+                            itemId: podId,
+                            follower: investorData.name,
+                            pod: podData.Name,
+                            comment: '',
+                            token: '',
+                            amount: amount,
+                            onlyInformation: false,
+                        }
+                    });
+                })
+            }
+            investorData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 15,
+                        typeItemId: 'user',
+                        itemId: podId,
+                        follower: investorData.name,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+            });
+
             res.send({ success: true });
         }
         else {
@@ -743,7 +954,7 @@ exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
     }
 };
 
-const getAllInfoMyPods = (allItemArray, myArray): Promise<any[]> => {
+const getAllInfoMyPods = exports.getAllInfoMyPods = (allItemArray, myArray): Promise<any[]> => {
     return new Promise<any[]>((resolve, reject) => {
         let array: any[] = [];
         if (myArray && myArray.length > 0) {
@@ -876,10 +1087,9 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
             resolve(fullArray)
         }
     });
-}
-    ;
+};
 
-const getFTPods = (): Promise<any[]> => {
+const getFTPods = exports.getFTPods = () : Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsFT = await db.collection(collections.podsFT).get();
 
@@ -1128,7 +1338,7 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
 };
 
 // function to get all NFT Pods
-const getNFTPods = (): Promise<any[]> => {
+const getNFTPods = exports.getNFTPods = (): Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsNFT = await db.collection(collections.podsNFT).get();
 
@@ -1183,7 +1393,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const offers = body.Offers;
         const isDigital: boolean = body.IsDigital; // recently added
         const royaltyFee = body.RoyaltyFee; // recently added
-        const redeemable = body.Redeemable; // recently added 
+        const redeemable = body.Redeemable; // recently added
         const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, token, royalty, offers);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
@@ -1201,6 +1411,41 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                 ` `,
                 notificationTypes.podCreation
             );
+
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
+            const userData : any = userSnap.data();
+            await notificationsController.addNotification({
+                userId: creator,
+                notification: {
+                    type: 9,
+                    typeItemId: 'user',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            userData.followers.forEach(async (item, i) => {
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 39,
+                        typeItemId: 'user',
+                        itemId: podData.Creator,
+                        follower: podData.Creator,
+                        pod: podData.Name,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
+                });
+            });
             res.send({ success: true });
         }
         else {
@@ -1235,6 +1480,36 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 17,
+                    typeItemId: 'user',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 18,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1268,6 +1543,36 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 19,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 20,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1299,6 +1604,36 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
                 ` `,
                 notificationTypes.podCreation
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 21,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 22,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1330,6 +1665,36 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
                 ` `,
                 notificationTypes.podCreation
             );
+            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podData : any = podSnap.data();
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 23,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
+            await notificationsController.addNotification({
+                userId: podData.Creator,
+                notification: {
+                    type: 24,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: podData.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1362,7 +1727,7 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
             let price = 0;
             let token = "unknown";
             const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-            const data = podSnap.data();
+            const data : any = podSnap.data();
             if (data && data.OrderBook && data.OrderBook.Buy && data.OrderBook.Buy[orderId]) {
                 buyer = data.OrderBook.Buy[orderId].Trader;
                 price = data.OrderBook.Buy[orderId].Price;
@@ -1388,6 +1753,20 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 25,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: data.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1420,7 +1799,7 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
             let price = 0;
             let token = "unknown";
             const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-            const data = podSnap.data();
+            const data : any = podSnap.data();
             if (data && data.OrderBook && data.OrderBook.Sell && data.OrderBook.Sell[orderId]) {
                 seller = data.OrderBook.Sell[orderId].Trader;
                 price = data.OrderBook.Sell[orderId].Price;
@@ -1446,6 +1825,20 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podCreation
             );
+            await notificationsController.addNotification({
+                userId: trader,
+                notification: {
+                    type: 26,
+                    typeItemId: 'NFTPod',
+                    itemId: podId,
+                    follower: '',
+                    pod: data.Name,
+                    comment: '',
+                    token: '',
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -1599,8 +1992,8 @@ async function getPodList() {
 //         const podIdUidMap = {}; // maps podId to creatorId, used to notify creator when pod liquidated
 //         const podsSnap = await db.collection(collections.podsFT).get();
 //         podsSnap.forEach((doc) => {
-//             podIdUidMap[doc.id] = doc.data().Creator;
-//         });
+//         podIdUidMap[doc.id] = doc.data().Creator;
+//      });
 //         candidates.forEach(async (podId) => {
 //             const blockchainRes = await podFTProtocol.checkPODLiquidation(podId, rateOfChange);
 //             if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
@@ -1609,6 +2002,22 @@ async function getPodList() {
 //                     ` `,
 //                     notificationTypes.podLiquidationFunds
 //                 );
+//                 const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+//                 const podData : any = podSnap.data();
+//                 await notificationsController.addNotification({
+//                     userId: podIdUidMap[podId],
+//                     notification: {
+//                         type: 58,
+//                         typeItemId: 'FTPod',
+//                         itemId: podId,
+//                         follower: '',
+//                         pod: podData.Name,
+//                         comment: '',
+//                         token: '',
+//                         amount: '',
+//                         onlyInformation: false,
+//                     }
+//                 });
 //             } else {
 //                 console.log('Error in controllers/podController -> checkLiquidation().', podId, blockchainRes.message);
 //             }
@@ -1624,6 +2033,70 @@ async function getPodList() {
  * cron job scheduled every day at 00:00, calculate if its a payment day for a pod.
  * For each candidate pod call blockchain/payInterest function
  */
+// exports.payInterest = cron.schedule('0 0 * * *', async () => {
+//     try {
+//         console.log("********* Pod payInterest() cron job started *********");
+//         const rateOfChange = await getRateOfChange();
+//         const podsSnap = await db.collection(collections.podsFT).get();
+//         podsSnap.forEach(async (pod) => {
+//             const data = pod.data();
+//             if (data.State.Status == "INITIATED") {
+//                 const duration: number = data.Duration;
+//                 const payments: number = data.Payments;
+//                 // both duration and payments exists and diferent than 0
+//                 if (payments && duration) {
+//                     const step = parseInt((duration / payments).toString());  // step to int
+//                     const podDay = data.State.POD_Day
+//                     // payment day
+//                     if (podDay % step == 0) {
+//                         const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
+//                         if (blockchainRes && blockchainRes.success) {
+//                             updateFirebase(blockchainRes);
+//                             // send notification to interest payer when payment done
+//                             const updateWallets = blockchainRes.output.UpdateWallets;
+//                             let uid: string = "";
+//                             let walletObj: any = null;
+//                             for ([uid, walletObj] of Object.entries(updateWallets)) {
+//                                 if (walletObj["Transaction"].length > 0) {
+//                                     createNotification(uid, "FT Pod - Interest Payment",
+//                                         ` `,
+//                                         notificationTypes.traditionalInterest
+//                                     );
+//                                     const podSnap = await db.collection(collections.podsFT).doc(pod.id).get();
+//                                     const podData : any = podSnap.data();
+//                                     await notificationsController.addNotification({
+//                                         userId: uid,
+//                                         notification: {
+//                                             type: 59,
+//                                             typeItemId: 'FTPod',
+//                                             itemId: pod.id,
+//                                             follower: '',
+//                                             pod: podData.Name,
+//                                             comment: '',
+//                                             token: '',
+//                                             amount: '',
+//                                             onlyInformation: false,
+//                                         }
+//                                     });
+//                                 }
+//                             }
+//                             console.log("--------- Pod payInterest() finished ---------");
+//                         }
+//                         else {
+//                             console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
+//                         }
+//                     }
+//                 }
+//             }
+//         })
+//     } catch (err) {
+//         console.log('Error in controllers/podController -> payInterest()', err);
+//     }
+// });
+// /**
+//  * cron job scheduled every day at 00:00, calcula if its a payment day
+//  * for each pod candidate to interest payment call blockchain/payInterest function
+//  */
 // exports.payInterest = cron.schedule('0 0 * * *', async () => {
 //     try {
 //         console.log("********* Pod payInterest() cron job started *********");
@@ -1706,7 +2179,7 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
         // podsSnap.forEach(async (pod) => {
         //     let dayLowestPrice = Infinity;
         //     let date = Date.now();
-        //     // get lowest price from Sales Book 
+        //     // get lowest price from Sales Book
         //     const podData = pod.data();
         //     if (podData) {
         //         let orderId = "";

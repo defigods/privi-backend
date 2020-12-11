@@ -21,6 +21,8 @@ import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
+const notificationsController = require('./notificationsController');
+
 const apiKey = "PRIVI"; // just for now
 
 const emailValidation = async (req: express.Request, res: express.Response) => {
@@ -293,7 +295,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
         const currency = body.currency;
         const email = body.email;
         const password = body.password;
-        const role = body.role; // role should not be coming from user input?
+
+        // const role = body.role; // role should not be coming from user input?
+		const role = "USER";
 
         if (email == "" || password == "") { // basic requirement validation
             console.log('email and password required');
@@ -379,7 +383,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     investedFTPods: [],
                     twitter: '',
                     instagram: '',
-                    facebook: ''
+                    facebook: '',
+                    level: 1,
+                    notifications: []
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -467,18 +473,19 @@ interface BasicInfo {
     numFollowers: number,
     numFollowings: number,
     bio: string,
+    level: number,
     twitter: string,
     facebook: string,
-    instagram: string
+    instagram: string,
+    notifications: any[]
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
-        let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', twitter: '', instagram: '', facebook: ''
-        };
+
+        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
+            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []};
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -489,10 +496,31 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
+            basicInfo.level = userData.level || 1;
             basicInfo.twitter = userData.twitter || '';
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
+            basicInfo.notifications = userData.notifications || '';
             res.send({ success: true, data: basicInfo });
+        }
+        else res.send({ success: false });
+
+    } catch (err) {
+        console.log('Error in controllers/profile -> getBasicInfo()', err);
+        res.send({ success: false });
+    }
+}
+
+const getLoginInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+
+        const userSnap = await db.collection(collections.user).doc(userId).get();
+        const userData = userSnap.data();
+        if (userData !== undefined) {
+            // update return data
+            userData.id = userSnap.id;
+            res.send({ success: true, data: userData });
         }
         else res.send({ success: false });
 
@@ -586,6 +614,18 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
         res.send({ success: true, data: actions });
     } catch (err) {
         console.log('Error in controllers/profile -> getOwnInfo()', err);
+        res.send({ success: false });
+    }
+}
+const getNotifications = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        console.log(userId);
+        const userSnap = await db.collection(collections.user).doc(userId).get();
+        const userData : any = userSnap.data();
+        res.send({ success: true, data: userData.notifications });
+    } catch (err) {
+        console.log('Error in controllers/profile -> getNotifications()', err);
         res.send({ success: false });
     }
 }
@@ -711,24 +751,31 @@ const followUser = async (req: express.Request, res: express.Response) => {
         const userToFollowGet = await userToFollowRef.get();
         const userToFollowData: any = userToFollowGet.data();
 
-        let alreadyFollowing = user.followings.find((item) => item === userToFollow.id);
-        if (!alreadyFollowing) {
-            user.followings.push(userToFollow.id);
-        }
-
         let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
         if (!alreadyFollower) {
-            userToFollowData.followers.push(body.user.id);
+            userToFollowData.followers.push({
+                user: body.user.id,
+                accepted: false
+            });
         }
-        userToFollowData.numFollowers = userToFollowData.followers.length;
 
         await userToFollowRef.update({
-            followers: userToFollowData.followers,
-            numFollowers: userToFollowData.numFollowers
+            followers: userToFollowData.followers
         });
-        await userRef.update({
-            followings: user.followings,
-            numFollowings: user.followings.length
+
+        await notificationsController.addNotification({
+            userId: userToFollow.id,
+            notification: {
+                type: 1,
+                typeItemId: 'user',
+                itemId: body.user.id,
+                follower: user.firstName,
+                pod: '',
+                comment: '',
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+            }
         });
         res.send({ success: true, data: userToFollowData });
     } catch (err) {
@@ -737,12 +784,118 @@ const followUser = async (req: express.Request, res: express.Response) => {
     }
 };
 
+const acceptFollowUser = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let userToAcceptFollow = body.userToAcceptFollow;
+
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        const userToAcceptRef = db.collection(collections.user)
+            .doc(userToAcceptFollow.id);
+        const userToAcceptGet = await userToAcceptRef.get();
+        const userToAcceptData: any = userToAcceptGet.data();
+
+        let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToAcceptFollow.id);
+        if (!alreadyFollowerIndex && alreadyFollowerIndex !== -1) {
+            user.followers[alreadyFollowerIndex] = {
+                user: userToAcceptFollow.id,
+                accepted: true
+            }
+        }
+
+        let followersAccepted = user.followers.filter((item) => item.accepted === true);
+        user.numFollowers = followersAccepted.length;
+
+        await userRef.update({
+            followers: user.followers,
+            numFollowers: user.numFollowers
+        });
+
+
+        let alreadyFollowing = userToAcceptData.followings.find((item) => item === body.user.id);
+        if (!alreadyFollowing) {
+            userToAcceptData.followings.push(body.user.id);
+        }
+
+        await userToAcceptRef.update({
+            followings: userToAcceptData.followers,
+            numFollowings: userToAcceptData.followers.length
+        });
+
+        await notificationsController.addNotification({
+            userId: userToAcceptFollow.id,
+            notification: {
+                type: 5,
+                typeItemId: 'user',
+                itemId: body.user.id,
+                follower: user.firstName,
+                pod: '',
+                comment: '',
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+            }
+        });
+
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
+        res.send({ success: false });
+    }
+};
+
+const declineFollowUser = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let userToDeclineFollow = body.userToDeclineFollow;
+
+        const userRef = db.collection(collections.user)
+            .doc(body.user.id);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToDeclineFollow.id);
+        if (!alreadyFollowerIndex && alreadyFollowerIndex !== -1) {
+            user.followers.splice(alreadyFollowerIndex, 1);
+        }
+
+        let followersAccepted = user.followers.filter((item) => item.accepted === true);
+        user.numFollowers = followersAccepted.length;
+
+        await userRef.update({
+            followers: user.followers,
+            numFollowers: user.numFollowers
+        });
+
+        await notificationsController.addNotification({
+            userId: userToDeclineFollow.id,
+            notification: {
+                type: 6,
+                typeItemId: 'user',
+                itemId: body.user.id,
+                follower: user.firstName,
+                pod: '',
+                comment: '',
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+            }
+        });
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
+        res.send({ success: false });
+    }
+};
+
 const unFollowUser = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
         let userToUnFollow = body.userToUnFollow;
-
-        console.log(body.user.id, userToUnFollow)
 
         const userRef = db.collection(collections.user)
             .doc(body.user.id);
@@ -754,12 +907,10 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
         const userToUnFollowGet = await userToUnFollowRef.get();
         const userToUnFollowData: any = userToUnFollowGet.data();
 
-        let newFollowings = user.followings.filter(item => item != userToUnFollow.id)
+        let newFollowings = user.followings.filter(item => item.user != userToUnFollow.id)
 
-        let newFollowers = userToUnFollowData.followers.filter((item) => item !== body.user.id);
+        let newFollowers = userToUnFollowData.followers.filter((item) => item.user !== body.user.id);
 
-        console.log(userToUnFollowData.followers);
-        console.log(newFollowers);
         userToUnFollowData.numFollowers = newFollowers.length;
 
         await userToUnFollowRef.update({
@@ -771,7 +922,7 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
             numFollowings: newFollowings.length
         });
 
-        res.send({ success: true, data: userToUnFollowData });
+        res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
         res.send({ success: false });
@@ -1087,7 +1238,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
 
-        let badgesGet = await db.collection('collectionName').get();
+        let badgesGet = await db.collection(collections.badges).get();
         let id = badgesGet.size;
 
         if (body) {
@@ -1145,6 +1296,195 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     }
 };
 
+const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
+    let userId = req.params.userId;
+    console.log(userId);
+}
+
+const createIssue = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        let issuesGet = await db.collection(collections.issues).get();
+        let id = issuesGet.size;
+
+        if(body && body.issue && body.userId && body.item && body.itemType && body.itemId &&
+           body.question && body.answers && body.description) {
+            await db.runTransaction(async (transaction) => {
+
+                transaction.set(db.collection(collections.issues).doc(''+(id+1)), {
+                    issue: body.issue,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: [],
+                    question: body.question,
+                    answers: body.answers,
+                    votes: [],
+                    description: body.description
+                });
+            });
+            res.send({ success: true, data: {
+                    issue: body.issue,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: [],
+                    question: body.question,
+                    answers: body.answers,
+                    votes: [],
+                    description: body.description,
+                    id: id+1
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> createIssue()', 'Missing Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> createIssue()', err);
+        res.send({ success: false });
+    }
+}
+
+const createProposal = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        let proposalsGet = await db.collection(collections.proposals).get();
+        let id = proposalsGet.size;
+
+        if(body && body.proposal && body.userId && body.item && body.itemType && body.itemId) {
+            await db.runTransaction(async (transaction) => {
+
+                transaction.set(db.collection(collections.proposals).doc(''+(id+1)), {
+                    proposal: body.proposal,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: []
+                });
+            });
+            res.send({ success: true, data: {
+                    proposal: body.proposal,
+                    userId: body.userId,
+                    date: new Date(),
+                    item: body.item,
+                    itemType: body.itemType,
+                    itemId: body.itemId,
+                    responses: [],
+                    id: id+1
+                }
+            });
+        } else {
+            console.log('Error in controllers/userController -> createIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> createIssue()', err);
+        res.send({ success: false });
+    }
+}
+
+const responseIssue = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        if(body && body.userId && body.userName && body.response && body.issueId) {
+            const issueRef = db.collection(collections.issues)
+                .doc(body.issueId);
+            const issueGet = await issueRef.get();
+            const issue : any = issueGet.data();
+
+            let response : any = {
+                userId: body.userId,
+                userName: body.userName,
+                response: body.response,
+                date: new Date()
+            }
+
+            issue.responses.push(response);
+
+            await issueRef.update({
+                responses: issue.responses
+            });
+            res.send({ success: true, data: issue });
+
+        } else {
+            console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> responseIssue()', err);
+        res.send({ success: false });
+    }
+}
+const responseProposal = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        if(body && body.userId && body.userName && body.response && body.proposalId) {
+            const proposalRef = db.collection(collections.proposals)
+                .doc(body.proposalId);
+            const proposalGet = await proposalRef.get();
+            const proposal : any = proposalGet.data();
+
+            let response : any = {
+                userId: body.userId,
+                userName: body.userName,
+                response: body.response,
+                date: new Date()
+            }
+
+            proposal.responses.push(response);
+
+            await proposalRef.update({
+                responses: proposal.responses
+            });
+            res.send({ success: true, data: proposal });
+
+        } else {
+            console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> responseIssue()', err);
+        res.send({ success: false });
+    }
+}
+
+const voteIssue = async (req: express.Request, res: express.Response) => {
+    try{
+        let body = req.body;
+
+        if(body && body.issueId && body.voteId) {
+            const issueRef = db.collection(collections.issues)
+                .doc(body.issueId);
+            const issueGet = await issueRef.get();
+            const issue : any = issueGet.data();
+
+            issue.votes[body.voteId].push(body.userId)
+
+            await issueRef.update({
+                votes: issue.votes
+            });
+            res.send({ success: true, data: issue });
+
+        } else {
+            console.log('Error in controllers/userController -> responseIssue()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> responseIssue()', err);
+        res.send({ success: false });
+    }
+}
 
 module.exports = {
     emailValidation,
@@ -1168,8 +1508,18 @@ module.exports = {
     changeUserProfilePhoto,
     getSocialTokens,
     getBasicInfo,
+    getLoginInfo,
     getPhotoById,
     getUserList,
     createBadge,
-    changeBadgePhoto
+    changeBadgePhoto,
+    getIssuesAndProposals,
+    createIssue,
+    createProposal,
+    responseIssue,
+    voteIssue,
+    responseProposal,
+    acceptFollowUser,
+    declineFollowUser,
+    getNotifications
 };

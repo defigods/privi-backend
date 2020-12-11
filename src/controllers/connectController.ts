@@ -363,8 +363,8 @@ const wsListen = () => {
                         // Store connection
                         if (action === 'ping') {
                             users.set(publicId, connection);
-                        };
-                    };
+                        }
+                    }
                 });
                 // User disconnected: remove connection from array
                 connection.on('close', () => {
