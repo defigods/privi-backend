@@ -17,6 +17,7 @@ module.exports = {
     priviCredits: "PriviCredits",
     priviCreditsLending: "PriviCreditsLending",
     priviCreditsBorrowing: "PriviCreditsBorrowing",
+    priviCreditsTransactions: "PriviCreditsTransactions",
     podsFT: "PodsFT",
     podsNFT: "PodsNFT",
     podTransactions: "PodTransactions",

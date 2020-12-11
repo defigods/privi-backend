@@ -15,7 +15,7 @@ export async function updateFirebase(blockchainRes) {
         const updateTokens = output.UpdateTokens;
         const updateBalances = output.UpdateBalances;
         const updateTransactions = output.Transactions;
-        // Pods 
+        // Pods FT
         const updatePods = output.UpdatePods;
         const updatePodStates = output.UpdatePodStates;
         // Insurance
@@ -29,7 +29,6 @@ export async function updateFirebase(blockchainRes) {
         const updatedCreditInfo = output.UpdatedCreditInfo;
         const updatedCreditState = output.UpdatedCreditState;
         const updatedCreditRequirement = output.UpdatedCreditRequirement;
-
         // update tokens
         if (updateTokens) {
             let key: string = "";

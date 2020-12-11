@@ -493,16 +493,18 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             updateFirebase(blockchainRes);
 
             // add txn to pod
-            let txObj = {};
+            let objList: any[] = [];
             const output = blockchainRes.output;
             const transactions = output.Transactions;
             let key = "";
             let obj: any = null;
             for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == podId || obj.To == podId) txObj = obj;
+                if (obj.From == podId || obj.To == podId) objList.push(obj);
             }
             const podSnap = await db.collection(collections.podsFT).doc(podId).get();
-            podSnap.ref.collection(collections.podTransactions).add(txObj)
+            objList.forEach((obj) => {
+                podSnap.ref.collection(collections.podTransactions).add(obj)
+            });
             // add to PriceOf the day 
             podSnap.ref.collection(collections.priceOfTheDay).add({
                 price: fundingTokenPerPodToken,

@@ -199,9 +199,9 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 ///////////////////////////// gets //////////////////////////////
 
 /**
- * Returns the balance of all tokens structured in this way {TokenType: {token: balance}}, this function is used in wallet page
+ * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
  */
-module.exports.getBalanceInTokenTypes = async (req: express.Request, res: express.Response) => {
+module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
         userId = userId!.toString()
@@ -241,7 +241,7 @@ module.exports.getBalanceInTokenTypes = async (req: express.Request, res: expres
             res.send({ success: true, data: {} });
         }
     } catch (err) {
-        console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
+        console.log('Error in controllers/walletController -> getAllTokenBalances()', err);
         res.send({ success: false });
     }
 }

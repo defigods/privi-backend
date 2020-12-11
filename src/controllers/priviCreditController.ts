@@ -5,6 +5,7 @@ import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
+import { user } from 'firebase-functions/lib/providers/auth';
 
 require('dotenv').config();
 const apiKey = "PRIVI"; // just for now
@@ -61,6 +62,19 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 UserRoles: userRoles
             }, { merge: true })
 
+            // add transaction to credit doc
+            let objList: any[] = [];
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
+            }
+            objList.forEach((obj) => {
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
+            });
+
             // return new created credit id to FE
             const updateCredit = blockchainRes.output.UpdatedCreditInfo;
             const loanIds: string[] = Object.keys(updateCredit);
@@ -81,7 +95,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const creditAddress = body.creditAddress;
-        const address = body.address;   // user addr
+        const address = body.userId;   // user addr
         const amount = body.amount;
 
         const date = Date.now();
@@ -90,6 +104,19 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await priviCredit.depositFunds(creditAddress, address, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+            // add transaction to credit doc
+            let objList: any[] = [];
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
+            }
+            objList.forEach((obj) => {
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
+            });
+
             createNotification(address, "Privi Credit - Credit Deposited",
                 `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
                 notificationTypes.priviCreditDeposited
@@ -109,18 +136,32 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
 exports.borrowFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        console.log(body);
         const creditAddress = body.creditAddress;
-        const address = body.address;   // user addr
+        const address = body.userId;   // user addr
         const amount = body.amount;
-        const collateral = body.collateral;
+        const collaterals = body.collaterals;
 
         const date = Date.now();
         const txnId = generateUniqueId();
         const rateOfChange = await getRateOfChange();
 
-        const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, date, txnId, collateral, rateOfChange, apiKey);
+        const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, date, txnId, collaterals, rateOfChange, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+            // add transaction to credit doc
+            let objList: any[] = [];
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
+            }
+            objList.forEach((obj) => {
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
+            });
+
             createNotification(address, "Privi Credit - Loan Borrowed",
                 `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
                 notificationTypes.priviCreditBorrowed
@@ -137,8 +178,96 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
     }
 };
 
+/**
+ * Function called when a user request to follow a pod (FT/NFT), updating both user and firebase docs 
+ * @param req {userId, creditId}
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
+exports.followCredit = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userId = body.userId;
+        const creditId = body.creditId;
+
+        // update user
+        const userSnap = await db.collection(collections.user)
+            .doc(userId).get();
+
+        let followingCredits: string[] = [];
+        const userData = userSnap.data();
+
+        if (userData && userData.FollowingCredits) followingCredits = userData.FollowingCredits;
+        followingCredits.push(creditId);
+        userSnap.ref.update({ FollowingCredits: followingCredits });
+
+        // update credit
+        const creditSnap = await db.collection(collections.priviCredits).doc(creditId).get();
+        let followerArray: any[] = [];
+        const creditData = creditSnap.data();
+        if (creditData && creditData.Followers) followerArray = creditData.Followers;
+        followerArray.push({
+            date: Date.now(),
+            id: userId
+        })
+        creditSnap.ref.update({
+            Followers: followerArray
+        });
+
+        res.send({ success: true });
+
+    } catch (err) {
+        console.log('Error in controllers/priviCreditController -> followCredit(): ', err);
+        res.send({ success: false });
+    }
+};
+
+/**
+ * Function called when a user request to unfollow a Privi Credit, updating both user and firebase docs 
+ * @param req {userId, podId, podType} podType in [FT, NFT]
+ * @param res {success}. success: boolean that indicates if the opreaction is performed.
+ */
+exports.unfollowCredit = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userId = body.userId;
+        const creditId = body.creditId;
+
+        // update user
+        const userSnap = await db.collection(collections.user)
+            .doc(userId).get();
+
+        let followingCredits: string[] = [];
+        const userData = userSnap.data();
+
+        if (userData && userData.FollowingCredits) followingCredits = userData.FollowingCredits;
+        followingCredits = followingCredits.filter((val, index, arr) => {
+            return val !== creditId;
+        });
+        userSnap.ref.update({ FollowingCredits: followingCredits });
+
+        // update credit
+        const creditSnap = await db.collection(collections.priviCredits).doc(creditId).get();
+        let followerArray: any[] = [];
+        const creditData = creditSnap.data();
+        if (creditData && creditData.Followers) followerArray = creditData.Followers;
+        followerArray = followerArray.filter((val, index, arr) => {
+            return val.id && val.id !== userId;
+        })
+        creditSnap.ref.update({
+            Followers: followerArray
+        });
+
+        res.send({ success: true });
+
+    } catch (err) {
+        console.log('Error in controllers/priviCreditController -> unFollowCredit(): ', err);
+        res.send({ success: false });
+    }
+};
+
 ///////////////////////////// GETS //////////////////////////////
 
+// getter for the whole collection, Optimization TODO: only return the necessary data to FE in order to reduce transmission load
 exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
     try {
         const allCredits: any[] = [];
@@ -181,6 +310,81 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
     }
 };
 
+// given an id, return the complete data of a certain privi credit 
+exports.getPriviCredit = async (req: express.Request, res: express.Response) => {
+    try {
+        let creditId = req.params.creditId;
+        const creditSnap = await db.collection(collections.priviCredits).doc(creditId).get();
+        if (creditSnap.exists) {
+            // lenders and borrowers
+            const lenders: any[] = [];
+            const borrowers: any[] = [];
+            const lendersSnap = await creditSnap.ref.collection(collections.priviCreditsLending).get();
+            const borrowersSnap = await creditSnap.ref.collection(collections.priviCreditsBorrowing).get();
+            lendersSnap.forEach((doc) => {
+                lenders.push(doc.data());
+            });
+            borrowersSnap.forEach((doc) => {
+                borrowers.push(doc.data());
+            });
+            // borrowers ponderated mean scores (trust, endorsement)
+            let totalBorrowed = 0;
+            let trustMean = 0;
+            let endorsementMean = 0;
+            const borrowerScores: any[] = [];
+            for (var i = 0; i < borrowers.length; i++) {
+                const borrower = borrowers[i];
+                const id = borrower.BorrowerAddress;
+                const userSnap = await db.collection(collections.user).doc(id).get();
+                if (userSnap.exists) {
+                    const data: any = userSnap.data();
+                    borrowerScores.push({
+                        borrowed: borrower.Amount,
+                        endorsementScore: data.endorsementScore,
+                        trustScore: data.trustScore
+                    })
+                    totalBorrowed += borrower.Amount;
+                }
+            }
+            borrowerScores.forEach((borrower) => {
+                trustMean += borrower.trustScore * (borrower.borrowed / totalBorrowed);
+                endorsementMean += borrower.endorsementScore * (borrower.borrowed / totalBorrowed);
+            })
+
+            const data = {
+                ...creditSnap.data(),
+                Lenders: lenders,
+                Borrowers: borrowers,
+                BorrowerTrustScore: trustMean,
+                BorrowerEndorsementScore: endorsementMean,
+            }
+            res.send({ success: true, data: data });
+        }
+        else {
+            console.log('Error in controllers/priviCredit -> getPriviCredit(): cant find credit with the given id ', creditId);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> getPriviCredit(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// given an id, return the complete data of a certain privi credit 
+exports.getPriviTransactions = async (req: express.Request, res: express.Response) => {
+    try {
+        let creditId = req.params.creditId;
+        const data: any[] = [];
+        const creditTxnSnap = await db.collection(collections.priviCredits).doc(creditId).collection(collections.priviCreditsTransactions).get();
+        creditTxnSnap.forEach((doc) => {
+            data.push(doc.data());
+        })
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> getPriviTransactions(): ', err);
+        res.send({ success: false });
+    }
+};
 
 /////////////////////////// CRON JOBS //////////////////////////////
 
