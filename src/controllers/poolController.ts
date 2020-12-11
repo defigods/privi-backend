@@ -7,6 +7,7 @@ import collections from '../firebase/collections';
 
 require('dotenv').config();
 const apiKey = "PRIVI"; // just for now
+const notificationsController = require('./notificationsController');
 
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {
     try {
@@ -26,6 +27,20 @@ exports.createLiquidityPool = async (req: express.Request, res: express.Response
                 ` `,
                 notificationTypes.liquidityPoolCreation
             );
+            /*await notificationsController.addNotification({
+                userId: creatorId,
+                notification: {
+                    type: 45,
+                    typeItemId: '',
+                    itemId: '', //Liquidity pool id
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });*/
             res.send({ success: true });
         }
         else {
@@ -55,6 +70,21 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
                 ` `,
                 notificationTypes.liquidityPoolProvide
             );
+            /*const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
+            const liquidityPoolData : any = liquidityPoolSnap.data();
+            await notificationsController.addNotification({
+                userId: liquidityPoolData.CreatorId,
+                notification: {
+                    type: 45,
+                    itemId: liquidityProviderAddress,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });*/
             res.send({ success: true });
         }
         else {
@@ -78,7 +108,7 @@ exports.swapCrytoTokens = async (req: express.Request, res: express.Response) =>
         const date = body.Date;
         const txnId = body.TxnId;
         const caller = apiKey;
-        
+
         const blockchainRes = await podProtocol.swapCrytoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, date, txnId, caller);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -138,6 +168,22 @@ exports.listLiquidityPool = async (req: express.Request, res: express.Response) 
                 ` `,
                 notificationTypes.liquidityPoolList
             );
+            /*const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(liquidityPoolId).get();
+            const liquidityPoolData : any = liquidityPoolSnap.data();
+            await notificationsController.addNotification({
+                userId: liquidityPoolData.CreatorId,
+                notification: {
+                    type: 47,
+                    typeItemId: 'user',
+                    itemId: liquidityPoolId,
+                    follower: providerId,
+                    pod: '',
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });*/
             res.send({ success: true });
         }
         else {

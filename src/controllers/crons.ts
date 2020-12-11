@@ -23,5 +23,5 @@ module.exports = {
     // podPayInterest,
     nftManagePriceHistory,
     checkTx,
-    saveUserBalanceSum,
+    saveUserBalanceSum
 }
