@@ -6,13 +6,8 @@ const LOGIN_EXPIRY_DAYS = 2;
 // need a bulk email account TODO
 const MAIL_SERVICE = "gmail";
 
-/*
 const MAIL_USER = "noreply@priviprotocol.io";
-const MAIl_PASS = "Y4*3auChPRIVI";
-*/
-
-const MAIL_USER = "away45846";
-const MAIL_PASS = "QSidiNX3infbiHs";
+const MAIL_PASS = "7>HZBPuP";
 
       
 module.exports = {
