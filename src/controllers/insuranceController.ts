@@ -1,6 +1,6 @@
 import express, { response } from 'express';
 import insurance from "../blockchain/insurance";
-import { updateFirebase, getRateOfChange, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, filterTrending } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, filterTrending } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections, { insurancePools } from "../firebase/collections";
 import { db } from "../firebase/firebase";

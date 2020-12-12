@@ -1,7 +1,7 @@
 import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
 import podNFTProtocol from "../blockchain/podNFTProtocol";
-import { updateFirebase, getRateOfChange, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -405,7 +405,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 
         const txnId = generateUniqueId();
 
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await podFTProtocol.initiatePOD(creator, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName,
             fundingToken, duration, frequency, principal, interest, liquidationCCR, date, expirationDate, collaterals, rateOfChange, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
@@ -416,24 +416,24 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 
             db.collection(collections.podsFT).doc(podId).set({ InterstDue: interestDue }, { merge: true });
 
-        //     createNotification(creator, "FT Pod - Pod Created",
-        //         ` `,
-        //         notificationTypes.podCreation
-        //     );
+            //     createNotification(creator, "FT Pod - Pod Created",
+            //         ` `,
+            //         notificationTypes.podCreation
+            //     );
 
-        //     // Create Pod Rate Doc
-        //     const newPodRate = 0.01;
-        //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
-        //     db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
-        //         rateUSD: newPodRate,
-        //         timestamp: Date.now()
-        //     });
+            //     // Create Pod Rate Doc
+            //     const newPodRate = 0.01;
+            //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
+            //     db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
+            //         rateUSD: newPodRate,
+            //         timestamp: Date.now()
+            //     });
             createNotification(creator, "FT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
             );
             const userSnap = await db.collection(collections.user).doc(creator).get();
-            const userData: any  = userSnap.data();
+            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
@@ -448,20 +448,20 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                 }
             });
             userData.followers.forEach(async (item, i) => {
-                    await notificationsController.addNotification({
-                        userId: item.user,
-                        notification: {
-                            type: 39,
-                            itemId: creator,
-                            follower: creator,
-                            pod: podId,
-                            comment: '',
-                            token: '',
-                            amount: '',
-                            onlyInformation: false,
-                        }
-                    });
+                await notificationsController.addNotification({
+                    userId: item.user,
+                    notification: {
+                        type: 39,
+                        itemId: creator,
+                        follower: creator,
+                        pod: podId,
+                        comment: '',
+                        token: '',
+                        amount: '',
+                        onlyInformation: false,
+                    }
                 });
+            });
             // Create Pod Rate Doc
             const newPodRate = 0.01;
             db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
@@ -505,9 +505,9 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await podFTProtocol.deletePod(publicId, podId);
 
         const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-        const podData : any = podSnap.data();
+        const podData: any = podSnap.data();
         const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
-        const userData : any = userSnap.data();
+        const userData: any = userSnap.data();
 
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -620,9 +620,9 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.podInvestment
             );
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             const investorSnap = await db.collection(collections.user).doc(investorId).get();
-            const investorData : any = investorSnap.data();
+            const investorData: any = investorSnap.data();
             await notificationsController.addNotification({
                 userId: investorId,
                 notification: {
@@ -744,7 +744,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
         const liquidityPoolId = body.liquidityPoolId;
         const podId = body.podId;
         const amount = body.amount;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await podFTProtocol.swapPOD(investorId, liquidityPoolId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -754,9 +754,9 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                 notificationTypes.podSwapGive
             );
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             const investorSnap = await db.collection(collections.user).doc(investorId).get();
-            const investorData : any = investorSnap.data();
+            const investorData: any = investorSnap.data();
             await notificationsController.addNotification({
                 userId: investorId,
                 notification: {
@@ -785,8 +785,8 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                 }
             });
-            if(podData.Investors && podData.size !== 0) {
-                let investorsId : any[] = [ ...podData.Investors.keys() ];
+            if (podData.Investors && podData.size !== 0) {
+                let investorsId: any[] = [...podData.Investors.keys()];
                 investorsId.forEach(async (item, i) => {
                     await notificationsController.addNotification({
                         userId: item,
@@ -1091,7 +1091,7 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
     });
 };
 
-const getFTPods = exports.getFTPods = () : Promise<any[]> => {
+const getFTPods = exports.getFTPods = (): Promise<any[]> => {
     return new Promise<any[]>(async (resolve, reject) => {
         const podsFT = await db.collection(collections.podsFT).get();
 
@@ -1415,9 +1415,9 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
             );
 
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
-            const userData : any = userSnap.data();
+            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
@@ -1483,7 +1483,7 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
                 notificationTypes.podCreation
             );
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             await notificationsController.addNotification({
                 userId: trader,
                 notification: {
@@ -1546,7 +1546,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
                 notificationTypes.podCreation
             );
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             await notificationsController.addNotification({
                 userId: trader,
                 notification: {
@@ -1607,7 +1607,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
                 notificationTypes.podCreation
             );
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             await notificationsController.addNotification({
                 userId: trader,
                 notification: {
@@ -1668,7 +1668,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
                 notificationTypes.podCreation
             );
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
-            const podData : any = podSnap.data();
+            const podData: any = podSnap.data();
             await notificationsController.addNotification({
                 userId: trader,
                 notification: {
@@ -1729,7 +1729,7 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
             let price = 0;
             let token = "unknown";
             const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-            const data : any = podSnap.data();
+            const data: any = podSnap.data();
             if (data && data.OrderBook && data.OrderBook.Buy && data.OrderBook.Buy[orderId]) {
                 buyer = data.OrderBook.Buy[orderId].Trader;
                 price = data.OrderBook.Buy[orderId].Price;
@@ -1801,7 +1801,7 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
             let price = 0;
             let token = "unknown";
             const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-            const data : any = podSnap.data();
+            const data: any = podSnap.data();
             if (data && data.OrderBook && data.OrderBook.Sell && data.OrderBook.Sell[orderId]) {
                 seller = data.OrderBook.Sell[orderId].Trader;
                 price = data.OrderBook.Sell[orderId].Price;
@@ -1970,7 +1970,7 @@ function isPodCollateralBellowLiquidation(amount: number, token: string, require
 // helper function: get array of object of tokens whice values are list of uids of users that have loan with ccr lower than required level
 async function getPodList() {
     const res: string[] = [];
-    const rateOfChange = await getRateOfChange();
+    const rateOfChange = await getRateOfChangeAsMap();
     const podsSnap = await db.collection(collections.podsFT).get();
     podsSnap.forEach(async (podDoc) => {
         const data = podDoc.data();
@@ -1989,7 +1989,7 @@ async function getPodList() {
 // exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
 //     try {
 //         console.log("********* Pod checkLiquidation() cron job started *********");
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         const candidates = await getPodList();
 //         const podIdUidMap = {}; // maps podId to creatorId, used to notify creator when pod liquidated
 //         const podsSnap = await db.collection(collections.podsFT).get();
@@ -2038,7 +2038,7 @@ async function getPodList() {
 // exports.payInterest = cron.schedule('0 0 * * *', async () => {
 //     try {
 //         console.log("********* Pod payInterest() cron job started *********");
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         const podsSnap = await db.collection(collections.podsFT).get();
 //         podsSnap.forEach(async (pod) => {
 //             const data = pod.data();
@@ -2102,7 +2102,7 @@ async function getPodList() {
 // exports.payInterest = cron.schedule('0 0 * * *', async () => {
 //     try {
 //         console.log("********* Pod payInterest() cron job started *********");
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         const podsSnap = await db.collection(collections.podsFT).get();
 //         podsSnap.forEach(async (pod) => {
 //             const data = pod.data();

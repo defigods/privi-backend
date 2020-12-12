@@ -1,7 +1,7 @@
 import express, {response} from 'express';
 import podProtocol from "../blockchain/podProtocol";
 import nftPodProtocol from "../blockchain/nftPodProtocol";
-import { updateFirebase, getRateOfChange, createNotification, updateFirebaseNFT, getUidNameMap, getEmailUidMap } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification, updateFirebaseNFT, getUidNameMap, getEmailUidMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db, firebase } from "../firebase/firebase";
@@ -343,7 +343,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         const p_liquidation = body.P_liquidation;
         const initialSupply = body.InitialSupply;
         const collaterals = body.Collaterals;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await podProtocol.initiatePOD(creator, token, duration, payments, principal, interest, p_liquidation, initialSupply, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);  // update blockchain res
@@ -420,7 +420,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         const investorId = body.investorId;
         const podId = body.podId;
         const amount = body.amount;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await podProtocol.investPOD(investorId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -473,7 +473,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
         const liquidityPoolId = body.liquidityPoolId;
         const podId = body.podId;
         const amount = body.amount;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await podProtocol.swapPOD(investorId, liquidityPoolId, podId, amount, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -1361,7 +1361,7 @@ function isPodCollateralBellowLiquidation(amount: number, token: string, require
 // helper function: get array of object of tokens whice values are list of uids of users that have loan with ccr lower than required level
 async function getPodList() {
     const res: string[] = [];
-    const rateOfChange = await getRateOfChange();
+    const rateOfChange = await getRateOfChangeAsMap();
     const podsSnap = await db.collection(collections.podsFT).get();
     podsSnap.forEach(async (podDoc) => {
         const data = podDoc.data();
@@ -1380,7 +1380,7 @@ async function getPodList() {
 exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
     try {
         console.log("********* Pod checkLiquidation() cron job started *********");
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const candidates = await getPodList();
         const podIdUidMap = {}; // maps podId to creatorId, used to notify creator when pod liquidated
         const podsSnap = await db.collection(collections.podsFT).get();
@@ -1413,7 +1413,7 @@ exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
 exports.payInterest = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Pod payInterest() cron job started *********");
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const podsSnap = await db.collection(collections.podsFT).get();
         podsSnap.forEach(async (pod) => {
             const data = pod.data();
@@ -1461,7 +1461,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
 // exports.payInterest = cron.schedule('0 0 * * *', async () => {
 //     try {
 //         console.log("********* Pod payInterest() cron job started *********");
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         const podList: string[] = [];
 //         const podsSnap = await db.collection(collections.podsFT).get();
 //         podsSnap.forEach((doc) => {

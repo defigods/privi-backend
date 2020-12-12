@@ -1,4 +1,4 @@
-// import { updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2 } from "../functions/functions";
+// import { updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getUidFromEmail, getRateOfChangeAsList } from "../functions/functions";
 // import notificationTypes from "../constants/notificationType";
 // import collections from "../firebase/collections";
 // import { db } from "../firebase/firebase";
@@ -144,7 +144,7 @@
 //         let { userId } = req.query;
 // 		userId = userId!.toString()
 
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         // get user currency in usd
 //         let sum = 0;
 //         let sumTokens = 0;
@@ -189,7 +189,7 @@
 //         let { userId } = req.query;
 // 		userId = userId!.toString()
 
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         // get user currency in usd
 //         let sum = 0;
 //         let token: string = "";
@@ -210,7 +210,7 @@
 // }
 
 // module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
-// 	const data = await getTokensRate2();
+// 	const data = await getRateOfChangeAsList();
 // 	if (data.length > 0) {
 //         res.send({ success: true, data: data });
 // 	} else {
@@ -227,7 +227,7 @@
 // 		userId = userId!.toString()
 
 //         const retData: {}[] = [];
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         for (const [token, _] of Object.entries(rateOfChange)) {
 //             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
 //             const data = walletTokenSnap.data();
@@ -243,7 +243,7 @@
 // }
 
 // module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
-// 	const rateData = await getTokensRate2();
+// 	const rateData = await getRateOfChangeAsList();
 
 //     try {
 //         const body = req.body;
@@ -296,7 +296,7 @@
 // }
 
 // module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
-// 	const rateData = await getTokensRate2();
+// 	const rateData = await getRateOfChangeAsList();
 
 //     try {
 //         const body = req.body;
@@ -353,7 +353,7 @@
 // 		userId = userId!.toString()
 
 //         let sum = 0;    // in usd
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
 //             .where("To", "==", userId).get();
 //         historySnap.forEach((doc) => {
@@ -388,7 +388,7 @@
 // 		userId = userId!.toString()
 
 //         let sum = 0;    // in usd
-//         const rateOfChange = await getRateOfChange();
+//         const rateOfChange = await getRateOfChangeAsMap();
 //         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
 //             .where("From", "==", userId).get();
 //         historySnap.forEach((doc) => {

@@ -200,7 +200,7 @@ export async function updateFirebaseNFT(blockchainRes) {
     });
 }
 
-export async function getRateOfChange() {
+export async function getRateOfChangeAsMap() {
     let res = {};
     const ratesQuery = await db.collection(collections.rates).get();
     for (const doc of ratesQuery.docs) {
@@ -213,7 +213,7 @@ export async function getRateOfChange() {
     return res;
 };
 
-export async function getTokensRate2() {
+export async function getRateOfChangeAsList() {
     const data:{}[] = [];
     try {
         const ratesSnap = await db.collection(collections.rates).get();

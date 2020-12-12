@@ -7,6 +7,7 @@ module.exports = {
     priviCreditModified: "PRIVI_credit_modified",
     priviCreditBorrowed: "PRIVI_credit_borrowing",
     priviCreditWithdrawn: "PRIVI_credit_withdraw",
+    priviCreditInterest: "PRIVI_credit_interest",
     priviCreditRiskAssumed: "PRIVI_risk_taking",
     priviCreditDeposited: "PRIVI_credit_deposit",
     priviCreditInterest: "PRIVI_interest_charge",

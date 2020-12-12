@@ -1,6 +1,6 @@
 import express from 'express';
-import priviCredit from "../blockchain/priviLending";
-import { updateFirebase, createNotification, generateUniqueId, getRateOfChange, filterTrending } from "../functions/functions";
+import priviCredit, { payInterest } from "../blockchain/priviCredit";
+import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
@@ -82,7 +82,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             let loanIds: string[] = Object.keys(updateCredit);
 
             const userSnap = await db.collection(collections.user).doc(creator).get();
-            const userData: any  = userSnap.data();
+            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
@@ -161,7 +161,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
             );
 
             const userSnap = await db.collection(collections.user).doc(address).get();
-            const userData: any  = userSnap.data();
+            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: address,
                 notification: {
@@ -216,7 +216,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
         const date = Date.now();
         const txnId = generateUniqueId();
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
 
         const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, date, txnId, collaterals, rateOfChange, apiKey);
         if (blockchainRes && blockchainRes.success) {
@@ -240,9 +240,9 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
             );
 
             const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
-            const priviCreditData: any  = priviCreditSnap.data();
+            const priviCreditData: any = priviCreditSnap.data();
             const userSnap = await db.collection(collections.user).doc(address).get();
-            const userData: any  = userSnap.data();
+            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: priviCreditData.Creator,
                 notification: {
@@ -269,128 +269,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
-/*
-exports.withdrawFunds = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        console.log(body);
-        const loanId = body.loanId;
-        const lenderId = body.lenderId;
-        const amount = body.amount;
-        const blockchainRes = await priviCredit.withdrawFunds(loanId, lenderId, amount);
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-            createNotification(lenderId, "Privi Credit - Credit Withdrawn",
-                `You have succesfully withdrawn ${amount} Coins of your Privi Credit loan`,
-                notificationTypes.priviCreditWithdrawn
-            );
 
-            await notificationsController.addNotification({
-                userId: lenderId,
-                notification: {
-                    type: 23,
-                    typeItemId: 'token',
-                    itemId: loanId,
-                    follower: '',
-                    pod: '',
-                    comment: '',
-                    token: loanId,
-                    amount: amount,
-                    onlyInformation: false,
-                }
-            });
-            res.send({ success: true });
-        }
-        else {
-            console.log('Error in controllers/priviCredit -> withdrawFunds(): success = false.', blockchainRes.message);
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/priviCredit -> withdrawFunds(): ', err);
-        res.send({ success: false });
-    }
-};
-
-exports.depositFunds = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const loanId = body.loanId;
-        const lenderId = body.lenderId;
-        const amount = body.amount;
-        const blockchainRes = await priviCredit.depositFunds(loanId, lenderId, amount);
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-            createNotification(lenderId, "Privi Credit - Credit Deposited",
-                `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
-                notificationTypes.priviCreditDeposited
-            );
-            await notificationsController.addNotification({
-                userId: lenderId,
-                notification: {
-                    type: 24,
-                    typeItemId: 'token',
-                    itemId: loanId,
-                    follower: '',
-                    pod: '',
-                    comment: '',
-                    token: loanId,
-                    amount: amount,
-                    onlyInformation: false,
-                }
-            });
-            res.send({ success: true });
-        }
-        else {
-            console.log('Error in controllers/priviCredit -> depositFunds(): success = false');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/priviCredit -> depositFunds(): ', err);
-        res.send({ success: false });
-    }
-};
-
-
-exports.assumeRisk = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const loanId = body.loanId;
-        const provierId = body.provierId;
-        const premiumId = body.premiumId;
-        const riskPct = body.riskPct;
-        const blockchainRes = await priviCredit.assumePRIVIrisk(loanId, provierId, premiumId, riskPct);
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-            createNotification(provierId, "Privi Credit - Credit Risk Assumed",
-                `You have assumed ${riskPct * 100}% risk of the loan`,
-                notificationTypes.priviCreditRiskAssumed
-            );
-            await notificationsController.addNotification({
-                userId: provierId,
-                notification: {
-                    type: 25,
-                    typeItemId: 'token',
-                    itemId: loanId,
-                    follower: '',
-                    pod: '',
-                    comment: '',
-                    token: loanId,
-                    amount: riskPct,
-                    onlyInformation: false,
-                }
-            });
-            res.send({ success: true });
-        }
-        else {
-            console.log('Error in controllers/priviCredit -> assumeRisk(): success = false');
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/priviCredit -> assumeRisk(): ', err);
-        res.send({ success: false });
-    }
-};
-*/
 
 /**
  * Function called when a user request to follow a pod (FT/NFT), updating both user and firebase docs 
@@ -520,7 +399,7 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
         });
     } catch (err) {
         console.log('Error in controllers/priviCredit -> getPriviCredits(): ', err);
-        res.send({success: false});
+        res.send({ success: false });
     }
 };
 
@@ -603,43 +482,58 @@ exports.getPriviTransactions = async (req: express.Request, res: express.Respons
 /////////////////////////// CRON JOBS //////////////////////////////
 
 // scheduled every day at 00:00
-// exports.managePRIVIcredits = cron.schedule('0 0 * * *', async () => {
-//    try {
-//         console.log("******** Privi Credit managePRIVIcredits ********");
-//         const blockchainRes = await priviCredit.managePRIVIcredits();
-//         if (blockchainRes && blockchainRes.success) {
-//             console.log("******** Privi Credit managePRIVIcredits finished ********");
-//             updateFirebase(blockchainRes);
-//             const updateWallets = blockchainRes.output.UpdateWallets;
-//             let uid: string = "";
-//             let walletObj: any = null;
-//             for ([uid, walletObj] of Object.entries(updateWallets)) {
-//                 if (walletObj["Transaction"].length > 0) {
-//                     createNotification(uid, "Privi Credit - Interest Payment",
-//                         ` `,
-//                         notificationTypes.priviCreditInterest
-//                     );
-//                     await notificationsController.addNotification({
-//                         userId: uid,
-//                         notification: {
-//                             type: 25,
-//                             typeItemId: 'user',
-//                             itemId: uid,
-//                             follower: '',
-//                             pod: '',
-//                             comment: '',
-//                             token: '',
-//                             amount: 0,
-//                             onlyInformation: false,
-//                         }
-//                     });
-//                 }
-//             }
-//         }
-//         else {
-//             console.log('Error in controllers/priviCredit -> managePRIVIcredits(): success = false');
-//         }
-//     } catch (err) {
-//         console.log('Error in controllers/priviCredit -> managePRIVIcredits()', err);
-//     }
-// });
+exports.payInterest = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("******** Privi Credit payInterest ********");
+        const creditsSnap = await db.collection(collections.priviCredits).get();
+        const credits = creditsSnap.docs;
+        for (let i = 0; i <= credits.length; i++) {
+            const creditAddress = credits[i].id;
+            const data = credits[i].data();
+            if (data) {
+                const frequency = data.Frequency;
+                const paymentDay = 1; // fixed for now
+                if (isPaymentDay(frequency, paymentDay)) {
+                    const date = Date.now();
+                    const txnId = generateUniqueId();
+                    const blockchainRes = await priviCredit.payInterest(creditAddress, date, txnId, apiKey);
+                    if (blockchainRes && blockchainRes.success) {
+                        updateFirebase(blockchainRes);
+                        const transactions = blockchainRes.output.Transactions;
+                        let tid: string = "";
+                        let txnObj: any = null;
+                        for ([tid, txnObj] of Object.entries(transactions)) {
+                            const from = txnObj.From;
+                            const to = txnObj.To;
+                            if (txnObj.Type && txnObj.Type == notificationTypes.priviCreditInterest && from && to == creditAddress) {
+                                createNotification(from, "Privi Credit - Interest Payment",
+                                    ` `,
+                                    notificationTypes.priviCreditInterest
+                                );
+                                await notificationsController.addNotification({
+                                    userId: from,
+                                    notification: {
+                                        type: 25,
+                                        typeItemId: 'user',
+                                        itemId: from,
+                                        follower: '',
+                                        pod: '',
+                                        comment: '',
+                                        token: '',
+                                        amount: 0,
+                                        onlyInformation: false,
+                                    }
+                                });
+                            }
+                        }
+                    }
+                    else {
+                        console.log('Error in controllers/priviCredit -> payInterest(): success = false for credit ', creditAddress, blockchainRes.message);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> payInterest()', err);
+    }
+});
