@@ -2,10 +2,11 @@ const axios = require("axios");
 const { supplyHisotry } = require("../firebase/collections");
 const api = require("./blockchainApi");
 
-module.exports.initiatePodNFT = async (creatorId, podAddress, tokenSymbol, tokenName, supply, royalty, date, dateExpiration, txnId, caller) => {
+module.exports.initiatePodNFT = async (creatorId, podAddress, claimingAddress, tokenSymbol, tokenName, supply, royalty, date, dateExpiration, txnId, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/initiatePodNFT", {
         Creator: creatorId,
         PodAddress: podAddress,
+        ClaimingAddress: claimingAddress,
         TokenSymbol: tokenSymbol,
         TokenName: tokenName,
         Supply: supply,
@@ -78,8 +79,8 @@ module.exports.deleteSellOrder = async (orderId, requesterAddress, podAddress, d
     return blockchainRes.data;
 };
 
-module.exports.buyPodNFT = async (podAddress, sAddress, orderId, amount, buyerAddress, txnId, date, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/buyPodNFT", {
+module.exports.buyPodTokens = async (podAddress, sAddress, orderId, amount, buyerAddress, txnId, date, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/buyPodTokens", {
         PodAddress: podAddress,
         SAddress: sAddress,
         OrderId: orderId,
@@ -93,13 +94,13 @@ module.exports.buyPodNFT = async (podAddress, sAddress, orderId, amount, buyerAd
     return blockchainRes.data;
 };
 
-module.exports.sellPodNFT = async (podAddress, bAddress, orderId, amount, sellerAddress, txnId, date, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/sellPodNFT", {
+module.exports.sellPodTokens = async (podAddress, bAddress, orderId, amount, sellerAddress, txnId, date, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/sellPodTokens", {
         PodAddress: podAddress,
         BAddress: bAddress,
         OrderId: orderId,
         Amount: amount,
-        sellerAddres: sellerAddress,
+        SellerAddress: sellerAddress,
         TxnId: txnId,
         Date: date,
         Caller: caller

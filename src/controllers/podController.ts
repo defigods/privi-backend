@@ -2,7 +2,7 @@ import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
 import podNFTProtocol from "../blockchain/podNFTProtocol";
 import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId } from "../functions/functions";
-import notificationTypes from "../constants/notificationType";
+import notificationTypes, { podSwapGet } from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
@@ -588,20 +588,18 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             const podTokenToReceive = await getPodTokenAmountAux(podId, amount);
             const fundingTokenPerPodToken = amount / podTokenToReceive;
             updateFirebase(blockchainRes);
+            const podSnap = await db.collection(collections.podsFT).doc(podId).get();
 
             // add txn to pod
-            let objList: any[] = [];
             const output = blockchainRes.output;
             const transactions = output.Transactions;
             let key = "";
             let obj: any = null;
             for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == podId || obj.To == podId) objList.push(obj);
+                if (obj.From == podId || obj.To == podId) {
+                    podSnap.ref.collection(collections.podTransactions).add(obj)
+                }
             }
-            const podSnap = await db.collection(collections.podsFT).doc(podId).get();
-            objList.forEach((obj) => {
-                podSnap.ref.collection(collections.podTransactions).add(obj)
-            });
             // add to PriceOf the day 
             podSnap.ref.collection(collections.priceOfTheDay).add({
                 price: fundingTokenPerPodToken,
@@ -693,6 +691,7 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             const fundingTokenToReceive = await getFundingTokenAmountAux(podId, amount);
             const fundingTokenPerPodToken = fundingTokenToReceive / amount;
             updateFirebase(blockchainRes);
+            const podSnap = await db.collection(collections.podsFT).doc(podId).get();
 
             // add txn to pod
             let txObj = {};
@@ -701,10 +700,8 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             let key = "";
             let obj: any = null;
             for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == podId || obj.To == podId) txObj = obj;
+                if (obj.From == podId || obj.To == podId) podSnap.ref.collection(collections.podTransactions).add(txObj)
             }
-            const podSnap = await db.collection(collections.podsFT).doc(podId).get();
-            podSnap.ref.collection(collections.podTransactions).add(txObj)
             // add to PriceOf the day
             podSnap.ref.collection(collections.priceOfTheDay).add({
                 price: fundingTokenPerPodToken,
@@ -1390,31 +1387,38 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
     try {
         const body = req.body;
         const creator = body.Creator;
-        const token = body.Token;
+        const tokenSymbol = body.Token;   // token symbol
+        const tokenName = body.TokenName; // token full name
+        const supply = body.Supply;
         const royalty = body.Royalty;
-        const offers = body.Offers;
-        const isDigital: boolean = body.IsDigital; // recently added
-        const royaltyFee = body.RoyaltyFee; // recently added
-        const redeemable = body.Redeemable; // recently added
-        const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, token, royalty, offers);
+        const startDate = body.StartDate;
+        const expirationDate = body.ExpirationDate;
+
+        const isDigital: boolean = body.IsDigital;
+        const royaltyFee = body.RoyaltyFee ?? 0; // 0 when not digital
+        const redeemable = body.Redeemable;
+
+        const podAddress = generateUniqueId();
+        const claimingAddress = generateUniqueId();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, podAddress, claimingAddress, tokenSymbol, tokenName, supply, royalty, startDate, expirationDate, tid, apiKey);
         console.log(blockchainRes);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);   // update blockchain res
-            const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
-            updateCommonFields(body, podId, false); // update common fields
-            const podDocRef = db.collection(collections.podsNFT).doc(podId);
-            // Royalty Fee only when its a digital NFT
-            if (isDigital) podDocRef.update({ RoyaltyFee: royaltyFee });
-            // Update Fields that only NFT Pods have
-            podDocRef.update({ IsDigital: isDigital, Redeemable: redeemable });
+            await updateFirebase(blockchainRes);   // update blockchain res
+
+            updateCommonFields(body, podAddress, false); // update common fields
+            const podDocRef = db.collection(collections.podsNFT).doc(podAddress);
+
+            // Update fields that only NFT Pods have
+            podDocRef.set({ IsDigital: isDigital, Redeemable: redeemable, RolyaltyFee: royaltyFee }, { merge: true });
 
             // TODO: set correct notification type
             createNotification(creator, "NFT Pod - Pod Created",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodCreation
             );
 
-            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podSnap = await db.collection(collections.PodsFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
             const userData: any = userSnap.data();
@@ -1423,11 +1427,11 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                 notification: {
                     type: 9,
                     typeItemId: 'user',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: token,
+                    token: tokenSymbol,
                     amount: '',
                     onlyInformation: false,
                 }
@@ -1470,26 +1474,31 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
 exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const trader = body.trader;
-        const podId = body.podId;
+        const buyerAddress = body.buyerAddress;
+        const podAddress = body.podAddress;
         const amount = body.amount;
         const price = body.price;
-        const blockchainRes = await podNFTProtocol.newBuyOrder(podId, trader, amount, price);
+        const token = body.token;
+
+        const orderId = generateUniqueId();
+        const date = Date.now();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.newBuyOrder(orderId, amount, price, token, podAddress, buyerAddress, date, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // TODO: set correct notification type
-            createNotification(trader, "NFT Pod - Pod Buy Offer Crated",
+            createNotification(buyerAddress, "NFT Pod - Pod Buy Offer Crated",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodBuyOffer
             );
-            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podSnap = await db.collection(collections.PodsFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             await notificationsController.addNotification({
-                userId: trader,
+                userId: buyerAddress,
                 notification: {
                     type: 17,
                     typeItemId: 'user',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1503,7 +1512,7 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
                 notification: {
                     type: 18,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1533,26 +1542,31 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
 exports.newSellOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const trader = body.trader;
-        const podId = body.podId;
+        const sellerAddress = body.sellerAddress;
+        const podAddress = body.podAddress;
         const amount = body.amount;
         const price = body.price;
-        const blockchainRes = await podNFTProtocol.newSellOrder(podId, trader, amount, price);
+        const token = body.token;
+
+        const orderId = generateUniqueId();
+        const date = Date.now();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.newSellOrder(orderId, amount, price, token, podAddress, sellerAddress, date, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // TODO: set correct notification type
-            createNotification(trader, "NFT Pod - Pod Sell Offer Crated",
+            createNotification(sellerAddress, "NFT Pod - Pod Sell Offer Crated",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodSellOffer
             );
-            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            const podSnap = await db.collection(collections.PodsFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             await notificationsController.addNotification({
-                userId: trader,
+                userId: sellerAddress,
                 notification: {
                     type: 19,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1566,7 +1580,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
                 notification: {
                     type: 20,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1595,25 +1609,30 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
 exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const trader = body.trader;
-        const podId = body.podId;
+        const requesterAddress = body.requesterAddress;
+        const podAddress = body.podAddress;
         const orderId = body.orderId;
-        const blockchainRes = await podNFTProtocol.deleteBuyOrder(podId, orderId, trader);
+
+        const date = Date.now();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.deleteBuyOrder(orderId, requesterAddress, podAddress, date, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // TODO: set correct notification type
-            createNotification(trader, "NFT Pod - Pod Buy Offer Deleted",
+            createNotification(requesterAddress, "NFT Pod - Pod Buy Offer Deleted",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodBuyOfferDelete
             );
-            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            // manually delete order
+            db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId).delete();
+
+            const podSnap = await db.collection(collections.PodsFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             await notificationsController.addNotification({
-                userId: trader,
+                userId: requesterAddress,
                 notification: {
                     type: 21,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1627,7 +1646,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
                 notification: {
                     type: 22,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1656,25 +1675,30 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
 exports.deleteSellOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const trader = body.trader;
-        const podId = body.podId;
+        const requesterAddress = body.requesterAddress;
+        const podAddress = body.podAddress;
         const orderId = body.orderId;
-        const blockchainRes = await podNFTProtocol.deleteSellOrder(podId, orderId, trader);
+
+        const date = Date.now();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.deleteSellOrder(orderId, requesterAddress, podAddress, date, tid, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // TODO: set correct notification type
-            createNotification(trader, "NFT Pod - Pod Sell Offer Deleted",
+            createNotification(requesterAddress, "NFT Pod - Pod Sell Offer Deleted",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodSellOfferDelete
             );
-            const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
+            // manually delete order
+            db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId).delete();
+
+            const podSnap = await db.collection(collections.PodsFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             await notificationsController.addNotification({
-                userId: trader,
+                userId: requesterAddress,
                 notification: {
                     type: 23,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1688,7 +1712,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
                 notification: {
                     type: 24,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
@@ -1714,53 +1738,57 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
  * @param req {podId, trader, orderId, amount}. trader: the user that sells the pod token
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
+exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const trader = body.trader;
-        const podId = body.podId;
-        const orderId = body.orderId;
+        const buyerAddress = body.buyerAddress;
+        const sellerAddress = body.sellerAddress;
         const amount = body.amount;
-        const blockchainRes = await podNFTProtocol.sellPodNFT(podId, trader, orderId, amount);
+        const podAddress = body.podAddress;
+        const orderId = body.orderId;
+
+        const date = Date.now();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.sellPodTokens(podAddress, buyerAddress, orderId, amount, sellerAddress, tid, date, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // add pod transaction
-            let buyer = "unknown";
-            let price = 0;
-            let token = "unknown";
-            const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
-            const data: any = podSnap.data();
-            if (data && data.OrderBook && data.OrderBook.Buy && data.OrderBook.Buy[orderId]) {
-                buyer = data.OrderBook.Buy[orderId].Trader;
-                price = data.OrderBook.Buy[orderId].Price;
-                token = data.Token;
-            }
-            db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).add({
-                amount: amount,
-                price: price,
-                token: token,
-                from: trader,
-                to: buyer,
-                date: Date.now(),
-                guarantor: "None"
-            })
-            // add to PriceOf the day 
-            podSnap.ref.collection(collections.priceOfTheDay).add({
-                price: price,
-                date: Date.now()
-            })
+            const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
 
-            // TODO: set correct notification type
-            createNotification(trader, "NFT Pod - Pod Token Sold",
+            let price = 0;
+            const data: any = podSnap.data();
+            const orderSnap = await db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId).get();
+            if (orderSnap.exists) {
+                const data: any = orderSnap.data();
+                price = data.Price;
+            }
+            // add txn to pod
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == podAddress || obj.To == podAddress) {
+                    podSnap.ref.collection(collections.podTransactions).add(obj)
+                }
+            }
+            // add to PriceOf the day 
+            if (price) {
+                podSnap.ref.collection(collections.priceOfTheDay).add({
+                    price: price,
+                    date: Date.now()
+                })
+            }
+
+            createNotification(sellerAddress, "NFT Pod - Pod Token Sold",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodSelling
             );
             await notificationsController.addNotification({
-                userId: trader,
+                userId: sellerAddress,
                 notification: {
                     type: 25,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: data.Name,
                     comment: '',
@@ -1786,53 +1814,58 @@ exports.sellPodNFT = async (req: express.Request, res: express.Response) => {
  * @param req {podId, trader, orderId, amount}. trader: the user that buys the pod token
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
+exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const trader = body.trader;
-        const podId = body.podId;
-        const orderId = body.orderId;
+        const buyerAddress = body.buyerAddress;
+        const sellerAddress = body.sellerAddress;
         const amount = body.amount;
-        const blockchainRes = await podNFTProtocol.buyPodNFT(podId, trader, orderId, amount);
+        const podAddress = body.podAddress;
+        const orderId = body.orderId;
+
+        const date = Date.now();
+        const tid = generateUniqueId();
+        const blockchainRes = await podNFTProtocol.buyPodTokens(podAddress, sellerAddress, orderId, amount, buyerAddress, tid, date, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // add pod transaction
-            let seller = "unknown";
+            const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
+
             let price = 0;
-            let token = "unknown";
-            const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
             const data: any = podSnap.data();
-            if (data && data.OrderBook && data.OrderBook.Sell && data.OrderBook.Sell[orderId]) {
-                seller = data.OrderBook.Sell[orderId].Trader;
-                price = data.OrderBook.Sell[orderId].Price;
-                token = data.Token;
+            const orderSnap = await db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId).get();
+            if (orderSnap.exists) {
+                const data: any = orderSnap.data();
+                price = data.Price;
             }
-            podSnap.ref.collection(collections.podTransactions).add({
-                amount: amount,
-                price: price,
-                token: token,
-                from: seller,
-                to: trader,
-                date: Date.now(),
-                guarantor: "none"
-            })
+            // add txn to pod
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == podAddress || obj.To == podAddress) {
+                    podSnap.ref.collection(collections.podTransactions).add(obj)
+                }
+            }
             // add to PriceOf the day 
-            podSnap.ref.collection(collections.priceOfTheDay).add({
-                price: price,
-                date: Date.now()
-            })
+            if (price) {
+                podSnap.ref.collection(collections.priceOfTheDay).add({
+                    price: price,
+                    date: Date.now()
+                })
+            }
 
             // TODO: set correct notification type
-            createNotification(trader, "NFT Pod - Pod Token Bought",
+            createNotification(buyerAddress, "NFT Pod - Pod Token Bought",
                 ` `,
-                notificationTypes.podCreation
+                notificationTypes.nftPodBuying
             );
             await notificationsController.addNotification({
-                userId: trader,
+                userId: buyerAddress,
                 notification: {
                     type: 26,
                     typeItemId: 'NFTPod',
-                    itemId: podId,
+                    itemId: podAddress,
                     follower: '',
                     pod: data.Name,
                     comment: '',
@@ -1844,11 +1877,11 @@ exports.buyPodNFT = async (req: express.Request, res: express.Response) => {
             res.send({ success: true });
         }
         else {
-            console.log('Error in controllers/podController -> buyPodNFT(), blockchain success = false, ', blockchainRes.message);
+            console.log('Error in controllers/podController -> buyPodTokens(), blockchain success = false, ', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> buyPodNFT(): ', err);
+        console.log('Error in controllers/podController -> buyPodTokens(): ', err);
         res.send({ success: false });
     }
 }
@@ -1863,19 +1896,9 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
         let podId = req.params.podId;
         const txns: any[] = [];
         if (podId) {
-            const uidNameMap = await getUidNameMap();
             const podTxnSnapshot = await db.collection(collections.podsNFT).doc(podId).collection(collections.podTransactions).get();
             podTxnSnapshot.forEach((doc) => {
-                const data = doc.data();
-                const txn = data;
-                let from = data.from;
-                let to = data.to;
-                // find name of "from" and "to"
-                if (uidNameMap[from]) from = uidNameMap[from];
-                if (uidNameMap[to]) to = uidNameMap[to];
-                txn.from = from;
-                txn.to = to;
-                txns.push(txn);
+                txns.push(doc.data());
             });
             res.send({ success: true, data: txns });
         } else {
@@ -2095,55 +2118,6 @@ async function getPodList() {
 //         console.log('Error in controllers/podController -> payInterest()', err);
 //     }
 // });
-// /**
-//  * cron job scheduled every day at 00:00, calcula if its a payment day
-//  * for each pod candidate to interest payment call blockchain/payInterest function
-//  */
-// exports.payInterest = cron.schedule('0 0 * * *', async () => {
-//     try {
-//         console.log("********* Pod payInterest() cron job started *********");
-//         const rateOfChange = await getRateOfChangeAsMap();
-//         const podsSnap = await db.collection(collections.podsFT).get();
-//         podsSnap.forEach(async (pod) => {
-//             const data = pod.data();
-//             if (data.State.Status == "INITIATED") {
-//                 const duration: number = data.Duration;
-//                 const payments: number = data.Payments;
-//                 // both duration and payments exists and diferent than 0
-//                 if (payments && duration) {
-//                     const step = parseInt((duration / payments).toString());  // step to int
-//                     const podDay = data.State.POD_Day
-//                     // payment day
-//                     if (podDay % step == 0) {
-//                         const blockchainRes = await podFTProtocol.interestPOD(pod.id, rateOfChange);
-//                         if (blockchainRes && blockchainRes.success) {
-//                             updateFirebase(blockchainRes);
-//                             // send notification to interest payer when payment done
-//                             const updateWallets = blockchainRes.output.UpdateWallets;
-//                             let uid: string = "";
-//                             let walletObj: any = null;
-//                             for ([uid, walletObj] of Object.entries(updateWallets)) {
-//                                 if (walletObj["Transaction"].length > 0) {
-//                                     createNotification(uid, "FT Pod - Interest Payment",
-//                                         ` `,
-//                                         notificationTypes.traditionalInterest
-//                                     );
-//                                 }
-//                             }
-//                             console.log("--------- Pod payInterest() finished ---------");
-//                         }
-//                         else {
-//                             console.log('Error in controllers/podController -> payInterest(): success = false.', blockchainRes.message);
-//                         }
-//                     }
-//                 }
-//             }
-//         })
-//     } catch (err) {
-//         console.log('Error in controllers/podController -> payInterest()', err);
-//     }
-// });
-
 
 /**
  * NFT-FT cron job, scheduled every day at 00:00. For each pod, this function gets the lowest sale price of the day from the "SalesOfTheDay" colection
@@ -2152,8 +2126,8 @@ async function getPodList() {
 exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Pod managePriceHistory() cron job started *********");
-        // FT
         let podsSnap = await db.collection(collections.podsFT).get();
+        // FT
         podsSnap.forEach(async (pod) => {
             const date = Date.now();
             const podData: any = pod.data();
@@ -2177,40 +2151,38 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
             priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
         })
         // NFT
-        // podsSnap = await db.collection(collections.podsNFT).get();
-        // podsSnap.forEach(async (pod) => {
-        //     let dayLowestPrice = Infinity;
-        //     let date = Date.now();
-        //     // get lowest price from Sales Book
-        //     const podData = pod.data();
-        //     if (podData) {
-        //         let orderId = "";
-        //         let sale: any = null;
-        //         for ([orderId, sale] of Object.entries(podData.OrderBook.Sell)) {
-        //             if (sale.Price < dayLowestPrice && sale.Amount != 0) dayLowestPrice = sale.Price;
-        //         }
-        //     }
-        //     // get price for nearest (date) price history, to use in case that have no sale offers today.
-        //     if (dayLowestPrice == Infinity) {
-        //         const priceHistorySnap = await pod.ref.collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
-        //         if (priceHistorySnap.docs.length) {
-        //             const data = priceHistorySnap.docs[0].data();
-        //             dayLowestPrice = data.price;
-        //             date = data.date;
-        //         }
-        //     }
-        //     // add this new price and date to PriceHistory colection
-        //     if (dayLowestPrice != Infinity) {
-        //         pod.ref.collection(collections.priceHistory).add({
-        //             price: dayLowestPrice,
-        //             date: date
-        //         }
-        //         );
-        //     }
-        //     // reset (empty) PriceOfTheDay
-        //     const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get()
-        //     priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
-        // });
+        podsSnap = await db.collection(collections.podsNFT).get();
+        podsSnap.forEach(async (pod) => {
+            let lowestPrice = Infinity;
+            let date = Date.now();
+            // get lowest price from Sales Book
+            const sellingOffersSnap = await pod.ref.collection(collections.sellingOffers).get();
+            sellingOffersSnap.forEach((sellingOffer) => {
+                const offerData: any = sellingOffer.data();
+                if (offerData.Price && offerData.Price < lowestPrice) lowestPrice = offerData.Price;
+            });
+
+            // get price for nearest (date) price history, to use in case that have no active sale offers.
+            if (lowestPrice == Infinity) {
+                const priceHistorySnap = await pod.ref.collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
+                if (priceHistorySnap.docs.length) {
+                    const data = priceHistorySnap.docs[0].data();
+                    lowestPrice = data.price;
+                    date = data.date;
+                }
+            }
+            // add this new price and date to PriceHistory colection
+            if (lowestPrice != Infinity) {
+                pod.ref.collection(collections.priceHistory).add({
+                    price: lowestPrice,
+                    date: date
+                }
+                );
+            }
+            // reset (empty) PriceOfTheDay
+            const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get()
+            priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
+        });
         console.log("--------- Pod managePriceHistory() finished ---------");
     } catch (err) {
         console.log('Error in controllers/podController -> managePriceHistory()', err);
