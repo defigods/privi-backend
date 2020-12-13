@@ -10,6 +10,7 @@ const blockchainPriviLendingAPI = "http://" + FabricAppServerIP + ":" + port + "
 const blockchainPodAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodFT";
 const blockchainPodNFTPodAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodNFT";
 const blockchainInsuranceFTAPI = "http://" + FabricAppServerIP + ":" + port + "/api/InsuranceFT";
+const blockchainPriviGovernanceAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PriviGovernance";
 
 module.exports = {
 	blockchainApi: blockchainApi,
@@ -19,5 +20,6 @@ module.exports = {
 	blockchainPriviLendingAPI: blockchainPriviLendingAPI,
 	blockchainPodAPI: blockchainPodAPI,
 	blockchainPodNFTPodAPI: blockchainPodNFTPodAPI,
-	blockchainInsuranceFTAPI: blockchainInsuranceFTAPI
+	blockchainInsuranceFTAPI: blockchainInsuranceFTAPI,
+	blockchainPriviGovernanceAPI: blockchainPriviGovernanceAPI
 };
