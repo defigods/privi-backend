@@ -6,19 +6,18 @@ export const authenticateJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (authHeader) {
         const token = authHeader.split(' ')[1];
-        //const token = authHeader;
-        // console.log(token);
+        // const token = authHeader;    // for testing in postman
+        console.log(token);
         jwt.verify(token, configuration.JWT_SECRET_STRING, (err, user) => {
             if (err) {
-                // return res.status(403).send(err);
-                return res.status(403);
+                return res.status(403).send(err);
             }
 
             if (!req.body) {
-				req.body = {};
+                req.body = {};
             }
             req.body.priviUser = user
-            
+
             next();
         });
     } else {

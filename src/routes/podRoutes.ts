@@ -20,8 +20,10 @@ let upload = multer({
     storage: storage
 });
 
+// COMMON
+
 router.post('/changePodPhoto', authenticateJWT, upload.single('image'), podController.changePodPhoto);
-router.get('/FT/getPhoto/:podId', authenticateJWT, podController.getPhotoById);
+router.get('/FT/getPhoto/:podId', podController.getPhotoById);
 
 router.get('/NFT/getPod/:podId', authenticateJWT, podController.getNFTPod);
 router.get('/FT/getPod/:podId', authenticateJWT, podController.getFTPod);
@@ -39,15 +41,23 @@ router.get('/FT/getOtherPods/:userId', authenticateJWT, podController.getOtherPo
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFTPodsInfo);
 
-router.post('/FT/initiatePod', authenticateJWT, podController.initiateFTPOD);
-router.post('/FT/deletePod', authenticateJWT, podController.deleteFTPOD);
-router.post('/FT/investPod', authenticateJWT, podController.investFTPOD);
-router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
-
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 
+
+// FT
+
+router.post('/FT/initiatePod', authenticateJWT, podController.initiateFTPOD);
+router.post('/FT/deletePod', authenticateJWT, podController.deleteFTPOD);
+router.post('/FT/investPod', authenticateJWT, podController.investFTPOD);
+router.post('/FT/sellPod', authenticateJWT, podController.sellFTPOD);
+router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
+
+router.post('/FT/getPodTokenAmount', authenticateJWT, podController.getPodTokenAmount);
+router.post('/FT/getFundingTokenAmount', authenticateJWT, podController.getFundingTokenAmount);
+router.get('/FT/getMarketPrice/:podId', authenticateJWT, podController.getMarketPrice);
 router.get('/FT/getPriceHistory/:podId', authenticateJWT, podController.getFTPodPriceHistory);
+router.get('/FT/getSupplyHistory/:podId', authenticateJWT, podController.getFTPodSupplyHistory);
 
 // NFT 
 router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);

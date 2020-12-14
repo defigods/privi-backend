@@ -1,43 +1,72 @@
 import express from 'express';
-import tradinionalLending from "../blockchain/traditionalLending";
+import priviGovernance from "../blockchain/priviGovernance";
 import { updateFirebase, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections, { stakingDeposit } from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
+import {user} from "firebase-functions/lib/providers/auth";
+const notificationsController = require('./notificationsController');
 
 // user stakes in a token
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
-        const amount = body.amount;
-        const token = body.token;
-        const blockchainRes = await tradinionalLending.stakeToken(publicId, token, amount)
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const txnId = body.TxnId;
+        const date = body.Date;
+        const caller = body.Caller;
+        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, txnId, date, caller)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
             let newTokenDepositVal = Number(amount);
-            const docSnap = await db.collection(collections.stakingDeposit).doc(publicId).get();
-            // case doc not exists, create doc and 'deposited' map
+            const docSnap = await db.collection(collections.stakingDeposit).doc(userAddress).get();
             if (!docSnap.exists) {
                 const obj = {};
                 obj[token] = newTokenDepositVal;
                 docSnap.ref.set({ deposited: obj });
             } else { // else calculate new deposited value and update firebase
                 const data = docSnap.data();
+                let txHistory : any[] = [];
                 if (data) { // update if already has some staking
                     if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
+                    if(data.history) {
+                        txHistory = [...data.history]
+                    }
                 }
                 const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
                 const obj = {};
+                obj['history'] = txHistory;
                 obj[dotNotation] = newTokenDepositVal;
-                db.collection(collections.stakingDeposit).doc(publicId).update(obj);
+                txHistory.push({
+                    amount: newTokenDepositVal,
+                    token: token,
+                    date: Date.now()
+                })
+                obj[dotNotation] = newTokenDepositVal;
+                db.collection(collections.stakingDeposit).doc(userAddress).update(obj);
             }
-            createNotification(publicId, "Staking - Token Unstaked",
+            /*createNotification(publicId, "Staking - Token Unstaked",
                 ` `,
                 notificationTypes.unstaking
-            );
+            );*/
+            await notificationsController.addNotification({
+                userId: userAddress,
+                notification: {
+                    type: 33,
+                    typeItemId: 'user',
+                    itemId: userAddress,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
+
             res.send({ success: true });
         }
         else {
@@ -54,35 +83,59 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
 exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        console.log(body);
-        const publicId = body.publicId;
-        const unstakeAmount = body.unstakeAmount;
-        const unstakeReward = body.unstakeReward;
-        const token = body.token;
-        const total = unstakeAmount + unstakeReward;
-        const blockchainRes = await tradinionalLending.unstakeToken(publicId, token, total);
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const txnId = body.TxnId;
+        const date = body.Date;
+        const caller = body.Caller;
+        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, txnId, date, caller);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
-            let newTokenDepositVal = -Number(unstakeAmount);
-            const docSnap = await db.collection(collections.stakingDeposit).doc(publicId).get();
+            let newTokenDepositVal = -Number(amount);
+            const docSnap = await db.collection(collections.stakingDeposit).doc(userAddress).get();
             if (docSnap.exists) {
-                const data = docSnap.data();
+                const data : any = docSnap.data();
+                let txHistory : any[] = [];
                 if (data) { // update if already has some staking
                     if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
+                    if(data.history) {
+                        txHistory = [...data.history]
+                    }
                 }
                 const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
                 const obj = {};
                 obj[dotNotation] = newTokenDepositVal;
-                db.collection(collections.stakingDeposit).doc(publicId).update(obj);
-                createNotification(publicId, "Staking - Token Unstaked",
+                txHistory.push({
+                    amount: newTokenDepositVal,
+                    token: token,
+                    date: Date.now()
+                })
+                obj['history'] = txHistory;
+                db.collection(collections.stakingDeposit).doc(userAddress).update(obj);
+                /*createNotification(publicId, "Staking - Token Unstaked",
                     ` `,
                     notificationTypes.unstaking
-                );
+                );*/
+                await notificationsController.addNotification({
+                    userId: userAddress,
+                    notification: {
+                        type: 34,
+                        typeItemId: 'user',
+                        itemId: userAddress,
+                        follower: '',
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
                 res.send({ success: true });
             }
             else {
-                console.log('Error in controllers/stakingController -> unstakeToken(): unstakin when StakingDeposit doc for ' + publicId + " not creaded");
+                console.log('Error in controllers/stakingController -> unstakeToken(): unstakin when StakingDeposit doc for ' + userAddress + " not creaded");
                 res.send({ success: false });
             }
         }
