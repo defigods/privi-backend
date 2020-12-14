@@ -511,64 +511,10 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
       res.send({ success: false, message: "parameters required" });
     }
 
-		const subject = body.subject;
-		const content = body.content;
-		const linkId = body.linkId;
-		const postType = body.postType;
-		let categoryId = body.categoryId ? body.categoryId : null;
-
-		if (postType == "cp") { // hard coded post category id
-			categoryId = 5; // credit pool
-		}
-
-		let forumPostGet = await db.collection(collections.forumPost).get();
-		let newId = forumPostGet.size + 1;
-
-		if (subject && content) {
-
-			await db.runTransaction(async (transaction) => {
-				transaction.set(db.collection(collections.forumPost).doc('' + newId), {
-					subject: subject,
-					content: content,
-
-					categoryId: categoryId,
-					postType: postType,
-					linkId: linkId,
-
-					createdBy: req.body.priviUser.id,
-					countComments: 0,
-					lastComment: Date.now(),
-					createdAt: Date.now(),
-					updatedAt: Date.now(),
-				});
-			});
-			res.send({
-				success: true, data: {
-					id: newId,
-					subject: subject,
-					content: content,
-
-					categoryId: categoryId,
-					postType: postType,
-					linkId: linkId,
-
-					createdBy: req.body.priviUser.id,
-					countComments: 0,
-					lastComment: Date.now(),
-					createdAt: Date.now(),
-					updatedAt: Date.now(),
-				}
-			});
-
-		} else {
-			console.log('parameters required');
-			res.send({ success: false, message: "parameters required" });
-		}
-
-	} catch (err) {
-		console.log('Error in controllers/postController -> postCreate()', err);
-		res.send({ success: false });
-	}
+  } catch (err) {
+    console.log('Error in controllers/postController -> postCreate()', err);
+    res.send({ success: false });
+  }
 
 } // postCreate
 
