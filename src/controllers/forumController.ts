@@ -453,9 +453,19 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
     const postType = body.postType;
     let categoryId = body.categoryId? body.categoryId : null;
 
-    if (postType == "cp") { // hard coded post category id
-        categoryId = 5; // credit pool
+    // hard coded post category id
+    if (postType == "cp") { // Credit Pools
+        categoryId = 5;
+    } else if (postType == "lp") { // Loan Pools
+        categoryId = 6;
+    } else if (postType == "ft") { // FT
+        categoryId = 7;
+    } else if (postType == "pnft") { // Physical NFT
+        categoryId = 8;
+    } else if (postType == "dnft") { // Digital NFT
+        categoryId = 9;
     }
+
 
     let forumPostGet = await db.collection(collections.forumPost).get();
     let newId = forumPostGet.size + 1;
@@ -665,7 +675,6 @@ module.exports.commentCreate = async (req: express.Request, res: express.Respons
 		if (postData) {
 			await db.runTransaction(async (transaction) => {
 
-				// no check if firestore insert works? TODO
 				transaction.set(db.collection(collections.forumComment).doc('' + newId), {
 					postId: postId,
 					content: content,
