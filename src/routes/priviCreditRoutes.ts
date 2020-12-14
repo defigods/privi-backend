@@ -7,6 +7,7 @@ const priviCreditController = require('../controllers/priviCreditController');
 router.get('/getPriviCredits', authenticateJWT, priviCreditController.getPriviCredits);
 router.get('/getPriviCredit/:creditId', authenticateJWT, priviCreditController.getPriviCredit);
 router.get('/getPriviTransactions/:creditId', authenticateJWT, priviCreditController.getPriviTransactions);
+router.get('/getHistories/:creditId', authenticateJWT, priviCreditController.getHistories);
 
 
 router.post('/initiatePriviCredit', authenticateJWT, priviCreditController.initiatePriviCredit);

@@ -19,10 +19,16 @@ module.exports = {
     ethTransactions: "EthTransactions",
     waitlist: "Waitlist",
     cloudDatabase: "CloudDatabase",
+
     priviCredits: "PriviCredits",
     priviCreditsLending: "PriviCreditsLending",
     priviCreditsBorrowing: "PriviCreditsBorrowing",
     priviCreditsTransactions: "PriviCreditsTransactions",
+    priviCreditInterestHistory: "PriviCreditsInterestHistory",
+    priviCreditDepositedHistory: "PriviCreditsDepositedHistory",
+    priviCreditBorrowedHistory: "PriviCreditsBorrowedHistory",
+    priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
+
     podsFT: "PodsFT",
     buyingOffers: "BuyingOffers",
     sellingOffers: "SellingOffers",
