@@ -595,7 +595,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
 });
 
 // cron scheduled every day at 00:00, generates a doc for Deposited, Borrowed and Available history collections
-exports.manageHistory = cron.schedule('* * * * *', async () => {
+exports.manageHistory = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("******** Privi Credit manageHistory ********");
         const creditsSnap = await db.collection(collections.priviCredits).get();
