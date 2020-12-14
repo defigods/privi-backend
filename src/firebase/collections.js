@@ -22,7 +22,10 @@ module.exports = {
     priviCredits: "PriviCredits",
     priviCreditsLending: "PriviCreditsLending",
     priviCreditsBorrowing: "PriviCreditsBorrowing",
+    priviCreditsTransactions: "PriviCreditsTransactions",
     podsFT: "PodsFT",
+    buyingOffers: "BuyingOffers",
+    sellingOffers: "SellingOffers",
     podsNFT: "PodsNFT",
     podTransactions: "PodTransactions",
     priceOfTheDay: "PriceOfTheDay",
@@ -52,5 +55,5 @@ module.exports = {
     campaigns: "Campaigns",
     forumCategory: "ForumCategory",
     forumPost: "ForumPost",
-	forumComment: "ForumComment",
+    forumComment: "ForumComment",
 }

@@ -1,5 +1,5 @@
 import {
-    updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId,
+    updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getUidFromEmail, getRateOfChangeAsList, generateUniqueId,
     isEmail, getEmailUidMap
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
@@ -256,9 +256,9 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 ///////////////////////////// gets //////////////////////////////
 
 /**
- * Returns the balance of all tokens structured in this way {TokenType: {token: balance}}, this function is used in wallet page
+ * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
  */
-module.exports.getBalanceInTokenTypes = async (req: express.Request, res: express.Response) => {
+module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
         userId = userId!.toString()
@@ -298,7 +298,7 @@ module.exports.getBalanceInTokenTypes = async (req: express.Request, res: expres
             res.send({ success: true, data: {} });
         }
     } catch (err) {
-        console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
+        console.log('Error in controllers/walletController -> getAllTokenBalances()', err);
         res.send({ success: false });
     }
 }
@@ -312,7 +312,7 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
         let { userId } = req.query;
         userId = userId!.toString();
         // crypto
-        const crytoHistory:any[] = [];
+        const crytoHistory: any[] = [];
         const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
         cryptoSnap.forEach((doc) => {
             const data = doc.data();
@@ -325,7 +325,7 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
         });
         data["crypto"] = crytoHistory;
         // ft
-        const ftHistory:any[] = [];
+        const ftHistory: any[] = [];
         const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ft).orderBy("date", "asc").get();
         ftSnap.forEach((doc) => {
             const data = doc.data();
@@ -338,7 +338,7 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
         });
         data["ft"] = ftHistory;
         // crypto
-        const nftHistory:any[] = [];
+        const nftHistory: any[] = [];
         const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nft).orderBy("date", "asc").get();
         cryptoSnap.forEach((doc) => {
             const data = doc.data();
@@ -351,7 +351,7 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
         });
         data["nft"] = nftHistory;
         // crypto
-        const socialHistory:any[] = [];
+        const socialHistory: any[] = [];
         const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.social).orderBy("date", "asc").get();
         cryptoSnap.forEach((doc) => {
             const data = doc.data();
@@ -439,7 +439,7 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
 
 
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
-    const data = await getTokensRate2();
+    const data = await getRateOfChangeAsList();
     if (data.length > 0) {
         res.send({ success: true, data: data });
     } else {
@@ -451,7 +451,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     try {
         let { userId } = req.query;
         userId = userId!.toString()
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         // get user currency in usd
         let sum = 0;    // in user currency
         // crypto
@@ -518,7 +518,7 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
         let { userId } = req.query;
         userId = userId!.toString()
         const retData: {}[] = [];
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         for (const [token, _] of Object.entries(rateOfChange)) {
             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
@@ -534,7 +534,7 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 }
 
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
-    const rateData = await getTokensRate2();
+    const rateData = await getRateOfChangeAsList();
 
     try {
         const body = req.body;
@@ -587,7 +587,7 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
 }
 
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
-    const rateData = await getTokensRate2();
+    const rateData = await getRateOfChangeAsList();
 
     try {
         const body = req.body;
@@ -644,7 +644,7 @@ module.exports.getTotalIncome = async (req: express.Request, res: express.Respon
         userId = userId!.toString()
 
         let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
             .where("To", "==", userId).get();
         historySnap.forEach((doc) => {
@@ -679,7 +679,7 @@ module.exports.getTotalExpense = async (req: express.Request, res: express.Respo
         userId = userId!.toString()
 
         let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
             .where("From", "==", userId).get();
         historySnap.forEach((doc) => {
@@ -775,7 +775,7 @@ module.exports.getEmailToUidMap = async (req: express.Request, res: express.Resp
 exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Wallet saveUserBalanceSum() cron job started *********");
-        const rateOfChange = await getRateOfChange();   // rates of all except nft
+        const rateOfChange = await getRateOfChangeAsMap();   // rates of all except nft
         const walletSnap = await db.collection(collections.wallet).get();
         walletSnap.forEach(async (userWallet) => {
             // crypto

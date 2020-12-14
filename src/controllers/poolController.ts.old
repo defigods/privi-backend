@@ -1,6 +1,6 @@
 import express from 'express';
 import podProtocol from "../blockchain/podFTProtocol";
-import { updateFirebase, getRateOfChange, createNotification } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {
@@ -65,7 +65,7 @@ exports.withdrawLiquidity = async (req: express.Request, res: express.Response) 
         const liquidityPoolId = body.liquidityPoolId;
         const providerId = body.providerId;
         const amount = body.amount;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await podProtocol.withdrawLiquidity(liquidityPoolId, providerId, amount, rateOfChange)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);

@@ -6,7 +6,7 @@ import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail, generateUniqueId } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail, generateUniqueId } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
@@ -297,7 +297,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
         const password = body.password;
 
         // const role = body.role; // role should not be coming from user input?
-		const role = "USER";
+        const role = "USER";
 
         if (email == "" || password == "") { // basic requirement validation
             console.log('email and password required');
@@ -404,7 +404,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
             // give user some balance in each tokens (50/tokenRate).
             const coinsVal = 50; // value in USD to be sent
             const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
-            const rateOfChange: any = await getRateOfChange();   // get rate of tokens
+            const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
             const arrayMultiTransfer: {}[] = [];
             let token: string = "";
             let rate: any = null;
@@ -484,8 +484,10 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
 
-        let basicInfo: BasicInfo = { name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []};
+        let basicInfo: BasicInfo = {
+            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
+            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
+        };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
@@ -622,7 +624,7 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
         let userId = req.params.userId;
         console.log(userId);
         const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData : any = userSnap.data();
+        const userData: any = userSnap.data();
         res.send({ success: true, data: userData.notifications });
     } catch (err) {
         console.log('Error in controllers/profile -> getNotifications()', err);
@@ -1302,17 +1304,17 @@ const getIssuesAndProposals = async (req: express.Request, res: express.Response
 }
 
 const createIssue = async (req: express.Request, res: express.Response) => {
-    try{
+    try {
         let body = req.body;
 
         let issuesGet = await db.collection(collections.issues).get();
         let id = issuesGet.size;
 
-        if(body && body.issue && body.userId && body.item && body.itemType && body.itemId &&
-           body.question && body.answers && body.description) {
+        if (body && body.issue && body.userId && body.item && body.itemType && body.itemId &&
+            body.question && body.answers && body.description) {
             await db.runTransaction(async (transaction) => {
 
-                transaction.set(db.collection(collections.issues).doc(''+(id+1)), {
+                transaction.set(db.collection(collections.issues).doc('' + (id + 1)), {
                     issue: body.issue,
                     userId: body.userId,
                     date: new Date(),
@@ -1326,7 +1328,8 @@ const createIssue = async (req: express.Request, res: express.Response) => {
                     description: body.description
                 });
             });
-            res.send({ success: true, data: {
+            res.send({
+                success: true, data: {
                     issue: body.issue,
                     userId: body.userId,
                     date: new Date(),
@@ -1338,7 +1341,7 @@ const createIssue = async (req: express.Request, res: express.Response) => {
                     answers: body.answers,
                     votes: [],
                     description: body.description,
-                    id: id+1
+                    id: id + 1
                 }
             });
         } else {
@@ -1352,16 +1355,16 @@ const createIssue = async (req: express.Request, res: express.Response) => {
 }
 
 const createProposal = async (req: express.Request, res: express.Response) => {
-    try{
+    try {
         let body = req.body;
 
         let proposalsGet = await db.collection(collections.proposals).get();
         let id = proposalsGet.size;
 
-        if(body && body.proposal && body.userId && body.item && body.itemType && body.itemId) {
+        if (body && body.proposal && body.userId && body.item && body.itemType && body.itemId) {
             await db.runTransaction(async (transaction) => {
 
-                transaction.set(db.collection(collections.proposals).doc(''+(id+1)), {
+                transaction.set(db.collection(collections.proposals).doc('' + (id + 1)), {
                     proposal: body.proposal,
                     userId: body.userId,
                     date: new Date(),
@@ -1371,7 +1374,8 @@ const createProposal = async (req: express.Request, res: express.Response) => {
                     responses: []
                 });
             });
-            res.send({ success: true, data: {
+            res.send({
+                success: true, data: {
                     proposal: body.proposal,
                     userId: body.userId,
                     date: new Date(),
@@ -1379,7 +1383,7 @@ const createProposal = async (req: express.Request, res: express.Response) => {
                     itemType: body.itemType,
                     itemId: body.itemId,
                     responses: [],
-                    id: id+1
+                    id: id + 1
                 }
             });
         } else {
@@ -1393,16 +1397,16 @@ const createProposal = async (req: express.Request, res: express.Response) => {
 }
 
 const responseIssue = async (req: express.Request, res: express.Response) => {
-    try{
+    try {
         let body = req.body;
 
-        if(body && body.userId && body.userName && body.response && body.issueId) {
+        if (body && body.userId && body.userName && body.response && body.issueId) {
             const issueRef = db.collection(collections.issues)
                 .doc(body.issueId);
             const issueGet = await issueRef.get();
-            const issue : any = issueGet.data();
+            const issue: any = issueGet.data();
 
-            let response : any = {
+            let response: any = {
                 userId: body.userId,
                 userName: body.userName,
                 response: body.response,
@@ -1426,16 +1430,16 @@ const responseIssue = async (req: express.Request, res: express.Response) => {
     }
 }
 const responseProposal = async (req: express.Request, res: express.Response) => {
-    try{
+    try {
         let body = req.body;
 
-        if(body && body.userId && body.userName && body.response && body.proposalId) {
+        if (body && body.userId && body.userName && body.response && body.proposalId) {
             const proposalRef = db.collection(collections.proposals)
                 .doc(body.proposalId);
             const proposalGet = await proposalRef.get();
-            const proposal : any = proposalGet.data();
+            const proposal: any = proposalGet.data();
 
-            let response : any = {
+            let response: any = {
                 userId: body.userId,
                 userName: body.userName,
                 response: body.response,
@@ -1460,14 +1464,14 @@ const responseProposal = async (req: express.Request, res: express.Response) => 
 }
 
 const voteIssue = async (req: express.Request, res: express.Response) => {
-    try{
+    try {
         let body = req.body;
 
-        if(body && body.issueId && body.voteId) {
+        if (body && body.issueId && body.voteId) {
             const issueRef = db.collection(collections.issues)
                 .doc(body.issueId);
             const issueGet = await issueRef.get();
-            const issue : any = issueGet.data();
+            const issue: any = issueGet.data();
 
             issue.votes[body.voteId].push(body.userId)
 

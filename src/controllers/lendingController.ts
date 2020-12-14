@@ -1,7 +1,7 @@
 import express from 'express';
 import tradinionalLending from "../blockchain/traditionalLending";
 import coinBalance from "../blockchain/coinBalance.js";
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -25,7 +25,7 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
         const interest_rate = constants.data();
 
         const retData: {}[] = [];
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         for (const [token, _] of Object.entries(rateOfChange)) {
             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
@@ -68,7 +68,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const token = body.token;
         const collaterals = body.collaterals;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await tradinionalLending.borrowFunds(publicId, token, amount, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -147,7 +147,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
         const publicId = body.publicId;
         const token = body.token;
         const collaterals = body.collaterals;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await tradinionalLending.withdrawCollateral(publicId, token, collaterals, rateOfChange)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -407,7 +407,7 @@ function isCollateralBellowLiquidation(amount: number, token: string, requiredLe
 // helper function: get object of tokens whice values are list of uids of users that have loan with ccr lower than required level
 async function getTokenUserList() {
     const res: { [key: string]: string[] } = {};
-    const rateOfChange = await getRateOfChange();
+    const rateOfChange = await getRateOfChangeAsMap();
     const constantsSnap = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
     const constantsData = constantsSnap.data();
     if (constantsData) {
@@ -434,7 +434,7 @@ async function getTokenUserList() {
 exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
     try {
         console.log("********* Traditional lending checkLiquidation() cron job started *********");
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const candidates = await getTokenUserList();
         for (const [token, uidList] of Object.entries(candidates)) {
             uidList.forEach(async (uid) => {
@@ -477,7 +477,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
         // get interest rates
         const lendingInterest = await getLendingInterest();
         const stakingInterest = await getStakingInterest();
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await tradinionalLending.payInterests(lendingInterest, stakingInterest, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);

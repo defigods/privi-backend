@@ -114,3 +114,13 @@ module.exports.borrowFunds = async (creditAddress, address, amount, date, txnId,
     });
     return blockchainRes.data;
 };
+
+module.exports.payInterest = async (creditAddress, date, txnId, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/payInterest", {
+        CreditAddress: creditAddress,
+        Date: date,
+        TxnId: txnId,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
