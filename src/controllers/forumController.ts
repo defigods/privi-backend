@@ -449,23 +449,36 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
 
     const subject = body.subject;
     const content = body.content;
-    const linkId = body.linkId;
+    const linkId = body.linkId? body.linkId : null;
     const postType = body.postType;
     let categoryId = body.categoryId? body.categoryId : null;
 
     // hard coded post category id
     if (postType == "cp") { // Credit Pools
         categoryId = 5;
+
     } else if (postType == "lp") { // Loan Pools
         categoryId = 6;
+
     } else if (postType == "ft") { // FT
         categoryId = 7;
+
     } else if (postType == "pnft") { // Physical NFT
         categoryId = 8;
+
     } else if (postType == "dnft") { // Digital NFT
         categoryId = 9;
-    }
 
+    } else if (postType == "pei") { // Privi Ecosystem Issues
+        categoryId = 10;
+
+    } else if (postType == "ped") { // Privi Ecosystem Discussions
+        categoryId = 11;
+
+    } else if (postType == "pep") { // Privi Ecosystem Proposals
+        categoryId = 12;
+
+    }
 
     let forumPostGet = await db.collection(collections.forumPost).get();
     let newId = forumPostGet.size + 1;
@@ -519,8 +532,13 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
 } // postCreate
 
 module.exports.postListByLink = async (req: express.Request, res: express.Response) => {
-	const linkId = req.params.linkId;
-	const postType = req.params.postType;
+    const body = req.body;
+
+    const linkId = body.linkId? body.linkId : null;
+    const postType = body.postType;
+
+	// const postType = req.params.postType;
+	// const linkId = req.params.linkId? req.params.linkId : null;
 
 	const data: {}[] = [];
 
