@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
+// import path from 'path';
 const router = express.Router();
 
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
