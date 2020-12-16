@@ -11,7 +11,6 @@ const uuid = require('uuid');
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
     await db.runTransaction(async (transaction) => {
-        console.log(output);
         const updateUser = output.UpdateUser;
         const updateWallets = output.UpdateWallets; // to be deleted
         const updateTokens = output.UpdateTokens;
@@ -166,21 +165,31 @@ export async function updateFirebase(blockchainRes) {
         }
         // update nft buying offers
         if (updateBuyingOffers) {
-            let orderId: string = '';
+            let _: string = '';
             let orderObj: any = null;
-            for ([orderId, orderObj] of Object.entries(updateBuyingOffers)) {
+            for ([_, orderObj] of Object.entries(updateBuyingOffers)) {
+                const orderId = orderObj.OrderId;
                 const podAddress = orderObj.PodAddress;
-                if (podAddress) transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                if (orderId && podAddress) {
+                    const amount = orderObj.Amount;
+                    if (amount == 0) transaction.delete(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId));
+                    else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                }
                 else console.log("Update Firebase: update nft buying order error ,", orderId, " order updateObject has no podAddress field");
             }
         }
         // update nft selling offers
         if (updateSellingOffers) {
-            let orderId: string = '';
+            let _: string = '';
             let orderObj: any = null;
-            for ([orderId, orderObj] of Object.entries(updateSellingOffers)) {
+            for ([_, orderObj] of Object.entries(updateSellingOffers)) {
+                const orderId = orderObj.OrderId;
                 const podAddress = orderObj.PodAddress;
-                if (podAddress) transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                if (orderId && podAddress) {
+                    const amount = orderObj.Amount;
+                    if (amount == 0) transaction.delete(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId));
+                    else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                }
                 else console.log("Update Firebase: update nft selling order error ,", orderId, " order updateObject has no podAddress field");
             }
         }

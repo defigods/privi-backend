@@ -464,26 +464,25 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
             });
             // Create Pod Rate Doc
             const newPodRate = 0.01;
-            db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
+            db.collection(collections.rates).doc(podId).set({ type: collections.ft, rate: newPodRate });
             db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
                 rateUSD: newPodRate,
                 timestamp: Date.now()
             });
 
             // Add Pod Id into user myFTPods array
-            if (blockchainRes.output.UpdatePods[0] && blockchainRes.output.UpdatePods[0].Creator) {
-                const userRef = db.collection(collections.user)
-                    .doc(blockchainRes.output.UpdatePods[0].Creator);
-                const userGet = await userRef.get();
-                const user: any = userGet.data();
+            const userRef = db.collection(collections.user)
+                .doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
 
-                let myFTPods: any[] = user.myNFTPods || [];
-                myFTPods.push(podId)
+            let myFTPods: any[] = user.myNFTPods || [];
+            myFTPods.push(podId)
 
-                await userRef.update({
-                    myFTPods: myFTPods
-                });
-            }
+            await userRef.update({
+                myFTPods: myFTPods
+            });
+
 
             res.send({ success: true, data: podId });
         }

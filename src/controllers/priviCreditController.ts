@@ -77,10 +77,6 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
             });
 
-            // return new created credit id to FE
-            const updateCredit = blockchainRes.output.UpdatedCreditInfo;
-            let loanIds: string[] = Object.keys(updateCredit);
-
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
             await notificationsController.addNotification({
@@ -114,10 +110,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 });
             })
 
-            const updateLoans = blockchainRes.output.UpdateLoans;
-            loanIds = Object.keys(updateLoans);
-            const id = loanIds[0];
-            res.send({ success: true, data: { id: id, date: date } });
+            res.send({ success: true, data: { id: creditAddress, date: date } });
         }
         else {
             console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
