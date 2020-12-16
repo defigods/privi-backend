@@ -3,7 +3,7 @@ const { supplyHisotry } = require("../firebase/collections");
 const api = require("./blockchainApi");
 
 module.exports.initiatePodNFT = async (creatorId, podAddress, claimingAddress, tokenSymbol, tokenName, supply, royalty, date, dateExpiration, txnId, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/initiatePodNFT", {
+    let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/initiatePOD", {
         Creator: creatorId,
         PodAddress: podAddress,
         ClaimingAddress: claimingAddress,

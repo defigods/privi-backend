@@ -5,6 +5,7 @@ const connectController = require('./connectController');
 const walletController = require('./walletController');
 
 const priviCreditPayInterest = priviCreditController.payInterest;
+const priviCreditManageHistory = priviCreditController.manageHistory;
 const payInterest = lendingController.payInterest;
 const checkLiquidation = lendingController.checkLiquidation;
 // const podCheckLiquidation = podController.checkLiquidation;
@@ -17,6 +18,7 @@ const saveUserBalanceSum = walletController.saveUserBalanceSum;
 // all cron jobs go here, server.ts will import all these functions and start them
 module.exports = {
     priviCreditPayInterest,
+    priviCreditManageHistory,
     payInterest,
     checkLiquidation,
     // podCheckLiquidation,

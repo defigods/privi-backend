@@ -135,13 +135,19 @@ export async function updateFirebase(blockchainRes) {
             }
         }
         // update pods (FT and NFT)
+        const isNFT = {};
         if (updatePods) {
             let podId: string = '';
             let podObj: any = {};
             for ([podId, podObj] of Object.entries(updatePods)) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
-                if (podObj.Royalty) colectionName = collections.podsNFT;    // case NFT
+                if (podObj.Royalty != undefined) {
+                    isNFT[podId] = true;
+                    colectionName = collections.podsNFT;    // case NFT
+                } else {
+                    isNFT[podId] = false;
+                }
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podObj, { merge: true });
             }
@@ -153,7 +159,7 @@ export async function updateFirebase(blockchainRes) {
             for ([podId, podState] of Object.entries(updatePodStates)) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
-                if (podState.Royalty) colectionName = collections.podsNFT;    // case NFT
+                if (isNFT[podId]) colectionName = collections.podsNFT;    // case NFT
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podState, { merge: true });
             }

@@ -4,7 +4,7 @@ import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAs
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
-import collections from '../firebase/collections';
+import collections, { podsNFT } from '../firebase/collections';
 import { user } from 'firebase-functions/lib/providers/auth';
 
 const notificationsController = require('./notificationsController');
@@ -191,7 +191,16 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                         onlyInformation: false,
                     }
                 });
-            })
+            });
+
+            // update total deposited
+            const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
+            const priviCreditData: any = priviCreditSnap.data();
+            let totalDeposited = priviCreditData.TotalDeposited ?? 0;
+            totalDeposited += amount;
+            priviCreditSnap.ref.update({
+                TotalDeposited: totalDeposited
+            });
 
             res.send({ success: true });
         }
@@ -208,7 +217,6 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
 exports.borrowFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        console.log(body);
         const creditAddress = body.creditAddress;
         const address = body.userId;   // user addr
         const amount = body.amount;
@@ -231,7 +239,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
             }
             objList.forEach((obj) => {
-                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj);
             });
 
             createNotification(address, "Privi Credit - Loan Borrowed",
@@ -241,8 +249,6 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
             const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
             const priviCreditData: any = priviCreditSnap.data();
-            const userSnap = await db.collection(collections.user).doc(address).get();
-            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: priviCreditData.Creator,
                 notification: {
@@ -257,6 +263,12 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                 }
             });
+            // update total borrowed
+            let totalBorrowed = priviCreditData.TotalBorrowed ?? 0;
+            totalBorrowed += amount;
+            priviCreditSnap.ref.update({
+                TotalBorrowed: totalBorrowed
+            })
 
             res.send({ success: true });
         }
@@ -463,7 +475,7 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
     }
 };
 
-// given an id, return the complete data of a certain privi credit 
+// given the credit id, return the complete data of a certain privi credit 
 exports.getPriviTransactions = async (req: express.Request, res: express.Response) => {
     try {
         let creditId = req.params.creditId;
@@ -479,9 +491,49 @@ exports.getPriviTransactions = async (req: express.Request, res: express.Respons
     }
 };
 
+// given the credit id, return all the data necessary for the graph, that is the history of interest, deposited, borrowed and available.
+exports.getHistories = async (req: express.Request, res: express.Response) => {
+    try {
+        let creditId = req.params.creditId;
+        const interestHistory: any[] = [];
+        const depositedHistory: any[] = [];
+        const borrowedHistory: any[] = [];
+        const availableHistory: any[] = [];
+
+        const creditRef = db.collection(collections.priviCredits).doc(creditId);
+        const interestSnap = await creditRef.collection(collections.priviCreditInterestHistory).get();
+        const depositedSnap = await creditRef.collection(collections.priviCreditDepositedHistory).get();
+        const borrowedSnap = await creditRef.collection(collections.priviCreditBorrowedHistory).get();
+        const availableSnap = await creditRef.collection(collections.priviCreditAvailableHistory).get();
+        interestSnap.forEach((doc) => {
+            interestHistory.push(doc.data());
+        });
+        depositedSnap.forEach((doc) => {
+            depositedHistory.push(doc.data());
+        });
+        borrowedSnap.forEach((doc) => {
+            borrowedHistory.push(doc.data());
+        });
+        availableSnap.forEach((doc) => {
+            availableHistory.push(doc.data());
+        });
+        res.send({
+            success: true, data: {
+                interestHistory: interestHistory,
+                depositedHistory: depositedHistory,
+                borrowedHistory: borrowedHistory,
+                availableHistory: availableHistory
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> getHistories(): ', err);
+        res.send({ success: false });
+    }
+};
+
 /////////////////////////// CRON JOBS //////////////////////////////
 
-// scheduled every day at 00:00
+// interest manager scheduled every day at 00:00
 exports.payInterest = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("******** Privi Credit payInterest ********");
@@ -502,6 +554,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                         const transactions = blockchainRes.output.Transactions;
                         let tid: string = "";
                         let txnObj: any = null;
+                        let totalInterest = data.TotalInterest ?? 0;
                         for ([tid, txnObj] of Object.entries(transactions)) {
                             const from = txnObj.From;
                             const to = txnObj.To;
@@ -524,8 +577,11 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                                         onlyInformation: false,
                                     }
                                 });
+                                totalInterest += txnObj.Amount;
                             }
                         }
+                        // update total interest
+                        db.collection(collections.priviCredits).doc(creditAddress).update({ TotalInterest: totalInterest });
                     }
                     else {
                         console.log('Error in controllers/priviCredit -> payInterest(): success = false for credit ', creditAddress, blockchainRes.message);
@@ -533,6 +589,42 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                 }
             }
         }
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> payInterest()', err);
+    }
+});
+
+// cron scheduled every day at 00:00, generates a doc for Deposited, Borrowed and Available history collections
+exports.manageHistory = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("******** Privi Credit manageHistory ********");
+        const creditsSnap = await db.collection(collections.priviCredits).get();
+        creditsSnap.forEach((doc) => {
+            const data: any = doc.data();
+            const totalInterest = data.TotalInterest ?? 0;
+            const totalDeposited = data.TotalDeposited ?? 0;
+            const totalBorrowed = data.TotalBorrowed ?? 0;
+            // add to interest history colection
+            doc.ref.collection(collections.priviCreditInterestHistory).add({
+                interest: totalInterest,
+                date: Date.now()
+            });
+            // add to deposited history colection
+            doc.ref.collection(collections.priviCreditDepositedHistory).add({
+                deposited: totalDeposited,
+                date: Date.now()
+            });
+            // add to borrowed history colection
+            doc.ref.collection(collections.priviCreditBorrowedHistory).add({
+                borrowed: totalBorrowed,
+                date: Date.now()
+            });
+            // add to available history colection
+            doc.ref.collection(collections.priviCreditAvailableHistory).add({
+                available: totalDeposited - totalBorrowed,
+                date: Date.now()
+            });
+        });
     } catch (err) {
         console.log('Error in controllers/priviCredit -> payInterest()', err);
     }
