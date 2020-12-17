@@ -63,7 +63,7 @@ router.post('/NFT/deleteSellOrder', authenticateJWT, podController.deleteSellOrd
 router.post('/NFT/sellPodTokens', authenticateJWT, podController.sellPodTokens);
 router.post('/NFT/buyPodTokens', authenticateJWT, podController.buyPodTokens);
 
-router.get('/NFT/getPriceHistory/:podId', authenticateJWT, podController.getNFTPodPriceHistory);
+router.get('/NFT/getHistories/:podId', authenticateJWT, podController.getNFTPodHistories);
 router.get('/NFT/getPod/:podId', authenticateJWT, podController.getNFTPod);
 router.get('/NFT/getPodTransactions/:podId', authenticateJWT, podController.getNFTPodTransactions);
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);

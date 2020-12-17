@@ -50,3 +50,13 @@ module.exports.updateProtocolParameters = async (token, mintingPct, releaseFrequ
     });
     return blockchainRes.data;
 };
+
+module.exports.payStakingReward = async (token, txnId, date, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/payStakingReward", {
+        Token: token,
+        TxnId: txnId,
+        Date: date,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};

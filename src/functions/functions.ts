@@ -2,6 +2,7 @@ import { db, firebase } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
+import { object } from "firebase-functions/lib/providers/storage";
 
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
@@ -34,6 +35,10 @@ export async function updateFirebase(blockchainRes) {
         const updatedCreditInfo = output.UpdatedCreditInfo;
         const updatedCreditState = output.UpdatedCreditState;
         const updatedCreditRequirement = output.UpdatedCreditRequirement;
+        // communities
+        const updateCommunities = output.UpdateCommunities;
+        const updateCommunityStates = output.UpdateCommunityStates;
+        const updateCommunityLPs = output.UpdateCommunityLPs;
 
         // update user
         if (updateUser) {
@@ -53,14 +58,6 @@ export async function updateFirebase(blockchainRes) {
                         transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
                     });
                 }
-            }
-        }
-        // update tokens
-        if (updateTokens) {
-            let key: string = "";
-            let val: any = null;
-            for ([key, val] of Object.entries(updateTokens)) {
-                transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
         // update wallet
@@ -119,6 +116,7 @@ export async function updateFirebase(blockchainRes) {
                     const newToken: any = Object.values(updateTokens)[0];
                     if (newToken.TokenType) tokenType = newToken.TokenType;
                 }
+                console.log(tokenType, token, balanceObj);
                 transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, { merge: true });
             }
         }
@@ -282,6 +280,31 @@ export async function updateFirebase(blockchainRes) {
             let creditObj: any = {};
             for ([creditId, creditObj] of Object.entries(updatedCreditRequirement)) {
                 transaction.set(db.collection(collections.priviCredits).doc(creditId), creditObj, { merge: true });
+            }
+        }
+        // update communities
+        if (updateCommunities) {
+            let communityAddress: string = '';
+            let communityObj: any = {};
+            for ([communityAddress, communityObj] of Object.entries(updateCommunities)) {
+                transaction.set(db.collection(collections.community).doc(communityAddress), communityObj, { merge: true });
+            }
+        }
+        // update community state
+        if (updateCommunityStates) {
+            let communityAddress: string = '';
+            let communityObj: any = {};
+            for ([communityAddress, communityObj] of Object.entries(updateCommunityStates)) {
+                transaction.set(db.collection(collections.community).doc(communityAddress), communityObj, { merge: true });
+            }
+        }
+        // update community LPs
+        if (updateCommunityLPs) {
+            let communityAddress: string = '';
+            let communityLPObj: any = {};
+            for ([communityAddress, communityLPObj] of Object.entries(updateCommunityLPs)) {
+                const uid = communityLPObj.LPAddress;
+                if (uid) transaction.set(db.collection(collections.community).doc(communityAddress).collection(collections.communityLP).doc(uid), communityLPObj, { merge: true });
             }
         }
     });

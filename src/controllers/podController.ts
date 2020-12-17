@@ -12,8 +12,7 @@ import path from 'path';
 const notificationsController = require('./notificationsController');
 
 require('dotenv').config();
-//const apiKey = process.env.API_KEY;
-const apiKey = "PRIVI"; // just for now
+const apiKey = process.env.API_KEY;
 
 /////////////////////////// COMMON //////////////////////////////
 
@@ -648,22 +647,24 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                 }
             });
-            podData.Followers.forEach(async (item, i) => {
-                await notificationsController.addNotification({
-                    userId: item.id,
-                    notification: {
-                        type: 42,
-                        typeItemId: 'user',
-                        itemId: investorId,
-                        follower: investorData.name,
-                        pod: podData.Name,
-                        comment: '',
-                        token: '',
-                        amount: amount,
-                        onlyInformation: false,
-                    }
+            if (podData.Followers) {
+                podData.Followers.forEach(async (item, i) => {
+                    await notificationsController.addNotification({
+                        userId: item.id,
+                        notification: {
+                            type: 42,
+                            typeItemId: 'user',
+                            itemId: investorId,
+                            follower: investorData.name,
+                            pod: podData.Name,
+                            comment: '',
+                            token: '',
+                            amount: amount,
+                            onlyInformation: false,
+                        }
+                    });
                 });
-            });
+            }
             res.send({ success: true });
         }
         else {
@@ -1211,7 +1212,7 @@ exports.getFTPodSupplyHistory = async (req: express.Request, res: express.Respon
         let podId = req.params.podId;
         const data: any[] = [];
         if (podId) {
-            const priceHistorySnap = await db.collection(collections.podsFT).doc(podId).collection(collections.supplyHisotry).get();
+            const priceHistorySnap = await db.collection(collections.podsFT).doc(podId).collection(collections.supplyHistory).get();
             priceHistorySnap.forEach((doc) => {
                 data.push(doc.data());
             });
@@ -1915,11 +1916,11 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
 
 
 /**
- * Function to get price from history and today price colections, merge, sort (by ascending date) and return this data
+ * Function to get pod histories (price and supply) used by FE for graphs
  * @param req {podId}. podId: identifier of the pod
- * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: price history array
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: price and supply history arrays
  */
-exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Response) => {
+exports.getNFTPodHistories = async (req: express.Request, res: express.Response) => {
     try {
         // comparator function used to sort by ascending date
         const comparator = (a, b) => {
@@ -1929,25 +1930,38 @@ exports.getNFTPodPriceHistory = async (req: express.Request, res: express.Respon
         }
 
         let podId = req.params.podId;
-        const data: any[] = [];
         if (podId) {
+            // price history
+            const priceHistory: any[] = [];
             const priceHistorySnap = await db.collection(collections.podsNFT).doc(podId).collection(collections.priceHistory).get();
             priceHistorySnap.forEach((doc) => {
-                data.push(doc.data());
+                priceHistory.push(doc.data());
             });
             const todayPriceSnap = await db.collection(collections.podsNFT).doc(podId).collection(collections.priceOfTheDay).get();
             todayPriceSnap.forEach((doc) => {
-                data.push(doc.data());
+                priceHistory.push(doc.data());
             });
-            // sort data by ascending date
-            data.sort(comparator);
-            res.send({ success: true, data: data });
+            priceHistory.sort(comparator);
+            // supply history
+            const supplyHistory: any[] = [];
+            const supplyHistorySnap = await db.collection(collections.podsNFT).doc(podId).collection(collections.supplyHistory).get();
+            supplyHistorySnap.forEach((doc) => {
+                supplyHistory.push(doc.data());
+            });
+            supplyHistory.sort(comparator);
+
+            res.send({
+                success: true, data: {
+                    priceHistory: priceHistory,
+                    supplyHistory: supplyHistory
+                }
+            });
         } else {
-            console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
+            console.log('Error in controllers/podController -> getNFTPodHistories()', "There's no pod id...");
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> getNFTPodTransactions()', err);
+        console.log('Error in controllers/podController -> getNFTPodHistories()', err);
         res.send({ success: false });
     }
 };
@@ -2143,7 +2157,7 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
                     date: date
                 });
                 // add to supply history
-                pod.ref.collection(collections.supplyHisotry).add({
+                pod.ref.collection(collections.supplyHistory).add({
                     supply: supplyReleased,
                     date: date
                 });
@@ -2155,6 +2169,7 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
         // NFT
         podsSnap = await db.collection(collections.podsNFT).get();
         podsSnap.forEach(async (pod) => {
+            // --- add to price history ---
             let lowestPrice = Infinity;
             let date = Date.now();
             // get lowest price from Sales Book
@@ -2184,6 +2199,14 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
             // reset (empty) PriceOfTheDay
             const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get()
             priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
+
+            // --- add to supply history ---
+            const podData = pod.data();
+            const supply = podData.Supply ?? 0;
+            pod.ref.collection(collections.supplyHistory).add({
+                supply: supply,
+                date: date
+            });
         });
         console.log("--------- Pod managePriceHistory() finished ---------");
     } catch (err) {
