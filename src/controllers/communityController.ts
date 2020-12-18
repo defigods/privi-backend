@@ -213,7 +213,30 @@ exports.changeBadgePhoto = async (req: express.Request, res: express.Response) =
     }
 };
 
+exports.getCommunities = async (req: express.Request, res: express.Response) => {
+    try {
+        const communities = await getCommunitiesArray();
+        res.send({ success: true, data: communities });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getMyPods()', err);
+        res.send({ success: false });
+    }
+}
 
+// function to get all NFT Pods
+const getCommunitiesArray = exports.getNFTPods = (): Promise<any[]> => {
+    return new Promise<any[]>(async (resolve, reject) => {
+        const communities = await db.collection(collections.community).get();
+
+        let array: any[] = [];
+        communities.docs.map((doc, i) => {
+            array.push(doc.data());
+            if (communities.docs.length === i + 1) {
+                resolve(array)
+            }
+        });
+    });
+}
 
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {

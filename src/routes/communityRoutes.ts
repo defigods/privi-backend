@@ -17,6 +17,8 @@ let upload = multer({
     storage: storage
 });
 
+router.get('/getCommunities', authenticateJWT, communityController.getCommunities);
+
 router.post('/votation/create', authenticateJWT, communityController.createVotation);
 router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
 
