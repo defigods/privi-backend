@@ -66,7 +66,7 @@ const getChainId = () => {
             console.log('Error in connectController.ts->getChainId(): ', err)
         });
 };
-getChainId();
+// getChainId();
 
 /**
  * @notice Start http & websocket servers to interact with the front-end

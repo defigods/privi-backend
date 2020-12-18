@@ -39,6 +39,9 @@ export async function updateFirebase(blockchainRes) {
         const updateCommunities = output.UpdateCommunities;
         const updateCommunityStates = output.UpdateCommunityStates;
         const updateCommunityLPs = output.UpdateCommunityLPs;
+        const updateVotations = output.updateVotations;
+        const updateVotationStates = output.updateVotationStates;
+        const updateVoters = output.UpdateVoters;
 
         // update user
         if (updateUser) {
@@ -304,6 +307,31 @@ export async function updateFirebase(blockchainRes) {
             for ([communityAddress, communityLPObj] of Object.entries(updateCommunityLPs)) {
                 const uid = communityLPObj.LPAddress;
                 if (uid) transaction.set(db.collection(collections.community).doc(communityAddress).collection(collections.communityLP).doc(uid), communityLPObj, { merge: true });
+            }
+        }
+        // update votations
+        if (updateVotations) {
+            console.log(updateVotations)
+            let votationId: string = '';
+            let votationObj: any = {};
+            for ([votationId, votationObj] of Object.entries(updateVotations)) {
+                transaction.set(db.collection(collections.votation).doc(votationId), votationObj, { merge: true });
+            }
+        }
+        // update votations state
+        if (updateVotationStates) {
+            let votationId: string = '';
+            let votationObj: any = {};
+            for ([votationId, votationObj] of Object.entries(updateVotationStates)) {
+                transaction.set(db.collection(collections.votationState).doc(votationId), votationObj, { merge: true });
+            }
+        }
+        // update votaters
+        if (updateVoters) {
+            let votationId: string = '';
+            let votationObj: any = {};
+            for ([votationId, votationObj] of Object.entries(updatedCreditState)) {
+                transaction.set(db.collection(collections.voter).doc(votationId), votationObj, { merge: true });
             }
         }
     });
