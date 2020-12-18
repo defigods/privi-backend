@@ -116,7 +116,6 @@ export async function updateFirebase(blockchainRes) {
                     const newToken: any = Object.values(updateTokens)[0];
                     if (newToken.TokenType) tokenType = newToken.TokenType;
                 }
-                console.log(tokenType, token, balanceObj);
                 transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, { merge: true });
             }
         }
@@ -522,3 +521,95 @@ export function isPaymentDay(frequency, paymentDay) {
     }
     return false;
 };
+
+// calculates the integral area given the upper and lower bounds
+const integral = (amm: string, upperBound: number, lowerBound: number, targetPrice: number = 0, targetSupply: number = 0) => {
+    let multiplier = 1;
+    let integral = 0;
+    switch (amm) {
+        case 'LINEAR':
+            if (targetSupply) multiplier = (targetPrice / targetSupply);
+            integral = Math.pow(upperBound, 2) - Math.pow(lowerBound, 2);
+            if (integral < 0) {
+                console.log("error calculating integral, area negative", integral);
+                return -1;
+            }
+            return multiplier * integral / 2;
+        case 'QUADRATIC':
+            if (targetSupply) multiplier = targetPrice / Math.pow(targetSupply, 2);
+            integral = Math.pow(upperBound, 3) - Math.pow(lowerBound, 3);
+            if (integral < 0) {
+                console.log("error calculating integral, area negative", integral);
+                return -1;
+            }
+            return multiplier * integral / 3;
+        case 'EXPONENTIAL':
+            if (targetSupply) multiplier = targetPrice / Math.exp(-targetSupply);
+            integral = upperBound - lowerBound;
+            if (integral < 0) {
+                console.log("error calculating integral, area negative", integral);
+                return -1;
+            }
+            return multiplier * integral;
+        case 'SIGMOID':
+            const upper = upperBound + Math.log(1 + Math.exp(-upperBound + targetSupply));
+            const lower = lowerBound + Math.log(1 + Math.exp(-lowerBound + targetSupply));
+            integral = upper - lower;
+            if (integral < 0) {
+                console.log("error calculating integral, area negative", integral);
+                return -1;
+            }
+            return targetPrice / 2 * integral;
+    }
+    return -1;
+}
+
+// calculates the market price of a token (community/FT pod)
+export function getMarketPrice(amm: string, supplyRealeased: number, initialSupply: number = 0, targetPrice: number = 0, targetSupply: number = 0) {
+    const effectiveSupply: number = supplyRealeased - initialSupply;
+    if (effectiveSupply < 0) { // ERROR
+        console.log('getMarketPrice error: initialSupply > supplyReleased')
+        return -1;
+    }
+
+    let multiplier = 1;
+    switch (amm) {
+        case 'LINEAR':
+            if (targetSupply) multiplier = targetPrice / targetSupply;
+            return multiplier * effectiveSupply;
+        case 'QUADRATIC':
+            if (targetSupply) multiplier = targetPrice / Math.pow(targetSupply, 2);
+            return multiplier * Math.pow(effectiveSupply, 2);
+        case 'EXPONENTIAL':
+            if (targetSupply) multiplier = targetPrice / Math.exp(-targetSupply);
+            return multiplier * Math.exp(supplyRealeased);
+        case 'SIGMOID':
+            return targetPrice * (1. / (1 + Math.exp(-effectiveSupply + targetSupply)));
+    }
+
+    return -1;
+}
+
+// calculates the amount of funding tokens to receive after selling an amount of pod/community tokens
+export function getFundingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, fundingTokenAmount, targetPrice: number = 0, targetSupply: number = 0) {
+    const effectiveSupply: number = supplyRealeased - initialSupply;
+    if (effectiveSupply < 0) { // ERROR
+        console.log('getFundingTokenPrice error: initialSupply > supplyReleased')
+        return -1;
+    }
+    const newSupply = effectiveSupply + fundingTokenAmount;
+    const fundingAmount = integral(amm, newSupply, effectiveSupply, targetPrice, targetSupply);
+    return fundingAmount;
+}
+
+// calculates the amount of investing tokens to get after investing some amount of funding token
+export function getInvestingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, investingTokenAmount, spread, targetPrice: number = 0, targetSupply: number = 0) {
+    const effectiveSupply: number = supplyRealeased - initialSupply;
+    if (effectiveSupply < 0) { // ERROR
+        console.log('getInvestingTokenAmount error: initialSupply > supplyReleased')
+        return -1;
+    }
+    const lowSupply = Math.max(0, effectiveSupply - investingTokenAmount);
+    const fundingAmount = integral(amm, effectiveSupply, lowSupply, targetPrice, targetSupply);
+    return fundingAmount * (1 - spread);
+}

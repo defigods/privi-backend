@@ -1,7 +1,7 @@
 import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
 import podNFTProtocol from "../blockchain/podNFTProtocol";
-import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, getMarketPrice, getFundingTokenAmount, getInvestingTokenAmount } from "../functions/functions";
 import notificationTypes, { podSwapGet } from "../constants/notificationType";
 import collections, { podsNFT } from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -583,10 +583,16 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         const txnId = generateUniqueId();
         const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            const podTokenToReceive = await getPodTokenAmountAux(podId, amount);
-            const fundingTokenPerPodToken = amount / podTokenToReceive;
             updateFirebase(blockchainRes);
+
+            // calculate pod tokens to receive
             const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+            const data: any = podSnap.data();
+            const supplyReleased = data.SupplyReleased;
+            const amm = data.AMM;
+            const spread = data.SpreadTarget;
+            const podTokenToReceive = getInvestingTokenAmount(amm, supplyReleased, undefined, amount, spread);
+            const fundingTokenPerPodToken = amount / podTokenToReceive;
 
             // add txn to pod
             const output = blockchainRes.output;
@@ -604,7 +610,6 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 date: Date.now()
             })
             // add new investor entry
-            const data: any = podSnap.data();
             let newInvestors = {};
             if (data.Investors) newInvestors = data.Investors;
 
@@ -688,10 +693,15 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
         const txnId = generateUniqueId();
         const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            const fundingTokenToReceive = await getFundingTokenAmountAux(podId, amount);
-            const fundingTokenPerPodToken = fundingTokenToReceive / amount;
             updateFirebase(blockchainRes);
+
+            // calculate funding token to receive
             const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+            const data: any = podSnap.data();
+            const supplyReleased = data.SupplyReleased;
+            const amm = data.AMM;
+            const fundingTokenToReceive = getFundingTokenAmount(amm, supplyReleased, undefined, amount);
+            const fundingTokenPerPodToken = fundingTokenToReceive / amount;
 
             // add txn to pod
             let txObj = {};
@@ -708,7 +718,6 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
                 date: Date.now()
             })
             // delete investor entry
-            const data: any = podSnap.data();
             let newInvestors = {};
             if (data.Investors) newInvestors = data.Investors;
 
@@ -832,31 +841,18 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
 
 // ------------------------ Price Calculations -----------------------------
 
-// calculate the pod tokens to receive when inverting 'investment' amount of founding token
-const getPodTokenAmountAux = async (podId, investment) => {
-    let price = NaN;
-    const podSnap = await db.collection(collections.podsFT).doc(podId).get();
-    const data = podSnap.data();
-    if (data) {
-        const amm = data.AMM;
-        const supplyReleased = data.SupplyReleased;
-        switch (amm) {
-            case "QUADRATIC":
-                const term = 3 * investment + Math.pow(supplyReleased, 3);
-                price = Math.pow(term, 1. / 3) - supplyReleased;
-                if (price < 0) price = NaN;
-                break;
-        }
-    }
-    return price;
-}
 // get pod price for API
 exports.getPodTokenAmount = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const podId = body.podId;
         const amount = body.amount;
-        const price = await getPodTokenAmountAux(podId, amount);
+        const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+        const data: any = podSnap.data();
+        const supplyReleased = data.SupplyReleased;
+        const amm = data.AMM;
+        const spread = data.SpreadTarget;
+        const price = getInvestingTokenAmount(amm, supplyReleased, undefined, amount, spread);
         res.send({ success: true, data: price });
     } catch (err) {
         console.log('Error in controllers/podController -> getPodTokenAmount(): ', err);
@@ -864,38 +860,17 @@ exports.getPodTokenAmount = async (req: express.Request, res: express.Response) 
     }
 };
 
-// calculates the integral of AMM curve
-const integral = (amm, upperBound, lowerBound) => {
-    let res = NaN;
-    switch (amm) {
-        case "QUADRATIC":
-            res = Math.pow(upperBound, 3) - Math.pow(lowerBound, 3);
-            res /= 3;
-            if (res < 0) res = NaN;
-            break;
-    }
-    return res;
-}
-
-// get the funding token amount to receive if selling 'amount' of pod tokens
-const getFundingTokenAmountAux = async (podId, amount) => {
-    let fundingTokenAmount = NaN;
-    const podSnap = await db.collection(collections.podsFT).doc(podId).get();
-    const data = podSnap.data();
-    if (data) {
-        const supplyReleased = data.SupplyReleased;
-        const amm = data.AMM;
-        fundingTokenAmount = integral(amm, supplyReleased + amount, supplyReleased);
-    }
-    return fundingTokenAmount;
-}
 // get funding tokens for API
 exports.getFundingTokenAmount = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const podId = body.podId;
         const amount = body.amount;
-        const price = await getFundingTokenAmountAux(podId, amount);
+        const podSnap = await db.collection(collections.podsFT).doc(podId).get();
+        const data: any = podSnap.data();
+        const supplyReleased = data.SupplyReleased;
+        const amm = data.AMM;
+        const price = getFundingTokenAmount(amm, supplyReleased, undefined, amount);
         res.send({ success: true, data: price });
     } catch (err) {
         console.log('Error in controllers/podController -> getFundingTokenAmount(): ', err);
@@ -904,16 +879,6 @@ exports.getFundingTokenAmount = async (req: express.Request, res: express.Respon
 };
 
 
-// get market price of the pod (used for price history graph)
-const getMarketPriceAux = (amm, supplyReleased) => {
-    let price = NaN;
-    switch (amm) {
-        case "QUADRATIC":
-            price = Math.pow(supplyReleased, 2);
-            break;
-    }
-    return price;
-}
 // get funding tokens for API
 exports.getMarketPrice = async (req: express.Request, res: express.Response) => {
     try {
@@ -924,7 +889,7 @@ exports.getMarketPrice = async (req: express.Request, res: express.Response) => 
         if (data) {
             const supplyReleased = data.SupplyReleased;
             const amm = data.AMM;
-            price = getMarketPriceAux(amm, supplyReleased);
+            price = getMarketPrice(amm, supplyReleased);
         }
         res.send({ success: true, data: price });
     } catch (err) {
@@ -1971,57 +1936,36 @@ exports.getNFTPodHistories = async (req: express.Request, res: express.Response)
 /////////////////////////// CRON JOBS //////////////////////////////
 //////////////////////////////////////////////////////////////
 
-/** 
- * Cron to daily update the PodDay field when the pod is in 'Initiated' Status
-*/
-exports.updatePodDay = cron.schedule('0 0 * * *', async () => {
-    try {
-        console.log("********* Pod updatePodDay() cron job started *********");
-        const podsSnap = await db.collection(collections.podsFT).get();
-        podsSnap.forEach(async (pod) => {
-            const data = pod.data();
-            // only update Initiated pods
-            if (data && data.State && data.State.Status == 'INITIATED') {
-                let podDay = data.State.Pod_Day;
-                podDay += 1;
-                pod.ref.update({ "State.POD_Day": podDay });
-            }
-        })
-    } catch (err) {
-        console.log('Error in controllers/podController -> updatePodDay()', err);
-    }
-});
 
+// // helper function: calculate if deposited collateral is below required ccr level
+// function isPodCollateralBellowLiquidation(amount: number, token: string, requiredLevel: number, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {
+//     if (!requiredLevel || !collaterals || !ratesOfChange) return false;
+//     let sum: number = 0; // collateral sum in USD
+//     amount = amount * ratesOfChange[token];   // amount in USD
+//     for (const [token, colValue] of Object.entries(collaterals)) {
+//         let conversionRate = ratesOfChange[token];
+//         if (!conversionRate) conversionRate = 1;
+//         sum += colValue * conversionRate;
+//     }
+//     return (sum / amount < requiredLevel);
+// }
 
-// helper function: calculate if deposited collateral is below required ccr level
-function isPodCollateralBellowLiquidation(amount: number, token: string, requiredLevel: number, collaterals: { [key: string]: number }, ratesOfChange: { [key: string]: number }) {
-    if (!requiredLevel || !collaterals || !ratesOfChange) return false;
-    let sum: number = 0; // collateral sum in USD
-    amount = amount * ratesOfChange[token];   // amount in USD
-    for (const [token, colValue] of Object.entries(collaterals)) {
-        let conversionRate = ratesOfChange[token];
-        if (!conversionRate) conversionRate = 1;
-        sum += colValue * conversionRate;
-    }
-    return (sum / amount < requiredLevel);
-}
-
-// helper function: get array of object of tokens whice values are list of uids of users that have loan with ccr lower than required level
-async function getPodList() {
-    const res: string[] = [];
-    const rateOfChange = await getRateOfChangeAsMap();
-    const podsSnap = await db.collection(collections.podsFT).get();
-    podsSnap.forEach(async (podDoc) => {
-        const data = podDoc.data();
-        const podId: string = podDoc.id;
-        const minLiquidation: number = data.P_liquidation;
-        const amount: number = data.Principal;
-        const token: string = data.Token;
-        const collaterals: { [key: string]: number } = data.Pools.Collateral_Pool;
-        if (isPodCollateralBellowLiquidation(amount, token, minLiquidation, collaterals, rateOfChange)) res.push(podId);
-    });
-    return res;
-}
+// // helper function: get array of object of tokens whice values are list of uids of users that have loan with ccr lower than required level
+// async function getPodList() {
+//     const res: string[] = [];
+//     const rateOfChange = await getRateOfChangeAsMap();
+//     const podsSnap = await db.collection(collections.podsFT).get();
+//     podsSnap.forEach(async (podDoc) => {
+//         const data = podDoc.data();
+//         const podId: string = podDoc.id;
+//         const minLiquidation: number = data.P_liquidation;
+//         const amount: number = data.Principal;
+//         const token: string = data.Token;
+//         const collaterals: { [key: string]: number } = data.Pools.Collateral_Pool;
+//         if (isPodCollateralBellowLiquidation(amount, token, minLiquidation, collaterals, rateOfChange)) res.push(podId);
+//     });
+//     return res;
+// }
 /**
  * cron job scheduled every 5 min, checks the liquidation of each pod (that is ccr below required level)
  */
@@ -2151,7 +2095,7 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
             const amm = podData.AMM;
             if (supplyReleased != undefined && amm != undefined) {
                 // add price to price history
-                const price = getMarketPriceAux(amm, supplyReleased);
+                const price = getMarketPrice(amm, supplyReleased);
                 pod.ref.collection(collections.priceHistory).add({
                     price: price,
                     date: date

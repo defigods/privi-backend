@@ -12,8 +12,8 @@ const apiKey = process.env.API_KEY;
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        // for blockchain call
         const creater = body.creater;
-        const communityAddress = body.communityAddress;
         const ammAddress = body.ammAddress;
         const amm = body.amm;
         const targetSupply = body.targetSupply;
@@ -26,13 +26,57 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         const initialSupply = body.initialSupply;
         const dateLockUpDate = body.dateLockUpDate;
 
+        const communityAddress = generateUniqueId();
         const date = Date.now();
         const txnId = generateUniqueId();
 
         const blockchainRes = await community.createCommunity(creater, communityAddress, ammAddress, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, date,
             dateLockUpDate, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+            await updateFirebase(blockchainRes);
+
+            // add other common infos
+            const name = body.Name;
+            const description = body.Description;
+            const mainHashtag = body.MainHashtag;
+            const hashtags = body.Hashtags;
+            const privacy = body.Privacy;
+            const hasPhoto = body.HasPhoto;
+            const dicordId = body.DiscordID;
+            const advertising = body.Advertising;
+            const ethereumAddr = body.EthereumContractAddress;
+            const allowPayments = body.AllowPayments;
+
+            const requiredTokens = body.RequiredTokens;
+
+            const levels = body.Levels; // list of {name, description}
+
+            const endorsementScore = body.EndorsementScore;
+            const trustScore = body.TrustScore;
+            const admins = body.Admins;
+            const friends = body.Friends; // list of string (email), TODO: send some kind of notification to these users
+
+            db.collection(collections.community).doc(communityAddress).set({
+                HasPhoto: hasPhoto || false,
+                Name: name || '',
+                Description: description || '',
+                MainHashtag: mainHashtag || '',
+                Hashtags: hashtags || [],
+                Privacy: privacy,
+                Advertising: advertising || true,
+                AllowPayments: allowPayments || false,
+                DiscordId: dicordId || '',
+                EthereumAddress: ethereumAddr || '',
+
+                RequiredTokens: requiredTokens || {},
+
+                EndorsementScore: endorsementScore || 0,
+                TrustScore: trustScore || 0,
+                Admins: admins || [],
+                Friends: friends,
+
+            }, { merge: true })
+
             res.send({ success: true });
         }
         else {
