@@ -121,11 +121,6 @@ exports.stakeCommunityFunds = async (req: express.Request, res: express.Response
     }
 };
 
-
-
-
-
-
 exports.createBadge = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -196,6 +191,78 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
 
 
 exports.changeBadgePhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file) {
+            const badgeRef = db.collection(collections.badges)
+                .doc(req.file.originalname);
+            const badgeGet = await badgeRef.get();
+            const badge: any = badgeGet.data();
+            if (badge.hasPhoto) {
+                await badgeRef.update({
+                    hasPhoto: true
+                });
+            }
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/communitiesController -> changeBadgePhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/communitiesController -> changePodPhoto()', err);
+        res.send({ success: false });
+    }
+};
+
+
+
+exports.createVotation = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const creatorAddress = body.creatorAddress;
+        const name = body.name;
+        const description = body.description;
+        const discordId = body.discordId;
+        const twitterId = body.twitterId;
+        const votationId = body.votationId;
+        const votationAddress = body.votationAddress;
+        const votingToken = body.votingToken;
+        const quorumRequired = body.quorumRequired;
+        const startDate = body.StartDate;
+        const endingDate = body.EndingDate;
+        const blockchainRes = await community.createVotation(creatorAddress, votationId, votationAddress, votingToken, parseFloat(quorumRequired), startDate, endingDate, 'PRIVI');
+
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+
+            res.send({
+                success: true, data: {
+                    creatorAddress: creatorAddress,
+                    votationId: votationId,
+                    votationAddress: votationAddress,
+                    votingToken: votingToken,
+                    quorumRequired: quorumRequired,
+                    startDate: startDate,
+                    endingDate: endingDate,
+                    name: name,
+                    description: description,
+                    discordId: discordId,
+                    twitterId: twitterId,
+                    users: [],
+                    hasPhoto: false
+                }
+            });
+        }
+        else {
+            console.log('Error in controllers/communitiesControllers -> createVotation(): success = false.', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (e) {
+        return ('Error in controllers/communitiesControllers -> createVotation()' + e)
+    }
+}
+
+
+exports.changeVotationPhoto = async (req: express.Request, res: express.Response) => {
     try {
         if (req.file) {
             const badgeRef = db.collection(collections.badges)

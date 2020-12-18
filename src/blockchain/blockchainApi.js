@@ -13,6 +13,7 @@ const blockchainInsuranceFTAPI = "http://" + FabricAppServerIP + ":" + port + "/
 const blockchainPriviGovernanceAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PriviGovernance";
 const blockchainCommunityAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Communities";
 const blockchainBadgesAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Badges";
+const blockchainVotationAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Votation";
 
 module.exports = {
 	blockchainApi: blockchainApi,
@@ -26,4 +27,5 @@ module.exports = {
 	blockchainPriviGovernanceAPI: blockchainPriviGovernanceAPI,
 	blockchainCommunityAPI: blockchainCommunityAPI,
 	blockchainBadgesAPI: blockchainBadgesAPI,
+	blockchainVotationAPI: blockchainVotationAPI
 };

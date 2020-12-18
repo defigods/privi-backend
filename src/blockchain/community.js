@@ -71,3 +71,17 @@ module.exports.payCommunityDividends = async (communityAddress, rateOfChange, da
     });
     return blockchainRes.data;
 };
+
+module.exports.createVotation = async (creatorAddress, votationId, votationAddress, votingToken, quorumRequiered, startingDate, endingDate, caller) => {
+    let blockchainRes = await axios.post(api.blockchainVotationAPI + "/payCommunityDividends", {
+        CreatorAddress: creatorAddress,
+        VotationId: votationId,
+        VotationAddress: votationAddress,
+        VotingToken: votingToken,
+        QuorumRequiered: quorumRequiered,
+        StartingDate: startingDate,
+        EndingDate: endingDate,
+        Caller: caller,
+    });
+    return blockchainRes.data;
+};
