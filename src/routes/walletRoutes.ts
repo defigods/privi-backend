@@ -20,6 +20,9 @@ router.get('/getTotalIncome', authenticateJWT, walletController.getTotalIncome);
 router.get('/getTotalExpense', authenticateJWT, walletController.getTotalExpense);
 
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
+
+
 router.post('/registerTokens', walletController.registerTokens);
+router.post('/updateTokens', walletController.updateTokens);
 
 module.exports = router;

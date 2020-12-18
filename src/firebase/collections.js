@@ -29,6 +29,9 @@ module.exports = {
     priviCreditBorrowedHistory: "PriviCreditsBorrowedHistory",
     priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
 
+    community: 'Community',
+    communityLP: 'CommunityLP',
+
     podsFT: "PodsFT",
     buyingOffers: "BuyingOffers",
     sellingOffers: "SellingOffers",
@@ -36,7 +39,7 @@ module.exports = {
     podTransactions: "PodTransactions",
     priceOfTheDay: "PriceOfTheDay",
     priceHistory: "PriceHistory",
-    supplyHisotry: "SupplyHistory",
+    supplyHistory: "SupplyHistory",
     podRoleInvitation: "PodRoleInvitation",
     podViewInvitation: "PodViewInvitation",
     liquidityPools: "LiquidityPools",

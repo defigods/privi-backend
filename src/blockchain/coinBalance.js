@@ -14,6 +14,16 @@ module.exports.registerToken = async (name, type, symbol, supply, addressId, cal
 	return blockchainRes.data;
 };
 
+module.exports.updateTokenInfo = async (name, tokenType, symbol, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/updateTokenInfo", {
+		Name: name,
+		TokenType: tokenType,
+		Symbol: symbol,
+		Caller: caller,
+	});
+	return blockchainRes.data;
+};
+
 module.exports.transfer = async (from, to, amount, coin, id, date, type, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/transfer", {
 		Token: coin,

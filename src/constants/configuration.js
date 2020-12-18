@@ -6,13 +6,8 @@ const LOGIN_EXPIRY_DAYS = 2;
 // need a bulk email account TODO
 const MAIL_SERVICE = "gmail";
 
-/*
 const MAIL_USER = "noreply@priviprotocol.io";
-const MAIl_PASS = "Y4*3auChPRIVI";
-*/
-
-const MAIL_USER = "away45846";
-const MAIL_PASS = "QSidiNX3infbiHs";
+const MAIL_PASS = "7>HZBPuP";
 
 const ETH_SWAP_MANAGER_ADDRESS = '0x37145a7b892fe1116D1B7AF6CB68D205dc09D49F';
 const ETH_PRIVI_ADDRESS = '0x9353395A21C4eFe442d1C5B41f3808766AA62cC9';

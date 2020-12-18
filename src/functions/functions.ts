@@ -2,6 +2,7 @@ import { db, firebase } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
+import { object } from "firebase-functions/lib/providers/storage";
 
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
@@ -11,7 +12,6 @@ const uuid = require('uuid');
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
     await db.runTransaction(async (transaction) => {
-        console.log(output);
         const updateUser = output.UpdateUser;
         const updateWallets = output.UpdateWallets; // to be deleted
         const updateTokens = output.UpdateTokens;
@@ -35,6 +35,10 @@ export async function updateFirebase(blockchainRes) {
         const updatedCreditInfo = output.UpdatedCreditInfo;
         const updatedCreditState = output.UpdatedCreditState;
         const updatedCreditRequirement = output.UpdatedCreditRequirement;
+        // communities
+        const updateCommunities = output.UpdateCommunities;
+        const updateCommunityStates = output.UpdateCommunityStates;
+        const updateCommunityLPs = output.UpdateCommunityLPs;
 
         // update user
         if (updateUser) {
@@ -54,14 +58,6 @@ export async function updateFirebase(blockchainRes) {
                         transaction.set(db.collection(collections.allTransactions).doc(obj.Id), obj); // to be deleted later
                     });
                 }
-            }
-        }
-        // update tokens
-        if (updateTokens) {
-            let key: string = "";
-            let val: any = null;
-            for ([key, val] of Object.entries(updateTokens)) {
-                transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
         // update wallet
@@ -120,6 +116,7 @@ export async function updateFirebase(blockchainRes) {
                     const newToken: any = Object.values(updateTokens)[0];
                     if (newToken.TokenType) tokenType = newToken.TokenType;
                 }
+                console.log(tokenType, token, balanceObj);
                 transaction.set(db.collection(collections.wallet).doc(uid).collection(tokenType).doc(token), balanceObj, { merge: true });
             }
         }
@@ -135,13 +132,19 @@ export async function updateFirebase(blockchainRes) {
             }
         }
         // update pods (FT and NFT)
+        const isNFT = {};
         if (updatePods) {
             let podId: string = '';
             let podObj: any = {};
             for ([podId, podObj] of Object.entries(updatePods)) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
-                if (podObj.Royalty) colectionName = collections.podsNFT;    // case NFT
+                if (podObj.Royalty != undefined) {
+                    isNFT[podId] = true;
+                    colectionName = collections.podsNFT;    // case NFT
+                } else {
+                    isNFT[podId] = false;
+                }
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podObj, { merge: true });
             }
@@ -153,28 +156,38 @@ export async function updateFirebase(blockchainRes) {
             for ([podId, podState] of Object.entries(updatePodStates)) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
-                if (podState.Royalty) colectionName = collections.podsNFT;    // case NFT
+                if (isNFT[podId]) colectionName = collections.podsNFT;    // case NFT
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podState, { merge: true });
             }
         }
         // update nft buying offers
         if (updateBuyingOffers) {
-            let orderId: string = '';
+            let _: string = '';
             let orderObj: any = null;
-            for ([orderId, orderObj] of Object.entries(updateBuyingOffers)) {
+            for ([_, orderObj] of Object.entries(updateBuyingOffers)) {
+                const orderId = orderObj.OrderId;
                 const podAddress = orderObj.PodAddress;
-                if (podAddress) transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                if (orderId && podAddress) {
+                    const amount = orderObj.Amount;
+                    if (amount == 0) transaction.delete(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId));
+                    else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                }
                 else console.log("Update Firebase: update nft buying order error ,", orderId, " order updateObject has no podAddress field");
             }
         }
         // update nft selling offers
         if (updateSellingOffers) {
-            let orderId: string = '';
+            let _: string = '';
             let orderObj: any = null;
-            for ([orderId, orderObj] of Object.entries(updateSellingOffers)) {
+            for ([_, orderObj] of Object.entries(updateSellingOffers)) {
+                const orderId = orderObj.OrderId;
                 const podAddress = orderObj.PodAddress;
-                if (podAddress) transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                if (orderId && podAddress) {
+                    const amount = orderObj.Amount;
+                    if (amount == 0) transaction.delete(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId));
+                    else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                }
                 else console.log("Update Firebase: update nft selling order error ,", orderId, " order updateObject has no podAddress field");
             }
         }
@@ -267,6 +280,31 @@ export async function updateFirebase(blockchainRes) {
             let creditObj: any = {};
             for ([creditId, creditObj] of Object.entries(updatedCreditRequirement)) {
                 transaction.set(db.collection(collections.priviCredits).doc(creditId), creditObj, { merge: true });
+            }
+        }
+        // update communities
+        if (updateCommunities) {
+            let communityAddress: string = '';
+            let communityObj: any = {};
+            for ([communityAddress, communityObj] of Object.entries(updateCommunities)) {
+                transaction.set(db.collection(collections.community).doc(communityAddress), communityObj, { merge: true });
+            }
+        }
+        // update community state
+        if (updateCommunityStates) {
+            let communityAddress: string = '';
+            let communityObj: any = {};
+            for ([communityAddress, communityObj] of Object.entries(updateCommunityStates)) {
+                transaction.set(db.collection(collections.community).doc(communityAddress), communityObj, { merge: true });
+            }
+        }
+        // update community LPs
+        if (updateCommunityLPs) {
+            let communityAddress: string = '';
+            let communityLPObj: any = {};
+            for ([communityAddress, communityLPObj] of Object.entries(updateCommunityLPs)) {
+                const uid = communityLPObj.LPAddress;
+                if (uid) transaction.set(db.collection(collections.community).doc(communityAddress).collection(collections.communityLP).doc(uid), communityLPObj, { merge: true });
             }
         }
     });

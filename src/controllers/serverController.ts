@@ -20,6 +20,7 @@ const poolRoutes = require('../routes/poolRoutes');
 const ethereumRoutes = require('../routes/ethereumRoutes');
 const insuranceRoutes = require('../routes/insuranceRoutes');
 const forumRoutes = require('../routes/forumRoutes');
+const communityRoutes = require('../routes/communityRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -61,6 +62,7 @@ export const startServer = (env: Env) => {
   app.use('/privi-data', priviDataRoutes);
   app.use('/forum', forumRoutes);
   app.use('/insurance', insuranceRoutes);
+  app.use('/community', communityRoutes);
 
   // start all cron jobs
   let name: string;

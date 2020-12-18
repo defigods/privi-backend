@@ -1,5 +1,5 @@
 import express from 'express';
-import priviCredit, { payInterest } from "../blockchain/priviCredit";
+import priviCredit from "../blockchain/priviCredit";
 import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
@@ -10,7 +10,7 @@ import { user } from 'firebase-functions/lib/providers/auth';
 const notificationsController = require('./notificationsController');
 
 require('dotenv').config();
-const apiKey = "PRIVI"; // just for now
+const apiKey = process.env.API_KEY;
 
 ///////////////////////////// POSTS //////////////////////////////
 
@@ -77,10 +77,6 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
             });
 
-            // return new created credit id to FE
-            const updateCredit = blockchainRes.output.UpdatedCreditInfo;
-            let loanIds: string[] = Object.keys(updateCredit);
-
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
             await notificationsController.addNotification({
@@ -114,10 +110,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 });
             })
 
-            const updateLoans = blockchainRes.output.UpdateLoans;
-            loanIds = Object.keys(updateLoans);
-            const id = loanIds[0];
-            res.send({ success: true, data: { id: id, date: date } });
+            res.send({ success: true, data: { id: creditAddress, date: date } });
         }
         else {
             console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
