@@ -9,6 +9,7 @@ import coinBalance from "../blockchain/coinBalance.js";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
+import { identifyTypeOfToken } from '../functions/functions';
 import cron from 'node-cron';
 
 require('dotenv').config();
@@ -554,7 +555,9 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
         const retData: {}[] = [];
         const rateOfChange = await getRateOfChangeAsMap();
         for (const [token, _] of Object.entries(rateOfChange)) {
-            const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
+            const tokenType = await identifyTypeOfToken(token);
+            const walletTokenSnap = await db.collection(collections.wallet).doc(userId).collection(tokenType).doc(token).get();
+            //const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
             let amount = 0;
             if (data) amount = data.Amount;
