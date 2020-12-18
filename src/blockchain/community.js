@@ -1,14 +1,38 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.createCommunity = async (creator, communityAddress, ammAddress, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, date, dateLockUpDate, txnId, caller) => {
+module.exports.createCommunity = async (creator, communityAddress, ammAddress, votationAddress, stakingAddress, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, date, dateLockUpDate, txnId, caller) => {
+    console.log("calling blockchain with", {
+        Creator: creator,
+        CommunityAddress: communityAddress,
+        AMMAddress: ammAddress,
+        VotationAddress: votationAddress,
+        StakingAddress: stakingAddress,
+        AMM: amm,
+        TargetSupply: targetSupply,
+        TargetPrice: targetPrice,
+        SpreadDividend: spreadDividend,
+        FundingToken: fundingToken,
+        TokenSymbol: tokenSymbol,
+        TokenName: tokenName,
+        Frequency: frequency,
+        InitialSupply: initialSupply,
+
+        TxnId: txnId,
+        Date: date,
+        DateLockUpDate: dateLockUpDate,
+        Caller: caller
+    })
+
     let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/createCommunity", {
         Creator: creator,
         CommunityAddress: communityAddress,
         AMMAddress: ammAddress,
+        VotationAddress: votationAddress,
+        StakingAddress: stakingAddress,
         AMM: amm,
         TargetSupply: targetSupply,
-        TargetPrice: TargetPrice,
+        TargetPrice: targetPrice,
         SpreadDividend: spreadDividend,
         FundingToken: fundingToken,
         TokenSymbol: tokenSymbol,
