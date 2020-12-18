@@ -474,7 +474,7 @@ export function isEmail(email: string) {
 }
 
 // given a string return the type of token (CRYPTO, FTPOD...)
-const identifyTypeOfToken = async function (token: string): Promise<string> {
+export const identifyTypeOfToken = async function (token: string): Promise<string> {
     const tokenSnap = await db.collection(collections.tokens).doc(token).get();
     if (tokenSnap.exists) {
         const data = tokenSnap.data();
@@ -482,7 +482,7 @@ const identifyTypeOfToken = async function (token: string): Promise<string> {
     }
     return collections.unknown;
 }
-module.exports.identifyTypeOfToken = identifyTypeOfToken;
+//module.exports.identifyTypeOfToken = identifyTypeOfToken;
 
 // filter the trending ones, that is the top 10 with most followers in the last week
 export function filterTrending(allElems) {
