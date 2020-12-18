@@ -410,7 +410,6 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                         doc.action === Action.WITHDRAW_ERC20) {
                         sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
                     } else {
-                        console.log('publicID:', doc.publicId)
                         swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate)
                     };
                 };
@@ -441,19 +440,20 @@ const swap = async (
     lastUpdate: number) => {
 
     try {
-
-        // console.log({
-        //     From: from,
-        //     To: publicId,
-        //     Type: action,
-        //     Token: token,
-        //     Amount: amount,
-        //     Date: lastUpdate,
-        //     Id: txHash,
-        //     Caller: 'PRIVI'
-        // })
-
         console.log('--> Swap: TX confirmed in Ethereum');
+
+        const mint = {
+            From: from,
+            To: publicId,
+            Type: action,
+            Token: token,
+            Amount: amount,
+            Date: lastUpdate,
+            Id: txHash,
+            Caller: 'PRIVI'
+        }
+        console.log('Mint params: ', mint)
+
         const response = await swapFab(
             action,
             from,
