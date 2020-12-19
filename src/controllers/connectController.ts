@@ -3,7 +3,7 @@ import express from 'express';
 import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
-import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance';
+import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
 import { updateFirebase } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
@@ -38,7 +38,7 @@ web3 = new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${
 //web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));  // Local Ganache
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 let CHAIN_ID = 'NA';
-const TX_LISTENING_CYCLE = 15; // listen for new transactions in ethereum every 15 seconds
+const TX_LISTENING_CYCLE = 15; // listen for new transactions in ethereum every N seconds
 
 // Action types
 const Action = {
@@ -66,7 +66,7 @@ const getChainId = () => {
             console.log('Error in connectController.ts->getChainId(): ', err)
         });
 };
-getChainId();
+// getChainId();
 
 /**
  * @notice Start http & websocket servers to interact with the front-end
@@ -410,8 +410,8 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                         doc.action === Action.WITHDRAW_ERC20) {
                         sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
                     } else {
-                        console.log('publicID:', doc.publicId)
-                        swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate)
+                        swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                        return;
                     };
                 };
             };
@@ -441,19 +441,20 @@ const swap = async (
     lastUpdate: number) => {
 
     try {
-
-        // console.log({
-        //     From: from,
-        //     To: publicId,
-        //     Type: action,
-        //     Token: token,
-        //     Amount: amount,
-        //     Date: lastUpdate,
-        //     Id: txHash,
-        //     Caller: 'PRIVI'
-        // })
-
         console.log('--> Swap: TX confirmed in Ethereum');
+
+        const mint = {
+            From: from,
+            To: publicId,
+            Type: action,
+            Token: token,
+            Amount: amount,
+            Date: lastUpdate,
+            Id: txHash,
+            Caller: 'PRIVI'
+        }
+        console.log('Mint params: ', mint)
+
         const response = await swapFab(
             action,
             from,
@@ -469,8 +470,7 @@ const swap = async (
             console.log('--> Swap: TX confirmed in Fabric: ', response);
 
             // Update balances in Firestore
-            const resBalance = await updateFirebase(response);
-            console.log('--> Swap: Update of balances in Fabric ', resBalance);
+            updateFirebase(response);
 
             // Update TX
             await sendTxBack(txHash, publicId, action, random, 'OK');
@@ -496,6 +496,19 @@ const swap = async (
  */
 const withdraw = async (params: any) => {
 
+    const input = {
+        From: params.publicId,
+        To: params.to,
+        Type: params.action,
+        Token: params.token,
+        Amount: params.amount,
+        Date: params.lastUpdate,
+        Id: params.random,
+        Caller: 'PRIVI'
+    }
+
+    console.log(`Input for burn: \n`, input);
+
     // Withdraw in Fabric
     const response = await withdrawFab(
         params.action,
@@ -510,12 +523,8 @@ const withdraw = async (params: any) => {
 
     if (response && response.success) {
 
-        console.log('--> Withdraw: TX confirmed in Fabric', response);
-
         // Update balances in Firestore
-        // Go ahead with Ethereum even the update of balances fails (no response.success required)
-        const resBalance = await updateFirebase(response);
-        console.log('--> Withdraw: Update of balances in Fabric ', resBalance);
+        updateFirebase(response);
 
         // Convert value into wei
         const amountWei = web3.utils.toWei(String(params.amount));

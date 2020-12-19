@@ -31,6 +31,9 @@ module.exports = {
 
     community: 'Community',
     communityLP: 'CommunityLP',
+    votation: 'Votation',
+    votationState: 'VotationState',
+    voter: 'Voter',
 
     podsFT: "PodsFT",
     buyingOffers: "BuyingOffers",
