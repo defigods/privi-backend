@@ -430,88 +430,88 @@ async function getTokenUserList() {
     return res;
 }
 
-// scheduled every 5 min
-exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
-    try {
-        console.log("********* Traditional lending checkLiquidation() cron job started *********");
-        const rateOfChange = await getRateOfChangeAsMap();
-        const candidates = await getTokenUserList();
-        for (const [token, uidList] of Object.entries(candidates)) {
-            uidList.forEach(async (uid) => {
-                const blockchainRes = await tradinionalLending.checkLiquidation(uid, token, rateOfChange);
-                if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
-                    updateFirebase(blockchainRes);
-                    createNotification(uid, "Loans 1.0 - Loan Liquidated",
-                        ` `,
-                        notificationTypes.traditionalLiquidation
-                    );
-                    await notificationsController.addNotification({
-                        userId: uid,
-                        notification: {
-                            type: 71,
-                            typeItemId: 'user',
-                            itemId: uid,
-                            follower: '',
-                            pod: '',
-                            comment: '',
-                            token: token,
-                            amount: 0,
-                            onlyInformation: false,
-                        }
-                    });
-                } else {
-                    console.log('Error in controllers/lendingController -> checkLiquidation().', uid, token, blockchainRes.message);
-                }
-            });
-        }
-        console.log("--------- Traditional lending checkLiquidation() finished ---------");
-    } catch (err) {
-        console.log('Error in controllers/lendingController -> checkLiquidation()', err);
-    }
-});
+// // scheduled every 5 min
+// exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
+//     try {
+//         console.log("********* Traditional lending checkLiquidation() cron job started *********");
+//         const rateOfChange = await getRateOfChangeAsMap();
+//         const candidates = await getTokenUserList();
+//         for (const [token, uidList] of Object.entries(candidates)) {
+//             uidList.forEach(async (uid) => {
+//                 const blockchainRes = await tradinionalLending.checkLiquidation(uid, token, rateOfChange);
+//                 if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
+//                     updateFirebase(blockchainRes);
+//                     createNotification(uid, "Loans 1.0 - Loan Liquidated",
+//                         ` `,
+//                         notificationTypes.traditionalLiquidation
+//                     );
+//                     await notificationsController.addNotification({
+//                         userId: uid,
+//                         notification: {
+//                             type: 71,
+//                             typeItemId: 'user',
+//                             itemId: uid,
+//                             follower: '',
+//                             pod: '',
+//                             comment: '',
+//                             token: token,
+//                             amount: 0,
+//                             onlyInformation: false,
+//                         }
+//                     });
+//                 } else {
+//                     console.log('Error in controllers/lendingController -> checkLiquidation().', uid, token, blockchainRes.message);
+//                 }
+//             });
+//         }
+//         console.log("--------- Traditional lending checkLiquidation() finished ---------");
+//     } catch (err) {
+//         console.log('Error in controllers/lendingController -> checkLiquidation()', err);
+//     }
+// });
 
-// scheduled every day 00:00
-exports.payInterest = cron.schedule('0 0 * * *', async () => {
-    try {
-        console.log("********* Traditional lending payInterest() cron job started *********");
-        // get interest rates
-        const lendingInterest = await getLendingInterest();
-        const stakingInterest = await getStakingInterest();
-        const rateOfChange = await getRateOfChangeAsMap();
-        const blockchainRes = await tradinionalLending.payInterests(lendingInterest, stakingInterest, rateOfChange);
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-            const updateWallets = blockchainRes.output.UpdateWallets;
-            let uid: string = "";
-            let walletObj: any = null;
-            for ([uid, walletObj] of Object.entries(updateWallets)) {
-                if (walletObj["Transaction"].length > 0) {
-                    createNotification(uid, "Loans 1.0 - Interest Payment",
-                        ` `,
-                        notificationTypes.traditionalInterest
-                    );
-                    await notificationsController.addNotification({
-                        userId: uid,
-                        notification: {
-                            type: 72,
-                            typeItemId: 'user',
-                            itemId: uid,
-                            follower: '',
-                            pod: '',
-                            comment: '',
-                            token: '',
-                            amount: 0,
-                            onlyInformation: false,
-                        }
-                    });
-                }
-            }
-            console.log("--------- Traditional lending payInterest() finished ---------");
-        }
-        else {
-            console.log('Error in controllers/lendingController -> payInterest(): success = false');
-        }
-    } catch (err) {
-        console.log('Error in controllers/lendingController -> payInterest()', err);
-    }
-});
+// // scheduled every day 00:00
+// exports.payInterest = cron.schedule('0 0 * * *', async () => {
+//     try {
+//         console.log("********* Traditional lending payInterest() cron job started *********");
+//         // get interest rates
+//         const lendingInterest = await getLendingInterest();
+//         const stakingInterest = await getStakingInterest();
+//         const rateOfChange = await getRateOfChangeAsMap();
+//         const blockchainRes = await tradinionalLending.payInterests(lendingInterest, stakingInterest, rateOfChange);
+//         if (blockchainRes && blockchainRes.success) {
+//             updateFirebase(blockchainRes);
+//             const updateWallets = blockchainRes.output.UpdateWallets;
+//             let uid: string = "";
+//             let walletObj: any = null;
+//             for ([uid, walletObj] of Object.entries(updateWallets)) {
+//                 if (walletObj["Transaction"].length > 0) {
+//                     createNotification(uid, "Loans 1.0 - Interest Payment",
+//                         ` `,
+//                         notificationTypes.traditionalInterest
+//                     );
+//                     await notificationsController.addNotification({
+//                         userId: uid,
+//                         notification: {
+//                             type: 72,
+//                             typeItemId: 'user',
+//                             itemId: uid,
+//                             follower: '',
+//                             pod: '',
+//                             comment: '',
+//                             token: '',
+//                             amount: 0,
+//                             onlyInformation: false,
+//                         }
+//                     });
+//                 }
+//             }
+//             console.log("--------- Traditional lending payInterest() finished ---------");
+//         }
+//         else {
+//             console.log('Error in controllers/lendingController -> payInterest(): success = false');
+//         }
+//     } catch (err) {
+//         console.log('Error in controllers/lendingController -> payInterest()', err);
+//     }
+// });

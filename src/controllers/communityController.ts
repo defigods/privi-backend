@@ -12,27 +12,124 @@ const apiKey = process.env.API_KEY;
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const creater = body.creater;
-        const communityAddress = body.communityAddress;
-        const ammAddress = body.ammAddress;
-        const amm = body.amm;
-        const targetSupply = body.targetSupply;
-        const targetPrice = body.targetPrice;
-        const spreadDividend = body.spreadDivident;
-        const fundingToken = body.fundingToken;
-        const tokenSymbol = body.tokenSymbol;
-        const tokenName = body.tokenName;
-        const frequency = body.frequency;
-        const initialSupply = body.initialSupply;
-        const dateLockUpDate = body.dateLockUpDate;
+        // for blockchain call
+        const communityToken = body.CommunityToken; // determines if the above parameters are given or not
 
+        const creator = body.Creator;
+
+        const amm = body.PriceDirection.toUpperCase();
+        const targetSupply = Number(body.TargetSupply);
+        const targetPrice = Number(body.TargetPrice);
+        const tradingSpread = Number(body.TradingSpread) / 100;
+        const fundingToken = body.FundingToken;
+        const tokenSymbol = body.TokenId;
+        const tokenName = body.TokenName;
+        const frequency = body.Frequency.toUpperCase();
+        const initialSupply = Number(body.InitialSupply);
+        const dateLockUpDate = 0;   // just for now
+
+        const ammAddress = generateUniqueId();
+        const communityAddress = generateUniqueId();
+        const votationAddress = generateUniqueId();
+        const stakingAddress = generateUniqueId();
         const date = Date.now();
         const txnId = generateUniqueId();
 
-        const blockchainRes = await community.createCommunity(creater, communityAddress, ammAddress, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, date,
+        console.log(body);
+
+        if (!communityToken) {  // not implemented this case yet
+            console.log('Not Community Token case not implemented yet');
+            res.send({ success: false });
+            return;
+        }
+
+        const blockchainRes = await community.createCommunity(creator, communityAddress, ammAddress, votationAddress, stakingAddress, amm, targetSupply, targetPrice, tradingSpread, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, date,
             dateLockUpDate, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+            await updateFirebase(blockchainRes);
+
+            // add other common infos
+            const name = body.Name;
+            const description = body.Description;
+            const mainHashtag = body.MainHashtag;
+            const hashtags = body.Hashtags;
+            const privacy = body.Privacy;
+            const hasPhoto = body.HasPhoto;
+            const dicordId = body.DiscordId;
+            const twitterId = body.TwitterId;
+            const openAdvertising = body.OpenAdvertising;
+            const ethereumAddr = body.EthereumContractAddress;
+            const paymentsAllowed = body.PaymentsAllowed;
+
+            const collateralQuantity = Number(body.CollateralQuantity);
+            const collateralOption = body.CollateralOption;
+            const collateralToken = body.CollateralToken;
+
+            const ruleBased = body.RuleBased;
+
+            const requiredTokens = body.RequiredTokens;
+
+            const minUserLevel = body.MinimumUserLevel == 'Not required' ? 0 : body.MinimumUserLevel;
+            const minEndorsementScore = body.MinimumEndorsementScore == 'Not required' ? 0 : body.MinimumEndorsementScore / 100;
+            const minTrustScore = body.MinimumTrustScore == 'Not required' ? 0 : body.MinimumTrustScore / 100;
+
+            const levels = body.Levels; // list of {name, description}
+
+            const blogsEnabled = body.BlogsEnabled;
+            const blogs = body.Blogs;
+            const memberDirectoriesEnabled = body.MemberDirectoriesEnabled;
+            const memberDirectories = body.MemberDirectories;
+            const projectsEnabled = body.ProjectsEnabled;
+            const projects = body.Projects;
+            const appsEnabled = body.AppsEnabled;
+            const apps = body.Apps;
+
+            const admins = body.Admins;
+            const userRoles = body.UserRoles;
+            const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
+
+            db.collection(collections.community).doc(communityAddress).set({
+                HasPhoto: hasPhoto || false,
+                Name: name || '',
+                Description: description || '',
+                MainHashtag: mainHashtag || '',
+                Hashtags: hashtags || [],
+                Privacy: privacy,
+                OpenAdvertising: openAdvertising || false,
+                PaymentsAllowed: paymentsAllowed || false,
+                DiscordId: dicordId || '',
+                TwitterId: twitterId || '',
+                EthereumAddress: ethereumAddr || '',
+
+                CollateralQuantity: collateralQuantity || 0,
+                CollateralOption: collateralOption || '',
+                CollateralToken: collateralToken || '',
+
+                RuleBased: ruleBased || true,
+
+                RequiredTokens: requiredTokens || {},
+
+                MinimumUserLevel: minUserLevel,
+                MinimumEndorsementScore: minEndorsementScore || 0,
+                MinimumTrustScore: minTrustScore || 0,
+
+                Levels: levels,
+
+                BlogsEnabled: blogsEnabled,
+                Blogs: blogs,
+                MemberDirectoriesEnabled: memberDirectoriesEnabled,
+                MemberDirectories: memberDirectories,
+                ProjectsEnabled: projectsEnabled,
+                Projects: projects,
+                AppsEnabled: appsEnabled,
+                Apps: apps,
+
+                UserRoles: userRoles,
+                Admins: admins || [],
+                InvitationUsers: invitedUsers,
+
+            }, { merge: true })
+
             res.send({ success: true });
         }
         else {
