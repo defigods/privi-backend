@@ -109,3 +109,14 @@ module.exports.createVotation = async (creatorAddress, votationId, votationAddre
     });
     return blockchainRes.data;
 };
+
+module.exports.endVotation = async (votationId, votationAddress, date, TxnId, caller) => {
+    let blockchainRes = await axios.post(api.blockchainVotationAPI + "/payCommunityDividends", {
+        VotationId: votationId,
+        VotationAddress: votationAddress,
+        Date: date,
+        TxnId: TxnId,
+        Caller: caller,
+    });
+    return blockchainRes.data;
+};

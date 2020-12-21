@@ -1,10 +1,11 @@
 import express from "express";
-import { createNotification, generateUniqueId, updateFirebase } from "../functions/functions";
+import {createNotification, generateUniqueId, getRateOfChangeAsMap, updateFirebase} from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import notificationTypes from "../constants/notificationType";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
+import cron from 'node-cron';
 
 require('dotenv').config();
 const apiKey = process.env.API_KEY;
@@ -385,24 +386,44 @@ exports.createVotation = async (req: express.Request, res: express.Response) => 
 exports.changeVotationPhoto = async (req: express.Request, res: express.Response) => {
     try {
         if (req.file) {
-            const badgeRef = db.collection(collections.badges)
+            const votationRef = db.collection(collections.votation)
                 .doc(req.file.originalname);
-            const badgeGet = await badgeRef.get();
-            const badge: any = badgeGet.data();
-            if (badge.hasPhoto) {
-                await badgeRef.update({
+            const votationGet = await votationRef.get();
+            const votation: any = votationGet.data();
+            if (votation.hasPhoto) {
+                await votationRef.update({
                     hasPhoto: true
                 });
             }
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/communitiesController -> changeBadgePhoto()', "There's no file...");
+            console.log('Error in controllers/communitiesController -> changeVotationPhoto()', "There's no file...");
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/communitiesController -> changePodPhoto()', err);
+        console.log('Error in controllers/communitiesController -> changeVotationPhoto()', err);
         res.send({ success: false });
     }
 };
 
+exports.endVotations = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("********* Community endVotation() cron job started *********");
+        const votationSnap = await db.collection(collections.votation).get();
+        votationSnap.forEach(async (votation) => {
+            let votationData = votation.data();
+            let endingDate = votationData.EndingDate;
+            if(endingDate > Date.now()) {
+                const txnId = generateUniqueId();
+                const blockchainRes = await community.endVotation(votationData.VotationId, votationData.VotationAddress, Date.now(), txnId, 'PRIVI');
 
+                if (blockchainRes && blockchainRes.success) {
+                    updateFirebase(blockchainRes);
+                }
+
+            }
+        });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> endVotation()', err);
+    }
+});
