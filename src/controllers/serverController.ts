@@ -26,6 +26,9 @@ const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
 
+var myServer;
+var io;
+
 export const startServer = (env: Env) => {
   // initialize configuration
   //dotenv.config();
@@ -73,12 +76,15 @@ export const startServer = (env: Env) => {
 
 
   // Start server
-
   switch (env) {
     // Run in local (development) environment without SSL
     case 'dev':
-      app.listen(port);
-      console.log(`Back-end DEV (Non-SSL) running on port ${port}`);
+      myServer = require('http').createServer(app);
+      if (myServer) {
+        myServer!.listen(port, () => {
+          console.log(`Back-end DEV (Non-SSL) running on port ${port}`);
+        });
+      }
       break;
     // Run in local (development) environment with SSL
     case 'devssl':
@@ -87,6 +93,7 @@ export const startServer = (env: Env) => {
         cert: fs.readFileSync('server.cert'),
       };
       const httpsServer = https.createServer(credentials, app);
+      myServer = httpsServer;
       httpsServer.listen(port, () => {
         console.log(`Back-end DEV (SSL) running on port ${port}`);
       });
@@ -103,6 +110,7 @@ export const startServer = (env: Env) => {
           ca: ca
         };
         const httpsServer = https.createServer(credentials, app);
+        myServer = httpsServer;
         httpsServer.listen(port, () => {
           console.log(`Back-end PROD (SSL) running on port ${port}`);
         });
@@ -156,7 +164,58 @@ export const startServer = (env: Env) => {
   //     // tslint:disable-next-line:no-console
   //     console.log(`server started at http://localhost:${port}`);
   // });
-
 };
 
+export const startSocket = (env: Env) => {
+    // socket io
+    io = require('socket.io')(myServer, {
+        cors: {
+            origin: "*",
+            // methods: ["GET", "POST"]
+        }
+    });
+
+    let numUsers = 0;
+
+    io.on('connection', (socket) => {
+      console.log('connect');
+      let addedUser = false;
+
+      // when the client emits 'new message', this listens and executes
+      socket.on('new message', (data) => {
+          console.log('new message');
+      });
+
+      // when the client emits 'add user', this listens and executes
+      socket.on('add user', (userId) => {
+        console.log('add user', userId);
+
+        socket.userId = userId;
+        numUsers++;
+      });
+
+      // when the client emits 'typing'
+      socket.on('typing', () => {
+        console.log('typing');
+      });
+
+      // when the client emits 'stop typing'
+      socket.on('stop typing', () => {
+        console.log('stop typing');
+      });
+
+      // when the user disconnects.. perform this
+      socket.on('disconnect', () => {
+        if (socket.userId) {
+            console.log('disconnect', socket.userId);
+            numUsers--;
+        } else {
+            console.log('disconnect');
+        }
+
+        socket.userId = "";
+      });
+    });
+
+};
 
