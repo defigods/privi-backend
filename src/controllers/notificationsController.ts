@@ -80,7 +80,7 @@ const removeNotification = async (object: any) => {
 }
 
 const sendNotificationSocket = (userId, socketId, notification) => {
-    sockets[socketId].to(userId).emit('sendNotification', notification);
+    sockets[socketId].emit('sendNotification', notification);
 }
 
 module.exports = {
