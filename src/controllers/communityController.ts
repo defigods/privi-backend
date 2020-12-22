@@ -1,14 +1,17 @@
 import express from "express";
-import {createNotification, generateUniqueId, getRateOfChangeAsMap, updateFirebase} from "../functions/functions";
+import { createNotification, generateUniqueId, updateFirebase, filterTrending, getMarketPrice, follow, unfollow, getRateOfChangeAsMap } from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import notificationTypes from "../constants/notificationType";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
+import fields from '../firebase/fields';
 import cron from 'node-cron';
 
 require('dotenv').config();
 const apiKey = process.env.API_KEY;
+
+///////////////////////////// POST ///////////////////////////////
 
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
     try {
@@ -219,6 +222,163 @@ exports.stakeCommunityFunds = async (req: express.Request, res: express.Response
     }
 };
 
+exports.follow = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const communityAddress = body.communityAddress;
+        const userAddress = body.userAddress;
+        if (await follow(userAddress, communityAddress, collections.community, 'FollowingCommunities')) res.send({ success: true });
+        else res.send({ success: false });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> follow(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.unfollow = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const communityAddress = body.communityAddress;
+        const userAddress = body.userAddress;
+        if (await unfollow(userAddress, communityAddress, collections.community, 'FollowingCommunities')) res.send({ success: true });
+        else res.send({ success: false });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> unfollow(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.join = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const communityAddress = body.communityAddress;
+        const userAddress = body.userAddress;
+        // update user
+        const userSnap = await db.collection(collections.user).doc(userAddress).get();
+        const userData: any = userSnap.data();
+
+        let joinedCommuntities = userData[fields.joinedCommunities] ?? [];
+        joinedCommuntities.push(communityAddress);
+        const userUpdateObj = {};
+        userUpdateObj[fields.joinedCommunities] = joinedCommuntities;
+        userSnap.ref.update(userUpdateObj);
+
+        // update prod
+        const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+        const commData: any = communitySnap.data();
+        const joinedUsers = commData[fields.joinedUsers] ?? [];
+        joinedUsers.push({
+            date: Date.now(),
+            id: userAddress
+        });
+        const commUpdateObj = {};
+        commUpdateObj[fields.joinedUsers] = joinedUsers;
+        communitySnap.ref.update(commUpdateObj);
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> join(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.leave = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const communityAddress = body.communityAddress;
+        const userAddress = body.userAddress;
+        // update user
+        const userSnap = await db.collection(collections.user).doc(userAddress).get();
+        const userData: any = userSnap.data();
+
+        let joinedCommuntities = userData[fields.joinedCommunities] ?? [];
+        joinedCommuntities = joinedCommuntities.filter((val, index, arr) => {
+            return val !== communityAddress;
+        });
+        const userUpdateObj = {};
+        userUpdateObj[fields.joinedCommunities] = joinedCommuntities;
+        userSnap.ref.update(userUpdateObj);
+
+        // update prod
+        const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+        const commData: any = communitySnap.data();
+        let joinedUsers = commData[fields.joinedUsers] ?? [];
+        joinedUsers = joinedUsers.filter((val, index, arr) => {
+            return val.id && val.id !== userAddress;
+        });
+        const commUpdateObj = {};
+        commUpdateObj[fields.joinedUsers] = joinedUsers;
+        communitySnap.ref.update(commUpdateObj);
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> leave(): ', err);
+        res.send({ success: false });
+    }
+};
+
+
+/////////////////////////// GETS /////////////////////////////
+// get some extra data needed for FE, they are not stored at firebase
+const getExtraData = (data, rateOfChange) => {
+    const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
+    // convert market price to Privi 
+    const priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PC ? price * (rateOfChange[data.FundingToken] / rateOfChange.PC) : 0;
+    const mcap = data.ReleasedSupply ? data.ReleasedSupply * priceInPrivi : 0;
+    return {
+        Price: price,
+        MCAP: mcap
+    };
+}
+
+// get all communities, highlighting the trending ones
+exports.getCommunities = async (req: express.Request, res: express.Response) => {
+    try {
+        const allCommunities: any[] = [];
+        const communitiesSnap = await db.collection(collections.community).get();
+        const rateOfChange = await getRateOfChangeAsMap();
+        communitiesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            const extraData = getExtraData(data, rateOfChange);
+            allCommunities.push({ ...data, ...extraData });
+        });
+        const trendingCommunities = filterTrending(allCommunities);
+        res.send({
+            success: true, data: {
+                all: allCommunities,
+                trending: trendingCommunities
+            }
+        });
+    } catch (e) {
+        return ('Error in controllers/communitiesControllers -> getAllCommunities()' + e)
+    }
+}
+
+// get a single community data
+exports.getCommunity = async (req: express.Request, res: express.Response) => {
+    try {
+        const communityAddress = req.params.communityAddress;
+        const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+        const rateOfChange = await getRateOfChangeAsMap();
+        const data: any = communitySnap.data();
+        const extraData = getExtraData(data, rateOfChange);
+        res.send({ success: true, data: { ...data, ...extraData } });
+    } catch (e) {
+        return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 exports.createBadge = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -228,7 +388,7 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         const totalSupply = body.totalSupply;
         const royalty = body.royalty;
         const txid = generateUniqueId();
-        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, 'PRIVI');
+        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
         if (blockchainRes && blockchainRes.success) {
             console.log('llega', creator);
@@ -311,31 +471,6 @@ exports.changeBadgePhoto = async (req: express.Request, res: express.Response) =
     }
 };
 
-exports.getCommunities = async (req: express.Request, res: express.Response) => {
-    try {
-        const communities = await getCommunitiesArray();
-        res.send({ success: true, data: communities });
-    } catch (err) {
-        console.log('Error in controllers/podController -> getMyPods()', err);
-        res.send({ success: false });
-    }
-}
-
-// function to get all NFT Pods
-const getCommunitiesArray = exports.getNFTPods = (): Promise<any[]> => {
-    return new Promise<any[]>(async (resolve, reject) => {
-        const communities = await db.collection(collections.community).get();
-
-        let array: any[] = [];
-        communities.docs.map((doc, i) => {
-            array.push(doc.data());
-            if (communities.docs.length === i + 1) {
-                resolve(array)
-            }
-        });
-    });
-}
-
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -350,7 +485,7 @@ exports.createVotation = async (req: express.Request, res: express.Response) => 
         const quorumRequired = body.quorumRequired;
         const startDate = body.StartDate;
         const endingDate = body.EndingDate;
-        const blockchainRes = await community.createVotation(creatorAddress, votationId, votationAddress, votingToken, parseFloat(quorumRequired), startDate, endingDate, 'PRIVI');
+        const blockchainRes = await community.createVotation(creatorAddress, votationId, votationAddress, votingToken, parseFloat(quorumRequired), startDate, endingDate, apiKey);
 
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -413,9 +548,9 @@ exports.endVotations = cron.schedule('0 0 * * *', async () => {
         votationSnap.forEach(async (votation) => {
             let votationData = votation.data();
             let endingDate = votationData.EndingDate;
-            if(endingDate > Date.now()) {
+            if (endingDate > Date.now()) {
                 const txnId = generateUniqueId();
-                const blockchainRes = await community.endVotation(votationData.VotationId, votationData.VotationAddress, Date.now(), txnId, 'PRIVI');
+                const blockchainRes = await community.endVotation(votationData.VotationId, votationData.VotationAddress, Date.now(), txnId, apiKey);
 
                 if (blockchainRes && blockchainRes.success) {
                     updateFirebase(blockchainRes);

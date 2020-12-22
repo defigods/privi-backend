@@ -18,6 +18,12 @@ let upload = multer({
 });
 
 router.get('/getCommunities', authenticateJWT, communityController.getCommunities);
+router.get('/getCommunity/:communityAddress', authenticateJWT, communityController.getCommunity);
+
+router.post('/follow', authenticateJWT, communityController.follow);
+router.post('/unfollow', authenticateJWT, communityController.unfollow);
+router.post('/join', authenticateJWT, communityController.join);
+router.post('/leave', authenticateJWT, communityController.leave);
 
 router.post('/votation/create', authenticateJWT, communityController.createVotation);
 router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);

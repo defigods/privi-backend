@@ -29,9 +29,9 @@ const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
 
-let myServer;
+export let myServer;
 export let io;
-export let sockets : any[] = [];
+export let sockets = {};
 
 export const startServer = (env: Env) => {
   // initialize configuration
@@ -178,14 +178,17 @@ export const startSocket = (env: Env) => {
         }
     });
 
-
     io.on('connection', (socket) => {
       console.log('connection successfull')
 
       // when the client emits 'add user', this listens and executes
       socket.on('add user', async (userId) => {
         console.log('add user', userId, socket.id);
-        sockets.push(socket);
+
+        socket.userId = userId;
+
+        sockets[socket.userId] = socket; // save reference
+        socket.join(userId); // subscribe to own room
 
         // socket.join(userId);
 
@@ -200,10 +203,8 @@ export const startSocket = (env: Env) => {
       });
 
       // when the user disconnects.. perform this
-      socket.on('disconnect', async (userId) => {
-        console.log('disconnect', userId, socket.id);
-        let i = sockets.indexOf((item) => item.id === socket.id);
-        sockets.splice(i, 1);
+      socket.on('disconnect', async () => {
+        console.log('disconnect', socket.id);
 
         let usersRef = db.collection(collections.user);
         let userRef = await usersRef.where('socketId', '==', socket.id);
@@ -214,6 +215,7 @@ export const startSocket = (env: Env) => {
             const userRef = db.collection(collections.user)
                 .doc(user.id);
 
+            sockets[user.id] = null;
             await userRef.update({
               connected: false,
               socketId: null

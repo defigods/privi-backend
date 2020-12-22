@@ -51,6 +51,7 @@ router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.ge
 router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.getFollowingUserInfo);
 router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
 router.get('/wall/getNotifications/:userId', authenticateJWT, userController.getNotifications);
+router.post('/wall/', authenticateJWT, userController.postToWall);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
