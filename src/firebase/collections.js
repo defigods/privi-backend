@@ -69,4 +69,6 @@ module.exports = {
     forumCategory: "ForumCategory",
     forumPost: "ForumPost",
     forumComment: "ForumComment",
+
+    wallPost: "WallPost",
 }

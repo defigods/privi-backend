@@ -134,7 +134,7 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
           countComments: 0,
           lastComment: Date.now(),
           createdAt: Date.now(),
-          updatedAt: Date.now(),
+          updatedAt: null,
         });
       });
 
@@ -155,7 +155,7 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
           countComments: 0,
           lastComment: Date.now(),
           createdAt: Date.now(),
-          updatedAt: Date.now(),
+          updatedAt: null,
         }
       });
 
@@ -339,7 +339,7 @@ module.exports.commentCreate = async (req: express.Request, res: express.Respons
 						content: content,
 						createdBy: req.body.priviUser.id,
 						createdAt: Date.now(),
-						updatedAt: Date.now(),
+						updatedAt: null,
 					});
 				});
 

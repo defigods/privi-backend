@@ -25,6 +25,8 @@ const notificationsController = require('./notificationsController');
 
 const apiKey = "PRIVI"; // just for now
 
+import { sockets } from "./serverController";
+
 const emailValidation = async (req: express.Request, res: express.Response) => {
     let success = false;
     let message = "";
@@ -631,6 +633,60 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
         res.send({ success: false });
     }
 }
+
+const postToWall = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    const wallContent = body.wallContent;
+    const wallId = body.wallId;
+
+    let wallPostGet = await db.collection(collections.wallPost).get();
+    let newId = wallPostGet.size + 1;
+
+    if (wallContent && wallId) {
+
+      await db.runTransaction(async (transaction) => {
+        transaction.set(db.collection(collections.wallPost).doc('' + newId), {
+
+          wallContent: wallContent,
+          wallId: wallId, // whose wall was posted to 
+          fromUserId: req.body.priviUser.id, // who posted to the wall
+
+          createdAt: Date.now(),
+          updatedAt: null,
+        });
+      });
+
+      let data = {
+        success: true, data: {
+          id: newId,
+          wallContent: wallContent,
+          userId: wallId,
+          fromUserId: req.body.priviUser.id,
+
+          createdAt: Date.now(),
+          updatedAt: null,
+        }
+      };
+      res.send(data);
+
+      console.log("to emit new wall post");
+      // send message back to socket
+      if (sockets[req.body.priviUser.id]) { 
+        sockets[req.body.priviUser.id].emit("new wall post", data);
+      }
+    } else {
+      console.log('parameters required');
+      res.send({ success: false, message: "parameters required" });
+    }
+
+  } catch (err) {
+    console.log('Error in controllers/userController -> postToWall()', err);
+    res.send({ success: false });
+  }
+
+} // postToWall
 
 // CONNECTIONS FUNCTIONS
 
@@ -1490,6 +1546,8 @@ const voteIssue = async (req: express.Request, res: express.Response) => {
     }
 }
 
+
+
 module.exports = {
     emailValidation,
     forgotPassword,
@@ -1525,5 +1583,6 @@ module.exports = {
     responseProposal,
     acceptFollowUser,
     declineFollowUser,
-    getNotifications
+    getNotifications,
+    postToWall,
 };

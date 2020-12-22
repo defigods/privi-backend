@@ -26,8 +26,9 @@ const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
 
-var myServer;
-var io;
+export let myServer;
+export let io;
+export let sockets = {};
 
 export const startServer = (env: Env) => {
   // initialize configuration
@@ -181,27 +182,15 @@ export const startSocket = (env: Env) => {
       console.log('connect');
       let addedUser = false;
 
-      // when the client emits 'new message', this listens and executes
-      socket.on('new message', (data) => {
-          console.log('new message');
-      });
-
       // when the client emits 'add user', this listens and executes
       socket.on('add user', (userId) => {
         console.log('add user', userId);
 
         socket.userId = userId;
         numUsers++;
-      });
 
-      // when the client emits 'typing'
-      socket.on('typing', () => {
-        console.log('typing');
-      });
-
-      // when the client emits 'stop typing'
-      socket.on('stop typing', () => {
-        console.log('stop typing');
+        sockets[socket.userId] = socket; // save reference
+        socket.join(userId); // subscribe to own room 
       });
 
       // when the user disconnects.. perform this
