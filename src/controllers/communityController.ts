@@ -1,5 +1,5 @@
 import express from "express";
-import { createNotification, generateUniqueId, updateFirebase, filterTrending, getMarketPrice, follow, unfollow, getRateOfChangeAsMap } from "../functions/functions";
+import { createNotification, generateUniqueId, updateFirebase, filterTrending, getMarketPrice, follow, unfollow, getRateOfChangeAsMap, getFundingTokenAmount, getInvestingTokenAmount } from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import notificationTypes from "../constants/notificationType";
@@ -7,6 +7,7 @@ import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
 import fields from '../firebase/fields';
 import cron from 'node-cron';
+import { clearLine } from "readline";
 
 require('dotenv').config();
 const apiKey = process.env.API_KEY;
@@ -132,7 +133,18 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 Admins: admins || [],
                 InvitationUsers: invitedUsers,
 
-            }, { merge: true })
+            }, { merge: true });
+
+            // add txn to community
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == ammAddress || obj.To == ammAddress) {
+                    db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).add(obj);
+                }
+            }
 
             res.send({ success: true });
         }
@@ -160,6 +172,16 @@ exports.sellCommunityToken = async (req: express.Request, res: express.Response)
         const blockchainRes = await community.sellCommunityToken(investor, communityAddress, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+
+            // add txn to community
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).add(obj); // add all because some of them dont have From or To (tokens are burned)
+            }
+
             res.send({ success: true });
         }
         else {
@@ -178,6 +200,7 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
         const investor = body.investor;
         const communityAddress = body.communityAddress;
         const amount = body.amount;
+        console.log(body)
 
         const date = Date.now();
         const txnId = generateUniqueId();
@@ -185,6 +208,22 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
         const blockchainRes = await community.buyCommunityToken(investor, communityAddress, amount, date, txnId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+
+            // add txn to community
+            const commSnap = await db.collection(collections.community).doc(communityAddress).get();
+            const data: any = commSnap.data();
+            const ammAddr = data.AMMAddress;
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let key = "";
+            let obj: any = null;
+            for ([key, obj] of Object.entries(transactions)) {
+                if (obj.From == ammAddr || obj.To == ammAddr) {
+                    commSnap.ref.collection(collections.communityTransactions).add(obj)
+                }
+            }
+
+
             res.send({ success: true });
         }
         else {
@@ -311,6 +350,39 @@ exports.leave = async (req: express.Request, res: express.Response) => {
         res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/communityController -> leave(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// get funding tokens for API
+exports.getCommunityTokenAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const communityAddress = body.communityAddress;
+        const amount = body.amount;
+        const commSnap = await db.collection(collections.community).doc(communityAddress).get();
+        const data: any = commSnap.data();
+        const fundingTokens = getInvestingTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.TargetPrice, data.TargetSupply);
+        res.send({ success: true, data: fundingTokens });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> getCommunityTokenAmount(): ', err);
+        res.send({ success: false });
+    }
+};
+
+// get investing tokens for API
+exports.getFundingTokenAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const communityAddress = body.communityAddress;
+        const amount = body.amount;
+        const commSnap = await db.collection(collections.community).doc(communityAddress).get();
+        const data: any = commSnap.data();
+        const communityTokens = getFundingTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.SpreadDividend, data.TargetPrice, data.TargetSupply);
+        console.log(communityTokens);
+        res.send({ success: true, data: communityTokens });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> getFundingTokenAmount(): ', err);
         res.send({ success: false });
     }
 };

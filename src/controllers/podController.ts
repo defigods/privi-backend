@@ -2,8 +2,8 @@ import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
 import podNFTProtocol from "../blockchain/podNFTProtocol";
 import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, getMarketPrice, getFundingTokenAmount, getInvestingTokenAmount } from "../functions/functions";
-import notificationTypes, { podSwapGet } from "../constants/notificationType";
-import collections, { podsNFT } from "../firebase/collections";
+import notificationTypes from "../constants/notificationType";
+import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import fs from 'fs';
@@ -590,8 +590,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             const data: any = podSnap.data();
             const supplyReleased = data.SupplyReleased;
             const amm = data.AMM;
-            const spread = data.SpreadTarget;
-            const podTokenToReceive = getInvestingTokenAmount(amm, supplyReleased, undefined, amount, spread);
+            const podTokenToReceive = getInvestingTokenAmount(amm, supplyReleased, undefined, amount);
             const fundingTokenPerPodToken = amount / podTokenToReceive;
 
             // add txn to pod
@@ -700,7 +699,8 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             const data: any = podSnap.data();
             const supplyReleased = data.SupplyReleased;
             const amm = data.AMM;
-            const fundingTokenToReceive = getFundingTokenAmount(amm, supplyReleased, undefined, amount);
+            const spread = data.SpreadTarget;
+            const fundingTokenToReceive = getFundingTokenAmount(amm, supplyReleased, undefined, amount, spread);
             const fundingTokenPerPodToken = fundingTokenToReceive / amount;
 
             // add txn to pod
@@ -851,8 +851,7 @@ exports.getPodTokenAmount = async (req: express.Request, res: express.Response) 
         const data: any = podSnap.data();
         const supplyReleased = data.SupplyReleased;
         const amm = data.AMM;
-        const spread = data.SpreadTarget;
-        const price = getInvestingTokenAmount(amm, supplyReleased, undefined, amount, spread);
+        const price = getInvestingTokenAmount(amm, supplyReleased, undefined, amount);
         res.send({ success: true, data: price });
     } catch (err) {
         console.log('Error in controllers/podController -> getPodTokenAmount(): ', err);
@@ -870,7 +869,8 @@ exports.getFundingTokenAmount = async (req: express.Request, res: express.Respon
         const data: any = podSnap.data();
         const supplyReleased = data.SupplyReleased;
         const amm = data.AMM;
-        const price = getFundingTokenAmount(amm, supplyReleased, undefined, amount);
+        const spread = data.SpreadTarget;
+        const price = getFundingTokenAmount(amm, supplyReleased, undefined, amount, spread);
         res.send({ success: true, data: price });
     } catch (err) {
         console.log('Error in controllers/podController -> getFundingTokenAmount(): ', err);
