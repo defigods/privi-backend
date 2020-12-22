@@ -3,6 +3,7 @@ import collections from '../firebase/collections';
 import { io, sockets } from "./serverController";
 
 interface Notification {
+    id: number,
     type: number,
     typeItemId: string,
     itemId: string,
@@ -24,6 +25,7 @@ const addNotification = async (object: any) => {
         const user: any = userGet.data();
 
         let notification : Notification = {
+            id: user.notifications.length + 1,
             type: object.notification.type,
             typeItemId: object.notification.typeItemId,
             itemId: object.notification.itemId,
@@ -35,23 +37,17 @@ const addNotification = async (object: any) => {
             onlyInformation: object.notification.onlyInformation,
             date: Date.now()
         }
-        console.log('llega 1', user.socketId);
 
         if(user.socketId) {
             sendNotificationSocket(object.userId, user.socketId, notification)
         }
 
-        console.log('llega aqui 2')
-        console.log('holaaaa', user, user.notifications);
-
         if(user.notifications && user.notifications.length > 0) {
             user.notifications.push(notification);
-            console.log(user.notifications)
             await userRef.update({
                 notifications: user.notifications
             });
         } else {
-            console.log([notification])
             await userRef.update({
                 notifications: [notification]
             });
@@ -80,7 +76,9 @@ const removeNotification = async (object: any) => {
 }
 
 const sendNotificationSocket = (userId, socketId, notification) => {
-    sockets[socketId].emit('sendNotification', notification);
+    if (sockets[userId]) {
+        sockets[userId].emit('sendNotification', notification);
+    }
 }
 
 module.exports = {
