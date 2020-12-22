@@ -1,5 +1,6 @@
 import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
+import { io, sockets } from "./serverController";
 
 interface Notification {
     type: number,
@@ -15,6 +16,7 @@ interface Notification {
 }
 
 const addNotification = async (object: any) => {
+    console.log(object);
     try {
         const userRef = db.collection(collections.user)
             .doc(object.userId);
@@ -33,21 +35,27 @@ const addNotification = async (object: any) => {
             onlyInformation: object.notification.onlyInformation,
             date: Date.now()
         }
+        console.log('llega 1', user.socketId);
 
-        if(user.notifications) {
+        if(user.socketId) {
+            sendNotificationSocket(object.userId, user.socketId, notification)
+        }
+
+        console.log('llega aqui 2')
+        console.log('holaaaa', user, user.notifications);
+
+        if(user.notifications && user.notifications.length > 0) {
             user.notifications.push(notification);
+            console.log(user.notifications)
             await userRef.update({
                 notifications: user.notifications
             });
         } else {
+            console.log([notification])
             await userRef.update({
                 notifications: [notification]
             });
         }
-
-        await userRef.update({
-            notifications: user.notifications
-        });
     } catch (e) {
         return('Error adding notification: ' + e)
     }
@@ -69,6 +77,10 @@ const removeNotification = async (object: any) => {
     } catch (e) {
         return('Error adding notification: ' + e)
     }
+}
+
+const sendNotificationSocket = (userId, socketId, notification) => {
+    sockets[socketId].to(userId).emit('sendNotification', notification);
 }
 
 module.exports = {

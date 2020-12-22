@@ -295,7 +295,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
         // update pod
         const podSnap = await db.collection(podRef).doc(podId).get();
         let followerArray: any[] = [];
-        const podData = podSnap.data();
+        const podData : any = podSnap.data();
         if (podData && podData.Followers) followerArray = podData.Followers;
         followerArray.push({
             date: Date.now(),
@@ -305,8 +305,24 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
         podSnap.ref.update({
             Followers: followerArray
         });
-        res.send({ success: true });
 
+
+        await notificationsController.addNotification({
+            userId: userId,
+            notification: {
+                type: 13,
+                typeItemId: 'Pod',
+                itemId: podId,
+                follower: '',
+                pod: podData.PodName,
+                comment: '',
+                token: '',
+                amount: '',
+                onlyInformation: false,
+            }
+        });
+
+        res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/podController -> followPod(): ', err);
         res.send({ success: false });
@@ -360,7 +376,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
         // update pod
         const podSnap = await db.collection(podRef).doc(podId).get();
         let followerArray: any[] = [];
-        const podData = podSnap.data();
+        const podData : any = podSnap.data();
         if (podData && podData.Followers) followerArray = podData.Followers;
         followerArray = followerArray.filter((val, index, arr) => {
             return val.id && val.id !== userId;
@@ -369,8 +385,23 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
         podSnap.ref.update({
             Followers: followerArray
         });
-        res.send({ success: true });
 
+        await notificationsController.addNotification({
+            userId: userId,
+            notification: {
+                type: 14,
+                typeItemId: 'Pod',
+                itemId: podId,
+                follower: '',
+                pod: podData.PodName,
+                comment: '',
+                token: '',
+                amount: '',
+                onlyInformation: false,
+            }
+        });
+
+        res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/podController -> unfollowPod(): ', err);
         res.send({ success: false });

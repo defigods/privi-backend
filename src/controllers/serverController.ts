@@ -2,6 +2,9 @@
 import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
+import {db} from "../firebase/firebase";
+import collections from '../firebase/collections';
+
 const logger = require('morgan');
 const cors = require('cors')
 const https = require('https')
@@ -26,13 +29,13 @@ const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
 
-var myServer;
-var io;
+let myServer;
+export let io;
+export let sockets : any[] = [];
 
 export const startServer = (env: Env) => {
   // initialize configuration
   //dotenv.config();
-
   const port = 3000;
   const app = express();
 
@@ -175,24 +178,57 @@ export const startSocket = (env: Env) => {
         }
     });
 
-    let numUsers = 0;
 
     io.on('connection', (socket) => {
-      console.log('connect');
-      let addedUser = false;
+      console.log('connection successfull')
+
+      // when the client emits 'add user', this listens and executes
+      socket.on('add user', async (userId) => {
+        console.log('add user', userId, socket.id);
+        sockets.push(socket);
+
+        // socket.join(userId);
+
+        const userRef = db.collection(collections.user)
+            .doc(userId);
+        // const userGet = await userRef.get();
+        // const user: any = userGet.data();
+        await userRef.update({
+          connected: true,
+          socketId: socket.id
+        });
+      });
+
+      // when the user disconnects.. perform this
+      socket.on('disconnect', async (userId) => {
+        console.log('disconnect', userId, socket.id);
+        let i = sockets.indexOf((item) => item.id === socket.id);
+        sockets.splice(i, 1);
+
+        let usersRef = db.collection(collections.user);
+        let userRef = await usersRef.where('socketId', '==', socket.id);
+        const userGet = await userRef.get();
+        userGet.forEach(async (user) => {
+          console.log(user.id);
+          if (user.id) {
+            const userRef = db.collection(collections.user)
+                .doc(user.id);
+
+            await userRef.update({
+              connected: false,
+              socketId: null
+            });
+          } else {
+            console.log('disconnect');
+          }
+        });
+      });
 
       // when the client emits 'new message', this listens and executes
       socket.on('new message', (data) => {
-          console.log('new message');
+        console.log('new message');
       });
 
-      // when the client emits 'add user', this listens and executes
-      socket.on('add user', (userId) => {
-        console.log('add user', userId);
-
-        socket.userId = userId;
-        numUsers++;
-      });
 
       // when the client emits 'typing'
       socket.on('typing', () => {
@@ -203,19 +239,5 @@ export const startSocket = (env: Env) => {
       socket.on('stop typing', () => {
         console.log('stop typing');
       });
-
-      // when the user disconnects.. perform this
-      socket.on('disconnect', () => {
-        if (socket.userId) {
-            console.log('disconnect', socket.userId);
-            numUsers--;
-        } else {
-            console.log('disconnect');
-        }
-
-        socket.userId = "";
-      });
     });
-
 };
-
