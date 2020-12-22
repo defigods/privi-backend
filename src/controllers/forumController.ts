@@ -276,19 +276,19 @@ module.exports.postView = async (req: express.Request, res: express.Response) =>
 				for (const doc of commentsSnap.docs) {
 					let name = "";
 					let createdByHasPhoto = false;
-					if (!userIdNameMap[postData.createdBy]) { // not in array cache
-						const userSnap = await db.collection(collections.user).doc(postData.createdBy).get();
+					if (!userIdNameMap[doc.data().createdBy]) { // not in array cache
+						const userSnap = await db.collection(collections.user).doc(doc.data().createdBy).get();
 						const userData = userSnap.data();
 						if (userData) {
 							name = (userData.firstName ? userData.firstName : "") + (userData.lastName ? " " + userData.lastName : "");
 							createdByHasPhoto = userData.HasPhoto;
 
-							userIdNameMap[postData.createdBy] = name;
-							userIdHasPhotoMap[postData.createdBy] = createdByHasPhoto;
+							userIdNameMap[doc.data().createdBy] = name;
+							userIdHasPhotoMap[doc.data().createdBy] = createdByHasPhoto;
 						}
 					} else {
-						name = userIdNameMap[postData.createdBy];
-						createdByHasPhoto = userIdHasPhotoMap[postData.createdBy];
+						name = userIdNameMap[doc.data().createdBy];
+						createdByHasPhoto = userIdHasPhotoMap[doc.data().createdBy];
 					}
 
 					comments.push({ id: doc.id, postId: postId, content: doc.data().content, createdBy: doc.data().createdBy, createdByName: name, createdByHasPhoto: createdByHasPhoto, createdAt: doc.data().createdAt, createdAtFormat: formatDate(new Date(doc.data().createdAt)), });
