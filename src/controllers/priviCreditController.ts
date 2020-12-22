@@ -1,10 +1,11 @@
 import express from 'express';
 import priviCredit from "../blockchain/priviCredit";
-import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay } from "../functions/functions";
+import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay, follow, unfollow } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
-import collections, { podsNFT } from '../firebase/collections';
+import collections from '../firebase/collections';
+import fields from '../firebase/fields';
 import { user } from 'firebase-functions/lib/providers/auth';
 
 const notificationsController = require('./notificationsController');
@@ -284,34 +285,10 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 exports.followCredit = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
-        const creditId = body.creditId;
-
-        // update user
-        const userSnap = await db.collection(collections.user)
-            .doc(userId).get();
-
-        let followingCredits: string[] = [];
-        const userData = userSnap.data();
-
-        if (userData && userData.FollowingCredits) followingCredits = userData.FollowingCredits;
-        followingCredits.push(creditId);
-        userSnap.ref.update({ FollowingCredits: followingCredits });
-
-        // update credit
-        const creditSnap = await db.collection(collections.priviCredits).doc(creditId).get();
-        let followerArray: any[] = [];
-        const creditData = creditSnap.data();
-        if (creditData && creditData.Followers) followerArray = creditData.Followers;
-        followerArray.push({
-            date: Date.now(),
-            id: userId
-        })
-        creditSnap.ref.update({
-            Followers: followerArray
-        });
-
-        res.send({ success: true });
+        const userAddress = body.userId;
+        const creditAddress = body.creditId;
+        if (await follow(userAddress, creditAddress, collections.priviCredits, fields.followingCredits)) res.send({ success: true });
+        else res.send({ success: false });
 
     } catch (err) {
         console.log('Error in controllers/priviCreditController -> followCredit(): ', err);
@@ -327,36 +304,10 @@ exports.followCredit = async (req: express.Request, res: express.Response) => {
 exports.unfollowCredit = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userId = body.userId;
-        const creditId = body.creditId;
-
-        // update user
-        const userSnap = await db.collection(collections.user)
-            .doc(userId).get();
-
-        let followingCredits: string[] = [];
-        const userData = userSnap.data();
-
-        if (userData && userData.FollowingCredits) followingCredits = userData.FollowingCredits;
-        followingCredits = followingCredits.filter((val, index, arr) => {
-            return val !== creditId;
-        });
-        userSnap.ref.update({ FollowingCredits: followingCredits });
-
-        // update credit
-        const creditSnap = await db.collection(collections.priviCredits).doc(creditId).get();
-        let followerArray: any[] = [];
-        const creditData = creditSnap.data();
-        if (creditData && creditData.Followers) followerArray = creditData.Followers;
-        followerArray = followerArray.filter((val, index, arr) => {
-            return val.id && val.id !== userId;
-        })
-        creditSnap.ref.update({
-            Followers: followerArray
-        });
-
-        res.send({ success: true });
-
+        const userAddress = body.userId;
+        const creditAddress = body.creditId;
+        if (await unfollow(userAddress, creditAddress, collections.priviCredits, fields.followingCredits)) res.send({ success: true });
+        else res.send({ success: false });
     } catch (err) {
         console.log('Error in controllers/priviCreditController -> unFollowCredit(): ', err);
         res.send({ success: false });

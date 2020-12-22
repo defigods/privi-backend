@@ -511,7 +511,7 @@ export const identifyTypeOfToken = async function (token: string): Promise<strin
 }
 //module.exports.identifyTypeOfToken = identifyTypeOfToken;
 
-// filter the trending ones, that is the top 10 with most followers in the last week
+// used to filter the trending ones, that is the top 10 with most followers in the last week
 export function filterTrending(allElems) {
     let trendingArray = [];
     let lastWeek = new Date();
@@ -532,6 +532,73 @@ export function filterTrending(allElems) {
     });
     return trendingArray;
 };
+
+// follow function shared between pods, credits, communities... 
+export async function follow(userAddress, productAddress, collectionName, fieldName) {
+    try {
+        // update user
+        const userSnap = await db.collection(collections.user).doc(userAddress).get();
+
+        const userData: any = userSnap.data();
+
+        const userFollowingProds = userData[fieldName] ?? [];
+        userFollowingProds.push(productAddress);
+        const userUpdateObj = {};
+        userUpdateObj[fieldName] = userFollowingProds;
+        userSnap.ref.update(userUpdateObj);
+
+        // update prod
+        const prodSnap = await db.collection(collectionName).doc(productAddress).get();
+        const prodData: any = prodSnap.data();
+        const followerArray = prodData.Followers ?? [];
+        followerArray.push({
+            date: Date.now(),
+            id: userAddress
+        })
+        prodSnap.ref.update({
+            Followers: followerArray
+        });
+        return true;
+    } catch (err) {
+        console.log(`error at following ${collectionName} ${productAddress} by the user ${userAddress}`, err);
+        return false;
+    }
+
+}
+
+// unfollow function shared between pods, credits, communities... 
+export async function unfollow(userAddress, productAddress, collectionName, fieldName) {
+    try {
+        // update user
+        const userSnap = await db.collection(collections.user).doc(userAddress).get();
+
+        const userData: any = userSnap.data();
+
+        let userFollowingProds = userData[fieldName] ?? [];
+        userFollowingProds = userFollowingProds.filter((val, index, arr) => {
+            return val !== productAddress;
+        });
+        const userUpdateObj = {};
+        userUpdateObj[fieldName] = userFollowingProds;
+        userSnap.ref.update(userUpdateObj);
+
+        // update prod
+        const prodSnap = await db.collection(collectionName).doc(productAddress).get();
+        const prodData: any = prodSnap.data();
+        let followerArray = prodData.Followers ?? [];
+        followerArray = followerArray.filter((val, index, arr) => {
+            return val.id && val.id !== userAddress;
+        });
+        prodSnap.ref.update({
+            Followers: followerArray
+        });
+        return true;
+    } catch (err) {
+        console.log(`error at unfollowing ${collectionName} ${productAddress} by the user ${userAddress}`, err);
+        return false;
+    }
+
+}
 
 // check if today is payment day, frequency can be DAILY, WEEKLY, MONTHLY and day: 1st, 2nd ...
 export function isPaymentDay(frequency, paymentDay) {
