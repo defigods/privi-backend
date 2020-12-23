@@ -1,72 +1,142 @@
-exports.getChats = async (req, res) => {
-    /*let user = req.body;
+import express from "express";
+import {db} from "../firebase/firebase";
+import collections from '../firebase/collections';
+import {generateUniqueId} from "../functions/functions";
 
-    // let chats = await Chat.find({ users: {
-    //   $elemMatch: {
-    //     userId: user._id
-    //   }
-    // }
-    // }).sort({ created: -1});
-    let chats = await Chat.find({
-        $or: [{
-            'users.userFrom.userId': user._id
-        }, {
-            'users.userTo.userId': user._id
-        }]
-    }).sort({ created: -1});
-    res.status(200).send(chats);*/
-};
-
-exports.createChat = async (req, res) => {
-    /*let body = req.body;
-
-    let room;
-    let userFrom = body.users.userFrom;
-    let userTo = body.users.userTo;
-
-    if (userFrom.userName.toLowerCase() < userTo.userName.toLowerCase()) {
-        room = "" + userFrom.userId + "" + userTo.userId;
-    } else {
-        room = "" + userTo.userId + "" + userFrom.userId;
+exports.getChats =  async (req: express.Request, res: express.Response) => {
+    try {
+        const allChats: any[] = [];
+        const chatSnap = await db.collection(collections.chat).get();
+        chatSnap.forEach((doc) => {
+            allChats.push(doc.data())
+        });
+        res.send({
+            success: true,
+            data: allChats
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> getChats()' + e)
     }
-    let checkChat = await Chat.findOne({room: room});
-
-    if(checkChat) {
-        res.status(200).send(checkChat);
-    } else {
-        let newChat = new Chat();
-        newChat.users.userFrom = userFrom;
-        newChat.users.userTo = userTo;
-        newChat.created = Date.now();
-        newChat.room = room;
-        newChat.lastMessage = null;
-        newChat.lastMessageDate = null;
-        let savedChat = await newChat.save();
-        res.status(200).send(savedChat);
-    }*/
 };
 
-exports.getMessagesNotSeen = async (req, res) => {
-    /*let user = req.body;
-
-    let messages = await Message.find({to: user._id, seen: false});
-    res.status(200).send({number: messages.length});*/
-};
-
-exports.lastView = async (req, res) => {
-    /*let body = req.body;
-    let update = await Chat.updateOne({room: body.room, "users.userId": ObjectId(body.user)}, {
-        $set: {
-            "users.$.lastView": body.lastView
+exports.createChat = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let room;
+        let userFrom = body.users.userFrom;
+        let userTo = body.users.userTo;
+        if (userFrom.userName.toLowerCase() < userTo.userName.toLowerCase()) {
+            room = "" + userFrom.userId + "" + userTo.userId;
+        } else {
+            room = "" + userTo.userId + "" + userFrom.userId;
         }
-    });
 
-    await Message.updateMany({room: body.room, to: body.user, seen: false}, {seen: true});
+        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        if(!chatQuery.empty) {
+            for (const doc of chatQuery.docs) {
+                res.status(200).send(doc);
+            }
+        } else {
+            await db.runTransaction(async (transaction) => {
+                const uid = generateUniqueId();
 
-    res.status(200).send({okey: 'ok'});*/
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.chat).doc(uid), {
+                    users: {
+                        userFrom: userFrom,
+                        userTo: userTo
+                    },
+                    created: Date.now(),
+                    room: room,
+                    lastMessage: null,
+                    lastMessageDate: null
+                });
+            });
+            res.status(200).send({
+                success: true,
+                data: {
+                    users: {
+                        userFrom: userFrom,
+                        userTo: userTo
+                    },
+                    created: Date.now(),
+                    room: room,
+                    lastMessage: null,
+                    lastMessageDate: null
+                }
+            });
+        }
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> createChat()' + e)
+    }
 };
 
-exports.getMessages = async (req, res) => {
+exports.getMessagesNotSeen = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const messageQuery = await db.collection(collections.message)
+            .where("to", "==", body.userId)
+            .where("seen", "==", false).get();
+        if(!messageQuery.empty) {
+            res.status(200).send({
+                success: true,
+                data: messageQuery.docs.length
+            });
+        }
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> getMessagesNotSeen()' + e)
+    }
+};
+
+exports.lastView = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const chatUserToQuery = await db.collection(collections.chat)
+            .where("room", "==", body.room)
+            .where("users.userTo.userId", "==", body.userId).get();
+        if(!chatUserToQuery.empty) {
+            for (const doc of chatUserToQuery.docs) {
+                let data = doc.data();
+
+                db.collection(collections.chat).doc(doc.id).update({
+                    "users.userTo.lastView": body.lastView
+                });
+            }
+        }
+        const chatUserFromQuery = await db.collection(collections.chat)
+            .where("room", "==", body.room)
+            .where("users.userFrom.userId", "==", body.userId).get();
+        if(!chatUserFromQuery.empty) {
+            for (const doc of chatUserFromQuery.docs) {
+                let data = doc.data();
+
+                db.collection(collections.chat).doc(doc.id).update({
+                    "users.userFrom.lastView": body.lastView
+                });
+            }
+        }
+        const messageQuery = await db.collection(collections.message)
+            .where("room", "==", body.room)
+            .where("to", "==", body.userId)
+            .where("seen", "==", false).get();
+        if(!messageQuery.empty) {
+            for (const doc of messageQuery.docs) {
+                let data = doc.data();
+
+                db.collection(collections.message).doc(doc.id).update({
+                    "seen": true
+                });
+            }
+        }
+        res.status(200).send({success: true});
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> lastView()' + e)
+    }
+};
+
+exports.getMessages = async (req: express.Request, res: express.Response) => {
     /*let body = req.body;
     let msgs = await Chat.findOne({ room: body.room }, { messages: 1 });
 
@@ -85,42 +155,60 @@ exports.getMessages = async (req, res) => {
     }*/
 };
 
-exports.getChatRoomById = async (req, res) => {
-    /*let room = req.body.room;
+exports.getChatRoomById = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
-    let chat = await Chat.find({room: room});
-
-    res.status(200).send(chat);*/
-};
-
-exports.getChatRoom = (req, res) => {
-    /*let users = req.body;
-
-    console.log('ussers', users);
-
-    let room;
-    if (users.userFrom.userName && users.userTo.userName) {
-        if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
-            room = "" + users.userFrom.userId + "" + users.userTo.userId;
-        } else {
-            room = "" + users.userTo.userId + "" + users.userFrom.userId;
+        const chatQuery = await db.collection(collections.chat)
+            .where("room", "==", body.room).get();
+        if(!chatQuery.empty) {
+            for (const doc of chatQuery.docs) {
+                res.status(200).send({
+                    success: true,
+                    data: doc
+                });
+            }
         }
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> getChatRoomById()' + e)
     }
-    res.status(200).send({
-        room: room
-    });*/
 };
 
-exports.getUsers = async (req, res) => {
-    /*let body = req.body;
+exports.getChatRoom = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let room;
+        if (body.userFrom.userName && body.userTo.userName) {
+            if (body.userFrom.userName.toLowerCase() < body.userTo.userName.toLowerCase()) {
+                room = "" + body.userFrom.userId + "" + body.userTo.userId;
+            } else {
+                room = "" + body.userTo.userId + "" + body.userFrom.userId;
+            }
+        }
 
-    let users = [];
+        res.status(200).send({
+            room: room
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> getChatRoom()' + e)
+    }
+};
 
-    await Athlete.find({name: {$regex : ".*" + body.name}}).then(async athletes => {
-        users = users.concat(athletes);
-        await Coach.find({name: {$regex : ".*" + body.name}}).then(coaches => {
-            users = users.concat(coaches);
-            res.status(200).send(users);
-        }).catch(error => res.status(400).send({error: error}));
-    }).catch(error => res.status(400).send({error: error}));*/
+exports.getUsers = async (req: express.Request, res: express.Response) => {
+    try {
+        let chats : any[] = [];
+
+        const chatQuery = await db.collection(collections.chat).get();
+        if(!chatQuery.empty) {
+            for (const doc of chatQuery.docs) {
+                chats.push(doc.data());
+            }
+            res.status(200).send({
+                success: true,
+                data: chats
+            });
+        }
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> getUsers()' + e)
+    }
 };
