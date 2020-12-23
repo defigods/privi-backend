@@ -4,6 +4,7 @@ import path from 'path';
 import helmet from 'helmet';
 import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
+import {generateUniqueId} from "../functions/functions";
 
 const logger = require('morgan');
 const cors = require('cors')
@@ -24,6 +25,7 @@ const ethereumRoutes = require('../routes/ethereumRoutes');
 const insuranceRoutes = require('../routes/insuranceRoutes');
 const forumRoutes = require('../routes/forumRoutes');
 const communityRoutes = require('../routes/communityRoutes');
+const chatRoutes = require('../routes/chatRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -69,6 +71,7 @@ export const startServer = (env: Env) => {
   app.use('/forum', forumRoutes);
   app.use('/insurance', insuranceRoutes);
   app.use('/community', communityRoutes);
+  app.use('/chat', chatRoutes);
 
   // start all cron jobs
   let name: string;
@@ -240,6 +243,117 @@ export const startSocket = (env: Env) => {
       // when the client emits 'stop typing'
       socket.on('stop typing', () => {
         console.log('stop typing');
+      });
+
+      socket.on('subscribe', async function(users) {
+        let room;
+        if(users && users.userFrom && users.userTo){
+          if(users.userFrom.userName && users.userTo.userName) {
+            if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
+              room = "" + users.userFrom.userId + "" + users.userTo.userId;
+            } else {
+              room = "" + users.userTo.userId + "" + users.userFrom.userId;
+            }
+          }
+          const chatQuery = await db.collection(collections.chat)
+              .where("room", "==", room).get();
+          if(!chatQuery.empty) {
+            for (const doc of chatQuery.docs) {
+              let data = doc.data()
+              if(users.userFrom.userId === data.users.userFrom.userId) {
+                db.collection(collections.chat).doc(doc.id).update({
+                  "users.userFrom.lastView": Date.now()
+                });
+              } else if(users.userFrom.userId === data.users.userTo.userId) {
+                db.collection(collections.chat).doc(doc.id).update({
+                  "users.userTo.lastView": Date.now()
+                });
+              }
+              console.log('joining room', room);
+              socket.join(room);
+            }
+          } else {
+            await db.runTransaction(async (transaction) => {
+              const uid = generateUniqueId();
+
+              // userData - no check if firestore insert works? TODO
+              transaction.set(db.collection(collections.chat).doc(uid), {
+                users: users,
+                created: Date.now(),
+                room: room,
+                lastMessage: null,
+                lastMessageDate: null
+              });
+            });
+
+            console.log('joining room', room);
+            socket.join(room);
+          }
+        }
+      });
+
+      socket.on('subscribeToYou', async (user) => {
+        socket.join(user._id);
+      });
+
+      socket.on('numberMessages', async (id) => {
+        const messageQuery = await db.collection(collections.message)
+            .where("to", "==", id)
+            .where("seen", "==", false).get();
+        if (!messageQuery.empty) {
+          socket.to(id).emit('numberMessages', { number: messageQuery.docs.length });
+        }
+      });
+
+      socket.on('add-message', async (message) => {
+        console.log('message', message);
+
+        const uid = generateUniqueId();
+        await db.runTransaction(async (transaction) => {
+
+          // userData - no check if firestore insert works? TODO
+          transaction.set(db.collection(collections.message).doc(uid), {
+            room: message.room,
+            message: message.message,
+            from: message.from,
+            to: message.to,
+            created: Date.now(),
+            seen: false
+          });
+        });
+        const chatQuery = await db.collection(collections.chat)
+            .where("room", "==", message.room).get();
+        if(!chatQuery.empty) {
+          for (const doc of chatQuery.docs) {
+            let data = doc.data();
+            let messages = data.messages;
+            messages.push(uid)
+
+            db.collection(collections.chat).doc(doc.id).update({
+              "messages": messages,
+              "lastMessage": message.message,
+              "lastMessageDate": message.created
+            });
+          }
+        }
+
+        const messageQuery = await db.collection(collections.message)
+            .where("to", "==", message.to)
+            .where("seen", "==", false).get();
+        if (!messageQuery.empty) {
+          socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+        }
+
+        console.log('sending room post', message);
+        socket.to(message.room).emit('message', {
+          room: message.room,
+          message: message.message,
+          from: message.from,
+          to: message.to,
+          created: Date.now(),
+          seen: false,
+          id: uid
+        });
       });
     });
 };
