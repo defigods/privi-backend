@@ -617,6 +617,32 @@ export function isPaymentDay(frequency, paymentDay) {
     return false;
 };
 
+// calculates the market price of a token (community/FT pod)
+export function getMarketPrice(amm: string, supplyRealeased: number, initialSupply: number = 0, targetPrice: number = 0, targetSupply: number = 0) {
+    const effectiveSupply: number = supplyRealeased - initialSupply;
+    if (effectiveSupply < 0) { // ERROR
+        console.log('getMarketPrice error: initialSupply > supplyReleased')
+        return -1;
+    }
+
+    let multiplier = 1;
+    switch (amm) {
+        case 'LINEAR':
+            if (targetSupply) multiplier = targetPrice / targetSupply;
+            return multiplier * effectiveSupply;
+        case 'QUADRATIC':
+            if (targetSupply) multiplier = targetPrice / Math.pow(targetSupply, 2);
+            return multiplier * Math.pow(effectiveSupply, 2);
+        case 'EXPONENTIAL':
+            if (targetSupply) multiplier = targetPrice / Math.exp(-targetSupply);
+            return multiplier * Math.exp(supplyRealeased);
+        case 'SIGMOID':
+            return targetPrice * (1. / (1 + Math.exp(-effectiveSupply + targetSupply)));
+    }
+
+    return -1;
+}
+
 // calculates the integral area given the upper and lower bounds
 const integral = (amm: string, upperBound: number, lowerBound: number, targetPrice: number = 0, targetSupply: number = 0) => {
     let multiplier = 1;
@@ -659,34 +685,8 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
     return -1;
 }
 
-// calculates the market price of a token (community/FT pod)
-export function getMarketPrice(amm: string, supplyRealeased: number, initialSupply: number = 0, targetPrice: number = 0, targetSupply: number = 0) {
-    const effectiveSupply: number = supplyRealeased - initialSupply;
-    if (effectiveSupply < 0) { // ERROR
-        console.log('getMarketPrice error: initialSupply > supplyReleased')
-        return -1;
-    }
-
-    let multiplier = 1;
-    switch (amm) {
-        case 'LINEAR':
-            if (targetSupply) multiplier = targetPrice / targetSupply;
-            return multiplier * effectiveSupply;
-        case 'QUADRATIC':
-            if (targetSupply) multiplier = targetPrice / Math.pow(targetSupply, 2);
-            return multiplier * Math.pow(effectiveSupply, 2);
-        case 'EXPONENTIAL':
-            if (targetSupply) multiplier = targetPrice / Math.exp(-targetSupply);
-            return multiplier * Math.exp(supplyRealeased);
-        case 'SIGMOID':
-            return targetPrice * (1. / (1 + Math.exp(-effectiveSupply + targetSupply)));
-    }
-
-    return -1;
-}
-
 // calculates the amount of funding tokens to receive after selling an amount of pod/community tokens
-export function getFundingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, fundingTokenAmount, targetPrice: number = 0, targetSupply: number = 0) {
+export function getInvestingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, fundingTokenAmount, targetPrice: number = 0, targetSupply: number = 0) {
     const effectiveSupply: number = supplyRealeased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
         console.log('getFundingTokenPrice error: initialSupply > supplyReleased')
@@ -698,7 +698,7 @@ export function getFundingTokenAmount(amm: string, supplyRealeased: number, init
 }
 
 // calculates the amount of investing tokens to get after investing some amount of funding token
-export function getInvestingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, investingTokenAmount, spread, targetPrice: number = 0, targetSupply: number = 0) {
+export function getFundingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, investingTokenAmount, spread, targetPrice: number = 0, targetSupply: number = 0) {
     const effectiveSupply: number = supplyRealeased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
         console.log('getInvestingTokenAmount error: initialSupply > supplyReleased')
