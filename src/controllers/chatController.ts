@@ -18,9 +18,7 @@ exports.getChats =  async (req: express.Request, res: express.Response) => {
         chatUserToSnap.forEach((doc) => {
             allChats.push(doc.data())
         });
-        console.log(allChats.length);
         let sortChats = allChats.sort((a, b) => (a.created > b.created) ? 1 : ((b.created > a.created) ? -1 : 0));
-        console.log(sortChats.length);
 
         res.send({
             success: true,
@@ -36,7 +34,7 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
         let body = req.body;
         let room;
 
-        if(!body.users || !body.users.userFrom || !body.users.userTo) {
+        if(body.users && body.users.userFrom && body.users.userTo) {
             let userFrom = body.users.userFrom;
             let userTo = body.users.userTo;
 
@@ -49,7 +47,12 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
             const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
             if(!chatQuery.empty) {
                 for (const doc of chatQuery.docs) {
-                    res.status(200).send(doc);
+                    let data = doc.data();
+                    data.id = doc.id;
+                    res.status(200).send({
+                        success: true,
+                        data: data
+                    });
                 }
             } else {
                 await db.runTransaction(async (transaction) => {
@@ -64,7 +67,8 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
                         created: Date.now(),
                         room: room,
                         lastMessage: null,
-                        lastMessageDate: null
+                        lastMessageDate: null,
+                        messages: []
                     });
                 });
                 res.status(200).send({
@@ -187,17 +191,22 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
                     let data = doc.data();
                     if(data && data.messages) {
                         for(let i = 0 ; i < data.messages.length; i++){
-                            const messageQuery = await db.collection(collections.message)
-                                .where("id", "==", data.messages[i]).get();
-                            for (const doc of messageQuery.docs) {
-                                messages.push(doc.data())
-                            }
+                            const messageGet = await db.collection(collections.message)
+                                .doc(data.messages[i]).get();
+                            messages.push(messageGet.data())
+
                             if(i === data.messages.length - 1) {
-                                res.status(200).send({messages: messages});
+                                res.status(200).send({
+                                    success: true,
+                                    data: messages
+                                });
                             }
                         }
                     } else {
-                        res.status(200).send({messages: messages});
+                        res.status(200).send({
+                            success: true,
+                            data: messages
+                        });
                     }
                 }
             } else {
@@ -272,7 +281,9 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
         const userQuery = await db.collection(collections.user).get();
         if(!userQuery.empty) {
             for (const doc of userQuery.docs) {
-                users.push(doc.data());
+                let data = doc.data();
+                data.id = doc.id;
+                users.push(data);
             }
             res.status(200).send({
                 success: true,

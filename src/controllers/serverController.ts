@@ -282,7 +282,8 @@ export const startSocket = (env: Env) => {
                 created: Date.now(),
                 room: room,
                 lastMessage: null,
-                lastMessageDate: null
+                lastMessageDate: null,
+                messages: []
               });
             });
 
@@ -326,13 +327,13 @@ export const startSocket = (env: Env) => {
         if(!chatQuery.empty) {
           for (const doc of chatQuery.docs) {
             let data = doc.data();
-            let messages = data.messages;
+            let messages : any = data.messages;
             messages.push(uid)
 
             db.collection(collections.chat).doc(doc.id).update({
-              "messages": messages,
-              "lastMessage": message.message,
-              "lastMessageDate": message.created
+              messages: messages,
+              lastMessage: message.message,
+              lastMessageDate: message.created
             });
           }
         }
