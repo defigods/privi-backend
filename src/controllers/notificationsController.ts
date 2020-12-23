@@ -1,7 +1,9 @@
 import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
+import { io, sockets } from "./serverController";
 
 interface Notification {
+    id: number,
     type: number,
     typeItemId: string,
     itemId: string,
@@ -15,6 +17,7 @@ interface Notification {
 }
 
 const addNotification = async (object: any) => {
+    console.log(object);
     try {
         const userRef = db.collection(collections.user)
             .doc(object.userId);
@@ -22,6 +25,7 @@ const addNotification = async (object: any) => {
         const user: any = userGet.data();
 
         let notification : Notification = {
+            id: user.notifications.length + 1,
             type: object.notification.type,
             typeItemId: object.notification.typeItemId,
             itemId: object.notification.itemId,
@@ -34,7 +38,11 @@ const addNotification = async (object: any) => {
             date: Date.now()
         }
 
-        if(user.notifications) {
+        if(user.socketId) {
+            sendNotificationSocket(object.userId, user.socketId, notification)
+        }
+
+        if(user.notifications && user.notifications.length > 0) {
             user.notifications.push(notification);
             await userRef.update({
                 notifications: user.notifications
@@ -44,10 +52,6 @@ const addNotification = async (object: any) => {
                 notifications: [notification]
             });
         }
-
-        await userRef.update({
-            notifications: user.notifications
-        });
     } catch (e) {
         return('Error adding notification: ' + e)
     }
@@ -68,6 +72,12 @@ const removeNotification = async (object: any) => {
         });
     } catch (e) {
         return('Error adding notification: ' + e)
+    }
+}
+
+const sendNotificationSocket = (userId, socketId, notification) => {
+    if (sockets[userId]) {
+        sockets[userId].emit('sendNotification', notification);
     }
 }
 

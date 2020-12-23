@@ -71,4 +71,6 @@ module.exports = {
     forumComment: "ForumComment",
 
     wallPost: "WallPost",
+    chat: "Chat",
+    message: "Message",
 }
