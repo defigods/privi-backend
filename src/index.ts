@@ -1,11 +1,12 @@
-import { startServer, startSocket } from './controllers/serverController';
+import {startServer, startSocket} from "./controllers/serverController";
 
 // 'dev' => Development environment without SSL
 // 'devssl' => Development environment with SSL
 // 'prod' => Development environment with SSL
-const env: string = process.argv[2];    
 
-const main = async () => {
+const env: string = process.argv[2];
+
+const main = () => {
 
     // Start Server
     if (env === 'dev' || env === 'prod' || env === 'devssl') {
