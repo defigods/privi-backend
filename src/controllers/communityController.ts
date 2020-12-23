@@ -1,5 +1,5 @@
 import express from "express";
-import { createNotification, generateUniqueId, updateFirebase, filterTrending, getMarketPrice, follow, unfollow, getRateOfChangeAsMap, getFundingTokenAmount, getInvestingTokenAmount } from "../functions/functions";
+import { createNotification, generateUniqueId, updateFirebase, filterTrending, getMarketPrice, follow, unfollow, getRateOfChangeAsMap, getBuyTokenAmount, getSellTokenAmount } from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import notificationTypes from "../constants/notificationType";
@@ -166,6 +166,7 @@ exports.sellCommunityToken = async (req: express.Request, res: express.Response)
         const communityAddress = body.communityAddress;
         const amount = body.amount;
 
+        console.log(body)
         const date = Date.now();
         const txnId = generateUniqueId();
 
@@ -200,7 +201,6 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
         const investor = body.investor;
         const communityAddress = body.communityAddress;
         const amount = body.amount;
-        console.log(body)
 
         const date = Date.now();
         const txnId = generateUniqueId();
@@ -354,15 +354,15 @@ exports.leave = async (req: express.Request, res: express.Response) => {
     }
 };
 
-// get funding tokens for API
-exports.getCommunityTokenAmount = async (req: express.Request, res: express.Response) => {
+// get funding tokens for API (Buy)
+exports.getBuyTokenAmount = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const communityAddress = body.communityAddress;
         const amount = body.amount;
         const commSnap = await db.collection(collections.community).doc(communityAddress).get();
         const data: any = commSnap.data();
-        const fundingTokens = getInvestingTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.TargetPrice, data.TargetSupply);
+        const fundingTokens = getBuyTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.TargetPrice, data.TargetSupply);
         res.send({ success: true, data: fundingTokens });
     } catch (err) {
         console.log('Error in controllers/communityController -> getCommunityTokenAmount(): ', err);
@@ -370,15 +370,15 @@ exports.getCommunityTokenAmount = async (req: express.Request, res: express.Resp
     }
 };
 
-// get investing tokens for API
-exports.getFundingTokenAmount = async (req: express.Request, res: express.Response) => {
+// get investing tokens for API (Selll)
+exports.getSellTokenAmount = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const communityAddress = body.communityAddress;
         const amount = body.amount;
         const commSnap = await db.collection(collections.community).doc(communityAddress).get();
         const data: any = commSnap.data();
-        const communityTokens = getFundingTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.SpreadDividend, data.TargetPrice, data.TargetSupply);
+        const communityTokens = getSellTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.SpreadDividend, data.TargetPrice, data.TargetSupply);
         console.log(communityTokens);
         res.send({ success: true, data: communityTokens });
     } catch (err) {

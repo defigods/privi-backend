@@ -1,7 +1,7 @@
 import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
 import podNFTProtocol from "../blockchain/podNFTProtocol";
-import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, getMarketPrice, getFundingTokenAmount, getInvestingTokenAmount } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, getMarketPrice, getSellTokenAmountPod, getBuyTokenAmountPod } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -590,7 +590,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             const data: any = podSnap.data();
             const supplyReleased = data.SupplyReleased;
             const amm = data.AMM;
-            const podTokenToReceive = getInvestingTokenAmount(amm, supplyReleased, undefined, amount);
+            const podTokenToReceive = getBuyTokenAmountPod(amm, supplyReleased, amount);
             const fundingTokenPerPodToken = amount / podTokenToReceive;
 
             // add txn to pod
@@ -697,20 +697,16 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             // calculate funding token to receive
             const podSnap = await db.collection(collections.podsFT).doc(podId).get();
             const data: any = podSnap.data();
-            const supplyReleased = data.SupplyReleased;
-            const amm = data.AMM;
-            const spread = data.SpreadTarget;
-            const fundingTokenToReceive = getFundingTokenAmount(amm, supplyReleased, undefined, amount, spread);
+            const fundingTokenToReceive = getSellTokenAmountPod(data.AMM, data.SupplyReleased, amount, data.RegimePoint);
             const fundingTokenPerPodToken = fundingTokenToReceive / amount;
 
             // add txn to pod
-            let txObj = {};
             const output = blockchainRes.output;
             const transactions = output.Transactions;
             let key = "";
             let obj: any = null;
             for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == podId || obj.To == podId) podSnap.ref.collection(collections.podTransactions).add(txObj)
+                if (obj.From == podId || obj.To == podId) podSnap.ref.collection(collections.podTransactions).add(obj)
             }
             // add to PriceOf the day
             podSnap.ref.collection(collections.priceOfTheDay).add({
@@ -842,38 +838,33 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
 // ------------------------ Price Calculations -----------------------------
 
 // get pod price for API
-exports.getPodTokenAmount = async (req: express.Request, res: express.Response) => {
+exports.getBuyTokenAmount = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const podId = body.podId;
         const amount = body.amount;
         const podSnap = await db.collection(collections.podsFT).doc(podId).get();
         const data: any = podSnap.data();
-        const supplyReleased = data.SupplyReleased;
-        const amm = data.AMM;
-        const price = getInvestingTokenAmount(amm, supplyReleased, undefined, amount);
+        const price = getBuyTokenAmountPod(data.AMM, data.SupplyReleased, amount);
         res.send({ success: true, data: price });
     } catch (err) {
-        console.log('Error in controllers/podController -> getPodTokenAmount(): ', err);
+        console.log('Error in controllers/podController -> getBuyTokenAmount(): ', err);
         res.send({ success: false });
     }
 };
 
 // get funding tokens for API
-exports.getFundingTokenAmount = async (req: express.Request, res: express.Response) => {
+exports.getSellTokenAmount = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const podId = body.podId;
         const amount = body.amount;
         const podSnap = await db.collection(collections.podsFT).doc(podId).get();
         const data: any = podSnap.data();
-        const supplyReleased = data.SupplyReleased;
-        const amm = data.AMM;
-        const spread = data.SpreadTarget;
-        const price = getFundingTokenAmount(amm, supplyReleased, undefined, amount, spread);
+        const price = getSellTokenAmountPod(data.AMM, data.SupplyReleased, amount, data.RegimePoint);
         res.send({ success: true, data: price });
     } catch (err) {
-        console.log('Error in controllers/podController -> getFundingTokenAmount(): ', err);
+        console.log('Error in controllers/podController -> getSellTokenAmount(): ', err);
         res.send({ success: false });
     }
 };
@@ -893,7 +884,7 @@ exports.getMarketPrice = async (req: express.Request, res: express.Response) => 
         }
         res.send({ success: true, data: price });
     } catch (err) {
-        console.log('Error in controllers/podController -> getFundingTokenAmount(): ', err);
+        console.log('Error in controllers/podController -> getSellTokenAmount(): ', err);
         res.send({ success: false });
     }
 };
@@ -1790,7 +1781,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const podAddress = body.podAddress;
         const orderId = body.orderId;
-
+        console.log(body);
         const date = Date.now();
         const tid = generateUniqueId();
         const blockchainRes = await podNFTProtocol.buyPodTokens(podAddress, sellerAddress, orderId, amount, buyerAddress, tid, date, apiKey);

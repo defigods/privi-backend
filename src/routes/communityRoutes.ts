@@ -39,8 +39,8 @@ router.post('/sellCommunityToken', authenticateJWT, communityController.sellComm
 router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommunityToken);
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
 
-router.post('/getCommuniyTokenAmount', authenticateJWT, communityController.getCommunityTokenAmount);
-router.post('/getFundingTokenAmount', authenticateJWT, communityController.getFundingTokenAmount);
+router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
+router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
 
 
 

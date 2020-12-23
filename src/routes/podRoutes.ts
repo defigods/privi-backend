@@ -39,8 +39,8 @@ router.post('/FT/investPod', authenticateJWT, podController.investFTPOD);
 router.post('/FT/sellPod', authenticateJWT, podController.sellFTPOD);
 router.post('/FT/swapPod', authenticateJWT, podController.swapFTPod);
 
-router.post('/FT/getPodTokenAmount', authenticateJWT, podController.getPodTokenAmount);
-router.post('/FT/getFundingTokenAmount', authenticateJWT, podController.getFundingTokenAmount);
+router.post('/FT/getBuyTokenAmount', authenticateJWT, podController.getBuyTokenAmount);
+router.post('/FT/getSellTokenAmount', authenticateJWT, podController.getSellTokenAmount);
 router.get('/FT/getMarketPrice/:podId', authenticateJWT, podController.getMarketPrice);
 router.get('/FT/getPriceHistory/:podId', authenticateJWT, podController.getFTPodPriceHistory);
 router.get('/FT/getSupplyHistory/:podId', authenticateJWT, podController.getFTPodSupplyHistory);
