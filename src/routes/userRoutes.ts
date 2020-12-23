@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
+// import path from 'path';
 const router = express.Router();
 
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
@@ -44,11 +44,14 @@ router.get('/email_validation/:validation_slug', userController.emailValidation)
 router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
+router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
 router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.getFollowingUserInfo);
 router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
+router.get('/wall/getNotifications/:userId', authenticateJWT, userController.getNotifications);
+router.post('/wall/', authenticateJWT, userController.postToWall);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
@@ -62,12 +65,16 @@ router.get('/investments/getReceivables/:userId', authenticateJWT, userControlle
 router.get('/investments/getLiabilities/:userId', authenticateJWT, userController.getLiabilities);
 router.get('/investments/getSocialTokens/:userId', authenticateJWT, userController.getSocialTokens);
 
+router.get('/governance/getIssuesAndProposals/:userId', authenticateJWT, userController.getIssuesAndProposals);
+
 // POST
 /*router.post('/addToWaitlist', authenticateJWT, userController.addToWaitlist);
 */
 
 // CONNECTIONS - POST
 router.post('/connections/followUser', authenticateJWT, userController.followUser);
+router.post('/connections/acceptFollowUser', authenticateJWT, userController.acceptFollowUser);
+router.post('/connections/declineFollowUser', authenticateJWT, userController.declineFollowUser);
 router.post('/connections/unFollowUser', authenticateJWT, userController.unFollowUser);
 
 router.post('/editUser', authenticateJWT, userController.editUser);
@@ -86,5 +93,12 @@ router.post('/getUserList', authenticateJWT, userController.getUserList);
 router.post('/badge/createBadge', authenticateJWT, userController.createBadge);
 router.post('/badge/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
+
+router.post('/governance/createIssue', userController.createIssue);
+router.post('/governance/createProposal', userController.createProposal);
+router.post('/governance/responseIssue', userController.responseIssue);
+router.post('/governance/voteIssue', userController.voteIssue);
+router.post('/governance/responseProposal', userController.responseProposal);
+
 
 module.exports = router;

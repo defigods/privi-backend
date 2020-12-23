@@ -1,5 +1,5 @@
 import {
-    updateFirebase, createNotification, getRateOfChange, getCurrencyRatesUsdBase, getUidFromEmail, getTokensRate2, generateUniqueId,
+    updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getUidFromEmail, getRateOfChangeAsList, generateUniqueId,
     isEmail, getEmailUidMap
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
@@ -9,11 +9,13 @@ import coinBalance from "../blockchain/coinBalance.js";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
+import { identifyTypeOfToken } from '../functions/functions';
 import cron from 'node-cron';
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI"; // just for now
+const notificationsController = require('./notificationsController');
 
 // Should be called each time the blockchain restarts (or we resert firestore) to register all the crypto tokens to the system
 // as well as adding this tokens info (type, supply..etc) to firestore
@@ -21,7 +23,6 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
     try {
         const type = "CRYPTO";
         const addressId = "PRIVI";
-        const caller = apiKey;
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
             { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
@@ -40,7 +41,7 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
-            const blockchainRes = await coinBalance.registerToken(token.Name, type, token.Symbol, token.Supply, addressId, caller);
+            const blockchainRes = await coinBalance.registerToken(token.Name, type, token.Symbol, token.Supply, addressId, apiKey);
             if (blockchainRes.success) {
                 updateFirebase(blockchainRes);
             }
@@ -53,7 +54,42 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
         console.log('Error in controllers/walletController -> registerTokens()', err);
         res.send({ success: false });
     }
+}
 
+module.exports.updateTokens = async (req: express.Request, res: express.Response) => {
+    try {
+        const type = "CRYPTO";
+        const tokens = [
+            { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
+            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
+            { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
+            { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
+            { "Name": "Dai Stablecoin", "Symbol": "DAI", "Supply": 0 },
+            { "Name": "Ethereum", "Symbol": "ETH", "Supply": 0 },
+            { "Name": "Chainlink", "Symbol": "LINK", "Supply": 0 },
+            { "Name": "MakerDAO", "Symbol": "MKR", "Supply": 0 },
+            { "Name": "Uniswap", "Symbol": "UNI", "Supply": 0 },
+            { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
+            { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
+            { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+        ];
+        tokens.forEach(async (token) => {
+            const blockchainRes = await coinBalance.updateTokenInfo(token.Name, type, token.Symbol, apiKey);
+            if (blockchainRes.success) {
+                updateFirebase(blockchainRes);
+            }
+            else {
+                console.log("blockchain success = false", blockchainRes);
+            }
+        });
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> updateTokens()', err);
+        res.send({ success: false });
+    }
 }
 
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
@@ -101,11 +137,40 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
                     `You have succesfully send ${amount} ${token} to ${receiverName}!`,
                     notificationTypes.transferSend
                 );
+                await notificationsController.addNotification({
+                    userId: senderSnap.id,
+                    notification: {
+                        type: 8,
+                        typeItemId: 'user',
+                        itemId: receiverSnap.id,
+                        follower: receiverName,
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
+
                 // notification to receiver
                 createNotification(fromUid, "Transfer - Received",
                     `You have succesfully received ${amount} ${token} from ${senderName}!`,
                     notificationTypes.transferReceive
                 );
+                await notificationsController.addNotification({
+                    userId: receiverSnap.id,
+                    notification: {
+                        type: 7,
+                        typeItemId: 'user',
+                        itemId: senderSnap.id,
+                        follower: senderName,
+                        pod: '',
+                        comment: '',
+                        token: token,
+                        amount: amount,
+                        onlyInformation: false,
+                    }
+                });
             }
             res.send({ success: true });
         } else {
@@ -144,8 +209,21 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );
+            await notificationsController.addNotification({
+                userId: from,
+                notification: {
+                    type: 10,
+                    typeItemId: 'token',
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
-
         } else {
             console.log('Error in controllers/walletController -> withdraw()');
             res.send({ success: false });
@@ -183,6 +261,20 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );
+            await notificationsController.addNotification({
+                userId: from,
+                notification: {
+                    type: 9,
+                    typeItemId: 'token',
+                    itemId: token,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         } else {
             console.log('Error in controllers/walletController -> mint()', blockchainRes);
@@ -199,9 +291,9 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 ///////////////////////////// gets //////////////////////////////
 
 /**
- * Returns the balance of all tokens structured in this way {TokenType: {token: balance}}, this function is used in wallet page
+ * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
  */
-module.exports.getBalanceInTokenTypes = async (req: express.Request, res: express.Response) => {
+module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
         userId = userId!.toString()
@@ -241,7 +333,74 @@ module.exports.getBalanceInTokenTypes = async (req: express.Request, res: expres
             res.send({ success: true, data: {} });
         }
     } catch (err) {
-        console.log('Error in controllers/walletController -> getBalanceInTokenTypes()', err);
+        console.log('Error in controllers/walletController -> getAllTokenBalances()', err);
+        res.send({ success: false });
+    }
+}
+
+/**
+ * Used to get user's balance history in type of token (used to fill the graphs in frontend wallet page)
+ */
+module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res: express.Response) => {
+    try {
+        const data = {};
+        let { userId } = req.query;
+        userId = userId!.toString();
+        // crypto
+        const crytoHistory: any[] = [];
+        const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                crytoHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["crypto"] = crytoHistory;
+        // ft
+        const ftHistory: any[] = [];
+        const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ft).orderBy("date", "asc").get();
+        ftSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                ftHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["ft"] = ftHistory;
+        // crypto
+        const nftHistory: any[] = [];
+        const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nft).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                nftHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["nft"] = nftHistory;
+        // crypto
+        const socialHistory: any[] = [];
+        const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.social).orderBy("date", "asc").get();
+        cryptoSnap.forEach((doc) => {
+            const data = doc.data();
+            if (data) {
+                socialHistory.push({
+                    x: new Date(data.date).toString(),
+                    y: data.balance
+                });
+            }
+        });
+        data["social"] = socialHistory;
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/userController -> getEmailUidMap()', err);
         res.send({ success: false });
     }
 }
@@ -315,7 +474,7 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
 
 
 module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
-    const data = await getTokensRate2();
+    const data = await getRateOfChangeAsList();
     if (data.length > 0) {
         res.send({ success: true, data: data });
     } else {
@@ -327,7 +486,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     try {
         let { userId } = req.query;
         userId = userId!.toString()
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         // get user currency in usd
         let sum = 0;    // in user currency
         // crypto
@@ -394,9 +553,11 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
         let { userId } = req.query;
         userId = userId!.toString()
         const retData: {}[] = [];
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         for (const [token, _] of Object.entries(rateOfChange)) {
-            const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
+            const tokenType = await identifyTypeOfToken(token);
+            const walletTokenSnap = await db.collection(collections.wallet).doc(userId).collection(tokenType).doc(token).get();
+            //const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
             let amount = 0;
             if (data) amount = data.Amount;
@@ -410,7 +571,7 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 }
 
 module.exports.getTransfers = async (req: express.Request, res: express.Response) => {
-    const rateData = await getTokensRate2();
+    const rateData = await getRateOfChangeAsList();
 
     try {
         const body = req.body;
@@ -463,7 +624,7 @@ module.exports.getTransfers = async (req: express.Request, res: express.Response
 }
 
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
-    const rateData = await getTokensRate2();
+    const rateData = await getRateOfChangeAsList();
 
     try {
         const body = req.body;
@@ -520,7 +681,7 @@ module.exports.getTotalIncome = async (req: express.Request, res: express.Respon
         userId = userId!.toString()
 
         let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
             .where("To", "==", userId).get();
         historySnap.forEach((doc) => {
@@ -555,7 +716,7 @@ module.exports.getTotalExpense = async (req: express.Request, res: express.Respo
         userId = userId!.toString()
 
         let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
             .where("From", "==", userId).get();
         historySnap.forEach((doc) => {
@@ -592,15 +753,40 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
     const body = req.body;
     const userId = body.userId;
     const token = body.token;
-    const tokenWalletSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
-    if (tokenWalletSnap.exists) {
-        const data = tokenWalletSnap.data();
-        if (data) {
-            const balance = data.Amount;
-            if (balance) res.send({ success: true, data: balance });
-            else res.send({ success: false });
+    const userWalletSnap = await db.collection(collections.wallet).doc(userId).get();
+    if (userWalletSnap.exists && token) {
+        let balance = 0;
+        // crypto
+        const crypto = await userWalletSnap.ref.collection(collections.crypto).doc(token).get();
+        if (crypto.exists) {
+            const data: any = crypto.data();
+            balance = data.Amount;
         }
-        else res.send({ success: false });
+        // pod ft
+        if (!balance) {
+            const ft = await userWalletSnap.ref.collection(collections.ft).doc(token).get();
+            if (ft.exists) {
+                const data: any = ft.data();
+                balance = data.Amount;
+            }
+        }
+        // pod nft
+        if (!balance) {
+            const nft = await userWalletSnap.ref.collection(collections.nft).doc(token).get();
+            if (nft.exists) {
+                const data: any = nft.data();
+                balance = data.Amount;
+            }
+        }
+        // social
+        if (!balance) {
+            const social = await userWalletSnap.ref.collection(collections.social).doc(token).get();
+            if (social.exists) {
+                const data: any = social.data();
+                balance = data.Amount;
+            }
+        }
+        res.send({ success: true, data: balance });
     }
     else res.send({ success: false });
 }
@@ -626,7 +812,7 @@ module.exports.getEmailToUidMap = async (req: express.Request, res: express.Resp
 exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Wallet saveUserBalanceSum() cron job started *********");
-        const rateOfChange = await getRateOfChange();   // rates of all except nft
+        const rateOfChange = await getRateOfChangeAsMap();   // rates of all except nft
         const walletSnap = await db.collection(collections.wallet).get();
         walletSnap.forEach(async (userWallet) => {
             // crypto

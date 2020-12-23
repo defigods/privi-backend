@@ -4,16 +4,17 @@ const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const priviCreditController = require('../controllers/priviCreditController');
 
-router.post('/getPRIVICreditInfo', authenticateJWT, priviCreditController.getPRIVICreditInfo);
-router.post('/getPRIVICreditState', authenticateJWT, priviCreditController.getPRIVICreditState);
-router.post('/getUserLendings', authenticateJWT, priviCreditController.getUserLendings);
-router.post('/getUserBorrowings', authenticateJWT, priviCreditController.getUserBorrowings);
-router.post('/getCreditBorrowers', authenticateJWT, priviCreditController.getCreditBorrowers);
-router.post('/getCreditLenders', authenticateJWT, priviCreditController.getCreditLenders);
+router.get('/getPriviCredits', authenticateJWT, priviCreditController.getPriviCredits);
+router.get('/getPriviCredit/:creditId', authenticateJWT, priviCreditController.getPriviCredit);
+router.get('/getPriviTransactions/:creditId', authenticateJWT, priviCreditController.getPriviTransactions);
+router.get('/getHistories/:creditId', authenticateJWT, priviCreditController.getHistories);
+
+
 router.post('/initiatePriviCredit', authenticateJWT, priviCreditController.initiatePriviCredit);
 router.post('/depositFunds', authenticateJWT, priviCreditController.depositFunds);
 router.post('/borrowFunds', authenticateJWT, priviCreditController.borrowFunds);
-router.post('/getPriviCredits', authenticateJWT, priviCreditController.getPriviCredits);
+router.post('/followCredit', authenticateJWT, priviCreditController.followCredit);
+router.post('/unfollowCredit', authenticateJWT, priviCreditController.unfollowCredit);
 
 
 module.exports = router;

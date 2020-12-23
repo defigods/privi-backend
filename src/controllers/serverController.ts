@@ -15,12 +15,20 @@ const lendingRoutes = require('../routes/lendingRoutes');
 const walletRoutes = require('../routes/walletRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
 const priviCreditRoutes = require('../routes/priviCreditRoutes');
+const priviDataRoutes = require('../routes/priviDataRoutes');
 const poolRoutes = require('../routes/poolRoutes');
 const ethereumRoutes = require('../routes/ethereumRoutes');
+const insuranceRoutes = require('../routes/insuranceRoutes');
+const forumRoutes = require('../routes/forumRoutes');
+const communityRoutes = require('../routes/communityRoutes');
 
 const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
+
+export let myServer;
+export let io;
+export let sockets = {};
 
 export const startServer = (env: Env) => {
   // initialize configuration
@@ -55,6 +63,10 @@ export const startServer = (env: Env) => {
   app.use('/priviCredit', priviCreditRoutes);
   app.use('/liquidityPool', poolRoutes);
   app.use('/ethereum', ethereumRoutes);
+  app.use('/privi-data', priviDataRoutes);
+  app.use('/forum', forumRoutes);
+  app.use('/insurance', insuranceRoutes);
+  app.use('/community', communityRoutes);
 
   // start all cron jobs
   let name: string;
@@ -65,12 +77,15 @@ export const startServer = (env: Env) => {
 
 
   // Start server
-
   switch (env) {
     // Run in local (development) environment without SSL
     case 'dev':
-      app.listen(port);
-      console.log(`Back-end DEV (Non-SSL) running on port ${port}`);
+      myServer = require('http').createServer(app);
+      if (myServer) {
+        myServer!.listen(port, () => {
+          console.log(`Back-end DEV (Non-SSL) running on port ${port}`);
+        });
+      }
       break;
     // Run in local (development) environment with SSL
     case 'devssl':
@@ -79,6 +94,7 @@ export const startServer = (env: Env) => {
         cert: fs.readFileSync('server.cert'),
       };
       const httpsServer = https.createServer(credentials, app);
+      myServer = httpsServer;
       httpsServer.listen(port, () => {
         console.log(`Back-end DEV (SSL) running on port ${port}`);
       });
@@ -95,6 +111,7 @@ export const startServer = (env: Env) => {
           ca: ca
         };
         const httpsServer = https.createServer(credentials, app);
+        myServer = httpsServer;
         httpsServer.listen(port, () => {
           console.log(`Back-end PROD (SSL) running on port ${port}`);
         });
@@ -148,7 +165,46 @@ export const startServer = (env: Env) => {
   //     // tslint:disable-next-line:no-console
   //     console.log(`server started at http://localhost:${port}`);
   // });
-
 };
 
+export const startSocket = (env: Env) => {
+    // socket io
+    io = require('socket.io')(myServer, {
+        cors: {
+            origin: "*",
+            // methods: ["GET", "POST"]
+        }
+    });
+
+    let numUsers = 0;
+
+    io.on('connection', (socket) => {
+      console.log('connect');
+      let addedUser = false;
+
+      // when the client emits 'add user', this listens and executes
+      socket.on('add user', (userId) => {
+        console.log('add user', userId);
+
+        socket.userId = userId;
+        numUsers++;
+
+        sockets[socket.userId] = socket; // save reference
+        socket.join(userId); // subscribe to own room 
+      });
+
+      // when the user disconnects.. perform this
+      socket.on('disconnect', () => {
+        if (socket.userId) {
+            console.log('disconnect', socket.userId);
+            numUsers--;
+        } else {
+            console.log('disconnect');
+        }
+
+        socket.userId = "";
+      });
+    });
+
+};
 

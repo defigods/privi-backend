@@ -1,12 +1,15 @@
 import express from 'express';
 import tradinionalLending from "../blockchain/traditionalLending";
 import coinBalance from "../blockchain/coinBalance.js";
-import { updateFirebase, getRateOfChange, getLendingInterest, getStakingInterest, createNotification } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import { restart } from 'pm2';
+import path from 'path';
+
+const notificationsController = require('./notificationsController');
 
 module.exports.getUserLoans = async (req: express.Request, res: express.Response) => {
     try {
@@ -22,7 +25,7 @@ module.exports.getUserLoans = async (req: express.Request, res: express.Response
         const interest_rate = constants.data();
 
         const retData: {}[] = [];
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         for (const [token, _] of Object.entries(rateOfChange)) {
             const walletTokenSnap = await db.collection(collections.wallet).doc(token).collection(collections.user).doc(userId).get();
             const data = walletTokenSnap.data();
@@ -65,7 +68,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const token = body.token;
         const collaterals = body.collaterals;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await tradinionalLending.borrowFunds(publicId, token, amount, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -73,6 +76,20 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.priviCreditCreated
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 68,
+                    typeItemId: 'token',
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -98,6 +115,20 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                 ` `,
                 notificationTypes.traditionalDepositCollateral
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 69,
+                    typeItemId: 'token',
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -116,7 +147,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
         const publicId = body.publicId;
         const token = body.token;
         const collaterals = body.collaterals;
-        const rateOfChange = await getRateOfChange();
+        const rateOfChange = await getRateOfChangeAsMap();
         const blockchainRes = await tradinionalLending.withdrawCollateral(publicId, token, collaterals, rateOfChange)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -124,6 +155,20 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                 ` `,
                 notificationTypes.traditionalWithdrawCollateral
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 70,
+                    typeItemId: 'token',
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -149,6 +194,20 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.traditionalRepay
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 70,
+                    typeItemId: 'token',
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: '',
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -224,6 +283,20 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.staking
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 46,
+                    typeItemId: 'user',
+                    itemId: publicId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -259,6 +332,20 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.unstaking
             );
+            await notificationsController.addNotification({
+                userId: publicId,
+                notification: {
+                    type: 48,
+                    typeItemId: 'user',
+                    itemId: publicId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -320,7 +407,7 @@ function isCollateralBellowLiquidation(amount: number, token: string, requiredLe
 // helper function: get object of tokens whice values are list of uids of users that have loan with ccr lower than required level
 async function getTokenUserList() {
     const res: { [key: string]: string[] } = {};
-    const rateOfChange = await getRateOfChange();
+    const rateOfChange = await getRateOfChangeAsMap();
     const constantsSnap = await db.collection(collections.constants).doc(collections.traditionalLendingConstants).get();
     const constantsData = constantsSnap.data();
     if (constantsData) {
@@ -343,60 +430,88 @@ async function getTokenUserList() {
     return res;
 }
 
-// scheduled every 5 min
-exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
-    try {
-        console.log("********* Traditional lending checkLiquidation() cron job started *********");
-        const rateOfChange = await getRateOfChange();
-        const candidates = await getTokenUserList();
-        for (const [token, uidList] of Object.entries(candidates)) {
-            uidList.forEach(async (uid) => {
-                const blockchainRes = await tradinionalLending.checkLiquidation(uid, token, rateOfChange);
-                if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
-                    updateFirebase(blockchainRes);
-                    createNotification(uid, "Loans 1.0 - Loan Liquidated",
-                        ` `,
-                        notificationTypes.traditionalLiquidation
-                    );
-                } else {
-                    console.log('Error in controllers/lendingController -> checkLiquidation().', uid, token, blockchainRes.message);
-                }
-            });
-        }
-        console.log("--------- Traditional lending checkLiquidation() finished ---------");
-    } catch (err) {
-        console.log('Error in controllers/lendingController -> checkLiquidation()', err);
-    }
-});
+// // scheduled every 5 min
+// exports.checkLiquidation = cron.schedule('*/5 * * * *', async () => {
+//     try {
+//         console.log("********* Traditional lending checkLiquidation() cron job started *********");
+//         const rateOfChange = await getRateOfChangeAsMap();
+//         const candidates = await getTokenUserList();
+//         for (const [token, uidList] of Object.entries(candidates)) {
+//             uidList.forEach(async (uid) => {
+//                 const blockchainRes = await tradinionalLending.checkLiquidation(uid, token, rateOfChange);
+//                 if (blockchainRes && blockchainRes.success && blockchainRes.output.Liquidated == "YES") {
+//                     updateFirebase(blockchainRes);
+//                     createNotification(uid, "Loans 1.0 - Loan Liquidated",
+//                         ` `,
+//                         notificationTypes.traditionalLiquidation
+//                     );
+//                     await notificationsController.addNotification({
+//                         userId: uid,
+//                         notification: {
+//                             type: 71,
+//                             typeItemId: 'user',
+//                             itemId: uid,
+//                             follower: '',
+//                             pod: '',
+//                             comment: '',
+//                             token: token,
+//                             amount: 0,
+//                             onlyInformation: false,
+//                         }
+//                     });
+//                 } else {
+//                     console.log('Error in controllers/lendingController -> checkLiquidation().', uid, token, blockchainRes.message);
+//                 }
+//             });
+//         }
+//         console.log("--------- Traditional lending checkLiquidation() finished ---------");
+//     } catch (err) {
+//         console.log('Error in controllers/lendingController -> checkLiquidation()', err);
+//     }
+// });
 
-// scheduled every day 00:00
-exports.payInterest = cron.schedule('0 0 * * *', async () => {
-    try {
-        console.log("********* Traditional lending payInterest() cron job started *********");
-        // get interest rates
-        const lendingInterest = await getLendingInterest();
-        const stakingInterest = await getStakingInterest();
-        const rateOfChange = await getRateOfChange();
-        const blockchainRes = await tradinionalLending.payInterests(lendingInterest, stakingInterest, rateOfChange);
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-            const updateWallets = blockchainRes.output.UpdateWallets;
-            let uid: string = "";
-            let walletObj: any = null;
-            for ([uid, walletObj] of Object.entries(updateWallets)) {
-                if (walletObj["Transaction"].length > 0) {
-                    createNotification(uid, "Loans 1.0 - Interest Payment",
-                        ` `,
-                        notificationTypes.traditionalInterest
-                    );
-                }
-            }
-            console.log("--------- Traditional lending payInterest() finished ---------");
-        }
-        else {
-            console.log('Error in controllers/lendingController -> payInterest(): success = false');
-        }
-    } catch (err) {
-        console.log('Error in controllers/lendingController -> payInterest()', err);
-    }
-});
+// // scheduled every day 00:00
+// exports.payInterest = cron.schedule('0 0 * * *', async () => {
+//     try {
+//         console.log("********* Traditional lending payInterest() cron job started *********");
+//         // get interest rates
+//         const lendingInterest = await getLendingInterest();
+//         const stakingInterest = await getStakingInterest();
+//         const rateOfChange = await getRateOfChangeAsMap();
+//         const blockchainRes = await tradinionalLending.payInterests(lendingInterest, stakingInterest, rateOfChange);
+//         if (blockchainRes && blockchainRes.success) {
+//             updateFirebase(blockchainRes);
+//             const updateWallets = blockchainRes.output.UpdateWallets;
+//             let uid: string = "";
+//             let walletObj: any = null;
+//             for ([uid, walletObj] of Object.entries(updateWallets)) {
+//                 if (walletObj["Transaction"].length > 0) {
+//                     createNotification(uid, "Loans 1.0 - Interest Payment",
+//                         ` `,
+//                         notificationTypes.traditionalInterest
+//                     );
+//                     await notificationsController.addNotification({
+//                         userId: uid,
+//                         notification: {
+//                             type: 72,
+//                             typeItemId: 'user',
+//                             itemId: uid,
+//                             follower: '',
+//                             pod: '',
+//                             comment: '',
+//                             token: '',
+//                             amount: 0,
+//                             onlyInformation: false,
+//                         }
+//                     });
+//                 }
+//             }
+//             console.log("--------- Traditional lending payInterest() finished ---------");
+//         }
+//         else {
+//             console.log('Error in controllers/lendingController -> payInterest(): success = false');
+//         }
+//     } catch (err) {
+//         console.log('Error in controllers/lendingController -> payInterest()', err);
+//     }
+// });
