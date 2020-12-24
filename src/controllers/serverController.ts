@@ -182,7 +182,7 @@ export const startSocket = (env: Env) => {
     });
 
     io.on('connection', (socket) => {
-      console.log('connection successfull')
+      console.log('socket.io connection successful')
 
       // when the client emits 'add user', this listens and executes
       socket.on('add user', async (userId) => {
@@ -192,8 +192,6 @@ export const startSocket = (env: Env) => {
 
         sockets[socket.userId] = socket; // save reference
         socket.join(userId); // subscribe to own room
-
-        // socket.join(userId);
 
         const userRef = db.collection(collections.user)
             .doc(userId);

@@ -205,6 +205,9 @@ const signIn = async (req: express.Request, res: express.Response) => {
                     data.type = 'post';
                     allWallPost.push(data)
                 });
+                if (!data.notifications) {
+                  data.notifications = [];
+                }
                 data.notifications.concat(allWallPost);
 
                 if (!data.isEmailValidated) {
@@ -556,6 +559,10 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
                 data.type = 'post';
                 allWallPost.push(data)
             });
+            if (!userData.notifications) {
+              userData.notifications = [];
+            }
+
             userData.notifications = userData.notifications.concat(allWallPost);
             userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
             res.send({ success: true, data: userData });
@@ -671,10 +678,14 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
             allWallPost.push(data)
         });
         console.log(allWallPost);
+        if (!userData.notifications) {
+          userData.notifications = [];
+        }
         userData.notifications = userData.notifications.concat(allWallPost);
-        userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
+        userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
 
         res.send({ success: true, data: userData.notifications });
+
     } catch (err) {
         console.log('Error in controllers/profile -> getNotifications()', err);
         res.send({ success: false });
@@ -696,7 +707,7 @@ const postToWall = async (req: express.Request, res: express.Response) => {
       await db.runTransaction(async (transaction) => {
         transaction.set(db.collection(collections.wallPost).doc(uid), {
           wallContent: wallContent,
-          wallId: wallId, // whose wall was posted to 
+          wallId: wallId, // whose wall was posted to
           fromUserId: req.body.priviUser.id, // who posted to the wall
           date: Date.now(),
           updatedAt: null,
@@ -720,7 +731,7 @@ const postToWall = async (req: express.Request, res: express.Response) => {
 
       console.log("to emit new wall post");
       // send message back to socket
-      if (sockets[req.body.priviUser.id]) { 
+      if (sockets[req.body.priviUser.id]) {
         sockets[req.body.priviUser.id].emit("new wall post", data);
       }
     } else {
