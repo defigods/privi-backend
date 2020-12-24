@@ -338,7 +338,7 @@ export async function updateFirebase(blockchainRes) {
 }
 
 
-// rate of all tokens in ratesOfChange colection (that is all types except nft) as {}
+// rate of all tokens in ratesOfChange colection (that is all cryptos and ft pods) as {}
 export async function getRateOfChangeAsMap() {
     let res = {};
     const ratesQuery = await db.collection(collections.rates).get();
@@ -352,7 +352,7 @@ export async function getRateOfChangeAsMap() {
     return res;
 };
 
-// rate of all tokens in ratesOfChange colection (that is all types except nft) as []
+// rate of all tokens in ratesOfChange colection (that is all cryptos and ft pods) as []
 export async function getRateOfChangeAsList() {
     const data: {}[] = [];
     let dcRate = 0.014;
@@ -372,7 +372,6 @@ export async function getRateOfChangeAsList() {
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
     }
-
     return data;
 }
 
@@ -685,26 +684,65 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
     return -1;
 }
 
-// calculates the amount of funding tokens to receive after selling an amount of pod/community tokens
-export function getInvestingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, fundingTokenAmount, targetPrice: number = 0, targetSupply: number = 0) {
-    const effectiveSupply: number = supplyRealeased - initialSupply;
+// calculates the amount of funding tokens to receive after selling an amount of pod/community tokens (Buying)
+export function getBuyTokenAmount(amm: string, supplyReleased: number, initialSupply: number = 0, amount, targetPrice: number = 0, targetSupply: number = 0) {
+    const effectiveSupply: number = supplyReleased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
         console.log('getFundingTokenPrice error: initialSupply > supplyReleased')
         return -1;
     }
-    const newSupply = effectiveSupply + fundingTokenAmount;
+    const newSupply = effectiveSupply + amount;
     const fundingAmount = integral(amm, newSupply, effectiveSupply, targetPrice, targetSupply);
     return fundingAmount;
 }
 
-// calculates the amount of investing tokens to get after investing some amount of funding token
-export function getFundingTokenAmount(amm: string, supplyRealeased: number, initialSupply: number = 0, investingTokenAmount, spread, targetPrice: number = 0, targetSupply: number = 0) {
-    const effectiveSupply: number = supplyRealeased - initialSupply;
+// calculates the amount of funding tokens to get after investing some amount of funding token (Selling)
+export function getSellTokenAmount(amm: string, supplyReleased: number, initialSupply: number = 0, amount, spread, targetPrice: number = 0, targetSupply: number = 0) {
+    const effectiveSupply: number = supplyReleased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
         console.log('getInvestingTokenAmount error: initialSupply > supplyReleased')
         return -1;
     }
-    const lowSupply = Math.max(0, effectiveSupply - investingTokenAmount);
+    const lowSupply = Math.max(0, effectiveSupply - amount);
     const fundingAmount = integral(amm, effectiveSupply, lowSupply, targetPrice, targetSupply);
     return fundingAmount * (1 - spread);
+}
+
+// buy function is different for pods (parameter amount is in funding tokens and returns pod tokens )
+export function getBuyTokenAmountPod(amm: string, supplyReleased: number, amount) {
+    let price = -1;
+    switch (amm) {
+        case "QUADRATIC":
+            const term = 3 * amount + Math.pow(supplyReleased, 3);
+            price = Math.pow(term, 1. / 3) - supplyReleased;
+            if (price < 0) price = NaN;
+            break;
+    }
+    return price;
+}
+
+// sell function is different for pods (parameter amount is in pod tokens and returns funding tokens to receive after sell )
+export function getSellTokenAmountPod(amm: string, supplyReleased: number, amount: number, regimePoint: number) {
+    const supplyLeft = supplyReleased - amount;
+    if (supplyLeft < 0) {
+        console.log('error getSellTokenAmountPod: supplyLeft negative');
+        return -1;
+    }
+    // funding phase
+    const fundingUpper = Math.min(regimePoint, supplyReleased);
+    const fundingLower = Math.min(regimePoint, supplyLeft);
+    const fundingPhase = integral(amm, fundingUpper, fundingLower);
+    if (fundingPhase < 0) {
+        console.log('error getSellTokenAmountPod: fundingPhase negative');
+        return -1;
+    }
+    // exchange phase
+    const exchangeUpper = Math.max(regimePoint, supplyReleased);
+    const exchangeLower = Math.max(regimePoint, supplyLeft);
+    const exchangePhase = integral(amm, exchangeUpper, exchangeLower);
+    if (exchangePhase < 0) {
+        console.log('error getSellTokenAmountPod: exchangePhase negative');
+        return -1;
+    }
+    return fundingPhase + exchangePhase;
 }

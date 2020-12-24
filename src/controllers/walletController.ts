@@ -1,5 +1,5 @@
 import {
-    updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getUidFromEmail, getRateOfChangeAsList, generateUniqueId,
+    updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getBuyTokenAmount, getBuyTokenAmountPod, getRateOfChangeAsList, generateUniqueId,
     isEmail, getEmailUidMap
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
@@ -548,6 +548,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     }
 }
 
+// get rateOfChange token balances
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
@@ -792,6 +793,107 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
 }
 
 /**
+ * Function used for FE in the wallet buy tokens modal
+ * @param req 
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: array of object {token, type, payments} being 'payments an array of {token, price, offerId}
+ */
+module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: express.Response) => {
+    try {
+        const retData: any[] = [];
+        // crypto
+        const tokensSnap = await db.collection(collections.tokens).get();
+        tokensSnap.forEach((doc) => {
+            const data: any = doc.data();
+            const type = data.TokenType;
+            if (type && type == collections.crypto) {
+                retData.push({
+                    token: doc.id,
+                    type: type,
+                    payments: []
+                });
+            }
+        });
+        // ft
+        const ftSnap = await db.collection(collections.podsFT).get();
+        ftSnap.forEach((doc) => {
+            console.log(doc.id)
+            const data: any = doc.data();
+            const token = data.TokenSymbol;
+            const payments: any[] = [];
+            payments.push({
+                token: data.FundingToken,
+                address: data.PodAddress
+            });
+            retData.push({
+                token: token,
+                type: collections.ft,
+                payments: payments
+            });
+        });
+        // nft
+        const nftSnap = await db.collection(collections.podsNFT).get();
+        const nftDocs = nftSnap.docs;
+        for (let i = 0; i < nftDocs.length; i++) {
+            const doc = nftDocs[i];
+            const data: any = doc.data();
+            const payments: any[] = [];
+            const token = data.TokenSymbol;
+            const sellingOffers = await doc.ref.collection(collections.sellingOffers).get();
+            const offers: any = {};  // to record the lowest price offer in each token
+            sellingOffers.forEach((offerDoc) => {
+                const offerData: any = offerDoc.data();
+                const payingToken = offerData.Token;
+                const offerPrice = offerData.Price;
+                if (!offers[payingToken] || offerPrice < offers[payingToken].price) {
+                    offers[payingToken] = {
+                        price: offerPrice,
+                        offerId: offerData.OrderId,
+                        seller: offerData.SAddress,
+                    }
+                }
+            });
+            let offerToken = '';
+            let offerObj: any = null;
+            for ([offerToken, offerObj] of Object.entries(offers)) {
+                payments.push({
+                    token: offerToken,
+                    address: data.PodAddress,
+                    seller: offerObj.seller,
+                    price: offerObj.price,
+                    offerId: offerObj.offerId
+                });
+            }
+            retData.push({
+                token: token,
+                type: collections.nft,
+                payments: payments
+            });
+        }
+        // social
+        const socialSnap = await db.collection(collections.community).get();
+        socialSnap.forEach((doc) => {
+            const data: any = doc.data();
+            const token = data.TokenSymbol;
+            const payments: any[] = [];
+            payments.push({
+                token: data.FundingToken,
+                address: data.CommunityAddress,
+            });
+            retData.push({
+                token: token,
+                type: collections.social,
+                payments: payments
+            });
+        });
+
+        res.send({ success: true, data: retData });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getUserTokenBalance()', err);
+        res.send({ success: false });
+    }
+}
+
+/**
  * Function to get email-uid map
  */
 module.exports.getEmailToUidMap = async (req: express.Request, res: express.Response) => {
@@ -799,7 +901,7 @@ module.exports.getEmailToUidMap = async (req: express.Request, res: express.Resp
         const data = await getEmailUidMap();
         res.send({ success: true, data: data });
     } catch (err) {
-        console.log('Error in controllers/userController -> getEmailUidMap()', err);
+        console.log('Error in controllers/walletController -> getEmailUidMap()', err);
         res.send({ success: false });
     }
 }
