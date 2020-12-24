@@ -196,10 +196,19 @@ const signIn = async (req: express.Request, res: express.Response) => {
             } else {
                 console.log('found from email')
                 const data = user.docs[0].data();
+                const allWallPost: any[] = [];
+                const wallPostSnap = await db.collection(collections.wallPost)
+                    .where("fromUserId", "==", user.docs[0].id).get();
+                wallPostSnap.forEach((doc) => {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    data.type = 'post';
+                    allWallPost.push(data)
+                });
+                data.notifications.concat(allWallPost);
 
                 if (!data.isEmailValidated) {
                     res.send({ isSignedIn: false, userData: {}, message: "please validate your email", message_key: "EMAIL_VALIDATION_REQUIRED" });
-
                 } else {
                     let success = false;
 
@@ -487,12 +496,21 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
-            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
+            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, numFollowings: 0,
+            bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
+            const allWallPost: any[] = [];
+            const wallPostSnap = await db.collection(collections.wallPost)
+                .where("fromUserId", "==", userId).get();
+            wallPostSnap.forEach((doc) => {
+                let data = doc.data();
+                data.id = doc.id;
+                data.type = 'post';
+                allWallPost.push(data)
+            });
             // update return data
             basicInfo.name = userData.firstName + " " + userData.lastName;
             basicInfo.trustScore = userData.trustScore;
@@ -504,7 +522,12 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.twitter = userData.twitter || '';
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
-            basicInfo.notifications = userData.notifications || '';
+            basicInfo.notifications = userData.notifications || [];
+            basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
+            basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
+
+            console.log(allWallPost, basicInfo.notifications);
+
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
@@ -524,6 +547,17 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
         if (userData !== undefined) {
             // update return data
             userData.id = userSnap.id;
+            const allWallPost: any[] = [];
+            const wallPostSnap = await db.collection(collections.wallPost)
+                .where("fromUserId", "==", userId).get();
+            wallPostSnap.forEach((doc) => {
+                let data = doc.data();
+                data.id = doc.id;
+                data.type = 'post';
+                allWallPost.push(data)
+            });
+            userData.notifications = userData.notifications.concat(allWallPost);
+            userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
             res.send({ success: true, data: userData });
         }
         else res.send({ success: false });
@@ -627,6 +661,19 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
         console.log(userId);
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData: any = userSnap.data();
+        const allWallPost: any[] = [];
+        const wallPostSnap = await db.collection(collections.wallPost)
+            .where("fromUserId", "==", userId).get();
+        wallPostSnap.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id;
+            data.type = 'post';
+            allWallPost.push(data)
+        });
+        console.log(allWallPost);
+        userData.notifications = userData.notifications.concat(allWallPost);
+        userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
+
         res.send({ success: true, data: userData.notifications });
     } catch (err) {
         console.log('Error in controllers/profile -> getNotifications()', err);
@@ -642,31 +689,31 @@ const postToWall = async (req: express.Request, res: express.Response) => {
     const wallId = body.wallId;
 
     let wallPostGet = await db.collection(collections.wallPost).get();
-    let newId = wallPostGet.size + 1;
+    let uid = generateUniqueId();
 
     if (wallContent && wallId) {
 
       await db.runTransaction(async (transaction) => {
-        transaction.set(db.collection(collections.wallPost).doc('' + newId), {
-
+        transaction.set(db.collection(collections.wallPost).doc(uid), {
           wallContent: wallContent,
           wallId: wallId, // whose wall was posted to 
           fromUserId: req.body.priviUser.id, // who posted to the wall
-
-          createdAt: Date.now(),
+          date: Date.now(),
           updatedAt: null,
+          hasPhoto: false
         });
       });
 
       let data = {
-        success: true, data: {
-          id: newId,
+        success: true,
+        data: {
+          id: uid,
           wallContent: wallContent,
-          userId: wallId,
-          fromUserId: req.body.priviUser.id,
-
-          createdAt: Date.now(),
+          wallId: wallId, // whose wall was posted to
+          fromUserId: req.body.priviUser.id, // who posted to the wall
+          date: Date.now(),
           updatedAt: null,
+          hasPhoto: false
         }
       };
       res.send(data);
@@ -686,7 +733,67 @@ const postToWall = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 
-} // postToWall
+}
+
+const changePostPhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file) {
+            const wallPostRef = db.collection(collections.wallPost)
+                .doc(req.file.originalname);
+            const wallPostGet = await wallPostRef.get();
+            const wallPost: any = wallPostGet.data();
+            if (wallPost.HasPhoto) {
+                await wallPost.update({
+                    HasPhoto: true
+                });
+            }
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/userController -> changePostPhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> changePostPhoto()', err);
+        res.send({ success: false });
+    }
+}
+
+const getPostPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let postId = req.params.postId;
+        console.log(postId);
+        if (postId) {
+            const directoryPath = path.join('uploads', 'wallPost');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'wallPost', postId + '.png'));
+            raw.on('error', function (err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/userController -> getPostPhotoById()', "There's no post id...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> getPostPhotoById()', err);
+        res.send({ success: false });
+    }
+};
 
 // CONNECTIONS FUNCTIONS
 
@@ -1585,4 +1692,6 @@ module.exports = {
     declineFollowUser,
     getNotifications,
     postToWall,
+    changePostPhoto,
+    getPostPhotoById
 };
