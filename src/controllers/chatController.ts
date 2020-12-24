@@ -18,7 +18,7 @@ exports.getChats =  async (req: express.Request, res: express.Response) => {
         chatUserToSnap.forEach((doc) => {
             allChats.push(doc.data())
         });
-        let sortChats = allChats.sort((a, b) => (a.created > b.created) ? 1 : ((b.created > a.created) ? -1 : 0));
+        let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
 
         res.send({
             success: true,
