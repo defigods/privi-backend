@@ -294,3 +294,23 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
         return ('Error in controllers/chatRoutes -> getUsers()' + e)
     }
 };
+
+exports.discordGetChat = async (req: express.Request, res: express.Response) => {
+
+}
+
+exports.discordCreateChat = async (req: express.Request, res: express.Response) => {
+
+}
+
+exports.discordCreateRoom = async (req: express.Request, res: express.Response) => {
+
+}
+
+exports.discordProvideAccess = async (req: express.Request, res: express.Response) => {
+
+}
+
+exports.discordRemoveAccess = async (req: express.Request, res: express.Response) => {
+
+}
