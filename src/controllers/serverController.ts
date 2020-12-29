@@ -354,5 +354,17 @@ export const startSocket = (env: Env) => {
           id: uid
         });
       });
+
+      socket.on('subscribe-discord', async function(users) {
+
+      });
+
+      socket.on('numberMessages-discord', async function(users) {
+
+      });
+
+      socket.on('add-message-discord', async function(users) {
+
+      });
     });
 };
