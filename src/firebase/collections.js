@@ -73,4 +73,7 @@ module.exports = {
     wallPost: "WallPost",
     chat: "Chat",
     message: "Message",
+    discordChat: "DiscordChat",
+    discordRoom: "DiscordRoom",
+    discordMessage: "DiscordMessage",
 }

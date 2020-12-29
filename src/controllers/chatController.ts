@@ -296,7 +296,19 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
 };
 
 exports.discordGetChat = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
+        let discordChat: any;
+        const chatUserFromSnap = await db.collection(collections.discordChat).get();
+
+        res.send({
+            success: true,
+            data: {}
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+    }
 }
 
 exports.discordCreateChat = async (req: express.Request, res: express.Response) => {
