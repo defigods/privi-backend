@@ -34,6 +34,18 @@ let storage2 = multer.diskStorage({
 let upload2 = multer({
     storage: storage2
 });
+let storage3 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/wallPost')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload3 = multer({
+    storage: storage3
+});
 
 // AUTHENTICATION
 router.post('/forgot_password', userController.forgotPassword);
@@ -52,6 +64,8 @@ router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.ge
 router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
 router.get('/wall/getNotifications/:userId', authenticateJWT, userController.getNotifications);
 router.post('/wall/', authenticateJWT, userController.postToWall);
+router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), userController.changePostPhoto);
+router.get('/wall/getPostPhoto/:postId', userController.getPostPhotoById);
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
