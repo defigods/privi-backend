@@ -17,7 +17,7 @@ router.post('/newChat', authenticateJWT, chatController.createChat);
 router.post('/discord/getChat', authenticateJWT, chatController.discordGetChat);
 router.post('/discord/createChat', authenticateJWT, chatController.discordCreateChat);
 router.post('/discord/createRoom', authenticateJWT, chatController.discordCreateRoom);
-router.post('/discord/provideAccess', authenticateJWT, chatController.discordProvideAccess);
+router.post('/discord/provideAccess', authenticateJWT, chatController.discordModifyAccess);
 router.post('/discord/removeAccess', authenticateJWT, chatController.discordRemoveAccess);
 
 

@@ -2,6 +2,7 @@ import express from "express";
 import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
 import {generateUniqueId} from "../functions/functions";
+import {user} from "firebase-functions/lib/providers/auth";
 
 exports.getChats =  async (req: express.Request, res: express.Response) => {
     try {
@@ -300,11 +301,23 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
         let body = req.body;
 
         let discordChat: any;
-        const chatUserFromSnap = await db.collection(collections.discordChat).get();
+        let discordRooms : any[] = [];
+        const discordChatRef = db.collection(collections.discordChat).doc(body.discordChat);
+        const discordChatGet = await discordChatRef.get();
+        const discordChatData : any = discordChatGet.data();
 
+        const discordRoomGet = await discordChatRef.collection(collections.discordRoom).get();
+        discordRoomGet.forEach((doc) => {
+            let data = {...doc.data()}
+            data.room = doc.id;
+            discordRooms.push(doc.data())
+        });
+        discordChat = {...discordChatData};
+        discordChat.id = discordChatGet.id;
+        discordChat.discordRooms = [...discordRooms]
         res.send({
             success: true,
-            data: {}
+            data: discordChat
         });
     } catch (e) {
         return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
@@ -312,17 +325,173 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
 }
 
 exports.discordCreateChat = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
+        const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
+        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName);
+
+
+        res.send({
+            success: true,
+            data: discordChatCreation
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+    }
 }
+
+const createDiscordChat = async (adminId, adminName) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const uid = generateUniqueId();
+            let users : any[] = [{
+                id: adminId,
+                name: adminName
+            }]
+
+            await db.runTransaction(async (transaction) => {
+
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.discordChat).doc(uid), {
+                    users: users,
+                    created: Date.now()
+                });
+            });
+
+            resolve({
+                id: uid,
+                users: users,
+                created: Date.now()
+            })
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> createDiscordChat()' + e)
+        }
+    })
+};
+
+const createDiscordRoom = async (chatId, type, adminId, adminName) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const uid = generateUniqueId();
+            let users : any[] = [{
+                type: 'admin',
+                userId: adminId,
+                userName: adminName,
+                userConnected: false,
+                lastView: Date.now()
+            }];
+            let obj : any = {
+                type: type,
+                users: users,
+                created: Date.now(),
+                lastMessage: null,
+                lastMessageDate: null,
+                messages: []
+            }
+            await db.collection(collections.discordChat).doc(chatId)
+                .collection(collections.discordRoom).doc(uid).set(obj);
+
+            obj.id = uid;
+            resolve(obj);
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> createDiscordChat()' + e)
+        }
+    })
+};
 
 exports.discordCreateRoom = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
+        const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName);
+
+        res.send({
+            success: true,
+            data: discordRoomCreation
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+    }
 }
 
-exports.discordProvideAccess = async (req: express.Request, res: express.Response) => {
+exports.discordModifyAccess = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
+        const discordRoomRef = db.collection(collections.discordChat)
+            .doc(body.discordChatId).collection(collections.discordRoom)
+            .doc(body.discordRoomId);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom : any = discordRoomGet.data();
+
+        let users : any[] = [...discordRoom.users];
+
+        let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
+
+        if(findUserIndex === -1) {
+            users.push({
+                type: body.type,
+                userId: body.userId,
+                userName: body.userName,
+                userConnected: false,
+                lastView: Date.now()
+            });
+        } else {
+            users[findUserIndex] = {
+                type: body.type
+            }
+        }
+
+        await discordRoomRef.update({
+            users: users
+        });
+
+        discordRoom.users = users;
+
+        res.send({
+            success: true,
+            data: discordRoom
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
+    }
 }
 
 exports.discordRemoveAccess = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
 
+        const discordRoomRef = db.collection(collections.discordChat)
+            .doc(body.discordChatId).collection(collections.discordRoom)
+            .doc(body.discordRoomId);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom : any = discordRoomGet.data();
+
+        let users : any[] = [...discordRoom.users];
+
+        let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
+
+        if(findUserIndex === -1) {
+            res.send({
+                success: false,
+                data: 'User not found'
+            });
+        } else {
+            users.splice(findUserIndex, 1);
+        }
+
+        await discordRoomRef.update({
+            users: users
+        });
+
+        discordRoom.users = users;
+
+        res.send({
+            success: true,
+            data: discordRoom
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordRemoveAccess()' + e)
+    }
 }
