@@ -1426,7 +1426,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         const totalSupply = body.totalSupply;
         const royalty = body.royalty;
         const txid = generateUniqueId();
-        debugger;
+
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
         if (blockchainRes && blockchainRes.success) {

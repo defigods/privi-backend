@@ -9,13 +9,14 @@ import fields from '../firebase/fields';
 import cron from 'node-cron';
 import { clearLine } from "readline";
 
-require('dotenv').config();
-const apiKey = process.env.API_KEY;
+// require('dotenv').config();
+// const apiKey = process.env.API_KEY;
+const apiKey = "PRIVI";
 
 ///////////////////////////// POST ///////////////////////////////
 
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
-    try {
+    try { 
         const body = req.body;
         // for blockchain call
         const communityToken = body.CommunityToken; // determines if the above parameters are given or not
