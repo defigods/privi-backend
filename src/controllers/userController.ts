@@ -373,6 +373,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     lastUpdate: lastUpdate,
                     endorsementScore: 0.5,
                     trustScore: 0.5,
+                    awards: [],
+                    creds: [],
                     followings: [],
                     numFollowings: 0,
                     followers: [],
@@ -472,6 +474,8 @@ interface BasicInfo {
     profilePhoto: string,
     trustScore: number,
     endorsementScore: number,
+    awards: any[],
+    creds: any[],
     numFollowers: number,
     numFollowings: number,
     bio: string,
@@ -487,7 +491,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0,
+            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [],
             numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
@@ -497,6 +501,8 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.name = userData.firstName + " " + userData.lastName;
             basicInfo.trustScore = userData.trustScore;
             basicInfo.endorsementScore = userData.endorsementScore;
+            basicInfo.creds = userData.creds || [];
+            basicInfo.awards = userData.awards || [];
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
