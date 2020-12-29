@@ -355,16 +355,78 @@ export const startSocket = (env: Env) => {
         });
       });
 
-      socket.on('subscribe-discord', async function(users) {
+      socket.on('subscribe-discord', async function(chatInfo) {
+        if(chatInfo.discordChatId && chatInfo.discordRoomId){
+          const discordRoomRef = db.collection(collections.discordChat)
+              .doc(chatInfo.discordChatId).collection(collections.discordRoom)
+              .doc(chatInfo.discordRoomId);
+          const discordRoomGet = await discordRoomRef.get();
+          const discordRoom : any = discordRoomGet.data();
 
+          let users : any[] = [...discordRoom.users]
+          let findUserIndex = users.findIndex((user, i) => chatInfo.userId === user.userId);
+          if(findUserIndex !== -1) {
+            users[findUserIndex].lastView = Date.now();
+            users[findUserIndex].userConnected = true;
+          }
+
+          console.log('joining room', chatInfo.discordRoomId);
+          socket.join(chatInfo.discordRoomId);
+        } else {
+          console.log('Error subscribe-discord socket: No Room provided')
+        }
       });
 
       socket.on('numberMessages-discord', async function(users) {
-
+        // Not need it now, think how to implement it
       });
 
-      socket.on('add-message-discord', async function(users) {
+      socket.on('add-message-discord', async function(message) {
+        console.log('message', message);
 
+        const uid = generateUniqueId();
+        await db.runTransaction(async (transaction) => {
+
+          // userData - no check if firestore insert works? TODO
+          transaction.set(db.collection(collections.discordMessage).doc(uid), {
+            discordRoom: message.discordRoom,
+            message: message.message,
+            from: message.from,
+            created: Date.now(),
+            seen: []
+          });
+        });
+        const discordRoomRef = db.collection(collections.discordChat)
+            .doc(message.discordChatId).collection(collections.discordRoom)
+            .doc(message.discordRoom);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom : any = discordRoomGet.data();
+
+        let messages : any = discordRoom.messages;
+        messages.push(uid)
+
+        await discordRoomRef.update({
+          messages: messages,
+          lastMessage: message.message,
+          lastMessageDate: message.created
+        });
+
+        /*const messageQuery = await db.collection(collections.message)
+            .where("to", "==", message.to)
+            .where("seen", "==", false).get();
+        if (!messageQuery.empty) {
+          socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+        }*/
+
+        console.log('sending room post', message);
+        socket.to(message.discordRoom).emit('message-discord', {
+          discordRoom: message.discordRoom,
+          message: message.message,
+          from: message.from,
+          created: Date.now(),
+          seen: [],
+          id: uid
+        });
       });
     });
 };
