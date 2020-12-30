@@ -42,6 +42,17 @@ export async function updateFirebase(blockchainRes) {
         const updateVotations = output.updateVotations;
         const updateVotationStates = output.updateVotationStates;
         const updateVoters = output.UpdateVoters;
+        // badges
+        const updateBadges = output.UpdateBadges;
+
+        // update badges
+        if (updateBadges) {
+            let key: string = "";
+            let val: any = null;
+            for ([key, val] of Object.entries(updateBadges)) {
+                transaction.set(db.collection(collections.badges).doc(key), val);
+            }
+        }
 
         // update user
         if (updateUser) {
@@ -103,6 +114,7 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
+        
         // update balances
         if (updateBalances) {
             let key: string = "";

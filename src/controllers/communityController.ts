@@ -10,12 +10,13 @@ import cron from 'node-cron';
 import { clearLine } from "readline";
 
 require('dotenv').config();
-const apiKey = process.env.API_KEY;
+// const apiKey = process.env.API_KEY;
+const apiKey = "PRIVI";
 
 ///////////////////////////// POST ///////////////////////////////
 
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
-    try {
+    try { 
         const body = req.body;
         // for blockchain call
         const communityToken = body.CommunityToken; // determines if the above parameters are given or not
@@ -438,19 +439,6 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     }
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 exports.createBadge = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -463,26 +451,13 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
         if (blockchainRes && blockchainRes.success) {
-            console.log('llega', creator);
-            // updateFirebase(blockchainRes);
-            /*await notificationsController.addNotification({
-                userId: creatorId,
-                notification: {
-                    type: 45,
-                    typeItemId: '',
-                    itemId: '', //Liquidity pool id
-                    follower: '',
-                    pod: '',
-                    comment: '',
-                    token: token,
-                    amount: 0,
-                    onlyInformation: false,
-                }
-            });*/
-            await db.runTransaction(async (transaction) => {
+            updateFirebase(blockchainRes);
+          
+            let badgesGet = await db.collection(collections.badges).get();
+            let id = badgesGet.size;
 
-                // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.badges).doc(creator), {
+            await db.runTransaction(async (transaction) => {
+                transaction.set(db.collection(collections.badges).doc('' + id + 1), {
                     creator: creator,
                     name: name,
                     description: description,
