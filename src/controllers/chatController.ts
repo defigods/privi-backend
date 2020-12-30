@@ -331,7 +331,6 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
         const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
         const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName);
 
-
         res.send({
             success: true,
             data: discordChatCreation
