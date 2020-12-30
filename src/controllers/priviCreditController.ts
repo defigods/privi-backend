@@ -11,7 +11,8 @@ import { user } from 'firebase-functions/lib/providers/auth';
 const notificationsController = require('./notificationsController');
 
 require('dotenv').config();
-const apiKey = process.env.API_KEY;
+// const apiKey = process.env.API_KEY;
+const apiKey = "PRIVI"
 
 ///////////////////////////// POSTS //////////////////////////////
 
