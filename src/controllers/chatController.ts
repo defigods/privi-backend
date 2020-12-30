@@ -300,7 +300,7 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
     try {
         let body = req.body;
 
-        let discordChat: any;
+        let discordChat: any = {};
         let discordRooms : any[] = [];
         const discordChatRef = db.collection(collections.discordChat).doc(body.discordChat);
         const discordChatGet = await discordChatRef.get();
@@ -310,11 +310,11 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
         discordRoomGet.forEach((doc) => {
             let data = {...doc.data()}
             data.room = doc.id;
-            discordRooms.push(doc.data())
+            discordRooms.push(data)
         });
         discordChat = {...discordChatData};
         discordChat.id = discordChatGet.id;
-        discordChat.discordRooms = [...discordRooms]
+        discordChat.discordRooms = [...discordRooms];
         res.send({
             success: true,
             data: discordChat
@@ -426,35 +426,88 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
         const discordRoom : any = discordRoomGet.data();
 
         let messages : any[] = [];
-        for(let i = 0 ; i < discordRoom.messages.length; i++){
-            const messageGet = await db.collection(collections.discordMessage)
-                .doc(discordRoom.messages[i]).get();
+        if(discordRoom.messages && discordRoom.messages.length > 0) {
+            for(let i = 0 ; i < discordRoom.messages.length; i++){
+                const messageGet = await db.collection(collections.discordMessage)
+                    .doc(discordRoom.messages[i]).get();
 
-            let discordMsg : any = messageGet.data();
+                let discordMsg : any = messageGet.data();
 
-            const userRef = db.collection(collections.user).doc(discordMsg.from);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
+                const userRef = db.collection(collections.user).doc(discordMsg.from);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
 
-            discordMsg['user'] = {
-                name: user.firstName,
-                level: user.level || 1,
-                cred: user.cred || 0,
-                salutes: user.salutes || 0,
+                discordMsg['user'] = {
+                    name: user.firstName,
+                    level: user.level || 1,
+                    cred: user.cred || 0,
+                    salutes: user.salutes || 0,
+                }
+                messages.push(discordMsg)
+
+                if(i === discordRoom.messages.length - 1) {
+                    res.status(200).send({
+                        success: true,
+                        data: messages
+                    });
+                }
             }
-            messages.push(discordMsg)
-
-            if(i === discordRoom.messages.length - 1) {
-                res.status(200).send({
-                    success: true,
-                    data: messages
-                });
-            }
+        } else {
+            res.status(200).send({
+                success: true,
+                data: []
+            });
         }
     } catch (e) {
         return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
     }
 }
+
+
+exports.discordLastView = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        if(body.userId && body.discordChat && body.discordRoom) {
+            const discordRoomRef = db.collection(collections.discordChat)
+                .doc(body.discordChat).collection(collections.discordRoom)
+                .doc(body.discordRoom);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+            if(discordRoom) {
+                let users = [...discordRoom.users];
+                let userIndex = users.findIndex((usr, i) => usr.userId === body.userId);
+                users[userIndex].lastView = body.lastView;
+                await discordRoomRef.update({
+                    users: users
+                })
+            }
+            const messageQuery = await db.collection(collections.discordMessage)
+                .where("room", "==", body.room).get();
+            if(!messageQuery.empty) {
+                for (const doc of messageQuery.docs) {
+                    let data = doc.data();
+                    if(!data.seen.includes(body.userId)) {
+                        let usersSeen = [...data.seen];
+                        usersSeen.push(body.userId);
+                        await db.collection(collections.discordMessage).doc(doc.id).update({
+                            seen: usersSeen
+                        });
+                    }
+                }
+            }
+            res.status(200).send({success: true});
+        } else {
+            res.status(200).send({
+                success: false,
+                error: 'Error in controllers/chatRoutes -> discordLastView(): Non UserId or Room Provided'
+            });
+        }
+
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> lastView()' + e)
+    }
+};
 
 exports.discordModifyAccess = async (req: express.Request, res: express.Response) => {
     try {

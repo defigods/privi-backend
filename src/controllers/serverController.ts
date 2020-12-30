@@ -377,7 +377,7 @@ export const startSocket = (env: Env) => {
         }
       });
 
-      socket.on('numberMessages-discord', async function(users) {
+      socket.on('numberMessages-discord', async function(room) {
         // Not need it now, think how to implement it
       });
 
