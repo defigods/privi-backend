@@ -18,6 +18,10 @@ import { accessSync } from 'fs';
 const jwt = require('jsonwebtoken');
 const crypto = require("crypto");
 import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates/emailTemplates";
+const bip39 = require('bip39');
+const hdkey = require("hdkey");
+const { privateToPublic, publicToAddress, toChecksumAddress } = require("ethereumjs-util");
+const { PRIVI_WALLET_PATH } = require('../constants/configuration');
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
@@ -473,6 +477,61 @@ const signUp = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/user.ts -> signUp(): ', err);
+        res.send({ success: false });
+    }
+};
+
+const attachAddress = async (req: express.Request, res: express.Response) => {
+    try {
+
+        const body = req.body;
+        const userPublicId = body.userPublicId;
+
+        // const role = body.role; // role should not be coming from user input?
+        const role = "USER";
+        const caller = apiKey;
+        const lastUpdate = Date.now();
+
+        // generate mnemonic and save it in DB ** only for testnet
+        /*
+            this is a bad approach and must be moved to frontend
+            and mnemonic should be encripted with a password and saved in user local machine
+        */
+        const mnemonic = bip39.generateMnemonic();
+        const seed = await bip39.mnemonicToSeed(mnemonic);
+        const path = PRIVI_WALLET_PATH;
+        const hdwallet = await hdkey.fromMasterSeed(seed);
+        const wallet = hdwallet.derive(path);
+        //    const privateKey = '0x' + wallet._privateKey.toString('hex');
+        const pubKey =  await privateToPublic(wallet._privateKey);   
+        //    const publicKey = pubKey.toString("hex");
+        const address = '0x' + await publicToAddress(pubKey).toString('hex');
+        const addressCheckSum = await toChecksumAddress(address);
+
+        const blockchainRes = await dataProtocol.attachAddress(userPublicId, addressCheckSum, caller);
+
+        if (blockchainRes && blockchainRes.success) {
+
+            // set address and mnemonic in User DB
+            await db.runTransaction(async (transaction) => {
+
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.user).doc(userPublicId), {
+                    mnemonic: mnemonic,
+                    address: addressCheckSum,
+                    lastUpdate: lastUpdate,
+                });
+
+            });
+
+            res.send({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
+
+        } else {
+            console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/user.ts -> attachaddress(): ', err);
         res.send({ success: false });
     }
 };
@@ -1679,6 +1738,7 @@ module.exports = {
     resendEmailValidation,
     signIn,
     signUp,
+    attachAddress,
     getFollowPodsInfo,
     getFollowingUserInfo,
     getOwnInfo,
