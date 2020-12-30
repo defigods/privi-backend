@@ -329,7 +329,7 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
         let body = req.body;
 
         const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
-        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName);
+        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName);
 
 
         res.send({
@@ -370,7 +370,7 @@ const createDiscordChat = async (adminId, adminName) => {
     })
 };
 
-const createDiscordRoom = async (chatId, type, adminId, adminName) => {
+const createDiscordRoom = async (chatId, type, adminId, adminName, roomName) => {
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
@@ -383,6 +383,7 @@ const createDiscordRoom = async (chatId, type, adminId, adminName) => {
             }];
             let obj : any = {
                 type: type,
+                name: roomName,
                 users: users,
                 created: Date.now(),
                 lastMessage: null,
@@ -404,7 +405,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
     try {
         let body = req.body;
 
-        const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName);
+        const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName);
 
         res.send({
             success: true,
@@ -412,6 +413,47 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
         });
     } catch (e) {
         return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+    }
+}
+
+exports.discordGetMessages = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordRoomRef = db.collection(collections.discordChat)
+            .doc(body.discordChatId).collection(collections.discordRoom)
+            .doc(body.discordRoom);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom : any = discordRoomGet.data();
+
+        let messages : any[] = [];
+        for(let i = 0 ; i < discordRoom.messages.length; i++){
+            const messageGet = await db.collection(collections.discordMessage)
+                .doc(discordRoom.messages[i]).get();
+
+            let discordMsg : any = messageGet.data();
+
+            const userRef = db.collection(collections.user).doc(discordMsg.from);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            discordMsg['user'] = {
+                name: user.firstName,
+                level: user.level || 1,
+                cred: user.cred || 0,
+                salutes: user.salutes || 0,
+            }
+            messages.push(discordMsg)
+
+            if(i === discordRoom.messages.length - 1) {
+                res.status(200).send({
+                    success: true,
+                    data: messages
+                });
+            }
+        }
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
     }
 }
 
