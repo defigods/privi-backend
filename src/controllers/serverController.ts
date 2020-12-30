@@ -405,7 +405,7 @@ export const startSocket = (env: Env) => {
         const discordRoom : any = discordRoomGet.data();
 
         let messages : any = discordRoom.messages;
-        messages.push(uid)
+        messages.push(uid);
 
         await discordRoomRef.update({
           messages: messages,
