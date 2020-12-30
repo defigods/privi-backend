@@ -487,7 +487,7 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         }
         else {
             console.log('Error in controllers/communitiesControllers -> createBadge(): success = false.', blockchainRes.message);
-            res.send({ success: false });
+            res.send({ success: false, data: blockchainRes.message });
         }
     } catch (e) {
         return ('Error in controllers/communitiesControllers -> createBadge()' + e)

@@ -1347,11 +1347,12 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
             });
             raw.pipe(res);
         } else {
-            console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
+            console.log('Error in controllers/userController -> getPhotoById()', "There's no id...");
+            res.sendStatus(400); // bad request
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> changePodPhoto()', err);
+        console.log('Error in controllers/userController -> getPhotoById()', err);
         res.send({ success: false });
     }
 };
