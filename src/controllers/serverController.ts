@@ -377,7 +377,7 @@ export const startSocket = (env: Env) => {
         }
       });
 
-      socket.on('numberMessages-discord', async function(users) {
+      socket.on('numberMessages-discord', async function(room) {
         // Not need it now, think how to implement it
       });
 
@@ -393,7 +393,9 @@ export const startSocket = (env: Env) => {
             message: message.message,
             from: message.from,
             created: Date.now(),
-            seen: []
+            seen: [],
+            likes: 0,
+            dislikes: 0
           });
         });
         const discordRoomRef = db.collection(collections.discordChat)
@@ -403,12 +405,12 @@ export const startSocket = (env: Env) => {
         const discordRoom : any = discordRoomGet.data();
 
         let messages : any = discordRoom.messages;
-        messages.push(uid)
+        messages.push(uid);
 
         await discordRoomRef.update({
           messages: messages,
           lastMessage: message.message,
-          lastMessageDate: message.created
+          lastMessageDate: Date.now()
         });
 
         /*const messageQuery = await db.collection(collections.message)
@@ -417,14 +419,25 @@ export const startSocket = (env: Env) => {
         if (!messageQuery.empty) {
           socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
         }*/
+        const userRef = db.collection(collections.user).doc(message.from);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
 
         console.log('sending room post', message);
         socket.to(message.discordRoom).emit('message-discord', {
           discordRoom: message.discordRoom,
           message: message.message,
           from: message.from,
+          user: {
+            name: user.firstName,
+            level: user.level || 1,
+            cred: user.cred || 0,
+            salutes: user.salutes || 0,
+          },
           created: Date.now(),
           seen: [],
+          likes: 0,
+          dislikes: 0,
           id: uid
         });
       });
