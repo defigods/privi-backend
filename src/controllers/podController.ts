@@ -10,7 +10,7 @@ import fs from 'fs';
 import path from 'path';
 
 const notificationsController = require('./notificationsController');
-
+const chatController = require('./chatController');
 require('dotenv').config();
 const apiKey = process.env.API_KEY;
 
@@ -444,7 +444,20 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
             await updateFirebase(blockchainRes);  // update blockchain res
             await updateCommonFields(body, podId, true); // update common fields
 
-            db.collection(collections.podsFT).doc(podId).set({ InterstDue: interestDue }, { merge: true });
+            // Add Pod Id into user myFTPods array
+            const userRef = db.collection(collections.user)
+                .doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
+
+            db.collection(collections.podsFT).doc(podId).set({
+                InterstDue: interestDue,
+                DiscordId: discordChatCreation.id
+            }, { merge: true });
 
             //     createNotification(creator, "FT Pod - Pod Created",
             //         ` `,
@@ -500,19 +513,12 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                 timestamp: Date.now()
             });
 
-            // Add Pod Id into user myFTPods array
-            const userRef = db.collection(collections.user)
-                .doc(creator);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
-
             let myFTPods: any[] = user.myNFTPods || [];
             myFTPods.push(podId)
 
             await userRef.update({
                 myFTPods: myFTPods
             });
-
 
             res.send({ success: true, data: podId });
         }

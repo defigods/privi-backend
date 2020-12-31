@@ -340,7 +340,7 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
     }
 }
 
-const createDiscordChat = async (adminId, adminName) => {
+const createDiscordChat = exports.createDiscordChat = async (adminId, adminName) => {
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
@@ -369,7 +369,7 @@ const createDiscordChat = async (adminId, adminName) => {
     })
 };
 
-const createDiscordRoom = async (chatId, type, adminId, adminName, roomName) => {
+const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName) => {
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();

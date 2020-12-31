@@ -9,6 +9,7 @@ import fields from '../firebase/fields';
 import cron from 'node-cron';
 import { clearLine } from "readline";
 
+const chatController = require('./chatController');
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI";
@@ -94,6 +95,15 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const userRoles = body.UserRoles;
             const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
 
+            const userRef = db.collection(collections.user)
+                .doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
+
             db.collection(collections.community).doc(communityAddress).set({
                 HasPhoto: hasPhoto || false,
                 Name: name || '',
@@ -103,7 +113,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 Privacy: privacy,
                 OpenAdvertising: openAdvertising || false,
                 PaymentsAllowed: paymentsAllowed || false,
-                DiscordId: dicordId || '',
+                DiscordId: discordChatCreation.id || '',
                 TwitterId: twitterId || '',
                 EthereumAddress: ethereumAddr || '',
 
