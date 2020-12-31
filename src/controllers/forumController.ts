@@ -7,8 +7,6 @@ import express from 'express';
 import path from 'path';
 import fs from "fs";
 
-// const currencySymbol = require("currency-symbol");
-// import { countDecimals } from "../functions/utilities";
 
 const categoryListHelper = async () => {
 	const data: {}[] = [];

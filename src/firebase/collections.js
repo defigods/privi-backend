@@ -66,9 +66,12 @@ module.exports = {
     issues: "Issues",
     proposals: "Proposals",
     campaigns: "Campaigns",
+
     forumCategory: "ForumCategory",
     forumPost: "ForumPost",
     forumComment: "ForumComment",
+
+    blogPost: "BlogPost",
 
     wallPost: "WallPost",
     chat: "Chat",
