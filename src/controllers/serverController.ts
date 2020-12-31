@@ -410,7 +410,7 @@ export const startSocket = (env: Env) => {
         await discordRoomRef.update({
           messages: messages,
           lastMessage: message.message,
-          lastMessageDate: message.created
+          lastMessageDate: Date.now()
         });
 
         /*const messageQuery = await db.collection(collections.message)
