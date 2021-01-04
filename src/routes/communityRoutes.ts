@@ -18,10 +18,9 @@ let upload = multer({
     storage: storage
 });
 
-
 let storage2 = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/blog-post/' + req.params.blogPostId)
+        cb(null, 'uploads/blogPost/' + 'photos-' + req.params.blogPostId)
     },
     filename: function (req: any, file: any, cb: any) {
         console.log(file);
@@ -30,6 +29,19 @@ let storage2 = multer.diskStorage({
 });
 let upload2 = multer({
     storage: storage2
+});
+
+let storage3 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/blogPost')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload3 = multer({
+    storage: storage3
 });
 
 router.post('/votation/create', authenticateJWT, communityController.createVotation);
@@ -57,8 +69,12 @@ router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTok
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
 
 router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
-router.post('/blog/changePostPhoto', authenticateJWT, upload.single('image'), blogController.changePostPhoto);
+router.get('/blog/getBlogPosts/:communityId', authenticateJWT, blogController.getBlogPost);
+router.post('/blog/changePostPhoto', authenticateJWT, upload3.single('image'), blogController.changePostPhoto);
 router.post('/blog/changePostDescriptionPhotos/:blogPostId', authenticateJWT, upload2.array('image'), blogController.changePostDescriptionPhotos);
+router.get('/blog/getPostPhoto/:blogPostId', blogController.getBlogPostPhotoById);
+router.get('/blog/getDescriptionPostPhoto/:blogPostId/:photoId', blogController.getBlogPostDescriptionPhotoById);
+router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBlogPost);
 
 
 

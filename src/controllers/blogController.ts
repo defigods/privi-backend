@@ -49,6 +49,7 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
         description: description,
         descriptionArray: descriptionArray,
         descriptionImages: [],
+        responses: [],
         hasPhoto: false,
         createdBy: req.body.priviUser.id,
         createdAt: Date.now(),
@@ -86,7 +87,7 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         });
       }
 
-      let dir = 'uploads/blog-post/' + req.file.originalname;
+      let dir = 'uploads/blogPost/' + 'photos-' + req.file.originalname;
 
       if (!fs.existsSync(dir)){
         fs.mkdirSync(dir);
@@ -137,3 +138,137 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
         res.send({ success: false });
     }
 }
+
+exports.getBlogPost =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+    let posts : any[] = [];
+
+    const blogPostQuery = await db.collection(collections.blogPost)
+      .where("communityId", "==", params.communityId).get();
+    if(!blogPostQuery.empty) {
+      for (const doc of blogPostQuery.docs) {
+        let data = doc.data();
+        data.id = doc.id;
+        posts.push(data);
+      }
+      res.status(200).send({
+        success: true,
+        data: posts
+      });
+    } else {
+      res.status(200).send({
+        success: true,
+        data: []
+      });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getBlogPost()', err);
+    res.send({ success: false });
+  }
+}
+
+exports.getBlogPostPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let postId = req.params.blogPostId;
+    if (postId) {
+      const directoryPath = path.join('uploads', 'blogPost');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'blogPost', postId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/blogController -> getBlogPostPhotoById()', "There's no post id...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getBlogPostPhotoById()', err);
+    res.send({ success: false });
+  }
+};
+exports.getBlogPostDescriptionPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let postId = req.params.blogPostId;
+    let photoId = req.params.photoId;
+    console.log('postId', postId, photoId);
+    if (postId && photoId) {
+      const directoryPath = path.join('uploads', 'blogPost', 'photos-' + postId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'blogPost', 'photos-' + postId, photoId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/blogController -> getBlogPostPhotoById()', "There's no post id...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getBlogPostPhotoById()', err);
+    res.send({ success: false });
+  }
+};
+
+exports.makeResponseBlogPost = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    console.log('body', body);
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
+      const blogPostRef = db.collection(collections.blogPost)
+        .doc(body.blogPostId);
+      const blogPostGet = await blogPostRef.get();
+      const blogPost: any = blogPostGet.data();
+
+      let responses : any[] = [...blogPost.responses];
+      responses.push({
+        userId: body.userId,
+        userName: body.userName,
+        response: body.response,
+        date: Date.now()
+      })
+      await blogPostRef.update({
+        responses: responses
+      });
+      res.send({ success: true, data: responses });
+
+    } else {
+      console.log('Error in controllers/blogController -> makeResponseBlogPost()', "There's no post id...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> makeResponseBlogPost()', err);
+    res.send({ success: false });
+  }
+};

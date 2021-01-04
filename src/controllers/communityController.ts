@@ -419,10 +419,12 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         const communitiesSnap = await db.collection(collections.community).get();
         const rateOfChange = await getRateOfChangeAsMap();
         communitiesSnap.forEach((doc) => {
-            const data: any = doc.data();
+            const data : any = doc.data();
+            const id : any = doc.id;
             const extraData = getExtraData(data, rateOfChange);
-            allCommunities.push({ ...data, ...extraData });
+            allCommunities.push({ ...data, ...extraData, id: id });
         });
+
         const trendingCommunities = filterTrending(allCommunities);
         res.send({
             success: true, data: {
@@ -442,8 +444,9 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
         const rateOfChange = await getRateOfChangeAsMap();
         const data: any = communitySnap.data();
+        const id: any = communitySnap.id;
         const extraData = getExtraData(data, rateOfChange);
-        res.send({ success: true, data: { ...data, ...extraData } });
+        res.send({ success: true, data: { ...data, ...extraData, id: id } });
     } catch (e) {
         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
     }
