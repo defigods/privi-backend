@@ -36,7 +36,7 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
     const uid = generateUniqueId();
 
     if (name && textShort) {
-    let data = {
+      let data : any = {
         comments: comments,
         name: name,
         textShort: textShort,
@@ -48,6 +48,7 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
         selectedFormat: selectedFormat,
         description: description,
         descriptionArray: descriptionArray,
+        descriptionImages: [],
         hasPhoto: false,
         createdBy: req.body.priviUser.id,
         createdAt: Date.now(),
@@ -70,28 +71,69 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
     console.log('Error in controllers/blogController -> blogCreate()', err);
     res.send({ success: false });
   }
-} // blogCreate
-
+}
 
 exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const blogPostRef = db.collection(collections.blogPost)
+        .doc(req.file.originalname);
+      const blogPostGet = await blogPostRef.get();
+      const blogPost: any = blogPostGet.data();
+      if (blogPost.HasPhoto) {
+        await blogPostRef.update({
+          HasPhoto: true
+        });
+      }
+
+      let dir = 'uploads/blog-post/' + req.file.originalname;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/blogController -> changePostPhoto()', "There's no file...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> changePostPhoto()', err);
+    res.send({ success: false });
+  }
+}
+
+exports.changePostDescriptionPhotos = async (req: express.Request, res: express.Response) => {
     try {
-        if (req.file) {
+        let blogPostId = req.params.blogPostId;
+        let files : any[] = [];
+        let fileKeys : any[] = Object.keys(req.files);
+
+        fileKeys.forEach(function(key) {
+          files.push(req.files[key]);
+        });
+
+        if (files) {
+            let filesName : string[] = [];
             const blogPostRef = db.collection(collections.blogPost)
-                .doc(req.file.originalname);
+                .doc(blogPostId);
             const blogPostGet = await blogPostRef.get();
             const blogPost: any = blogPostGet.data();
-            if (blogPost.HasPhoto) {
-                await blogPostRef.update({
-                    HasPhoto: true
-                });
+
+            for(let i = 0; i < files.length; i++) {
+              filesName.push('/' + blogPostId + '/' + files[i].originalname)
             }
+            console.log(req.params.blogPostId, filesName)
+            await blogPostRef.update({
+              descriptionImages: filesName
+            });
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/blogController -> changePostPhoto()', "There's no file...");
+            console.log('Error in controllers/blogController -> changePostDescriptionPhotos()', "There's no file...");
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/blogController -> changePostPhoto()', err);
+        console.log('Error in controllers/blogController -> changePostDescriptionPhotos()', err);
         res.send({ success: false });
     }
 }

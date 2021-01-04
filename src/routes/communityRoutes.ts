@@ -21,7 +21,7 @@ let upload = multer({
 
 let storage2 = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/blog-post')
+        cb(null, 'uploads/blog-post/' + req.params.blogPostId)
     },
     filename: function (req: any, file: any, cb: any) {
         console.log(file);
@@ -57,7 +57,8 @@ router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTok
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
 
 router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
-router.post('/blog/changePostPhoto', authenticateJWT, upload2.single('image'), blogController.changePostPhoto);
+router.post('/blog/changePostPhoto', authenticateJWT, upload.single('image'), blogController.changePostPhoto);
+router.post('/blog/changePostDescriptionPhotos/:blogPostId', authenticateJWT, upload2.array('image'), blogController.changePostDescriptionPhotos);
 
 
 
