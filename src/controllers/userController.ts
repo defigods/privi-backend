@@ -388,6 +388,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     trustScore: 0.5,
                     awards: [],
                     creds: [],
+                    badges: [],
                     followings: [],
                     numFollowings: 0,
                     followers: [],
@@ -489,6 +490,7 @@ interface BasicInfo {
     endorsementScore: number,
     awards: any[],
     creds: any[],
+    badges: any[],
     numFollowers: number,
     numFollowings: number,
     bio: string,
@@ -504,8 +506,8 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [],
-            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
+            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [], 
+            badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
@@ -525,6 +527,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.endorsementScore = userData.endorsementScore;
             basicInfo.creds = userData.creds || [];
             basicInfo.awards = userData.awards || [];
+            basicInfo.badges = userData.badges || [];
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
@@ -1418,6 +1421,30 @@ const getUserList = async (req: express.Request, res: express.Response) => {
     }
 };
 
+// get all badges
+const getBadges = async (req: express.Request, res: express.Response) => {
+    try {
+        // const creator = req.body;
+        const allBadges: any[] = [];
+        const badgesSnap = await db.collection(collections.badges).get();
+        // .where("creator", "==", creator).get();
+
+        badgesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            allBadges.push({ ...data });
+        });
+
+        res.send({
+            success: true, 
+            data: {
+                all: allBadges
+                }
+        });
+    } catch (e) {
+        return ('Error in controllers/userControllers -> getBadges()' + e)
+    }
+}
+
 const createBadge = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -1430,16 +1457,15 @@ const createBadge = async (req: express.Request, res: express.Response) => {
 
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-
+        if (blockchainRes && blockchainRes.success) {  
+            //await updateFirebase(blockchainRes);
             let badgesGet = await db.collection(collections.badges).get();
-            let id = badgesGet.size;
+            let id = badgesGet.size.toString();
 
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc('' + id + 1), {
+                transaction.set(db.collection(collections.badges).doc(id), {
                     creator: creator,
-                    name: name,
+                    name: name, 
                     description: description,
                     symbol: name,
                     users: [],
@@ -1451,6 +1477,16 @@ const createBadge = async (req: express.Request, res: express.Response) => {
                 });
             });
 
+            // add badge to user
+            const userRef = db.collection(collections.user).doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+            let badges = user.badges || [];
+    
+            await userRef.update({
+                badges: badges.push(id)
+            });
+    
             res.send({
                 success: true, data: {
                     creator: creator,
@@ -1473,7 +1509,6 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         return ('Error in controllers/userController -> createBadge()' + e)
     }
 }
-
 
 const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
     try {
@@ -1779,6 +1814,7 @@ module.exports = {
     getLoginInfo,
     getPhotoById,
     getUserList,
+    getBadges,
     createBadge,
     changeBadgePhoto,
     getIssuesAndProposals,

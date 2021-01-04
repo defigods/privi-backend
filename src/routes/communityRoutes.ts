@@ -35,6 +35,7 @@ let upload2 = multer({
 router.post('/votation/create', authenticateJWT, communityController.createVotation);
 router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
 
+router.post('/badges/getBadges', authenticateJWT, communityController.getBadges);
 router.post('/badges/create', authenticateJWT, communityController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
 
