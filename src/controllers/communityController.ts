@@ -449,6 +449,44 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     }
 }
 
+// get all badges
+exports.getBadges = async (req: express.Request, res: express.Response) => {
+    try {
+        // const creator = req.params.creator;
+        const allBadges: any[] = [];
+        const badgesSnap = await db.collection(collections.badges).get();
+        // .where("creator", "==", creator)
+
+        badgesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            allBadges.push({ ...data });
+        });
+
+        res.send({
+            success: true, 
+            data: {
+                all: allBadges
+                }
+        });
+    } catch (e) {
+        return ('Error in controllers/communitiesControllers -> getBadges()' + e)
+    }
+}
+
+// get a single badge data
+// exports.getBadge = async (req: express.Request, res: express.Response) => {
+//     try {
+//         const communityAddress = req.params.communityAddress;
+//         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+//         const rateOfChange = await getRateOfChangeAsMap();
+//         const data: any = communitySnap.data();
+//         const extraData = getExtraData(data, rateOfChange);
+//         res.send({ success: true, data: { ...data, ...extraData } });
+//     } catch (e) {
+//         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
+//     }
+// }
+
 exports.createBadge = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -460,14 +498,12 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         const txid = generateUniqueId();
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-          
+        if (blockchainRes && blockchainRes.success) {          
             let badgesGet = await db.collection(collections.badges).get();
-            let id = badgesGet.size;
+            let id = badgesGet.size.toString();
 
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc('' + id + 1), {
+                transaction.set(db.collection(collections.badges).doc(id), {
                     creator: creator,
                     name: name,
                     description: description,
