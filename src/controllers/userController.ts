@@ -287,7 +287,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
 };
 
 const attachAddress = async (userPublicId: string) => {
-    return new Promise(async () => {
+    return new Promise(async (resolve, reject) => {
         try {
             console.log('got call from', userPublicId)
             // const role = body.role; // role should not be coming from user input?
@@ -328,15 +328,15 @@ const attachAddress = async (userPublicId: string) => {
     
                 });
     
-                return({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
+                resolve({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
     
             } else {
                 console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
-                return({ success: false });
+                reject({ success: false });
             }
         } catch (err) {
             console.log('Error in controllers/user.ts -> attachaddress(): ', err);
-            return({ success: false });
+            reject({ success: false });
         }
     });
 };
