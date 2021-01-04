@@ -1,4 +1,11 @@
-import { updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getUidFromEmail } from "../functions/functions";
+import {
+    updateFirebase,
+    createNotification,
+    getRateOfChangeAsMap,
+    getCurrencyRatesUsdBase,
+    getUidFromEmail,
+    generateUniqueId
+} from "../functions/functions";
 import { formatDate } from "../functions/utilities";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
@@ -7,21 +14,10 @@ import express from 'express';
 import path from 'path';
 import fs from "fs";
 
-module.exports.blogCreate = async (req: express.Request, res: express.Response) => {
+exports.blogCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     console.log(body);
-/*
-comments: true,
-name: 'title',
-textShort: 'text short',
-schedulePost: 1609424580000,
-mainHashtag: '#main',
-hashtags: [ '#main', '#tag2' ],
-communityId: 'Px4487bc42-43ff-46cc-b19a-4ab40a4a8417',
-selectedFormat: 1,
-description: 'sdfsfdsfsdfds',
-*/
 
     const comments = body.comments || false; // allow comments?
     const name = body.name;
@@ -34,33 +30,35 @@ description: 'sdfsfdsfsdfds',
     const description = body.description;
     const descriptionArray = body.descriptionArray;
 
-    let blogPostGet = await db.collection(collections.blogPost).get();
-    let newId = blogPostGet.size + 1;
+    /*let blogPostGet = await db.collection(collections.blogPost).get();
+    let newId = blogPostGet.size + 1;*/
+
+    const uid = generateUniqueId();
 
     if (name && textShort) {
-      let data = {
-          comments: comments,
-          name: name,
-          textShort: textShort,
+    let data = {
+        comments: comments,
+        name: name,
+        textShort: textShort,
 
-          schedulePost: schedulePost,
-          mainHashtag: mainHashtag,
-          hashtags: hashtags,
-          communityId: communityId,
-          selectedFormat: selectedFormat,
-          description: description,
-          descriptionArray: descriptionArray,
-
-          createdBy: req.body.priviUser.id,
-          createdAt: Date.now(),
-          updatedAt: null,
-        };
+        schedulePost: schedulePost,
+        mainHashtag: mainHashtag,
+        hashtags: hashtags,
+        communityId: communityId,
+        selectedFormat: selectedFormat,
+        description: description,
+        descriptionArray: descriptionArray,
+        hasPhoto: false,
+        createdBy: req.body.priviUser.id,
+        createdAt: Date.now(),
+        updatedAt: null,
+      };
 
       await db.runTransaction(async (transaction) => {
-        transaction.set(db.collection(collections.blogPost).doc('' + newId), data);
+        transaction.set(db.collection(collections.blogPost).doc('' + uid), data);
       });
 
-      let ret = {id: newId, ...data};
+      let ret = {id: uid, ...data};
       res.send({success: true, data: ret});
 
     } else {
@@ -72,6 +70,28 @@ description: 'sdfsfdsfsdfds',
     console.log('Error in controllers/blogController -> blogCreate()', err);
     res.send({ success: false });
   }
-
-
 } // blogCreate
+
+
+exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file) {
+            const blogPostRef = db.collection(collections.blogPost)
+                .doc(req.file.originalname);
+            const blogPostGet = await blogPostRef.get();
+            const blogPost: any = blogPostGet.data();
+            if (blogPost.HasPhoto) {
+                await blogPostRef.update({
+                    HasPhoto: true
+                });
+            }
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/blogController -> changePostPhoto()', "There's no file...");
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/blogController -> changePostPhoto()', err);
+        res.send({ success: false });
+    }
+}

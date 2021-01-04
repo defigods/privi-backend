@@ -3,6 +3,7 @@ const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from "multer";
 const communityController = require('../controllers/communityController');
+const blogController = require('../controllers/blogController');
 
 let storage = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
@@ -18,6 +19,18 @@ let upload = multer({
 });
 
 
+let storage2 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/blog-post')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload2 = multer({
+    storage: storage2
+});
 
 router.post('/votation/create', authenticateJWT, communityController.createVotation);
 router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
@@ -41,6 +54,9 @@ router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCo
 
 router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
+
+router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
+router.post('/blog/changePostPhoto', authenticateJWT, upload2.single('image'), blogController.changePostPhoto);
 
 
 

@@ -26,7 +26,6 @@ const insuranceRoutes = require('../routes/insuranceRoutes');
 const forumRoutes = require('../routes/forumRoutes');
 const communityRoutes = require('../routes/communityRoutes');
 const chatRoutes = require('../routes/chatRoutes');
-const blogRoutes = require('../routes/blogRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -73,7 +72,6 @@ export const startServer = (env: Env) => {
   app.use('/insurance', insuranceRoutes);
   app.use('/community', communityRoutes);
   app.use('/chat', chatRoutes);
-  app.use('/blog', blogRoutes);
 
   // start all cron jobs
   let name: string;

@@ -761,7 +761,7 @@ const changePostPhoto = async (req: express.Request, res: express.Response) => {
             const wallPostGet = await wallPostRef.get();
             const wallPost: any = wallPostGet.data();
             if (wallPost.HasPhoto) {
-                await wallPost.update({
+                await wallPostRef.update({
                     HasPhoto: true
                 });
             }
