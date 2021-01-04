@@ -286,6 +286,61 @@ const signIn = async (req: express.Request, res: express.Response) => {
 
 };
 
+const attachAddress = async (userPublicId: string) => {
+    return new Promise(async () => {
+        try {
+            console.log('got call from', userPublicId)
+            // const role = body.role; // role should not be coming from user input?
+            const role = "USER";
+            const caller = apiKey;
+            const lastUpdate = Date.now();
+    
+            // generate mnemonic and save it in DB ** only for testnet
+            /*
+                this is a bad approach and must be moved to frontend
+                and mnemonic should be encripted with a password and saved in user local machine
+            */
+            const mnemonic = bip39.generateMnemonic();
+            const seed = await bip39.mnemonicToSeed(mnemonic);
+            const path = PRIVI_WALLET_PATH;
+            const hdwallet = await hdkey.fromMasterSeed(seed);
+            const wallet = hdwallet.derive(path);
+            //    const privateKey = '0x' + wallet._privateKey.toString('hex');
+            const pubKey =  await privateToPublic(wallet._privateKey);   
+            const publicKey = '0x04' + pubKey.toString("hex");
+            const address = '0x' + await publicToAddress(pubKey).toString('hex');
+            const addressCheckSum = await toChecksumAddress(address);
+    
+            const blockchainRes = await dataProtocol.attachAddress(userPublicId, publicKey, caller);
+    
+            if (blockchainRes && blockchainRes.success) {
+    
+                // set address and mnemonic in User DB
+                await db.runTransaction(async (transaction) => {
+    
+                    // userData - no check if firestore insert works? TODO
+                    transaction.update(db.collection(collections.user).doc(userPublicId), {
+                        mnemonic: mnemonic,
+                        pubKey: publicKey,
+                        address: addressCheckSum,
+                        lastUpdate: lastUpdate,
+                    });
+    
+                });
+    
+                return({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
+    
+            } else {
+                console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
+                return({ success: false });
+            }
+        } catch (err) {
+            console.log('Error in controllers/user.ts -> attachaddress(): ', err);
+            return({ success: false });
+        }
+    });
+};
+
 const signUp = async (req: express.Request, res: express.Response) => {
     try {
         /*
@@ -405,7 +460,10 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     instagram: '',
                     facebook: '',
                     level: 1,
-                    notifications: []
+                    notifications: [],
+                    mnemonic: '',
+                    pubKey: '',
+                    address: '',
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -419,6 +477,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                 */
 
             });
+
+            // ------------------------- attach address only test net ----------------------------
+            await attachAddress(userPublicId);
 
             // ------------------------- Provisional for TestNet ---------------------------------
             // give user some balance in each tokens (50/tokenRate).
@@ -481,60 +542,60 @@ const signUp = async (req: express.Request, res: express.Response) => {
     }
 };
 
-const attachAddress = async (req: express.Request, res: express.Response) => {
-    try {
+// const createMnemonic = async (req: express.Request, res: express.Response) => {
+//     try {
+//         const body = req.body;
+//         const userPublicId = body.userId;
+//         console.log('got call from', userPublicId)
+//         // const role = body.role; // role should not be coming from user input?
+//         const role = "USER";
+//         const caller = apiKey;
+//         const lastUpdate = Date.now();
 
-        const body = req.body;
-        const userPublicId = body.userPublicId;
+//         // generate mnemonic and save it in DB ** only for testnet
+//         /*
+//             this is a bad approach and must be moved to frontend
+//             and mnemonic should be encripted with a password and saved in user local machine
+//         */
+//         const mnemonic = bip39.generateMnemonic();
+//         const seed = await bip39.mnemonicToSeed(mnemonic);
+//         const path = PRIVI_WALLET_PATH;
+//         const hdwallet = await hdkey.fromMasterSeed(seed);
+//         const wallet = hdwallet.derive(path);
+//         //    const privateKey = '0x' + wallet._privateKey.toString('hex');
+//         const pubKey =  await privateToPublic(wallet._privateKey);   
+//         const publicKey = '0x04' + pubKey.toString("hex");
+//         const address = '0x' + await publicToAddress(pubKey).toString('hex');
+//         const addressCheckSum = await toChecksumAddress(address);
 
-        // const role = body.role; // role should not be coming from user input?
-        const role = "USER";
-        const caller = apiKey;
-        const lastUpdate = Date.now();
+//         const blockchainRes = await dataProtocol.attachAddress(userPublicId, publicKey, caller);
 
-        // generate mnemonic and save it in DB ** only for testnet
-        /*
-            this is a bad approach and must be moved to frontend
-            and mnemonic should be encripted with a password and saved in user local machine
-        */
-        const mnemonic = bip39.generateMnemonic();
-        const seed = await bip39.mnemonicToSeed(mnemonic);
-        const path = PRIVI_WALLET_PATH;
-        const hdwallet = await hdkey.fromMasterSeed(seed);
-        const wallet = hdwallet.derive(path);
-        //    const privateKey = '0x' + wallet._privateKey.toString('hex');
-        const pubKey =  await privateToPublic(wallet._privateKey);   
-        //    const publicKey = pubKey.toString("hex");
-        const address = '0x' + await publicToAddress(pubKey).toString('hex');
-        const addressCheckSum = await toChecksumAddress(address);
+//         if (blockchainRes && blockchainRes.success) {
 
-        const blockchainRes = await dataProtocol.attachAddress(userPublicId, addressCheckSum, caller);
+//             // set address and mnemonic in User DB
+//             await db.runTransaction(async (transaction) => {
 
-        if (blockchainRes && blockchainRes.success) {
+//                 // userData - no check if firestore insert works? TODO
+//                 transaction.update(db.collection(collections.user).doc(userPublicId), {
+//                     mnemonic: mnemonic,
+//                     pubKey: publicKey,
+//                     address: addressCheckSum,
+//                     lastUpdate: lastUpdate,
+//                 });
 
-            // set address and mnemonic in User DB
-            await db.runTransaction(async (transaction) => {
+//             });
 
-                // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.user).doc(userPublicId), {
-                    mnemonic: mnemonic,
-                    address: addressCheckSum,
-                    lastUpdate: lastUpdate,
-                });
+//             res.send({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
 
-            });
-
-            res.send({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
-
-        } else {
-            console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
-            res.send({ success: false });
-        }
-    } catch (err) {
-        console.log('Error in controllers/user.ts -> attachaddress(): ', err);
-        res.send({ success: false });
-    }
-};
+//         } else {
+//             console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
+//             res.send({ success: false });
+//         }
+//     } catch (err) {
+//         console.log('Error in controllers/user.ts -> attachaddress(): ', err);
+//         res.send({ success: false });
+//     }
+// };
 
 // MY WALL FUNCTIONS
 
@@ -1738,7 +1799,7 @@ module.exports = {
     resendEmailValidation,
     signIn,
     signUp,
-    attachAddress,
+    // createMnemonic,
     getFollowPodsInfo,
     getFollowingUserInfo,
     getOwnInfo,
