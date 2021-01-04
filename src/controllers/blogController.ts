@@ -86,7 +86,7 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         });
       }
 
-      let dir = 'uploads/blog-post/' + req.file.originalname;
+      let dir = 'uploads/blogPost/' + 'photos-' + req.file.originalname;
 
       if (!fs.existsSync(dir)){
         fs.mkdirSync(dir);
@@ -137,3 +137,68 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
         res.send({ success: false });
     }
 }
+
+exports.getBlogPost =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+    let posts : any[] = [];
+
+    const blogPostQuery = await db.collection(collections.blogPost)
+      .where("communityId", "==", params.communityId).get();
+    if(!blogPostQuery.empty) {
+      for (const doc of blogPostQuery.docs) {
+        let data = doc.data();
+        data.id = doc.id;
+        posts.push(data);
+      }
+      res.status(200).send({
+        success: true,
+        data: posts
+      });
+    } else {
+      res.status(200).send({
+        success: true,
+        data: []
+      });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getBlogPost()', err);
+    res.send({ success: false });
+  }
+}
+
+exports.getBlogPostPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let postId = req.params.blogPostId;
+    if (postId) {
+      const directoryPath = path.join('uploads', 'blogPost');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'blogPost', postId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/blogController -> getBlogPostPhotoById()', "There's no post id...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getBlogPostPhotoById()', err);
+    res.send({ success: false });
+  }
+};
