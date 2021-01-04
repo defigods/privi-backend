@@ -44,6 +44,12 @@ export async function updateFirebase(blockchainRes) {
         const updateVoters = output.UpdateVoters;
         // badges
         const updateBadges = output.UpdateBadges;
+        // liquidity pools
+        const updatedLiquidityPoolInfos = output.UpdatedLiquidityPoolInfos;
+        const updatedLiquidityPoolStates = output.UpdatedLiquidityPoolStates;
+        const updatedProtocolPool = output.UpdatedProtocolPool;
+        // staking
+        const updateStakings = output.UpdateStakings;
 
         // update badges
         if (updateBadges) {
@@ -114,7 +120,7 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
-        
+
         // update balances
         if (updateBalances) {
             let key: string = "";
@@ -344,6 +350,39 @@ export async function updateFirebase(blockchainRes) {
             let votationObj: any = {};
             for ([votationId, votationObj] of Object.entries(updatedCreditState)) {
                 transaction.set(db.collection(collections.voter).doc(votationId), votationObj, { merge: true });
+            }
+        }
+        // update liquidity pools info
+        if (updatedLiquidityPoolInfos) {
+            let poolToken: string = '';
+            let poolObj: any = {};
+            for ([poolToken, poolObj] of Object.entries(updatedLiquidityPoolInfos)) {
+                transaction.set(db.collection(collections.liquidityPools).doc(poolToken), poolObj, { merge: true });
+            }
+        }
+        // update liquidity pools states
+        if (updatedLiquidityPoolStates) {
+            let poolToken: string = '';
+            let poolObj: any = {};
+            for ([poolToken, poolObj] of Object.entries(updatedLiquidityPoolStates)) {
+                transaction.set(db.collection(collections.liquidityPools).doc(poolToken), poolObj, { merge: true });
+            }
+        }
+        // update protocol pools
+        if (updatedProtocolPool) {
+            let poolToken: string = '';
+            let poolObj: any = {};
+            for ([poolToken, poolObj] of Object.entries(updatedLiquidityPoolStates)) {
+                transaction.set(db.collection(collections.liquidityPools).doc(poolToken), poolObj, { merge: true });
+            }
+        }
+        // update staking
+        if (updateStakings) {
+            let token: string = '';
+            let obj: any = {};
+            for ([token, obj] of Object.entries(updateStakings)) {
+                const userAddress = obj.UserAddress;
+                transaction.set(db.collection(collections.stakingDeposit).doc(userAddress), obj, { merge: true });
             }
         }
     });

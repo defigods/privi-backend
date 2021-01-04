@@ -14,7 +14,7 @@ router.get('/getTotalBalance', authenticateJWT, walletController.getTotalBalance
 router.get('/getTokenBalances', authenticateJWT, walletController.getTokenBalances);    // rateOfChange token balances
 router.get('/getAllTokenBalances', authenticateJWT, walletController.getAllTokenBalances);  // all token balances
 router.get('/getAllTokensWithBuyingPrice', walletController.getAllTokensWithBuyingPrice);  // all token balances
-router.get('/getBalanceHisotryInTokenTypes', authenticateJWT, walletController.getBalanceHisotryInTokenTypes);
+router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes);
 router.get('/getTransfers', authenticateJWT, walletController.getTransfers);
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
 router.get('/getTotalIncome', authenticateJWT, walletController.getTotalIncome);

@@ -1,53 +1,59 @@
 import express from 'express';
 import priviGovernance from "../blockchain/priviGovernance";
-import { updateFirebase, createNotification } from "../functions/functions";
+import { updateFirebase, createNotification, generateUniqueId } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections, { stakingDeposit } from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
-import {user} from "firebase-functions/lib/providers/auth";
+import { user } from "firebase-functions/lib/providers/auth";
 const notificationsController = require('./notificationsController');
+
+const apiKey = process.env.API_KEY;
+
+// ----------------------------------- POST -------------------------------------------
 
 // user stakes in a token
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userAddress = body.UserAddress;
-        const token = body.Token;
-        const amount = body.Amount;
-        const txnId = body.TxnId;
-        const date = body.Date;
-        const caller = body.Caller;
-        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, txnId, date, caller)
+        const userAddress = body.userAddress;
+        const token = body.token;
+        const amount = body.amount;
+
+        const txnId = generateUniqueId();
+        const date = Date.now();
+        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, txnId, date, apiKey)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            let newTokenDepositVal = Number(amount);
-            const docSnap = await db.collection(collections.stakingDeposit).doc(userAddress).get();
-            if (!docSnap.exists) {
-                const obj = {};
-                obj[token] = newTokenDepositVal;
-                docSnap.ref.set({ deposited: obj });
-            } else { // else calculate new deposited value and update firebase
-                const data = docSnap.data();
-                let txHistory : any[] = [];
-                if (data) { // update if already has some staking
-                    if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
-                    if(data.history) {
-                        txHistory = [...data.history]
-                    }
-                }
-                const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
-                const obj = {};
-                obj['history'] = txHistory;
-                obj[dotNotation] = newTokenDepositVal;
-                txHistory.push({
-                    amount: newTokenDepositVal,
-                    token: token,
-                    date: Date.now()
-                })
-                obj[dotNotation] = newTokenDepositVal;
-                db.collection(collections.stakingDeposit).doc(userAddress).update(obj);
-            }
+
+            // let newTokenDepositVal = Number(amount);
+            // const docSnap = await db.collection(collections.stakingDeposit).doc(userAddress).get();
+            // if (!docSnap.exists) {
+            //     const obj = {};
+            //     obj[token] = newTokenDepositVal;
+            //     docSnap.ref.set({ deposited: obj });
+            // } else { // else calculate new deposited value and update firebase
+            //     const data = docSnap.data();
+            //     let txHistory: any[] = [];
+            //     if (data) { // update if already has some staking
+            //         if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
+            //         if (data.history) {
+            //             txHistory = [...data.history]
+            //         }
+            //     }
+            //     const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
+            //     const obj = {};
+            //     obj['history'] = txHistory;
+            //     obj[dotNotation] = newTokenDepositVal;
+            //     txHistory.push({
+            //         amount: newTokenDepositVal,
+            //         token: token,
+            //         date: Date.now()
+            //     })
+            //     obj[dotNotation] = newTokenDepositVal;
+            //     db.collection(collections.stakingDeposit).doc(userAddress).update(obj);
+            // }
+
             /*createNotification(publicId, "Staking - Token Unstaked",
                 ` `,
                 notificationTypes.unstaking
@@ -86,21 +92,21 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
         const userAddress = body.UserAddress;
         const token = body.Token;
         const amount = body.Amount;
-        const txnId = body.TxnId;
-        const date = body.Date;
-        const caller = body.Caller;
-        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, txnId, date, caller);
+
+        const txnId = generateUniqueId();
+        const date = Date.now();;
+        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, txnId, date, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // update staking deposit: check if field already exists, if not intialize to the given amount else sum this value
             let newTokenDepositVal = -Number(amount);
             const docSnap = await db.collection(collections.stakingDeposit).doc(userAddress).get();
             if (docSnap.exists) {
-                const data : any = docSnap.data();
-                let txHistory : any[] = [];
+                const data: any = docSnap.data();
+                let txHistory: any[] = [];
                 if (data) { // update if already has some staking
                     if (data.deposited[token]) newTokenDepositVal += data.deposited[token];
-                    if(data.history) {
+                    if (data.history) {
                         txHistory = [...data.history]
                     }
                 }
@@ -241,6 +247,29 @@ exports.getUserStakeInfo = async (req: express.Request, res: express.Response) =
         res.send({ success: true, data: retData });
     } catch (err) {
         console.log('Error in controllers/stakingController -> getUserStakeInfo(): ', err);
+        res.send({ success: false });
+    }
+};
+
+
+// ----------------------------------- GETTER -------------------------------------------
+
+// get user staking amount of PRIVI
+exports.getStakingAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const userId = req.params.userId;
+        console.log(userId);
+        const stakingSnap = await db.collection(collections.stakingDeposit).doc(userId).get();
+        const data = stakingSnap.data();
+        if (data) {
+            const stakedAmount = data.StakedAmount + data.NewStakedAmount;
+            res.send({ success: true, data: stakedAmount });
+        }
+        else {
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/stakingController -> getStakings(): ', err);
         res.send({ success: false });
     }
 };

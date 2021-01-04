@@ -9,4 +9,6 @@ router.post('/unstakeToken', authenticateJWT, stakeController.unstakeToken);
 router.post('/getStakeReward', authenticateJWT, stakeController.getStakeReward);
 router.post('/getUserStakeInfo', authenticateJWT, stakeController.getUserStakeInfo);
 
+router.get('/getStakingAmount/:userId', authenticateJWT, stakeController.getStakingAmount);
+
 module.exports = router;
