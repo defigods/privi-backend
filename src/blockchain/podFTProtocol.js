@@ -80,92 +80,10 @@ module.exports.checkPODLiquidation = async (podId, rateOfChange) => {
     return blockchainRes.data;
 };
 
-// -------------------- liquidity pool ---------------------
 
-module.exports.createLiquidityPool = async (poolAddress, poolToken, minFee, maxFee, riskParameter, regimePoint, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/createLiquidityPool", {
-        Token: poolAddress,
-        PoolToken: poolToken,
-        MinFee: minFee,
-        MaxFee: maxFee,
-        RiskParameter: riskParameter,
-        RegimePoint: regimePoint,
-        Caller: caller
-    });
-    return blockchainRes.data;
-};
 
-module.exports.depositLiquidity = async (liquidityProviderAddress, poolToken, amount, depositId, txnId, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/depositLiquidity", {
-        liquidityProviderAddress: liquidityProviderAddress,
-        poolToken: poolToken,
-        Amount: amount,
-        depositId: depositId,
-        txnId: txnId,
-        caller: caller,
-    });
-    return blockchainRes.data;
-};
 
-module.exports.swapCrytoTokens = async (traderAddress, tokenFrom, tokenTo, amountFrom, rate, date, txnId, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/swapCrytoTokens", {
-        TraderAddress: traderAddress,
-        TokenFrom: tokenFrom,
-        TokenTo: tokenTo,
-        AmountFrom: amountFrom,
-        Rate: rate,
-        Date: date,
-        TxnId: txnId,
-        Caller: caller
-    });
-    return blockchainRes.data;
-};
 
-module.exports.protectLiquidityPool = async (poolToken, poolSpread, date, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/protectLiquidityPool", {
-        PoolToken: poolToken,
-        PoolSpread: poolSpread,
-        Date: date,
-        Caller: caller
-    });
-    return blockchainRes.data;
-};
-
-module.exports.listLiquidityPool = async (poolToken, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/listLiquidityPool", {
-        PoolToken: poolToken,
-        Caller: caller
-    });
-    return blockchainRes.data;
-};
-
-module.exports.getLiquidityPoolInfo = async (poolToken) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/getLiquidityPoolInfo", {
-        PoolToken: poolToken
-    });
-    return blockchainRes.data;
-};
-
-module.exports.getLiquidityPoolState = async (poolToken) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/getLiquidityPoolState", {
-        PoolToken: poolToken
-    });
-    return blockchainRes.data;
-};
-
-module.exports.getLiquidityDeposits = async (address) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/getLiquidityDeposits", {
-        Address: address
-    });
-    return blockchainRes.data;
-};
-
-module.exports.getLiquidityProviders = async (poolToken) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/getLiquidityProviders", {
-        PoolToken: poolToken
-    });
-    return blockchainRes.data;
-};
 
 module.exports.swapPOD = async (investorId, liquidityPoolId, podId, amount, rateOfChange) => {
     let blockchainRes = await axios.post(api.blockchainPodAPI + "/swapPOD", {

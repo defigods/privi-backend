@@ -4,6 +4,7 @@ const podController = require('./podController');
 const connectController = require('./connectController');
 const communityController = require('./communityController');
 const walletController = require('./walletController');
+const stakeController = require('./stakeController');
 
 const priviCreditPayInterest = priviCreditController.payInterest;
 const priviCreditManageHistory = priviCreditController.manageHistory;
@@ -15,6 +16,7 @@ const nftManagePriceHistory = podController.managePriceHistory;
 const checkTx = connectController.checkTx;
 const saveUserBalanceSum = walletController.saveUserBalanceSum;
 const endVotations = communityController.endVotations;
+const manageStakedAmount = stakeController.manageStakedAmount;
 
 
 // all cron jobs go here, server.ts will import all these functions and start them
@@ -28,5 +30,6 @@ module.exports = {
     nftManagePriceHistory,
     checkTx,
     saveUserBalanceSum,
-    endVotations
+    endVotations,
+    manageStakedAmount,
 }

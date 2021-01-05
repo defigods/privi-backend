@@ -2,9 +2,9 @@
 import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
-import {db} from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
-import {generateUniqueId} from "../functions/functions";
+import { generateUniqueId } from "../functions/functions";
 
 const logger = require('morgan');
 const cors = require('cors')
@@ -20,7 +20,7 @@ const walletRoutes = require('../routes/walletRoutes');
 const priviScanRoutes = require('../routes/priviScanRoutes');
 const priviCreditRoutes = require('../routes/priviCreditRoutes');
 const priviDataRoutes = require('../routes/priviDataRoutes');
-const poolRoutes = require('../routes/poolRoutes');
+const liquidityPoolRoutes = require('../routes/liquidityPoolRoutes');
 const ethereumRoutes = require('../routes/ethereumRoutes');
 const insuranceRoutes = require('../routes/insuranceRoutes');
 const forumRoutes = require('../routes/forumRoutes');
@@ -65,7 +65,7 @@ export const startServer = (env: Env) => {
   app.use('/wallet', walletRoutes);
   app.use('/privi-scan', priviScanRoutes);
   app.use('/priviCredit', priviCreditRoutes);
-  app.use('/liquidityPool', poolRoutes);
+  app.use('/liquidityPool', liquidityPoolRoutes);
   app.use('/ethereum', ethereumRoutes);
   app.use('/privi-data', priviDataRoutes);
   app.use('/forum', forumRoutes);
@@ -173,273 +173,273 @@ export const startServer = (env: Env) => {
 };
 
 export const startSocket = (env: Env) => {
-    // socket io
-    io = require('socket.io')(myServer, {
-        cors: {
-            origin: "*",
-            // methods: ["GET", "POST"]
-        }
+  // socket io
+  io = require('socket.io')(myServer, {
+    cors: {
+      origin: "*",
+      // methods: ["GET", "POST"]
+    }
+  });
+
+  io.on('connection', (socket) => {
+    console.log('socket.io connection successful')
+
+    // when the client emits 'add user', this listens and executes
+    socket.on('add user', async (userId) => {
+      console.log('add user', userId, socket.id);
+
+      socket.userId = userId;
+
+      sockets[socket.userId] = socket; // save reference
+      socket.join(userId); // subscribe to own room
+
+      const userRef = db.collection(collections.user)
+        .doc(userId);
+      // const userGet = await userRef.get();
+      // const user: any = userGet.data();
+      await userRef.update({
+        connected: true,
+        socketId: socket.id
+      });
     });
 
-    io.on('connection', (socket) => {
-      console.log('socket.io connection successful')
+    // when the user disconnects.. perform this
+    socket.on('disconnect', async () => {
+      console.log('disconnect', socket.id);
 
-      // when the client emits 'add user', this listens and executes
-      socket.on('add user', async (userId) => {
-        console.log('add user', userId, socket.id);
+      let usersRef = db.collection(collections.user);
+      let userRef = await usersRef.where('socketId', '==', socket.id);
+      const userGet = await userRef.get();
+      userGet.forEach(async (user) => {
+        console.log(user.id);
+        if (user.id) {
+          const userRef = db.collection(collections.user)
+            .doc(user.id);
 
-        socket.userId = userId;
-
-        sockets[socket.userId] = socket; // save reference
-        socket.join(userId); // subscribe to own room
-
-        const userRef = db.collection(collections.user)
-            .doc(userId);
-        // const userGet = await userRef.get();
-        // const user: any = userGet.data();
-        await userRef.update({
-          connected: true,
-          socketId: socket.id
-        });
+          sockets[user.id] = null;
+          await userRef.update({
+            connected: false,
+            socketId: null
+          });
+        } else {
+          console.log('disconnect');
+        }
       });
+    });
 
-      // when the user disconnects.. perform this
-      socket.on('disconnect', async () => {
-        console.log('disconnect', socket.id);
+    // when the client emits 'new message', this listens and executes
+    socket.on('new message', (data) => {
+      console.log('new message');
+    });
 
-        let usersRef = db.collection(collections.user);
-        let userRef = await usersRef.where('socketId', '==', socket.id);
-        const userGet = await userRef.get();
-        userGet.forEach(async (user) => {
-          console.log(user.id);
-          if (user.id) {
-            const userRef = db.collection(collections.user)
-                .doc(user.id);
 
-            sockets[user.id] = null;
-            await userRef.update({
-              connected: false,
-              socketId: null
-            });
+    // when the client emits 'typing'
+    socket.on('typing', () => {
+      console.log('typing');
+    });
+
+    // when the client emits 'stop typing'
+    socket.on('stop typing', () => {
+      console.log('stop typing');
+    });
+
+    socket.on('subscribe', async function (users) {
+      let room;
+      if (users && users.userFrom && users.userTo) {
+        if (users.userFrom.userName && users.userTo.userName) {
+          if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
+            room = "" + users.userFrom.userId + "" + users.userTo.userId;
           } else {
-            console.log('disconnect');
+            room = "" + users.userTo.userId + "" + users.userFrom.userId;
           }
-        });
-      });
-
-      // when the client emits 'new message', this listens and executes
-      socket.on('new message', (data) => {
-        console.log('new message');
-      });
-
-
-      // when the client emits 'typing'
-      socket.on('typing', () => {
-        console.log('typing');
-      });
-
-      // when the client emits 'stop typing'
-      socket.on('stop typing', () => {
-        console.log('stop typing');
-      });
-
-      socket.on('subscribe', async function(users) {
-        let room;
-        if(users && users.userFrom && users.userTo){
-          if(users.userFrom.userName && users.userTo.userName) {
-            if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
-              room = "" + users.userFrom.userId + "" + users.userTo.userId;
-            } else {
-              room = "" + users.userTo.userId + "" + users.userFrom.userId;
-            }
-          }
-          const chatQuery = await db.collection(collections.chat)
-              .where("room", "==", room).get();
-          if(!chatQuery.empty) {
-            for (const doc of chatQuery.docs) {
-              let data = doc.data()
-              if(users.userFrom.userId === data.users.userFrom.userId) {
-                db.collection(collections.chat).doc(doc.id).update({
-                  "users.userFrom.lastView": Date.now()
-                });
-              } else if(users.userFrom.userId === data.users.userTo.userId) {
-                db.collection(collections.chat).doc(doc.id).update({
-                  "users.userTo.lastView": Date.now()
-                });
-              }
-              console.log('joining room', room);
-              socket.join(room);
-            }
-          } else {
-            await db.runTransaction(async (transaction) => {
-              const uid = generateUniqueId();
-
-              // userData - no check if firestore insert works? TODO
-              transaction.set(db.collection(collections.chat).doc(uid), {
-                users: users,
-                created: Date.now(),
-                room: room,
-                lastMessage: null,
-                lastMessageDate: null,
-                messages: []
+        }
+        const chatQuery = await db.collection(collections.chat)
+          .where("room", "==", room).get();
+        if (!chatQuery.empty) {
+          for (const doc of chatQuery.docs) {
+            let data = doc.data()
+            if (users.userFrom.userId === data.users.userFrom.userId) {
+              db.collection(collections.chat).doc(doc.id).update({
+                "users.userFrom.lastView": Date.now()
               });
-            });
-
+            } else if (users.userFrom.userId === data.users.userTo.userId) {
+              db.collection(collections.chat).doc(doc.id).update({
+                "users.userTo.lastView": Date.now()
+              });
+            }
             console.log('joining room', room);
             socket.join(room);
           }
-        }
-      });
+        } else {
+          await db.runTransaction(async (transaction) => {
+            const uid = generateUniqueId();
 
-      socket.on('subscribeToYou', async (user) => {
-        socket.join(user._id);
-      });
-
-      socket.on('numberMessages', async (id) => {
-        const messageQuery = await db.collection(collections.message)
-            .where("to", "==", id)
-            .where("seen", "==", false).get();
-        if (!messageQuery.empty) {
-          socket.to(id).emit('numberMessages', { number: messageQuery.docs.length });
-        }
-      });
-
-      socket.on('add-message', async (message) => {
-        console.log('message', message);
-
-        const uid = generateUniqueId();
-        await db.runTransaction(async (transaction) => {
-
-          // userData - no check if firestore insert works? TODO
-          transaction.set(db.collection(collections.message).doc(uid), {
-            room: message.room,
-            message: message.message,
-            from: message.from,
-            to: message.to,
-            created: Date.now(),
-            seen: false
-          });
-        });
-        const chatQuery = await db.collection(collections.chat)
-            .where("room", "==", message.room).get();
-        if(!chatQuery.empty) {
-          for (const doc of chatQuery.docs) {
-            let data = doc.data();
-            let messages : any = data.messages;
-            messages.push(uid)
-
-            db.collection(collections.chat).doc(doc.id).update({
-              messages: messages,
-              lastMessage: message.message,
-              lastMessageDate: message.created
+            // userData - no check if firestore insert works? TODO
+            transaction.set(db.collection(collections.chat).doc(uid), {
+              users: users,
+              created: Date.now(),
+              room: room,
+              lastMessage: null,
+              lastMessageDate: null,
+              messages: []
             });
-          }
-        }
+          });
 
-        const messageQuery = await db.collection(collections.message)
-            .where("to", "==", message.to)
-            .where("seen", "==", false).get();
-        if (!messageQuery.empty) {
-          socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+          console.log('joining room', room);
+          socket.join(room);
         }
+      }
+    });
 
-        console.log('sending room post', message);
-        socket.to(message.room).emit('message', {
+    socket.on('subscribeToYou', async (user) => {
+      socket.join(user._id);
+    });
+
+    socket.on('numberMessages', async (id) => {
+      const messageQuery = await db.collection(collections.message)
+        .where("to", "==", id)
+        .where("seen", "==", false).get();
+      if (!messageQuery.empty) {
+        socket.to(id).emit('numberMessages', { number: messageQuery.docs.length });
+      }
+    });
+
+    socket.on('add-message', async (message) => {
+      console.log('message', message);
+
+      const uid = generateUniqueId();
+      await db.runTransaction(async (transaction) => {
+
+        // userData - no check if firestore insert works? TODO
+        transaction.set(db.collection(collections.message).doc(uid), {
           room: message.room,
           message: message.message,
           from: message.from,
           to: message.to,
           created: Date.now(),
-          seen: false,
-          id: uid
+          seen: false
         });
       });
+      const chatQuery = await db.collection(collections.chat)
+        .where("room", "==", message.room).get();
+      if (!chatQuery.empty) {
+        for (const doc of chatQuery.docs) {
+          let data = doc.data();
+          let messages: any = data.messages;
+          messages.push(uid)
 
-      socket.on('subscribe-discord', async function(chatInfo) {
-        if(chatInfo.discordChatId && chatInfo.discordRoomId){
-          const discordRoomRef = db.collection(collections.discordChat)
-              .doc(chatInfo.discordChatId).collection(collections.discordRoom)
-              .doc(chatInfo.discordRoomId);
-          const discordRoomGet = await discordRoomRef.get();
-          const discordRoom : any = discordRoomGet.data();
-
-          let users : any[] = [...discordRoom.users]
-          let findUserIndex = users.findIndex((user, i) => chatInfo.userId === user.userId);
-          if(findUserIndex !== -1) {
-            users[findUserIndex].lastView = Date.now();
-            users[findUserIndex].userConnected = true;
-          }
-
-          console.log('joining room', chatInfo.discordRoomId);
-          socket.join(chatInfo.discordRoomId);
-        } else {
-          console.log('Error subscribe-discord socket: No Room provided')
-        }
-      });
-
-      socket.on('numberMessages-discord', async function(room) {
-        // Not need it now, think how to implement it
-      });
-
-      socket.on('add-message-discord', async function(message) {
-        console.log('message', message);
-
-        const uid = generateUniqueId();
-        await db.runTransaction(async (transaction) => {
-
-          // userData - no check if firestore insert works? TODO
-          transaction.set(db.collection(collections.discordMessage).doc(uid), {
-            discordRoom: message.discordRoom,
-            message: message.message,
-            from: message.from,
-            created: Date.now(),
-            seen: [],
-            likes: 0,
-            dislikes: 0
+          db.collection(collections.chat).doc(doc.id).update({
+            messages: messages,
+            lastMessage: message.message,
+            lastMessageDate: message.created
           });
-        });
+        }
+      }
+
+      const messageQuery = await db.collection(collections.message)
+        .where("to", "==", message.to)
+        .where("seen", "==", false).get();
+      if (!messageQuery.empty) {
+        socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+      }
+
+      console.log('sending room post', message);
+      socket.to(message.room).emit('message', {
+        room: message.room,
+        message: message.message,
+        from: message.from,
+        to: message.to,
+        created: Date.now(),
+        seen: false,
+        id: uid
+      });
+    });
+
+    socket.on('subscribe-discord', async function (chatInfo) {
+      if (chatInfo.discordChatId && chatInfo.discordRoomId) {
         const discordRoomRef = db.collection(collections.discordChat)
-            .doc(message.discordChatId).collection(collections.discordRoom)
-            .doc(message.discordRoom);
+          .doc(chatInfo.discordChatId).collection(collections.discordRoom)
+          .doc(chatInfo.discordRoomId);
         const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();
+        const discordRoom: any = discordRoomGet.data();
 
-        let messages : any = discordRoom.messages;
-        messages.push(uid);
+        let users: any[] = [...discordRoom.users]
+        let findUserIndex = users.findIndex((user, i) => chatInfo.userId === user.userId);
+        if (findUserIndex !== -1) {
+          users[findUserIndex].lastView = Date.now();
+          users[findUserIndex].userConnected = true;
+        }
 
-        await discordRoomRef.update({
-          messages: messages,
-          lastMessage: message.message,
-          lastMessageDate: Date.now()
-        });
+        console.log('joining room', chatInfo.discordRoomId);
+        socket.join(chatInfo.discordRoomId);
+      } else {
+        console.log('Error subscribe-discord socket: No Room provided')
+      }
+    });
 
-        /*const messageQuery = await db.collection(collections.message)
-            .where("to", "==", message.to)
-            .where("seen", "==", false).get();
-        if (!messageQuery.empty) {
-          socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
-        }*/
-        const userRef = db.collection(collections.user).doc(message.from);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+    socket.on('numberMessages-discord', async function (room) {
+      // Not need it now, think how to implement it
+    });
 
-        console.log('sending room post', message);
-        socket.to(message.discordRoom).emit('message-discord', {
+    socket.on('add-message-discord', async function (message) {
+      console.log('message', message);
+
+      const uid = generateUniqueId();
+      await db.runTransaction(async (transaction) => {
+
+        // userData - no check if firestore insert works? TODO
+        transaction.set(db.collection(collections.discordMessage).doc(uid), {
           discordRoom: message.discordRoom,
           message: message.message,
           from: message.from,
-          user: {
-            name: user.firstName,
-            level: user.level || 1,
-            cred: user.cred || 0,
-            salutes: user.salutes || 0,
-          },
           created: Date.now(),
           seen: [],
           likes: 0,
-          dislikes: 0,
-          id: uid
+          dislikes: 0
         });
       });
+      const discordRoomRef = db.collection(collections.discordChat)
+        .doc(message.discordChatId).collection(collections.discordRoom)
+        .doc(message.discordRoom);
+      const discordRoomGet = await discordRoomRef.get();
+      const discordRoom: any = discordRoomGet.data();
+
+      let messages: any = discordRoom.messages;
+      messages.push(uid);
+
+      await discordRoomRef.update({
+        messages: messages,
+        lastMessage: message.message,
+        lastMessageDate: Date.now()
+      });
+
+      /*const messageQuery = await db.collection(collections.message)
+          .where("to", "==", message.to)
+          .where("seen", "==", false).get();
+      if (!messageQuery.empty) {
+        socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+      }*/
+      const userRef = db.collection(collections.user).doc(message.from);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      console.log('sending room post', message);
+      socket.to(message.discordRoom).emit('message-discord', {
+        discordRoom: message.discordRoom,
+        message: message.message,
+        from: message.from,
+        user: {
+          name: user.firstName,
+          level: user.level || 1,
+          cred: user.cred || 0,
+          salutes: user.salutes || 0,
+        },
+        created: Date.now(),
+        seen: [],
+        likes: 0,
+        dislikes: 0,
+        id: uid
+      });
     });
+  });
 };
