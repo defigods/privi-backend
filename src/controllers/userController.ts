@@ -311,7 +311,7 @@ const attachAddress = async (userPublicId: string) => {
             const address = '0x' + await publicToAddress(pubKey).toString('hex');
             const addressCheckSum = await toChecksumAddress(address);
     
-            const blockchainRes = await dataProtocol.attachAddress(userPublicId, publicKey, caller);
+            const blockchainRes = await dataProtocol.attachAddress(userPublicId, addressCheckSum, caller);
     
             if (blockchainRes && blockchainRes.success) {
     
