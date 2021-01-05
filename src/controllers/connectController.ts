@@ -66,7 +66,7 @@ const getChainId = () => {
             console.log('Error in connectController.ts->getChainId(): ', err)
         });
 };
-// getChainId();
+getChainId();
 
 /**
  * @notice Start http & websocket servers to interact with the front-end
@@ -225,6 +225,7 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
  */
 const send = async (req: express.Request, res: express.Response) => {
     const body = req.body;
+    // console.log('body', body)
     if (typeof body.action === 'string') {
         if (body.action === Action.WITHDRAW_ERC20 || body.action === Action.WITHDRAW_ETH) {
             withdraw(body)
@@ -242,7 +243,7 @@ const send = async (req: express.Request, res: express.Response) => {
  * @param params Relevant transaction fields to be stored
  */
 const saveTx = async (params: any) => {
-
+    // console.log('saveTx',params)
     // Build object with fields to be stored in Firestore
     const data = {
         txHash: params.txHash,
@@ -250,6 +251,7 @@ const saveTx = async (params: any) => {
         to: params.to,
         random: params.random,
         publicId: params.publicId,
+        address: params.userAddress,
         chainId: params.chainId,
         action: params.action,
         description: params.description,
@@ -386,7 +388,7 @@ const wsListen = () => {
  * approve or withdraw
  */
 const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
-
+    // console.log('cronJob called');
     // Start WS server if not initialized yet
     (!runOnce) ? wsListen() : null;
 
@@ -399,18 +401,22 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
 
     // Process outstanding TX
     if (!snapshot.empty) {
+        console.log('!snapshot.empty', !snapshot.empty);
         for (let i in snapshot.docs) {
             const doc = snapshot.docs[i].data();
             const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+            console.log('confirmation', confirmations)
             if (confirmations > 0) {
                 if (!txQueue.includes(doc.txHash)) {
                     txQueue.push(doc.txHash);
                     if (doc.action === Action.SWAP_APPROVE_ERC20 ||
                         doc.action === Action.WITHDRAW_ETH ||
                         doc.action === Action.WITHDRAW_ERC20) {
+                            console.log('sendTxBack');
                         sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
                     } else {
-                        swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                        console.log('performing swap');
+                        swap(doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
                         return;
                     };
                 };
