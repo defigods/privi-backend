@@ -54,14 +54,20 @@ module.exports = {
     privacy: "EnabledPrivacy",
     rates: "ratesOfChange",
     rateHistory: "rateHistory",
+
     constants: "manualConstants",
     traditionalLendingConstants: "TraditionalLendingConstants",
     podFTConstants: "FTPodConstants",
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
+
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
+    stakingToken: "StakingToken",
+    retunHistory: "ReturnHistory",
+    stakedHistory: "StakedHistory",
+
     badges: "Badges",
     issues: "Issues",
     proposals: "Proposals",

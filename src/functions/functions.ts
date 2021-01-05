@@ -797,3 +797,19 @@ export function getSellTokenAmountPod(amm: string, supplyReleased: number, amoun
     }
     return fundingPhase + exchangePhase;
 }
+
+// add 7 days of 0 to History
+export async function addZerosToHistory(colRef, fieldName) {
+    const dates: Date[] = [];
+    for (let i = 6; i >= 0; i--) {
+        let date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+    }
+    dates.forEach((date) => {
+        const obj: any = {};
+        obj[fieldName] = 0;
+        obj.date = date.getTime();
+        colRef.add(obj);
+    });
+}
