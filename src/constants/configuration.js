@@ -15,6 +15,8 @@ const ETH_PRIVI_KEY = 'fa32c34f16b54be767b94aad4f86797bb3966c325c3e0c300b1ea3f4f
 const ETH_INFURA_KEY = 'eda1216d6a374b3b861bf65556944cdb';
 
 const PRIVI_WALLET_PATH = `m/44'/60'/0'/0/0`;
+const MIN_ETH_CONFIRMATION = 12; // > 12 to be fully secure
+const MIN_BTC_CONFIRMATION = 6;  // > 6 to be fully secure
 
 module.exports = {
 	JWT_SECRET_STRING,
@@ -30,5 +32,7 @@ module.exports = {
 	ETH_PRIVI_KEY,
 	ETH_INFURA_KEY,
 
-	PRIVI_WALLET_PATH
+	PRIVI_WALLET_PATH,
+	MIN_ETH_CONFIRMATION,
+	MIN_BTC_CONFIRMATION
 }

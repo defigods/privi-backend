@@ -22,6 +22,8 @@ router.get('/getTotalExpense', authenticateJWT, walletController.getTotalExpense
 
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
 
+router.get('/getBalancesOfAddress', authenticateJWT, walletController.getBalancesOfAddress);
+
 
 router.post('/registerTokens', walletController.registerTokens);
 router.post('/updateTokens', walletController.updateTokens);

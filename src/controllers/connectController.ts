@@ -4,8 +4,8 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase } from '../functions/functions';
-import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
+import { updateFirebase, confirmOneToOneSwap } from '../functions/functions';
+import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
@@ -401,12 +401,16 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
 
     // Process outstanding TX
     if (!snapshot.empty) {
-        console.log('!snapshot.empty', !snapshot.empty);
+        console.log('should check Tx for swap', !snapshot.empty);
         for (let i in snapshot.docs) {
             const doc = snapshot.docs[i].data();
+            const docId = snapshot.docs[i].id;
             const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-            console.log('confirmation', confirmations)
-            if (confirmations > 0) {
+            console.log('is confirmation > ', MIN_ETH_CONFIRMATION, confirmations > MIN_ETH_CONFIRMATION)
+            /* 
+                confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+            */
+            if (confirmations > MIN_ETH_CONFIRMATION) {
                 if (!txQueue.includes(doc.txHash)) {
                     txQueue.push(doc.txHash);
                     if (doc.action === Action.SWAP_APPROVE_ERC20 ||
@@ -416,7 +420,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                         sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
                     } else {
                         console.log('performing swap');
-                        swap(doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
                         return;
                     };
                 };
@@ -437,7 +441,9 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
  * @param lastUpdate Date of the swap in Unix timestamp
  */
 const swap = async (
+    swapDocId: string,
     publicId: string,
+    userAddress: string,
     from: string,
     amount: string,
     token: string,
@@ -449,22 +455,22 @@ const swap = async (
     try {
         console.log('--> Swap: TX confirmed in Ethereum');
 
-        const mint = {
-            From: from,
-            To: publicId,
-            Type: action,
-            Token: token,
-            Amount: amount,
-            Date: lastUpdate,
-            Id: txHash,
-            Caller: 'PRIVI'
-        }
-        console.log('Mint params: ', mint)
+        // const mint = {
+        //     From: from,
+        //     To: publicId,
+        //     Type: action,
+        //     Token: token,
+        //     Amount: amount,
+        //     Date: lastUpdate,
+        //     Id: txHash,
+        //     Caller: 'PRIVI'
+        // }
+        // console.log('Mint params: ', mint)
 
         const response = await swapFab(
             action,
             from,
-            publicId,
+            userAddress,
             amount,
             token,
             lastUpdate,
@@ -476,10 +482,15 @@ const swap = async (
             console.log('--> Swap: TX confirmed in Fabric: ', response);
 
             // Update balances in Firestore
-            updateFirebase(response);
+            // updateFirebase(response);
+
+            // confirm swap: ** this could be moved to updateFireBase
+            console.log('should confirm swap doc id', swapDocId)
+            confirmOneToOneSwap(swapDocId);
 
             // Update TX
-            await sendTxBack(txHash, publicId, action, random, 'OK');
+            // Sarkawt: i don't know why
+            // await sendTxBack(txHash, publicId, action, random, 'OK');
         } else {
             console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful', response);
             await sendTxBack(txHash, publicId, action, random, 'KO');

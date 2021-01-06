@@ -483,38 +483,40 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
             // ------------------------- Provisional for TestNet ---------------------------------
             // give user some balance in each tokens (50/tokenRate).
-            const coinsVal = 50; // value in USD to be sent
-            const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
-            const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
-            const arrayMultiTransfer: {}[] = [];
-            let token: string = "";
-            let rate: any = null;
-            for ([token, rate] of Object.entries(rateOfChange)) { // build multitransfer array object by looping in rateOfChange
-                // rateOfChange also cointains podTokens, we dont need them
-                const tid = generateUniqueId();
-                const date = Date.now();
-                if (token.length <= 8) {
-                    const amount = coinsVal / rateOfChange[token];
-                    const transferObj = {
-                        Type: "transfer",
-                        Token: token,
-                        From: fromUid,
-                        To: uid,
-                        Amount: amount,
-                        Id: tid,
-                        date: date
-                    };
-                    arrayMultiTransfer.push(transferObj);
-                }
-            }
-            const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer, caller);
-            if (blockchainRes2 && blockchainRes2.success) {
-                console.log('User initial gift sent: 50 USD in each token');
-                updateFirebase(blockchainRes2);
-            }
-            else {
-                console.log('Error at sending initial 50 coins, blockchain success = false.', blockchainRes2.message);
-            }
+            // const coinsVal = 50; // value in USD to be sent
+            // const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
+            // const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
+            // const arrayMultiTransfer: {}[] = [];
+            // let token: string = "";
+            // let rate: any = null;
+            // for ([token, rate] of Object.entries(rateOfChange)) { // build multitransfer array object by looping in rateOfChange
+            //     // rateOfChange also cointains podTokens, we dont need them
+            //     const tid = generateUniqueId();
+            //     const date = Date.now();
+            //     if (token.length <= 8) {
+            //         const amount = coinsVal / rateOfChange[token];
+            //         const transferObj = {
+            //             Type: "transfer",
+            //             Token: token,
+            //             From: fromUid,
+            //             To: uid,
+            //             Amount: amount,
+            //             Id: tid,
+            //             date: date
+            //         };
+            //         arrayMultiTransfer.push(transferObj);
+            //     }
+            // }
+            // console.log('signUp arrayMultiTransfer', arrayMultiTransfer)
+
+            // const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer, caller);
+            // if (blockchainRes2 && blockchainRes2.success) {
+            //     console.log('User initial gift sent: 50 USD in each token');
+            //     updateFirebase(blockchainRes2);
+            // }
+            // else {
+            //     console.log('Error at sending initial 50 coins, blockchain success = false.', blockchainRes2.message);
+            // }
             // ------------------------------------------------------------------------------------
 
             // send email validation here

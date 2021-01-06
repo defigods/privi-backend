@@ -290,6 +290,29 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 
 ///////////////////////////// gets //////////////////////////////
 
+module.exports.getBalancesOfAddress = async (req: express.Request, res: express.Response) => {
+    try {
+        console.log('getBalancesOfAddress req.query', req.query);
+        let { userId, userAddress } = req.query;
+        userId = userId!.toString();
+        userAddress = userAddress!.toString();
+
+        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+
+            console.log('getBalancesOfAddress: data send to front', blockchainRes.output)
+            res.send({ success: true, data: blockchainRes.output });
+        } else {
+            console.log("cant getBalancesOfAddress for", userAddress);
+            res.send({ success: false, data: {} });
+        }
+
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getBalancesOfAddress()', err);
+        res.send({ success: false });
+    }
+}
+
 /**
  * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
  */
@@ -483,16 +506,20 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
 }
 
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
+    // console.log('request', req)
     try {
-        let { userId } = req.query;
+        let { userId, userAddress } = req.query;
         userId = userId!.toString()
+        userAddress = userAddress!.toString();
         const rateOfChange = await getRateOfChangeAsMap();
         // get user currency in usd
         let sum = 0;    // in user currency
         // crypto
-        const userWalletRef = db.collection(collections.wallet).doc(userId);
+        const userWalletRef = db.collection(collections.wallet).doc(userAddress);
         const cryptoWallet = await userWalletRef.collection(collections.crypto).get();
         cryptoWallet.forEach((doc) => {
+            // console.log('rateOfChange[doc.id]', rateOfChange[doc.id])
+            // console.log('doc.data().Amount', doc.data().Amount)
             if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
             else sum += doc.data().Amount;
         });

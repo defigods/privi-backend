@@ -7,7 +7,12 @@ import { object } from "firebase-functions/lib/providers/storage";
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
 
-
+export async function confirmOneToOneSwap(swapDocID) {
+    await db.runTransaction(async (transaction) => {
+        console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {status: 'confirmed'});
+    });
+};
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
@@ -111,7 +116,7 @@ export async function updateFirebase(blockchainRes) {
                 let uid = "";
                 let token = "";
                 let tokenType = "";
-                const splitted: string[] = key.split(" ");
+                const splitted: string[] = key.split(" "); // Sarkawt: here it takes the address instead of publicId
                 uid = splitted[0];
                 token = splitted[1];
                 tokenType = await identifyTypeOfToken(token);   // token type colection
