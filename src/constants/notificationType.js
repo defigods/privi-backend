@@ -18,9 +18,13 @@ module.exports = {
     traditionalWithdrawCollateral: "traditional_collateral_withdraw",
     traditionalInterest: "lending_interest",
     traditionalLiquidation: "traditional_liquidated",
-    staking: "staking",
-    unstaking: "unstaking",
-    stakingInterest: "staking_interest",
+
+    staking: "PRIVI_Staking",
+    unstaking: "PRIVI_Unstaking",
+    stakingReward: "Staking_Reward",
+    mintingStaking: "Minting_Staking",
+
+
     podCreation: "POD_creation",
     podDeletion: "POD_deletion",
     podInvestment: "POD_investment",

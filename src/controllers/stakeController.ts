@@ -233,12 +233,34 @@ exports.manageStakedAmount = cron.schedule('0 0 * * *', async () => {
 });
 
 // // manage daily returns
-// exports.manageReturns = cron.schedule('0 0 * * *', async () => {
-//     try {
-//         console.log("********* Staking manageReturns() cron job started *********");
-//         TODO: SEND RETURN TO STAKED USERS AND ADD THE TOTAL AMOUNT TO HISTORY COLLECTION
-//     }
-//     catch (err) {
-//         console.log('Error in controllers/stakingController -> manageReturns()', err);
-//     }
-// });
+exports.manageReturns = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("********* Staking manageReturns() cron job started *********");
+        const tokensSnap = await db.collection(collections.stakingToken).get();
+        const tokenDocs = tokensSnap.docs;
+        for (let i = 0; i < tokenDocs.length; i++) {
+            const token = tokenDocs[i].id;
+            const txnId = generateUniqueId();
+            const date = Date.now();
+            const blockchainRes = await priviGovernance.payStakingReward(token, txnId, date, apiKey);
+            if (blockchainRes && blockchainRes.success) {
+                updateFirebase(blockchainRes);
+                // calculate total return amount
+                let returnAmount = 0;
+                const txns = blockchainRes.output ? blockchainRes.output.Transactions : {};
+                let tid: string = '';
+                let tobj: any = null;
+                for ([tid, tobj] of Object.entries(txns)) {
+                    if (tobj.Type == notificationTypes.stakingReward) returnAmount += tobj.Amount;
+                }
+                tokenDocs[i].ref.collection(collections.retunHistory).add({
+                    return: returnAmount,
+                    date: date
+                });
+            }
+        }
+    }
+    catch (err) {
+        console.log('Error in controllers/stakingController -> manageReturns()', err);
+    }
+});
