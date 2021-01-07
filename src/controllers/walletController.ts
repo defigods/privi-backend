@@ -299,7 +299,6 @@ module.exports.getBalancesOfAddress = async (req: express.Request, res: express.
 
         const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
         if (blockchainRes && blockchainRes.success) {
-
             // console.log('getBalancesOfAddress: data send to front', blockchainRes.output)
             res.send({ success: true, data: blockchainRes.output });
         } else {
@@ -506,7 +505,7 @@ module.exports.getTokensRate = async (req: express.Request, res: express.Respons
 }
 
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
-    // console.log('request', req)
+    console.log('getTotalBalancemust be depricated')
     try {
         let { userId, userAddress } = req.query;
         userId = userId!.toString()
@@ -575,8 +574,96 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     }
 }
 
+module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Response) => {
+    
+    try {
+        let { userId, userAddress } = req.query;
+        userId = userId!.toString()
+        userAddress = userAddress!.toString();
+        console.log('getTotalBalance_v2 is called', userAddress)
+        const rateOfChange = await getRateOfChangeAsMap();
+        // get user currency in usd
+        let sum = 0;    // in user currency
+        // crypto
+        const blockchainCryptoRes = await coinBalance.getBalancesByType(userAddress, collections.crypto, apiKey);
+        if (blockchainCryptoRes.success) {
+            const output = blockchainCryptoRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.crypto, blockchainCryptoRes)
+        }
+        // ft
+        const blockchainFtRes = await coinBalance.getBalancesByType(userAddress, collections.ft, apiKey);
+        if (blockchainFtRes.success) {
+            const output = blockchainFtRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.ft, blockchainFtRes)
+        }
+        // nft
+        const blockchainNftRes = await coinBalance.getBalancesByType(userAddress, collections.nft, apiKey);
+        if (blockchainNftRes.success) {
+            const output = blockchainNftRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.nft, blockchainNftRes)
+        }
+        // social
+        const blockchainSocialRes = await coinBalance.getBalancesByType(userAddress, collections.social, apiKey);
+        if (blockchainSocialRes.success) {
+            const output = blockchainSocialRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.social, blockchainSocialRes)
+        }
+
+        // get user currency
+        let amountInUserCurrency = sum;
+        const userSnap = await db.collection(collections.user).doc(userId).get();
+        const userData = userSnap.data();
+        let currency = "Unknown";
+        if (userData) {
+            currency = userData.currency;
+            const currencyRate = await getCurrencyRatesUsdBase()
+            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
+        }
+
+        const data = {
+            amount: amountInUserCurrency,   // total balance in users currency
+            tokens: rateOfChange["PC"] ? sum / rateOfChange["PC"] : 0,  // total balance in PC
+            currency: currency,
+            currency_symbol: currencySymbol.symbol(currency),
+            debt: 0,
+            daily_return: 0,
+            weekly_return: 0,
+            monthly_return: 0
+        }
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTotalBalance_v2()', err);
+        res.send({ success: false });
+    }
+}
+
 // get rateOfChange token balances
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
+    console.log('getTokenBalances to be depricated')
     try {
         let { userId } = req.query;
         userId = userId!.toString()
@@ -594,6 +681,31 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
         res.send({ success: true, data: retData });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokenBalances()', err);
+        res.send({ success: false });
+    }
+}
+
+module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.Response) => {
+    try {
+        let { userId, userAddress } = req.query;
+        userId = userId!.toString()
+        userAddress = userAddress!.toString()
+        const retData: {}[] = [];
+        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const output = blockchainRes.output;
+            // console.log('getTokenBalances_v2 blockchain output', output)
+            for (let balance of output) {
+                retData.push({ token: balance.Token, value: balance.Amount });
+            }
+            // console.log('getTokenBalances_v2 blockchain retData', retData)
+            res.send({ success: true, data: retData });
+        } else {
+            console.log("cant getTokenBalances_v2 for", userAddress);
+            res.send({ success: false, retData: {} });
+        }
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTokenBalances_v2()', err);
         res.send({ success: false });
     }
 }

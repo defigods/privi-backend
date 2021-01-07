@@ -15,7 +15,7 @@ export async function confirmOneToOneSwap(swapDocID) {
 };
 
 export async function getRecentSwaps(userAddress) {
-    console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
+    // console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
     let recentSwaps = {};
     const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate').limit(5)*/.get();
     for (const doc of swapQuery.docs) {

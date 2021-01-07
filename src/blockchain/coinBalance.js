@@ -18,6 +18,23 @@ module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 	return blockchainRes.data;
 };
 
+module.exports.getBalancesByType = async (userAddress, type, caller) => {
+	// console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/getBalancesByType", 
+		data: JSON.stringify({
+			PublicId: userAddress,
+			Type: type,
+			Caller: caller,
+		})
+    }
+	let blockchainRes = await axios(config);
+	// console.log('result blockchain', blockchainRes.data)
+	return blockchainRes.data;
+};
+
 module.exports.registerToken = async (name, type, symbol, supply, addressId, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/registerToken", {
 		Name: name,

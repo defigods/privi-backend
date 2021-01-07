@@ -597,9 +597,9 @@ const withdraw = async (params: any) => {
 
 const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     const { userId, userAddress } = req.query;
-    console.log('getRecentSwaps', userAddress)
+    // console.log('getRecentSwaps', userAddress)
     const recentSwaps = await loadRecentSwaps(userAddress);
-    console.log('recentSwaps', recentSwaps)
+    // console.log('recentSwaps', recentSwaps)
     if (recentSwaps) {
         res.send({success: true, data: recentSwaps});
     } else {

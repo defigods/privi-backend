@@ -11,7 +11,9 @@ router.post('/mint', authenticateJWT, walletController.mint);
 
 router.get('/getTokensRate', authenticateJWT, walletController.getTokensRate);
 router.get('/getTotalBalance', authenticateJWT, walletController.getTotalBalance);
+router.get('/getTotalBalance_v2', authenticateJWT, walletController.getTotalBalance_v2);
 router.get('/getTokenBalances', authenticateJWT, walletController.getTokenBalances);    // rateOfChange token balances
+router.get('/getTokenBalances_v2', authenticateJWT, walletController.getTokenBalances_v2);
 router.get('/getAllTokenBalances', authenticateJWT, walletController.getAllTokenBalances);  // all token balances
 router.get('/getAllTokensWithBuyingPrice', walletController.getAllTokensWithBuyingPrice);  // all token balances
 router.get('/getBalanceHisotryInTokenTypes', authenticateJWT, walletController.getBalanceHisotryInTokenTypes);
