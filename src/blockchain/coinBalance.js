@@ -3,7 +3,7 @@ const api = require("./blockchainApi");
 
 
 module.exports.getBalancesOfAddress = async (userAddress, caller) => {
-	console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
+	// console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
@@ -14,7 +14,7 @@ module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 		})
     }
 	let blockchainRes = await axios(config);
-	console.log('result blockchain', blockchainRes.data)
+	// console.log('result blockchain', blockchainRes.data)
 	return blockchainRes.data;
 };
 

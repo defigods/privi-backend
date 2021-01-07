@@ -300,7 +300,7 @@ module.exports.getBalancesOfAddress = async (req: express.Request, res: express.
         const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
         if (blockchainRes && blockchainRes.success) {
 
-            console.log('getBalancesOfAddress: data send to front', blockchainRes.output)
+            // console.log('getBalancesOfAddress: data send to front', blockchainRes.output)
             res.send({ success: true, data: blockchainRes.output });
         } else {
             console.log("cant getBalancesOfAddress for", userAddress);

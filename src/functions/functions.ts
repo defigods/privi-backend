@@ -9,10 +9,22 @@ const uuid = require('uuid');
 
 export async function confirmOneToOneSwap(swapDocID) {
     await db.runTransaction(async (transaction) => {
-        console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
+        // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
         transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {status: 'confirmed'});
     });
 };
+
+export async function getRecentSwaps(userAddress) {
+    console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
+    let recentSwaps = {};
+    const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate').limit(5)*/.get();
+    for (const doc of swapQuery.docs) {
+        const swap = doc.data();
+        recentSwaps[doc.id] = swap;
+    }
+    return recentSwaps;
+};
+
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;

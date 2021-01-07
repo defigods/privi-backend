@@ -4,7 +4,7 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase, confirmOneToOneSwap } from '../functions/functions';
+import { updateFirebase, confirmOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
@@ -595,8 +595,21 @@ const withdraw = async (params: any) => {
     }
 };
 
+const getRecentSwaps = async (req: express.Request, res: express.Response) => {
+    const { userId, userAddress } = req.query;
+    console.log('getRecentSwaps', userAddress)
+    const recentSwaps = await loadRecentSwaps(userAddress);
+    console.log('recentSwaps', recentSwaps)
+    if (recentSwaps) {
+        res.send({success: true, data: recentSwaps});
+    } else {
+        res.send({success: false});
+    }
+}
+
 module.exports = {
     getERC20Balance,
     send,
     checkTx,
+    getRecentSwaps
 };
