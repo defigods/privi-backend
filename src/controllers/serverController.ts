@@ -395,7 +395,8 @@ export const startSocket = (env: Env) => {
           created: Date.now(),
           seen: [],
           likes: 0,
-          dislikes: 0
+          dislikes: 0,
+          numReplies: 0
         });
       });
       const discordRoomRef = db.collection(collections.discordChat)
@@ -450,10 +451,10 @@ export const startSocket = (env: Env) => {
       await db.runTransaction(async (transaction) => {
 
         // userData - no check if firestore insert works? TODO
-        transaction.set(db.collection(collections.discordMessage).doc(message.discordMessageId)
+        transaction.set(db.collection(collections.discordMessage).doc(message.discordMessage)
           .collection(collections.discordMessageReplies).doc(uid), {
           discordRoom: message.discordRoom,
-          discordMessage: message.discordMessageId,
+          discordMessage: message.discordMessage,
           message: message.message,
           from: message.from,
           created: Date.now(),
@@ -463,13 +464,20 @@ export const startSocket = (env: Env) => {
         });
       });
       const discordMessageRef = db.collection(collections.discordMessage)
-        .doc(message.discordMessageId);
+        .doc(message.discordMessage);
       const discordMessageGet = await discordMessageRef.get();
       const discordMessage: any = discordMessageGet.data();
 
-      await discordMessageRef.update({
-        numReplies: discordMessage.numReplies + 1
-      });
+      if(discordMessage && discordMessage.numReplies && discordMessage.numReplies !== 0) {
+        await discordMessageRef.update({
+          numReplies: discordMessage.numReplies + 1
+        });
+      } else {
+        await discordMessageRef.update({
+          numReplies: 1
+        });
+      }
+
 
       /*const messageQuery = await db.collection(collections.message)
           .where("to", "==", message.to)

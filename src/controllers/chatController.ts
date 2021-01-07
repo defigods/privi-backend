@@ -443,6 +443,7 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
                     cred: user.cred || 0,
                     salutes: user.salutes || 0,
                 }
+                discordMsg.id = messageGet.id;
                 messages.push(discordMsg)
 
                 if(i === discordRoom.messages.length - 1) {
@@ -463,6 +464,50 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
     }
 }
 
+exports.discordGetReplies = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        console.log(body);
+        const discordMessageRepliesRef = db.collection(collections.discordMessage)
+            .doc(body.discordMessageId).collection(collections.discordMessageReplies);
+        const discordMessageRepliesGet = await discordMessageRepliesRef.get();
+
+        let messages : any[] = [];
+        if(!discordMessageRepliesGet.empty) {
+            for (const doc of discordMessageRepliesGet.docs) {
+                let data = doc.data();
+
+                const userRef = db.collection(collections.user).doc(body.priviUser.id);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
+
+                data['user'] = {
+                    name: user.firstName,
+                    level: user.level || 1,
+                    cred: user.cred || 0,
+                    salutes: user.salutes || 0,
+                }
+                data.id = doc.id;
+                messages.push(data);
+            }
+            res.status(200).send({
+                success: true,
+                data: messages
+            });
+        } else {
+            res.status(200).send({
+                success: true,
+                data: []
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordGetReplies()' + e);
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> discordGetReplies()' + e
+        });
+    }
+}
 
 exports.discordLastView = async (req: express.Request, res: express.Response) => {
     try {
