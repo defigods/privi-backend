@@ -40,6 +40,10 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
             else newMembers[userAddress] += amount;
             tokenSnap.ref.set({ StakedAmount: newAmount, Members: newMembers }, { merge: true });
 
+            // add zeros for graph
+            addZerosToHistory(tokenSnap.ref.collection(collections.retunHistory), 'return');
+            addZerosToHistory(tokenSnap.ref.collection(collections.stakedHistory), 'amount');
+
             await notificationsController.addNotification({
                 userId: userAddress,
                 notification: {
@@ -197,18 +201,6 @@ exports.getStakedHistory = async (req: express.Request, res: express.Response) =
     }
 };
 
-
-////////////////////////////////////////////////////////////////////////////////
-//  called in postman to add dummy data (0s) to graphs
-exports.addDummy = async (req: express.Request, res: express.Response) => {
-    const snap = await db.collection(collections.stakingToken).get();
-    snap.forEach((tokenDoc) => {
-        addZerosToHistory(tokenDoc.ref.collection(collections.retunHistory), 'return');
-        addZerosToHistory(tokenDoc.ref.collection(collections.stakedHistory), 'amount');
-    });
-    res.send({ success: true });
-};
-////////////////////////////////////////////////////////////////////////////////
 
 // ----------------------------------- CRON -------------------------------------------
 

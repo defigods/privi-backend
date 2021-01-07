@@ -12,6 +12,5 @@ router.get('/getTotalMembers/:token', authenticateJWT, stakeController.getTotalM
 router.get('/getReturnHistory/:token', authenticateJWT, stakeController.getReturnHistory);
 router.get('/getStakedHistory/:token', authenticateJWT, stakeController.getStakedHistory);
 
-router.post('/addDummy', stakeController.addDummy); // add dummy return and staking amount for the graphs
 
 module.exports = router;

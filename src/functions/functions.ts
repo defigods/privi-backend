@@ -59,7 +59,6 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(collections.badges).doc(key), val);
             }
         }
-
         // update user
         if (updateUser) {
             let uid: string = '';
@@ -410,7 +409,7 @@ export async function getRateOfChangeAsList() {
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
-            const name = doc.data().name;
+            const name = doc.data().name ?? '';
             const token = doc.id;
             const rate = doc.data().rate;
             if (name) data.push({ token: token, name: name, rate: rate });
@@ -418,7 +417,7 @@ export async function getRateOfChangeAsList() {
             if (token == "PC") dcRate = rate;
         }
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: dcRate });   // DC same rate as PC for now
+        data.push({ token: "DC", name: "Data Coin", rate: dcRate });   // DC same rate as PRIVI for now
 
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
