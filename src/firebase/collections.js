@@ -85,4 +85,5 @@ module.exports = {
     discordChat: "DiscordChat",
     discordRoom: "DiscordRoom",
     discordMessage: "DiscordMessage",
+    discordMessageReplies: "discordMessageReplies",
 }
