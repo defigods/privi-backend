@@ -416,13 +416,14 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
 }
 
 
-module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
+module.exports.getCryptosRateAsList = async (req: express.Request, res: express.Response) => {
     const data = await getRateOfChangeAsList();
-    if (data.length > 0) {
-        res.send({ success: true, data: data });
-    } else {
-        res.send({ success: false });
-    }
+    res.send({ success: true, data: data });
+}
+
+module.exports.getCryptosRateAsMap = async (req: express.Request, res: express.Response) => {
+    const data = await getRateOfChangeAsMap();
+    res.send({ success: true, data: data });
 }
 
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
@@ -496,7 +497,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     }
 }
 
-// get rateOfChange token balances
+// get rateOfChange token balances as array
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
@@ -623,76 +624,6 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
         res.send({ success: true, data: retData });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTransactions()', err);
-        res.send({ success: false });
-    }
-}
-
-module.exports.getTotalIncome = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-
-        let { userId } = req.query;
-        userId = userId!.toString()
-
-        let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChangeAsMap();
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("To", "==", userId).get();
-        historySnap.forEach((doc) => {
-            const token = doc.data().Token;
-            const amount = doc.data().Amount;
-            let rate = 1;
-            if (rateOfChange[token]) rate = rateOfChange[token];
-            sum += amount * rate;
-        })
-        // get user currency
-        let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
-        res.send({ success: true, data: amountInUserCurrency });
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTotalWithdraw()', err);
-        res.send({ success: false });
-    }
-}
-
-module.exports.getTotalExpense = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-
-        let { userId } = req.query;
-        userId = userId!.toString()
-
-        let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChangeAsMap();
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("From", "==", userId).get();
-        historySnap.forEach((doc) => {
-            const token = doc.data().Token;
-            const amount = doc.data().Amount;
-            let rate = 1;
-            if (rateOfChange[token]) rate = rateOfChange[token];
-            sum += amount * rate;
-        })
-        // get user currency
-        let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
-        res.send({ success: true, data: amountInUserCurrency });
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTotalSwap()', err);
         res.send({ success: false });
     }
 }

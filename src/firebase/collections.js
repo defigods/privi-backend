@@ -46,7 +46,6 @@ module.exports = {
     supplyHistory: "SupplyHistory",
     podRoleInvitation: "PodRoleInvitation",
     podViewInvitation: "PodViewInvitation",
-    liquidityPools: "LiquidityPools",
     insurancePools: "InsurancePools",
     insuranceClients: "InsuranceCleints",
     insuranceInvestors: "InsurnaceInvestors",
@@ -61,6 +60,10 @@ module.exports = {
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
+
+    liquidityPools: "LiquidityPools",
+    liquidityHistory: "LiquidityHistory",
+    rewardHistory: "RewardHistory",
 
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
