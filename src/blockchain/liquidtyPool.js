@@ -40,6 +40,15 @@ module.exports.swapCrytoTokens = async (traderAddress, tokenFrom, tokenTo, amoun
     return blockchainRes.data;
 };
 
+
+module.exports.listLiquidityPool = async (poolToken, caller) => {
+    let blockchainRes = await axios.post(api.blockchainLiquidityPoolAPI + "/listLiquidityPool", {
+        PoolToken: poolToken,
+        Caller: caller,
+    });
+    return blockchainRes.data;
+};
+
 module.exports.protectLiquidityPool = async (poolToken, poolSpread, date, caller) => {
     let blockchainRes = await axios.post(api.blockchainLiquidityPoolAPI + "/protectLiquidityPool", {
         PoolToken: poolToken,

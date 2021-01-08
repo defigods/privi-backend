@@ -250,6 +250,9 @@ exports.manageReturns = cron.schedule('0 0 * * *', async () => {
                     date: date
                 });
             }
+            else {
+                console.log('Error in controllers/stakingController -> manageReturns()', blockchainRes.message);
+            }
         }
     }
     catch (err) {
