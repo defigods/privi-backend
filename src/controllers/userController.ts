@@ -6,6 +6,7 @@ import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
+import badge from "../blockchain/badge";
 import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail, generateUniqueId } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
@@ -446,6 +447,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     trustScore: 0.5,
                     awards: [],
                     creds: [],
+                    badges: [],
                     followings: [],
                     numFollowings: 0,
                     followers: [],
@@ -610,6 +612,7 @@ interface BasicInfo {
     endorsementScore: number,
     awards: any[],
     creds: any[],
+    badges: any[],
     numFollowers: number,
     numFollowings: number,
     bio: string,
@@ -625,8 +628,8 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [],
-            numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
+            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [], 
+            badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
@@ -646,6 +649,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.endorsementScore = userData.endorsementScore;
             basicInfo.creds = userData.creds || [];
             basicInfo.awards = userData.awards || [];
+            basicInfo.badges = userData.badges || [];
             basicInfo.numFollowers = userData.numFollowers || 0;
             basicInfo.numFollowings = userData.numFollowings || 0;
             basicInfo.bio = userData.bio || '';
@@ -656,8 +660,6 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.notifications = userData.notifications || [];
             basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
             basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
-
-            console.log(allWallPost, basicInfo.notifications);
 
             res.send({ success: true, data: basicInfo });
         }
@@ -882,7 +884,7 @@ const changePostPhoto = async (req: express.Request, res: express.Response) => {
             const wallPostGet = await wallPostRef.get();
             const wallPost: any = wallPostGet.data();
             if (wallPost.HasPhoto) {
-                await wallPost.update({
+                await wallPostRef.update({
                     HasPhoto: true
                 });
             }
@@ -1539,42 +1541,94 @@ const getUserList = async (req: express.Request, res: express.Response) => {
     }
 };
 
+// get all badges
+const getBadges = async (req: express.Request, res: express.Response) => {
+    try {
+        // const creator = req.body;
+        const allBadges: any[] = [];
+        const badgesSnap = await db.collection(collections.badges).get();
+        // .where("creator", "==", creator).get();
+
+        badgesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            data.id = doc.id;
+            allBadges.push({ ...data });
+        });
+
+        res.send({
+            success: true, 
+            data: {
+                all: allBadges
+                }
+        });
+    } catch (e) {
+        return ('Error in controllers/userControllers -> getBadges()' + e)
+    }
+}
+
 const createBadge = async (req: express.Request, res: express.Response) => {
     try {
-        let body = req.body;
+        const body = req.body;
+        const creator = body.creator;
+        const name = body.name;
+        const description = body.description;
+        const totalSupply = body.totalSupply;
+        const royalty = body.royalty;
+        const txid = generateUniqueId();
 
-        let badgesGet = await db.collection(collections.badges).get();
-        let id = badgesGet.size;
-
-        if (body) {
+        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
+        console.log(blockchainRes)
+        if (blockchainRes && blockchainRes.success) {  
+            //await updateFirebase(blockchainRes);
+            let badgesGet = await db.collection(collections.badges).get();
+            // let id = badgesGet.size.toString();
             await db.runTransaction(async (transaction) => {
-
-                // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.badges).doc('' + id + 1), {
-                    creatorId: body.creatorId,
+                transaction.set(db.collection(collections.badges).doc(''+txid), {
+                    creator: creator,
+                    name: name, 
+                    description: description,
+                    symbol: name,
                     users: [],
-                    badgesAvailable: body.badgesAvailable,
-                    name: body.name,
+                    totalSupply: totalSupply,
+                    date: Date.now(),
+                    royalty: royalty,
+                    txnId: txid,
                     hasPhoto: false
                 });
             });
+
+            // add badge to user
+            const userRef = db.collection(collections.user).doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+            let badges = [...user.badges];
+
+            console.log('badges', badges, user)
+    
+            await userRef.update({
+                badges: badges.push(txid)
+            });
+    
             res.send({
                 success: true, data: {
-                    creatorId: body.userId,
+                    creator: creator,
+                    name: name,
+                    symbol: name,
                     users: [],
-                    badgesAvailable: body.badgesAvailable,
-                    name: body.name,
-                    hasPhoto: false,
-                    id: id + 1
+                    totalSupply: totalSupply,
+                    date: Date.now(),
+                    royalty: royalty,
+                    txnId: txid,
+                    hasPhoto: false
                 }
             });
-        } else {
-            console.log('Error in controllers/userController -> createBadge()', 'No Information');
+        }
+        else {
+            console.log('Error in controllers/userController -> createBadge(): success = false.', blockchainRes.message);
             res.send({ success: false });
         }
-    } catch (err) {
-        console.log('Error in controllers/userController -> createBadge()', err);
-        res.send({ success: false });
+    } catch (e) {
+        return ('Error in controllers/userController -> createBadge()' + e)
     }
 }
 
@@ -1585,9 +1639,9 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
                 .doc(req.file.originalname);
             const badgeGet = await badgeRef.get();
             const badge: any = badgeGet.data();
-            if (badge.HasPhoto) {
+            if (badge.hasPhoto) {
                 await badgeRef.update({
-                    HasPhoto: true
+                    hasPhoto: true
                 });
             }
             res.send({ success: true });
@@ -1596,10 +1650,110 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/userController -> changePodPhoto()', err);
+        console.log('Error in controllers/userController -> changeBadgePhoto()', err);
         res.send({ success: false });
     }
 };
+
+const getBadgePhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let badgeId = req.params.badgeId;
+        console.log(badgeId);
+        if (badgeId) {
+            const directoryPath = path.join('uploads', 'badges');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'badges', badgeId + '.png'));
+            raw.on('error', function (err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/userController -> getBadgePhotoById()', "There's no id...");
+            res.sendStatus(400); // bad request
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> getBadgePhotoById()', err);
+        res.send({ success: false });
+    }
+}
+
+// const createBadge = async (req: express.Request, res: express.Response) => {
+//     try {
+//         let body = req.body;
+
+//         let badgesGet = await db.collection(collections.badges).get();
+//         let id = badgesGet.size;
+
+//         if (body) {
+//             await db.runTransaction(async (transaction) => {
+
+//                 // userData - no check if firestore insert works? TODO
+//                 transaction.set(db.collection(collections.badges).doc('' + id + 1), {
+//                     creatorId: body.creatorId,
+//                     users: [],
+//                     badgesAvailable: body.badgesAvailable,
+//                     name: body.name,
+//                     hasPhoto: false
+//                 });
+//             });
+//             res.send({
+//                 success: true, data: {
+//                     creatorId: body.userId,
+//                     users: [],
+//                     badgesAvailable: body.badgesAvailable,
+//                     name: body.name,
+//                     hasPhoto: false,
+//                     id: id + 1
+//                 }
+//             });
+//         } else {
+//             console.log('Error in controllers/userController -> createBadge()', 'No Information');
+//             res.send({ success: false });
+//         }
+//     } catch (err) {
+//         console.log('Error in controllers/userController -> createBadge()', err);
+//         res.send({ success: false });
+//     }
+// }
+
+// const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
+//     try {
+//         if (req.file) {
+//             const badgeRef = db.collection(collections.badges)
+//                 .doc(req.file.originalname);
+//             const badgeGet = await badgeRef.get();
+//             const badge: any = badgeGet.data();
+//             if (badge.HasPhoto) {
+//                 await badgeRef.update({
+//                     HasPhoto: true
+//                 });
+//             }
+//             res.send({ success: true });
+//         } else {
+//             console.log('Error in controllers/userController -> changeBadgePhoto()', "There's no file...");
+//             res.send({ success: false });
+//         }
+//     } catch (err) {
+//         console.log('Error in controllers/userController -> changePodPhoto()', err);
+//         res.send({ success: false });
+//     }
+// };
 
 const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
@@ -1821,6 +1975,7 @@ module.exports = {
     getLoginInfo,
     getPhotoById,
     getUserList,
+    getBadges,
     createBadge,
     changeBadgePhoto,
     getIssuesAndProposals,
@@ -1834,5 +1989,6 @@ module.exports = {
     getNotifications,
     postToWall,
     changePostPhoto,
-    getPostPhotoById
+    getPostPhotoById,
+    getBadgePhotoById
 };

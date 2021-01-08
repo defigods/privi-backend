@@ -9,13 +9,15 @@ import fields from '../firebase/fields';
 import cron from 'node-cron';
 import { clearLine } from "readline";
 
+const chatController = require('./chatController');
 require('dotenv').config();
-const apiKey = process.env.API_KEY;
+// const apiKey = process.env.API_KEY;
+const apiKey = "PRIVI";
 
 ///////////////////////////// POST ///////////////////////////////
 
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
-    try {
+    try { 
         const body = req.body;
         // for blockchain call
         const communityToken = body.CommunityToken; // determines if the above parameters are given or not
@@ -93,6 +95,15 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const userRoles = body.UserRoles;
             const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
 
+            const userRef = db.collection(collections.user)
+                .doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
+
             db.collection(collections.community).doc(communityAddress).set({
                 HasPhoto: hasPhoto || false,
                 Name: name || '',
@@ -102,7 +113,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 Privacy: privacy,
                 OpenAdvertising: openAdvertising || false,
                 PaymentsAllowed: paymentsAllowed || false,
-                DiscordId: dicordId || '',
+                DiscordId: discordChatCreation.id || '',
                 TwitterId: twitterId || '',
                 EthereumAddress: ethereumAddr || '',
 
@@ -408,10 +419,12 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         const communitiesSnap = await db.collection(collections.community).get();
         const rateOfChange = await getRateOfChangeAsMap();
         communitiesSnap.forEach((doc) => {
-            const data: any = doc.data();
+            const data : any = doc.data();
+            const id : any = doc.id;
             const extraData = getExtraData(data, rateOfChange);
-            allCommunities.push({ ...data, ...extraData });
+            allCommunities.push({ ...data, ...extraData, id: id });
         });
+
         const trendingCommunities = filterTrending(allCommunities);
         res.send({
             success: true, data: {
@@ -431,25 +444,51 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
         const rateOfChange = await getRateOfChangeAsMap();
         const data: any = communitySnap.data();
+        const id: any = communitySnap.id;
         const extraData = getExtraData(data, rateOfChange);
-        res.send({ success: true, data: { ...data, ...extraData } });
+        res.send({ success: true, data: { ...data, ...extraData, id: id } });
     } catch (e) {
         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
     }
 }
 
+// get all badges
+exports.getBadges = async (req: express.Request, res: express.Response) => {
+    try {
+        // const creator = req.params.creator;
+        const allBadges: any[] = [];
+        const badgesSnap = await db.collection(collections.badges).get();
+        // .where("creator", "==", creator)
 
+        badgesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            allBadges.push({ ...data });
+        });
 
+        res.send({
+            success: true, 
+            data: {
+                all: allBadges
+                }
+        });
+    } catch (e) {
+        return ('Error in controllers/communitiesControllers -> getBadges()' + e)
+    }
+}
 
-
-
-
-
-
-
-
-
-
+// get a single badge data
+// exports.getBadge = async (req: express.Request, res: express.Response) => {
+//     try {
+//         const communityAddress = req.params.communityAddress;
+//         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+//         const rateOfChange = await getRateOfChangeAsMap();
+//         const data: any = communitySnap.data();
+//         const extraData = getExtraData(data, rateOfChange);
+//         res.send({ success: true, data: { ...data, ...extraData } });
+//     } catch (e) {
+//         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
+//     }
+// }
 
 exports.createBadge = async (req: express.Request, res: express.Response) => {
     try {
@@ -462,27 +501,12 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         const txid = generateUniqueId();
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
-        if (blockchainRes && blockchainRes.success) {
-            console.log('llega', creator);
-            // updateFirebase(blockchainRes);
-            /*await notificationsController.addNotification({
-                userId: creatorId,
-                notification: {
-                    type: 45,
-                    typeItemId: '',
-                    itemId: '', //Liquidity pool id
-                    follower: '',
-                    pod: '',
-                    comment: '',
-                    token: token,
-                    amount: 0,
-                    onlyInformation: false,
-                }
-            });*/
-            await db.runTransaction(async (transaction) => {
+        if (blockchainRes && blockchainRes.success) {          
+            let badgesGet = await db.collection(collections.badges).get();
+            let id = badgesGet.size.toString();
 
-                // userData - no check if firestore insert works? TODO
-                transaction.set(db.collection(collections.badges).doc(creator), {
+            await db.runTransaction(async (transaction) => {
+                transaction.set(db.collection(collections.badges).doc(id), {
                     creator: creator,
                     name: name,
                     description: description,

@@ -11,7 +11,7 @@ module.exports.createBadge = async (creator, name, symbol, totalSupply, royalty,
         Date: date,
         LockUpDate: lockUpDate,
         TxnId: txnId,
-        Caller: caller
+        Caller: "PRIVI"
     });
     return blockchainRes.data;
 };

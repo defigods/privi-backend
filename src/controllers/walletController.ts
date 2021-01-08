@@ -318,7 +318,12 @@ module.exports.getBalancesOfAddress = async (req: express.Request, res: express.
 module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
-        userId = userId!.toString()
+        userId = userId!.toString();
+        if (!userId) {
+            console.log('error: userId empty');
+            res.send({ success: false });
+            return;
+        }
         const walletSnap = await db.collection(collections.wallet).doc(userId).get();
         const data = {};
         if (walletSnap.exists) {
@@ -363,78 +368,16 @@ module.exports.getAllTokenBalances = async (req: express.Request, res: express.R
 /**
  * Used to get user's balance history in type of token (used to fill the graphs in frontend wallet page)
  */
-module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res: express.Response) => {
+module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res: express.Response) => {
     try {
         const data = {};
         let { userId } = req.query;
         userId = userId!.toString();
-        // crypto
-        const crytoHistory: any[] = [];
-        const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
-        cryptoSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data) {
-                crytoHistory.push({
-                    x: new Date(data.date).toString(),
-                    y: data.balance
-                });
-            }
-        });
-        data["crypto"] = crytoHistory;
-        // ft
-        const ftHistory: any[] = [];
-        const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ft).orderBy("date", "asc").get();
-        ftSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data) {
-                ftHistory.push({
-                    x: new Date(data.date).toString(),
-                    y: data.balance
-                });
-            }
-        });
-        data["ft"] = ftHistory;
-        // crypto
-        const nftHistory: any[] = [];
-        const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nft).orderBy("date", "asc").get();
-        cryptoSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data) {
-                nftHistory.push({
-                    x: new Date(data.date).toString(),
-                    y: data.balance
-                });
-            }
-        });
-        data["nft"] = nftHistory;
-        // crypto
-        const socialHistory: any[] = [];
-        const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.social).orderBy("date", "asc").get();
-        cryptoSnap.forEach((doc) => {
-            const data = doc.data();
-            if (data) {
-                socialHistory.push({
-                    x: new Date(data.date).toString(),
-                    y: data.balance
-                });
-            }
-        });
-        data["social"] = socialHistory;
-        res.send({ success: true, data: data });
-    } catch (err) {
-        console.log('Error in controllers/userController -> getEmailUidMap()', err);
-        res.send({ success: false });
-    }
-}
-
-/**
- * Used to get user's balance history in type of token (used to fill the graphs in frontend wallet page)
- */
-module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res: express.Response) => {
-    try {
-        const data = {};
-        let { userId } = req.query;
-        userId = userId!.toString();
+        if (!userId) {
+            console.log('error: userId empty');
+            res.send({ success: false });
+            return;
+        }
         // crypto
         const crytoHistory: any[] = [];
         const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
@@ -495,13 +438,14 @@ module.exports.getBalanceHisotryInTokenTypes = async (req: express.Request, res:
 }
 
 
-module.exports.getTokensRate = async (req: express.Request, res: express.Response) => {
+module.exports.getCryptosRateAsList = async (req: express.Request, res: express.Response) => {
     const data = await getRateOfChangeAsList();
-    if (data.length > 0) {
-        res.send({ success: true, data: data });
-    } else {
-        res.send({ success: false });
-    }
+    res.send({ success: true, data: data });
+}
+
+module.exports.getCryptosRateAsMap = async (req: express.Request, res: express.Response) => {
+    const data = await getRateOfChangeAsMap();
+    res.send({ success: true, data: data });
 }
 
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
@@ -510,6 +454,11 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
         let { userId, userAddress } = req.query;
         userId = userId!.toString()
         userAddress = userAddress!.toString();
+        if (!userId) {
+            console.log('error: userId empty');
+            res.send({ success: false });
+            return;
+        }
         const rateOfChange = await getRateOfChangeAsMap();
         // get user currency in usd
         let sum = 0;    // in user currency
@@ -575,7 +524,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
 }
 
 module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Response) => {
-    
+
     try {
         let { userId, userAddress } = req.query;
         userId = userId!.toString()
@@ -661,12 +610,17 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
     }
 }
 
-// get rateOfChange token balances
+// get rateOfChange token balances as array
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
     console.log('getTokenBalances to be depricated')
     try {
         let { userId } = req.query;
-        userId = userId!.toString()
+        userId = userId!.toString();
+        if (!userId) {
+            console.log('error: userId empty');
+            res.send({ success: false });
+            return;
+        }
         const retData: {}[] = [];
         const rateOfChange = await getRateOfChangeAsMap();
         for (const [token, _] of Object.entries(rateOfChange)) {
@@ -809,76 +763,6 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
         res.send({ success: true, data: retData });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTransactions()', err);
-        res.send({ success: false });
-    }
-}
-
-module.exports.getTotalIncome = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-
-        let { userId } = req.query;
-        userId = userId!.toString()
-
-        let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChangeAsMap();
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("To", "==", userId).get();
-        historySnap.forEach((doc) => {
-            const token = doc.data().Token;
-            const amount = doc.data().Amount;
-            let rate = 1;
-            if (rateOfChange[token]) rate = rateOfChange[token];
-            sum += amount * rate;
-        })
-        // get user currency
-        let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
-        res.send({ success: true, data: amountInUserCurrency });
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTotalWithdraw()', err);
-        res.send({ success: false });
-    }
-}
-
-module.exports.getTotalExpense = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-
-        let { userId } = req.query;
-        userId = userId!.toString()
-
-        let sum = 0;    // in usd
-        const rateOfChange = await getRateOfChangeAsMap();
-        const historySnap = await db.collection(collections.history).doc(collections.history).collection(userId)
-            .where("From", "==", userId).get();
-        historySnap.forEach((doc) => {
-            const token = doc.data().Token;
-            const amount = doc.data().Amount;
-            let rate = 1;
-            if (rateOfChange[token]) rate = rateOfChange[token];
-            sum += amount * rate;
-        })
-        // get user currency
-        let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
-        res.send({ success: true, data: amountInUserCurrency });
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTotalSwap()', err);
         res.send({ success: false });
     }
 }

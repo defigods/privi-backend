@@ -46,7 +46,6 @@ module.exports = {
     supplyHistory: "SupplyHistory",
     podRoleInvitation: "PodRoleInvitation",
     podViewInvitation: "PodViewInvitation",
-    liquidityPools: "LiquidityPools",
     insurancePools: "InsurancePools",
     insuranceClients: "InsuranceCleints",
     insuranceInvestors: "InsurnaceInvestors",
@@ -54,21 +53,34 @@ module.exports = {
     privacy: "EnabledPrivacy",
     rates: "ratesOfChange",
     rateHistory: "rateHistory",
+
     constants: "manualConstants",
     traditionalLendingConstants: "TraditionalLendingConstants",
     podFTConstants: "FTPodConstants",
     podNFTConstants: "NFTPodConstants",
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
+
+    liquidityPools: "LiquidityPools",
+    liquidityHistory: "LiquidityHistory",
+    rewardHistory: "RewardHistory",
+
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
+    stakingToken: "StakingToken",
+    retunHistory: "ReturnHistory",
+    stakedHistory: "StakedHistory",
+
     badges: "Badges",
     issues: "Issues",
     proposals: "Proposals",
     campaigns: "Campaigns",
+
     forumCategory: "ForumCategory",
     forumPost: "ForumPost",
     forumComment: "ForumComment",
+
+    blogPost: "BlogPost",
 
     wallPost: "WallPost",
     chat: "Chat",
@@ -76,4 +88,5 @@ module.exports = {
     discordChat: "DiscordChat",
     discordRoom: "DiscordRoom",
     discordMessage: "DiscordMessage",
+    discordMessageReplies: "DiscordMessageReplies",
 }

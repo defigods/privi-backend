@@ -59,7 +59,23 @@ export async function updateFirebase(blockchainRes) {
         const updateVotations = output.updateVotations;
         const updateVotationStates = output.updateVotationStates;
         const updateVoters = output.UpdateVoters;
+        // badges
+        const updateBadges = output.UpdateBadges;
+        // liquidity pools
+        const updatedLiquidityPoolInfos = output.UpdatedLiquidityPoolInfos;
+        const updatedLiquidityPoolStates = output.UpdatedLiquidityPoolStates;
+        const updatedProtocolPool = output.UpdatedProtocolPool;
+        // staking
+        const updateStakings = output.UpdateStakings;
 
+        // update badges
+        if (updateBadges) {
+            let key: string = "";
+            let val: any = null;
+            for ([key, val] of Object.entries(updateBadges)) {
+                transaction.set(db.collection(collections.badges).doc(key), val);
+            }
+        }
         // update user
         if (updateUser) {
             let uid: string = '';
@@ -120,6 +136,7 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(collections.tokens).doc(key), val);
             }
         }
+
         // update balances
         if (updateBalances) {
             let key: string = "";
@@ -351,6 +368,39 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(collections.voter).doc(votationId), votationObj, { merge: true });
             }
         }
+        // update liquidity pools info
+        if (updatedLiquidityPoolInfos) {
+            let poolToken: string = '';
+            let poolObj: any = {};
+            for ([poolToken, poolObj] of Object.entries(updatedLiquidityPoolInfos)) {
+                transaction.set(db.collection(collections.liquidityPools).doc(poolToken), poolObj, { merge: true });
+            }
+        }
+        // update liquidity pools states
+        if (updatedLiquidityPoolStates) {
+            let poolToken: string = '';
+            let poolObj: any = {};
+            for ([poolToken, poolObj] of Object.entries(updatedLiquidityPoolStates)) {
+                transaction.set(db.collection(collections.liquidityPools).doc(poolToken), poolObj, { merge: true });
+            }
+        }
+        // update protocol pools
+        if (updatedProtocolPool) {
+            let poolToken: string = '';
+            let poolObj: any = {};
+            for ([poolToken, poolObj] of Object.entries(updatedLiquidityPoolStates)) {
+                transaction.set(db.collection(collections.liquidityPools).doc(poolToken), poolObj, { merge: true });
+            }
+        }
+        // update staking
+        if (updateStakings) {
+            let token: string = '';
+            let obj: any = {};
+            for ([token, obj] of Object.entries(updateStakings)) {
+                const userAddress = obj.UserAddress;
+                transaction.set(db.collection(collections.stakingDeposit).doc(userAddress), obj, { merge: true });
+            }
+        }
     });
 }
 
@@ -376,7 +426,7 @@ export async function getRateOfChangeAsList() {
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
-            const name = doc.data().name;
+            const name = doc.data().name ?? '';
             const token = doc.id;
             const rate = doc.data().rate;
             if (name) data.push({ token: token, name: name, rate: rate });
@@ -384,7 +434,7 @@ export async function getRateOfChangeAsList() {
             if (token == "PC") dcRate = rate;
         }
         data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: dcRate });   // DC same rate as PC for now
+        data.push({ token: "DC", name: "Data Coin", rate: dcRate });   // DC same rate as PRIVI for now
 
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
@@ -762,4 +812,20 @@ export function getSellTokenAmountPod(amm: string, supplyReleased: number, amoun
         return -1;
     }
     return fundingPhase + exchangePhase;
+}
+
+// add 7 days of 0 to History
+export async function addZerosToHistory(colRef, fieldName) {
+    const dates: Date[] = [];
+    for (let i = 6; i >= 0; i--) {
+        let date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date);
+    }
+    dates.forEach((date) => {
+        const obj: any = {};
+        obj[fieldName] = 0;
+        obj.date = date.getTime();
+        colRef.add(obj);
+    });
 }
