@@ -1444,6 +1444,7 @@ const getBadges = async (req: express.Request, res: express.Response) => {
 }
 
 const createBadge = async (req: express.Request, res: express.Response) => {
+    console.log('llamada Create Badge')
     try {
         const body = req.body;
         const creator = body.creator;
@@ -1454,7 +1455,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         const txid = generateUniqueId();
 
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
-
+        console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {  
             //await updateFirebase(blockchainRes);
             let badgesGet = await db.collection(collections.badges).get();
