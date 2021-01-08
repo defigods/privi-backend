@@ -228,11 +228,6 @@ const send = async (req: express.Request, res: express.Response) => {
     const body = req.body;
     // console.log('body', body)
     if (typeof body.action === 'string') {
-        // if (body.action === Action.WITHDRAW_ERC20 || body.action === Action.WITHDRAW_ETH) {
-        //     withdraw(body)
-        // } else {
-        //     await saveTx(body);
-        // };
         await saveTx(body);
         res.send('OK');
     } else {
@@ -419,23 +414,11 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                     confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                 */
                 if (confirmations > MIN_ETH_CONFIRMATION) {
-                    // if (!txQueue.includes(doc.txHash)) {
-                    //     txQueue.push(doc.txHash);
-                    //     if (doc.action === Action.SWAP_APPROVE_ERC20 ||
-                    //         doc.action === Action.WITHDRAW_ETH ||
-                    //         doc.action === Action.WITHDRAW_ERC20) {
-                    //         console.log('sendTxBack or withdraw');
-                    //         // sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
-                    //     } else {
-                            console.log('performing swap');
-                            swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
-                            return;
-                    //     };
-                    // };
+                    console.log('performing swap');
+                    swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                    return;
                 };
             }
-
-            
         };
     };
 });
@@ -465,18 +448,6 @@ const swap = async (
 
     try {
         console.log('--> Swap: TX confirmed in Ethereum');
-
-        // const mint = {
-        //     From: from,
-        //     To: publicId,
-        //     Type: action,
-        //     Token: token,
-        //     Amount: amount,
-        //     Date: lastUpdate,
-        //     Id: txHash,
-        //     Caller: 'PRIVI'
-        // }
-        // console.log('Mint params: ', mint)
 
         const response = await swapFab(
             action,
