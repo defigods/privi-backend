@@ -1445,7 +1445,6 @@ const getBadges = async (req: express.Request, res: express.Response) => {
 }
 
 const createBadge = async (req: express.Request, res: express.Response) => {
-    console.log('llamada Create Badge')
     try {
         const body = req.body;
         const creator = body.creator;
@@ -1461,9 +1460,8 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             //await updateFirebase(blockchainRes);
             let badgesGet = await db.collection(collections.badges).get();
             // let id = badgesGet.size.toString();
-
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc(txid), {
+                transaction.set(db.collection(collections.badges).doc(''+txid), {
                     creator: creator,
                     name: name, 
                     description: description,
@@ -1481,7 +1479,9 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             const userRef = db.collection(collections.user).doc(creator);
             const userGet = await userRef.get();
             const user: any = userGet.data();
-            let badges = user.badges || [];
+            let badges = [...user.badges];
+
+            console.log('badges', badges, user)
     
             await userRef.update({
                 badges: badges.push(txid)
