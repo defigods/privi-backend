@@ -4,13 +4,14 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase, confirmOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
+import { updateFirebase, updateStatusOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
 require('dotenv').config();
+const uuid = require('uuid');
 
 // TODO: this should be the preferred method to get the private key!
 // Get private key for API calls
@@ -227,11 +228,12 @@ const send = async (req: express.Request, res: express.Response) => {
     const body = req.body;
     // console.log('body', body)
     if (typeof body.action === 'string') {
-        if (body.action === Action.WITHDRAW_ERC20 || body.action === Action.WITHDRAW_ETH) {
-            withdraw(body)
-        } else {
-            await saveTx(body);
-        };
+        // if (body.action === Action.WITHDRAW_ERC20 || body.action === Action.WITHDRAW_ETH) {
+        //     withdraw(body)
+        // } else {
+        //     await saveTx(body);
+        // };
+        await saveTx(body);
         res.send('OK');
     } else {
         res.send('KO');
@@ -401,30 +403,39 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
 
     // Process outstanding TX
     if (!snapshot.empty) {
-        console.log('should check Tx for swap', !snapshot.empty);
+        console.log('should check Tx for swap?', !snapshot.empty);
         for (let i in snapshot.docs) {
             const doc = snapshot.docs[i].data();
             const docId = snapshot.docs[i].id;
-            const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-            console.log('is confirmation > ', MIN_ETH_CONFIRMATION, confirmations > MIN_ETH_CONFIRMATION)
-            /* 
-                confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
-            */
-            if (confirmations > MIN_ETH_CONFIRMATION) {
-                if (!txQueue.includes(doc.txHash)) {
-                    txQueue.push(doc.txHash);
-                    if (doc.action === Action.SWAP_APPROVE_ERC20 ||
-                        doc.action === Action.WITHDRAW_ETH ||
-                        doc.action === Action.WITHDRAW_ERC20) {
-                            console.log('sendTxBack');
-                        sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
-                    } else {
-                        console.log('performing swap');
-                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
-                        return;
-                    };
+            if (doc.action === Action.SWAP_APPROVE_ERC20 ||
+                doc.action === Action.WITHDRAW_ETH ||
+                doc.action === Action.WITHDRAW_ERC20) {
+                console.log('performing withdraw');
+                withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
+            } else {
+                const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, confirmations > MIN_ETH_CONFIRMATION)
+                /* 
+                    confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                */
+                if (confirmations > MIN_ETH_CONFIRMATION) {
+                    // if (!txQueue.includes(doc.txHash)) {
+                    //     txQueue.push(doc.txHash);
+                    //     if (doc.action === Action.SWAP_APPROVE_ERC20 ||
+                    //         doc.action === Action.WITHDRAW_ETH ||
+                    //         doc.action === Action.WITHDRAW_ERC20) {
+                    //         console.log('sendTxBack or withdraw');
+                    //         // sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
+                    //     } else {
+                            console.log('performing swap');
+                            swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                            return;
+                    //     };
+                    // };
                 };
-            };
+            }
+
+            
         };
     };
 });
@@ -486,7 +497,7 @@ const swap = async (
 
             // confirm swap: ** this could be moved to updateFireBase
             console.log('should confirm swap doc id', swapDocId)
-            confirmOneToOneSwap(swapDocId);
+            updateStatusOneToOneSwap(swapDocId, 'confirmed');
 
             // Update TX
             // Sarkawt: i don't know why
@@ -511,25 +522,126 @@ const swap = async (
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param action Action to be performed (swap ETH or swap ERC20 token)
  */
-const withdraw = async (params: any) => {
 
-    const input = {
-        From: params.publicId,
-        To: params.to,
-        Type: params.action,
-        Token: params.token,
-        Amount: params.amount,
-        Date: params.lastUpdate,
-        Id: params.random,
-        Caller: 'PRIVI'
+const withdraw = async (
+    swapDocId: string,
+    fromFabricAddress: string,
+    toEthAddress: string,
+    amount: any,
+    action: string,
+    token: string,
+    date: string,
+    chainId: string
+) => {
+    console.log('wothdraw called with',swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
+    
+    // set swap doc to in progress
+    updateStatusOneToOneSwap(swapDocId, 'inProgress');
+    // first burn fabric token
+    // Withdraw in Fabric
+    const response = await withdrawFab(
+        action,
+        fromFabricAddress,
+        toEthAddress,
+        amount,
+        token,
+        date,
+        'Wd_' + uuid.v4(),
+        'PRIVI'
+    );
+
+    if (response && response.success) {
+        console.log('burn fab', response.success)
+        // second send coin to user on eth
+        
+        // Convert value into wei
+        const amountWei = web3.utils.toWei(String(amount));
+
+        // Get SwapManager contract code
+        const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+
+        // check if contract has balance
+        // let contractBalanceWei = web3.eth.getBalance(contract.address);
+        // console.log('contract.address, contractBalanceWei', contract.address, contractBalanceWei)
+
+        // Choose method from SwapManager to be called
+        const method = (action === Action.WITHDRAW_ETH)
+            ? contract.methods.withdrawEther(toEthAddress, amountWei).encodeABI()
+            : contract.methods.withdrawERC20Token(token, toEthAddress, amountWei).encodeABI();
+
+        // Transaction parameters
+        const paramsTX = {
+            chainId:chainId,
+            fromAddress: ETH_PRIVI_ADDRESS,
+            fromAddressKey: ETH_PRIVI_KEY,
+            encodedABI: method,
+            toAddress: ETH_SWAP_MANAGER_ADDRESS,
+        };
+
+        // Execute transaction to withdraw in Ethereum
+        const { success, data } = await executeTX(paramsTX);
+        
+        if (success) {
+            console.log('--> Withdraw: TX confirmed in Ethereum', data);
+            // paramsTx.txHash = data.transactionHash,
+            //     await saveTx(paramsTx);
+            updateStatusOneToOneSwap(swapDocId, 'confirmed');
+        } else {
+            console.warn('--> Withdraw: TX failed in Ethereum', data);
+            console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
+
+            updateStatusOneToOneSwap(swapDocId, 'failed');
+
+            const mintBack = await swapFab(
+                'CRYPTO',
+                toEthAddress,
+                fromFabricAddress,
+                amount,
+                token,
+                date,
+                'Wd_' + uuid.v4(),
+                'PRIVI'
+            );
+
+            if(mintBack.success){
+                console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+                updateStatusOneToOneSwap(swapDocId, 'failed with return');
+            } else {
+                console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+                updateStatusOneToOneSwap(swapDocId, 'failed without return');
+            }
+        };
+    
+
+    
+    } else {
+        console.log('fabric burn fail', response);
+        // set back swap doc to pending, so it can be tried later
+        updateStatusOneToOneSwap(swapDocId, 'pending');
     }
 
-    console.log(`Input for burn: \n`, input);
+}
+
+const _withdraw = async (params: any) => {
+
+    // const input = {
+    //     From: params.publicId,
+    //     userAddress: params.userAddress,
+    //     To: params.to,
+    //     Type: params.action,
+    //     Token: params.token,
+    //     Amount: params.amount,
+    //     Date: params.lastUpdate,
+    //     Id: params.random,
+    //     Caller: 'PRIVI'
+    // }
+
+    // console.log(`Input for burn: \n`, input);
 
     // Withdraw in Fabric
     const response = await withdrawFab(
         params.action,
-        params.publicId,
+        params.userAddress,
         params.to,
         params.amount,
         params.token,
@@ -541,7 +653,7 @@ const withdraw = async (params: any) => {
     if (response && response.success) {
 
         // Update balances in Firestore
-        updateFirebase(response);
+        // updateFirebase(response);
 
         // Convert value into wei
         const amountWei = web3.utils.toWei(String(params.amount));

@@ -7,10 +7,10 @@ import { object } from "firebase-functions/lib/providers/storage";
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
 
-export async function confirmOneToOneSwap(swapDocID) {
+export async function updateStatusOneToOneSwap(swapDocID, _status) {
     await db.runTransaction(async (transaction) => {
         // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
-        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {status: 'confirmed'});
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {status: _status});
     });
 };
 
