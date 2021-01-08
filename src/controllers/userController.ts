@@ -539,8 +539,6 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
             basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
 
-            console.log(allWallPost, basicInfo.notifications);
-
             res.send({ success: true, data: basicInfo });
         }
         else res.send({ success: false });
@@ -1533,6 +1531,44 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     }
 };
 
+const getBadgePhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let badgeId = req.params.badgeId;
+        console.log(badgeId);
+        if (badgeId) {
+            const directoryPath = path.join('uploads', 'badges');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'badges', badgeId + '.png'));
+            raw.on('error', function (err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/userController -> getBadgePhotoById()', "There's no id...");
+            res.sendStatus(400); // bad request
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> getBadgePhotoById()', err);
+        res.send({ success: false });
+    }
+}
+
 // const createBadge = async (req: express.Request, res: express.Response) => {
 //     try {
 //         let body = req.body;
@@ -1828,5 +1864,6 @@ module.exports = {
     getNotifications,
     postToWall,
     changePostPhoto,
-    getPostPhotoById
+    getPostPhotoById,
+    getBadgePhotoById
 };
