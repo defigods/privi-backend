@@ -329,7 +329,7 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
         let body = req.body;
 
         const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
-        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName);
+        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false);
 
         res.send({
             success: true,
@@ -354,6 +354,10 @@ const createDiscordChat = exports.createDiscordChat = async (adminId, adminName)
                 // userData - no check if firestore insert works? TODO
                 transaction.set(db.collection(collections.discordChat).doc(uid), {
                     users: users,
+                    admin: {
+                        id: adminId,
+                        name: adminName
+                    },
                     created: Date.now()
                 });
             });
@@ -369,12 +373,12 @@ const createDiscordChat = exports.createDiscordChat = async (adminId, adminName)
     })
 };
 
-const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName) => {
+const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName, privacy) => {
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
             let users : any[] = [{
-                type: 'admin',
+                type: 'Admin',
                 userId: adminId,
                 userName: adminName,
                 userConnected: false,
@@ -383,6 +387,7 @@ const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, admin
             let obj : any = {
                 type: type,
                 name: roomName,
+                private: privacy,
                 users: users,
                 created: Date.now(),
                 lastMessage: null,
@@ -404,15 +409,39 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
     try {
         let body = req.body;
 
-        const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName);
+        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
 
-        res.send({
-            success: true,
-            data: discordRoomCreation
-        });
+        if(checkIsAdmin) {
+            const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private);
+
+            res.send({
+                success: true,
+                data: discordRoomCreation
+            });
+        } else {
+            res.send({
+                success: false,
+                error: 'Non permissions'
+            });
+        }
     } catch (e) {
         return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
     }
+}
+
+const checkIfUserIsAdmin = (chatId, adminId) : Promise<boolean> => {
+    return new Promise(async (resolve, reject) => {
+        const discordChatRef = db.collection(collections.discordChat)
+          .doc(chatId);
+        const discordChatGet = await discordChatRef.get();
+        const discordChat : any = discordChatGet.data();
+
+        if(discordChat && discordChat.admin && discordChat.admin.id && discordChat.admin.id === adminId) {
+            resolve(true);
+        } else {
+            resolve(false);
+        }
+    })
 }
 
 exports.discordGetMessages = async (req: express.Request, res: express.Response) => {
@@ -438,6 +467,7 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
                 const user: any = userGet.data();
 
                 discordMsg['user'] = {
+                    id: userGet.id,
                     name: user.firstName,
                     level: user.level || 1,
                     cred: user.cred || 0,
