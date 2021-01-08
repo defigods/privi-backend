@@ -1112,6 +1112,7 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
             pod.rates = {};
             pod.rates[pod.FundingToken] = val;
             pod.rates[podId] = val;
+            pod.id = podGet.id;
             const rateSnap = await db.collection(collections.rates).get();
             rateSnap.forEach((doc) => {
                 if (doc.id == pod.FundingToken || doc.id == podId) { // only need these two
