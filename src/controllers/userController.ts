@@ -1429,6 +1429,7 @@ const getBadges = async (req: express.Request, res: express.Response) => {
 
         badgesSnap.forEach((doc) => {
             const data: any = doc.data();
+            data.id = doc.id;
             allBadges.push({ ...data });
         });
 
@@ -1459,10 +1460,10 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {  
             //await updateFirebase(blockchainRes);
             let badgesGet = await db.collection(collections.badges).get();
-            let id = badgesGet.size.toString();
+            // let id = badgesGet.size.toString();
 
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc(id), {
+                transaction.set(db.collection(collections.badges).doc(txid), {
                     creator: creator,
                     name: name, 
                     description: description,
@@ -1483,7 +1484,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             let badges = user.badges || [];
     
             await userRef.update({
-                badges: badges.push(id)
+                badges: badges.push(txid)
             });
     
             res.send({
