@@ -1452,9 +1452,10 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         const description = body.description;
         const totalSupply = body.totalSupply;
         const royalty = body.royalty;
+        const classification = body.class;
         const txid = generateUniqueId();
 
-        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
+        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
         if (blockchainRes && blockchainRes.success) {  
             //await updateFirebase(blockchainRes);
            
@@ -1463,6 +1464,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
                     creator: creator,
                     name: name, 
                     description: description,
+                    classification: classification,
                     symbol: name,
                     users: [],
                     totalSupply: totalSupply,
@@ -1490,6 +1492,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
                     creator: creator,
                     name: name,
                     symbol: name,
+                    classification: classification,
                     users: [],
                     totalSupply: totalSupply,
                     date: Date.now(),
