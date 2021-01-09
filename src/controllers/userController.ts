@@ -1455,11 +1455,9 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         const txid = generateUniqueId();
 
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
-        console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {  
             //await updateFirebase(blockchainRes);
-            let badgesGet = await db.collection(collections.badges).get();
-            // let id = badgesGet.size.toString();
+           
             await db.runTransaction(async (transaction) => {
                 transaction.set(db.collection(collections.badges).doc(''+txid), {
                     creator: creator,
@@ -1476,16 +1474,16 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             });
 
             // add badge to user
-            const userRef = db.collection(collections.user).doc(creator);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
-            let badges = [...user.badges];
+            //  const userRef = db.collection(collections.user).doc(creator);
+            //  const userGet = await userRef.get();
+            //  const user: any = userGet.data();
+            //  let badges = [...user.badges];
 
-            console.log('badges', badges, user)
+            // console.log('badges', badges, user)
     
-            await userRef.update({
-                badges: badges.push(txid)
-            });
+            // await userRef.update({
+            //     badges: badges.push(txid)
+            // });
     
             res.send({
                 success: true, data: {
@@ -1498,7 +1496,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
                     royalty: royalty,
                     txnId: txid,
                     hasPhoto: false
-                }
+                 }
             });
         }
         else {
@@ -1515,13 +1513,16 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
         if (req.file) {
             const badgeRef = db.collection(collections.badges)
                 .doc(req.file.originalname);
+    
             const badgeGet = await badgeRef.get();
-            const badge: any = badgeGet.data();
+            const badge: any = await badgeGet.data();
+
             if (badge.hasPhoto) {
                 await badgeRef.update({
                     hasPhoto: true
                 });
             }
+
             res.send({ success: true });
         } else {
             console.log('Error in controllers/userController -> changeBadgePhoto()', "There's no file...");
