@@ -1452,20 +1452,19 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         const description = body.description;
         const totalSupply = body.totalSupply;
         const royalty = body.royalty;
+        const classification = body.class;
         const txid = generateUniqueId();
 
-        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
-
+        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
         if (blockchainRes && blockchainRes.success) {  
             //await updateFirebase(blockchainRes);
-            let badgesGet = await db.collection(collections.badges).get();
-            // let id = badgesGet.size.toString();
-
+           
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc(txid), {
+                transaction.set(db.collection(collections.badges).doc(''+txid), {
                     creator: creator,
                     name: name, 
                     description: description,
+                    classification: classification,
                     symbol: name,
                     users: [],
                     totalSupply: totalSupply,
@@ -1477,27 +1476,30 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             });
 
             // add badge to user
-            const userRef = db.collection(collections.user).doc(creator);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
-            let badges = user.badges || [];
+            //  const userRef = db.collection(collections.user).doc(creator);
+            //  const userGet = await userRef.get();
+            //  const user: any = userGet.data();
+            //  let badges = [...user.badges];
+
+            // console.log('badges', badges, user)
     
-            await userRef.update({
-                badges: badges.push(txid)
-            });
+            // await userRef.update({
+            //     badges: badges.push(txid)
+            // });
     
             res.send({
                 success: true, data: {
                     creator: creator,
                     name: name,
                     symbol: name,
+                    classification: classification,
                     users: [],
                     totalSupply: totalSupply,
                     date: Date.now(),
                     royalty: royalty,
                     txnId: txid,
                     hasPhoto: false
-                }
+                 }
             });
         }
         else {
@@ -1514,13 +1516,16 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
         if (req.file) {
             const badgeRef = db.collection(collections.badges)
                 .doc(req.file.originalname);
+    
             const badgeGet = await badgeRef.get();
-            const badge: any = badgeGet.data();
+            const badge: any = await badgeGet.data();
+
             if (badge.hasPhoto) {
                 await badgeRef.update({
                     hasPhoto: true
                 });
             }
+
             res.send({ success: true });
         } else {
             console.log('Error in controllers/userController -> changeBadgePhoto()', "There's no file...");
@@ -1569,68 +1574,6 @@ const getBadgePhotoById = async (req: express.Request, res: express.Response) =>
         res.send({ success: false });
     }
 }
-
-// const createBadge = async (req: express.Request, res: express.Response) => {
-//     try {
-//         let body = req.body;
-
-//         let badgesGet = await db.collection(collections.badges).get();
-//         let id = badgesGet.size;
-
-//         if (body) {
-//             await db.runTransaction(async (transaction) => {
-
-//                 // userData - no check if firestore insert works? TODO
-//                 transaction.set(db.collection(collections.badges).doc('' + id + 1), {
-//                     creatorId: body.creatorId,
-//                     users: [],
-//                     badgesAvailable: body.badgesAvailable,
-//                     name: body.name,
-//                     hasPhoto: false
-//                 });
-//             });
-//             res.send({
-//                 success: true, data: {
-//                     creatorId: body.userId,
-//                     users: [],
-//                     badgesAvailable: body.badgesAvailable,
-//                     name: body.name,
-//                     hasPhoto: false,
-//                     id: id + 1
-//                 }
-//             });
-//         } else {
-//             console.log('Error in controllers/userController -> createBadge()', 'No Information');
-//             res.send({ success: false });
-//         }
-//     } catch (err) {
-//         console.log('Error in controllers/userController -> createBadge()', err);
-//         res.send({ success: false });
-//     }
-// }
-
-// const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
-//     try {
-//         if (req.file) {
-//             const badgeRef = db.collection(collections.badges)
-//                 .doc(req.file.originalname);
-//             const badgeGet = await badgeRef.get();
-//             const badge: any = badgeGet.data();
-//             if (badge.HasPhoto) {
-//                 await badgeRef.update({
-//                     HasPhoto: true
-//                 });
-//             }
-//             res.send({ success: true });
-//         } else {
-//             console.log('Error in controllers/userController -> changeBadgePhoto()', "There's no file...");
-//             res.send({ success: false });
-//         }
-//     } catch (err) {
-//         console.log('Error in controllers/userController -> changePodPhoto()', err);
-//         res.send({ success: false });
-//     }
-// };
 
 const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;

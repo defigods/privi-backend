@@ -8,6 +8,8 @@ import collections from '../firebase/collections';
 import fields from '../firebase/fields';
 import cron from 'node-cron';
 import { clearLine } from "readline";
+import path from "path";
+import fs from "fs";
 
 const chatController = require('./chatController');
 require('dotenv').config();
@@ -455,13 +457,14 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 // get all badges
 exports.getBadges = async (req: express.Request, res: express.Response) => {
     try {
-        // const creator = req.params.creator;
+        // const creator = req.body;
         const allBadges: any[] = [];
         const badgesSnap = await db.collection(collections.badges).get();
-        // .where("creator", "==", creator)
+        // .where("creator", "==", creator).get();
 
         badgesSnap.forEach((doc) => {
             const data: any = doc.data();
+            data.id = doc.id;
             allBadges.push({ ...data });
         });
 
@@ -472,23 +475,9 @@ exports.getBadges = async (req: express.Request, res: express.Response) => {
                 }
         });
     } catch (e) {
-        return ('Error in controllers/communitiesControllers -> getBadges()' + e)
+        return ('Error in controllers/userControllers -> getBadges()' + e)
     }
 }
-
-// get a single badge data
-// exports.getBadge = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const communityAddress = req.params.communityAddress;
-//         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
-//         const rateOfChange = await getRateOfChangeAsMap();
-//         const data: any = communitySnap.data();
-//         const extraData = getExtraData(data, rateOfChange);
-//         res.send({ success: true, data: { ...data, ...extraData } });
-//     } catch (e) {
-//         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
-//     }
-// }
 
 exports.createBadge = async (req: express.Request, res: express.Response) => {
     try {
@@ -498,18 +487,18 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         const description = body.description;
         const totalSupply = body.totalSupply;
         const royalty = body.royalty;
+        const classification = body.class;
         const txid = generateUniqueId();
-        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), Date.now(), 0, txid, apiKey);
 
-        if (blockchainRes && blockchainRes.success) {          
-            let badgesGet = await db.collection(collections.badges).get();
-            let id = badgesGet.size.toString();
-
+        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
+        if (blockchainRes && blockchainRes.success) {  
+           
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc(id), {
+                transaction.set(db.collection(collections.badges).doc(''+txid), {
                     creator: creator,
-                    name: name,
+                    name: name, 
                     description: description,
+                    classification: classification,
                     symbol: name,
                     users: [],
                     totalSupply: totalSupply,
@@ -519,53 +508,94 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
                     hasPhoto: false
                 });
             });
-
+    
             res.send({
                 success: true, data: {
                     creator: creator,
                     name: name,
                     symbol: name,
+                    classification: classification,
                     users: [],
                     totalSupply: totalSupply,
                     date: Date.now(),
                     royalty: royalty,
                     txnId: txid,
                     hasPhoto: false
-                }
+                 }
             });
         }
         else {
-            console.log('Error in controllers/communitiesControllers -> createBadge(): success = false.', blockchainRes.message);
-            res.send({ success: false, data: blockchainRes.message });
+            console.log('Error in controllers/communityController -> createBadge(): success = false.', blockchainRes.message);
+            res.send({ success: false });
         }
     } catch (e) {
-        return ('Error in controllers/communitiesControllers -> createBadge()' + e)
+        return ('Error in controllers/communityController -> createBadge()' + e)
     }
 }
-
 
 exports.changeBadgePhoto = async (req: express.Request, res: express.Response) => {
     try {
         if (req.file) {
             const badgeRef = db.collection(collections.badges)
                 .doc(req.file.originalname);
+    
             const badgeGet = await badgeRef.get();
-            const badge: any = badgeGet.data();
+            const badge: any = await badgeGet.data();
+
             if (badge.hasPhoto) {
                 await badgeRef.update({
                     hasPhoto: true
                 });
             }
+
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/communitiesController -> changeBadgePhoto()', "There's no file...");
+            console.log('Error in controllers/communityController -> changeBadgePhoto()', "There's no file...");
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/communitiesController -> changePodPhoto()', err);
+        console.log('Error in controllers/communityController -> changeBadgePhoto()', err);
         res.send({ success: false });
     }
 };
+
+exports.getBadgePhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let badgeId = req.params.badgeId;
+        console.log(badgeId);
+        if (badgeId) {
+            const directoryPath = path.join('uploads', 'badges');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'badges', badgeId + '.png'));
+            raw.on('error', function (err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/communityController -> getBadgePhotoById()', "There's no id...");
+            res.sendStatus(400); // bad request
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/communityController -> getBadgePhotoById()', err);
+        res.send({ success: false });
+    }
+}
 
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {
