@@ -329,7 +329,7 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
         let body = req.body;
 
         const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
-        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false);
+        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false, []);
 
         res.send({
             success: true,
@@ -373,7 +373,7 @@ const createDiscordChat = exports.createDiscordChat = async (adminId, adminName)
     })
 };
 
-const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName, privacy) => {
+const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName, privacy, users) => {
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
@@ -412,7 +412,52 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
         const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
 
         if(checkIsAdmin) {
-            const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private);
+            let users : any[] = [];
+            if(!body.private) {
+                if(body.type === 'Pod') {
+                    const podSnap = await db.collection(collections.PodsFT).doc(body.id).get();
+                    const podData: any = podSnap.data();
+
+                    const investors = [...podData.Investors.keys()];
+
+                    for (const user of investors) {
+                        let i = investors.indexOf(user);
+                        const userSnap = await db.collection(collections.user).doc(user).get();
+                        let data : any = userSnap.data();
+
+                        users.push({
+                            type: 'Member',
+                            userId: user,
+                            userName: data.firstName,
+                            userConnected: false,
+                            lastView: Date.now()
+                        })
+                    }
+                } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
+                    const communitySnap = await db.collection(collections.community).doc(body.id).get();
+                    const communityData: any = communitySnap.data();
+
+
+                    for (const user of communityData.Members) {
+                        const userSnap = await db.collection(collections.user).doc(user.id).get();
+                        let data : any = userSnap.data();
+
+                        users.push({
+                            type: 'Member',
+                            userId: user.id,
+                            userName: data.firstName,
+                            userConnected: false,
+                            lastView: Date.now()
+                        })
+                    }
+                } else if(body.type === 'Credit-Pool') {
+
+                } else if(body.type === 'Insurance') {
+
+                }
+            }
+
+            const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private, users);
 
             res.send({
                 success: true,
@@ -442,6 +487,43 @@ const checkIfUserIsAdmin = (chatId, adminId) : Promise<boolean> => {
             resolve(false);
         }
     })
+}
+
+exports.discordAddUserToRoom = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordRoomRef = db.collection(collections.discordChat)
+          .doc(body.discordChatId).collection(collections.discordRoom)
+          .doc(body.discordRoomId);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom : any = discordRoomGet.data();
+
+        const userSnap = await db.collection(collections.user).doc(body.userId).get();
+        let data : any = userSnap.data();
+
+        let users = [...discordRoom.users];
+        users.push({
+            type: 'Member',
+            userId: body.userId,
+            userName: data.firstName,
+            userConnected: false,
+            lastView: Date.now()
+        })
+
+        await discordRoomRef.update({
+            users: users
+        });
+
+        discordRoom.users = users;
+
+        res.send({
+            success: true,
+            data: discordRoom
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordAddUserToRoom()' + e)
+    }
 }
 
 exports.discordGetMessages = async (req: express.Request, res: express.Response) => {
@@ -617,6 +699,7 @@ exports.discordModifyAccess = async (req: express.Request, res: express.Response
         });
 
         discordRoom.users = users;
+        discordRoom.id = discordRoomGet.id;
 
         res.send({
             success: true,
