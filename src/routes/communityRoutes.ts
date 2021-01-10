@@ -50,6 +50,7 @@ router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'
 router.post('/badges/getBadges', authenticateJWT, communityController.getBadges);
 router.post('/badges/create', authenticateJWT, communityController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
+router.get('/badges/getPhoto/:badgeId', communityController.getBadgePhotoById);
 
 // communities
 router.get('/getCommunities', authenticateJWT, communityController.getCommunities);
