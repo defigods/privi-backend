@@ -23,6 +23,7 @@ router.post('/discord/getReplies', authenticateJWT, chatController.discordGetRep
 router.post('/discord/lastView', authenticateJWT, chatController.discordLastView);
 router.post('/discord/provideAccess', authenticateJWT, chatController.discordModifyAccess);
 router.post('/discord/removeAccess', authenticateJWT, chatController.discordRemoveAccess);
+router.post('/discord/getPossibleUsers', authenticateJWT, chatController.discordGetPossibleUsers);
 
 
 module.exports = router;

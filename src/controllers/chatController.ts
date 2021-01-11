@@ -451,7 +451,40 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                         })
                     }
                 } else if(body.type === 'Credit-Pool') {
+                    const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
+                      .collection(collections.priviCreditsBorrowing).get();
+                    const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
+                      .collection(collections.priviCreditsLending).get();
 
+                    if(!creditPoolBorrowersSnap.empty) {
+                        for (const doc of creditPoolBorrowersSnap.docs) {
+                            const userRef = db.collection(collections.user).doc(doc.id);
+                            const userGet = await userRef.get();
+                            const user: any = userGet.data();
+
+                            users.push({
+                                type: 'Member',
+                                userId: doc.id,
+                                userName: user.firstName
+                            });
+                        }
+                    }
+
+                    if(!creditPoolLendersSnap.empty) {
+                        for (const doc of creditPoolLendersSnap.docs) {
+                            for (const doc of creditPoolBorrowersSnap.docs) {
+                                const userRef = db.collection(collections.user).doc(doc.id);
+                                const userGet = await userRef.get();
+                                const user: any = userGet.data();
+
+                                users.push({
+                                    type: 'Member',
+                                    userId: doc.id,
+                                    userName: user.firstName
+                                });
+                            }
+                        }
+                    }
                 } else if(body.type === 'Insurance') {
 
                 }
@@ -747,3 +780,113 @@ exports.discordRemoveAccess = async (req: express.Request, res: express.Response
         return ('Error in controllers/chatRoutes -> discordRemoveAccess()' + e)
     }
 }
+
+exports.discordGetPossibleUsers = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        /*const discordRoomRef = db.collection(collections.discordChat)
+          .doc(body.discordChatId).collection(collections.discordRoom)
+          .doc(body.discordRoomId);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom : any = discordRoomGet.data();*/
+        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
+
+
+        if(checkIsAdmin) {
+            let users : any[] = [];
+
+            if(body.type === 'Pod') {
+                console.log(body.id);
+                const podSnap = await db.collection(collections.podsFT).doc(body.id).get();
+
+                const podData: any = podSnap.data();
+
+                const investors = Object.keys(podData.Investors);
+
+                for (const user of investors) {
+                    let i = investors.indexOf(user);
+                    const userSnap = await db.collection(collections.user).doc(user).get();
+                    let data : any = userSnap.data();
+
+                    users.push({
+                        type: 'Member',
+                        userId: user,
+                        userName: data.firstName,
+                        userConnected: false,
+                        lastView: Date.now()
+                    })
+                }
+            } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
+                const communitySnap = await db.collection(collections.community).doc(body.id).get();
+                const communityData: any = communitySnap.data();
+
+
+                for (const user of communityData.Members) {
+                    const userSnap = await db.collection(collections.user).doc(user.id).get();
+                    let data : any = userSnap.data();
+
+                    users.push({
+                        type: 'Member',
+                        userId: user.id,
+                        userName: data.firstName,
+                        userConnected: false,
+                        lastView: Date.now()
+                    })
+                }
+            } else if(body.type === 'Credit-Pool') {
+                const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
+                  .collection(collections.priviCreditsBorrowing).get();
+                const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
+                  .collection(collections.priviCreditsLending).get();
+
+                if(!creditPoolBorrowersSnap.empty) {
+                    for (const doc of creditPoolBorrowersSnap.docs) {
+                        const userRef = db.collection(collections.user).doc(doc.id);
+                        const userGet = await userRef.get();
+                        const user: any = userGet.data();
+
+                        users.push({
+                            type: 'Member',
+                            userId: doc.id,
+                            userName: user.firstName
+                        });
+                    }
+                }
+
+                if(!creditPoolLendersSnap.empty) {
+                    for (const doc of creditPoolLendersSnap.docs) {
+                        for (const doc of creditPoolBorrowersSnap.docs) {
+                            const userRef = db.collection(collections.user).doc(doc.id);
+                            const userGet = await userRef.get();
+                            const user: any = userGet.data();
+
+                            users.push({
+                                type: 'Member',
+                                userId: doc.id,
+                                userName: user.firstName
+                            });
+                        }
+                    }
+                }
+            } else {
+                res.send({
+                    success: false,
+                    error: 'No type provided'
+                });
+            }
+
+            res.send({
+                success: true,
+                data: users
+            });
+        } else {
+            res.send({
+                success: false,
+                error: 'Non permissions'
+            });
+        }
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> discordRemoveAccess()' + e)
+    }
+};
