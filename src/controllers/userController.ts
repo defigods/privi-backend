@@ -403,7 +403,10 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     instagram: '',
                     facebook: '',
                     level: 1,
-                    notifications: []
+                    notifications: [],
+                    verified: false,
+                    anon: false,
+                    anonAvatar: '../../assets/anonAvatars/ToyFaces_Colored_BG_111.jpg'
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -498,7 +501,9 @@ interface BasicInfo {
     twitter: string,
     facebook: string,
     instagram: string,
-    notifications: any[]
+    notifications: any[],
+    anon: boolean,
+    anonAvatar: string,    
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -507,7 +512,8 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
 
         let basicInfo: BasicInfo = {
             name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [], 
-            badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: []
+            badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: [],
+            anon: false, anonAvatar: '../../assets/anonAvatars/ToyFaces_Colored_BG_111.jpg'
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
@@ -537,7 +543,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.facebook = userData.facebook || '';
             basicInfo.notifications = userData.notifications || [];
             basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
-            basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
+            basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
+            basicInfo.anon = userData.anon || false;
+            basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
 
             res.send({ success: true, data: basicInfo });
         }
@@ -1767,6 +1775,59 @@ const voteIssue = async (req: express.Request, res: express.Response) => {
     }
 }
 
+//CHANGE ANON MODE
+
+const changeAnonMode = async (req: express.Request, res: express.Response) => {
+try {
+        let body = req.body;
+
+        if (body && body.userId && body.anonMode) {
+            const userRef = db.collection(collections.user)
+            .doc(body.userId);
+
+            await userRef.update({
+            anon: body.anonMode,
+        });
+
+            res.send({ success: true });
+
+        } else {
+            console.log('Error in controllers/userController -> changeAnonMode()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> changeAnonMode()', err);
+        res.send({ success: false });
+    }
+}
+
+
+//CHANGE ANON AVATAR
+
+const changeAnonAvatar = async (req: express.Request, res: express.Response) => {
+try {
+        let body = req.body;
+
+        if (body && body.userId && body.anonAvatar) {
+            const userRef = db.collection(collections.user)
+            .doc(body.userId);
+
+            await userRef.update({
+            anonAvatar: body.anonAvatar,
+        });
+
+            res.send({ success: true });
+
+        } else {
+            console.log('Error in controllers/userController -> changeAnonAvatar()', 'No Information');
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> changeAnonAvatar()', err);
+        res.send({ success: false });
+    }
+}
+
 
 
 module.exports = {
@@ -1809,5 +1870,7 @@ module.exports = {
     postToWall,
     changePostPhoto,
     getPostPhotoById,
-    getBadgePhotoById
+    getBadgePhotoById,
+    changeAnonMode,
+    changeAnonAvatar
 };
