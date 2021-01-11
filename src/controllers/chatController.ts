@@ -930,6 +930,43 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
     try {
         let body = req.body;
 
+        const discordMessageRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId);
+        const discordMessageGet = await discordMessageRef.get();
+        const discordMessage: any = discordMessageGet.data();
+
+        let likes = [...discordMessage.likes];
+        let dislikes = [...discordMessage.dislikes];
+        let numLikes = discordMessage.numLikes + 1;
+        let numDislikes = discordMessage.numDislikes;
+        likes.push(body.userId);
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+        console.log(dislikeIndex, dislikes)
+        if(dislikeIndex !== -1) {
+            dislikes.splice(dislikeIndex, 1);
+            numDislikes = numDislikes - 1;
+        }
+
+        await discordMessageRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        let message = {...discordMessage};
+        message.id = discordMessageGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+        console.log('like', message);
+
+        res.send({
+            success: false,
+            data: message
+        });
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordLikeMessage() ' + e)
         res.send({
@@ -943,6 +980,43 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
     try {
         let body = req.body;
 
+        const discordMessageRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId);
+        const discordMessageGet = await discordMessageRef.get();
+        const discordMessage: any = discordMessageGet.data();
+
+        let dislikes = [...discordMessage.dislikes];
+        let likes = [...discordMessage.likes];
+        let numLikes = discordMessage.numLikes;
+        let numDislikes = discordMessage.numDislikes + 1;
+        dislikes.push(body.userId);
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+        if(likeIndex !== -1) {
+            likes.splice(likeIndex, 1);
+            numLikes = numLikes - 1;
+        }
+
+        await discordMessageRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+
+        let message = {...discordMessage};
+        message.id = discordMessageGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+        console.log('dislike', message);
+
+        res.send({
+            success: false,
+            data: message
+        });
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordDislikeMessage() ' + e)
         res.send({
