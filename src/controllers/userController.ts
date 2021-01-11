@@ -1422,10 +1422,10 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 // get all badges
 const getBadges = async (req: express.Request, res: express.Response) => {
     try {
-        // const creator = req.body;
+        let creator = req.params.userId;
         const allBadges: any[] = [];
-        const badgesSnap = await db.collection(collections.badges).get();
-        // .where("creator", "==", creator).get();
+        const badgesSnap = await db.collection(collections.badges)
+        .where("creator", "==", creator).get();
 
         badgesSnap.forEach((doc) => {
             const data: any = doc.data();

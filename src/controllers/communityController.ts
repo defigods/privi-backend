@@ -462,10 +462,10 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 // get all badges
 exports.getBadges = async (req: express.Request, res: express.Response) => {
     try {
-        // const creator = req.body;
+        let creator = req.params.communityAddress;
         const allBadges: any[] = [];
-        const badgesSnap = await db.collection(collections.badges).get();
-        // .where("creator", "==", creator).get();
+        const badgesSnap = await db.collection(collections.badges)
+        .where("creator", "==", creator).get();
 
         badgesSnap.forEach((doc) => {
             const data: any = doc.data();
@@ -480,7 +480,7 @@ exports.getBadges = async (req: express.Request, res: express.Response) => {
                 }
         });
     } catch (e) {
-        return ('Error in controllers/userControllers -> getBadges()' + e)
+        return ('Error in controllers/communityController -> getBadges()' + e)
     }
 }
 
