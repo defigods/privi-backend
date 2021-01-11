@@ -426,7 +426,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                         let data : any = userSnap.data();
 
                         users.push({
-                            type: 'Member',
+                            type: 'Members',
                             userId: user,
                             userName: data.firstName,
                             userConnected: false,
@@ -443,7 +443,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                         let data : any = userSnap.data();
 
                         users.push({
-                            type: 'Member',
+                            type: 'Members',
                             userId: user.id,
                             userName: data.firstName,
                             userConnected: false,
@@ -463,7 +463,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                             const user: any = userGet.data();
 
                             users.push({
-                                type: 'Member',
+                                type: 'Members',
                                 userId: doc.id,
                                 userName: user.firstName
                             });
@@ -478,7 +478,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                                 const user: any = userGet.data();
 
                                 users.push({
-                                    type: 'Member',
+                                    type: 'Members',
                                     userId: doc.id,
                                     userName: user.firstName
                                 });
@@ -526,36 +526,50 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
     try {
         let body = req.body;
 
-        const discordRoomRef = db.collection(collections.discordChat)
-          .doc(body.discordChatId).collection(collections.discordRoom)
-          .doc(body.discordRoomId);
-        const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();
+        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
 
-        const userSnap = await db.collection(collections.user).doc(body.userId).get();
-        let data : any = userSnap.data();
+        console.log(body);
+        if(checkIsAdmin) {
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(body.discordChatId).collection(collections.discordRoom)
+              .doc(body.discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
 
-        let users = [...discordRoom.users];
-        users.push({
-            type: 'Member',
-            userId: body.userId,
-            userName: data.firstName,
-            userConnected: false,
-            lastView: Date.now()
-        })
+            const userSnap = await db.collection(collections.user).doc(body.userId).get();
+            let data : any = userSnap.data();
 
-        await discordRoomRef.update({
-            users: users
-        });
+            let users = [...discordRoom.users];
+            users.push({
+                type: 'Members',
+                userId: body.userId,
+                userName: data.firstName,
+                userConnected: false,
+                lastView: Date.now()
+            })
 
-        discordRoom.users = users;
+            await discordRoomRef.update({
+                users: users
+            });
 
-        res.send({
-            success: true,
-            data: discordRoom
-        });
+            discordRoom.users = users;
+
+            res.send({
+                success: true,
+                data: discordRoom
+            });
+        } else {
+            res.send({
+                success: false,
+                error: 'Non permissions'
+            });
+        }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordAddUserToRoom()' + e)
+        console.log('Error in controllers/chatRoutes -> discordAddUserToRoom() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
 
@@ -747,37 +761,49 @@ exports.discordRemoveAccess = async (req: express.Request, res: express.Response
     try {
         let body = req.body;
 
-        const discordRoomRef = db.collection(collections.discordChat)
-            .doc(body.discordChatId).collection(collections.discordRoom)
-            .doc(body.discordRoomId);
-        const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();
+        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
 
-        let users : any[] = [...discordRoom.users];
+        if(checkIsAdmin) {
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(body.discordChatId).collection(collections.discordRoom)
+              .doc(body.discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
 
-        let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
+            let users : any[] = [...discordRoom.users];
 
-        if(findUserIndex === -1) {
+            let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
+
+            if(findUserIndex === -1) {
+                res.send({
+                    success: false,
+                    data: 'User not found'
+                });
+            } else {
+                users.splice(findUserIndex, 1);
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+
+                res.send({
+                    success: true,
+                    data: discordRoom
+                });
+            }
+        } else {
             res.send({
                 success: false,
-                data: 'User not found'
+                error: 'Non permissions'
             });
-        } else {
-            users.splice(findUserIndex, 1);
         }
-
-        await discordRoomRef.update({
-            users: users
-        });
-
-        discordRoom.users = users;
-
-        res.send({
-            success: true,
-            data: discordRoom
-        });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordRemoveAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordRemoveAccess() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
 
@@ -785,11 +811,6 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
     try {
         let body = req.body;
 
-        /*const discordRoomRef = db.collection(collections.discordChat)
-          .doc(body.discordChatId).collection(collections.discordRoom)
-          .doc(body.discordRoomId);
-        const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();*/
         const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
 
 
@@ -810,11 +831,9 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                     let data : any = userSnap.data();
 
                     users.push({
-                        type: 'Member',
+                        type: 'Members',
                         userId: user,
-                        userName: data.firstName,
-                        userConnected: false,
-                        lastView: Date.now()
+                        userName: data.firstName
                     })
                 }
             } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
@@ -827,7 +846,7 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                     let data : any = userSnap.data();
 
                     users.push({
-                        type: 'Member',
+                        type: 'Members',
                         userId: user.id,
                         userName: data.firstName,
                         userConnected: false,
@@ -847,7 +866,7 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                         const user: any = userGet.data();
 
                         users.push({
-                            type: 'Member',
+                            type: 'Members',
                             userId: doc.id,
                             userName: user.firstName
                         });
@@ -862,7 +881,7 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                             const user: any = userGet.data();
 
                             users.push({
-                                type: 'Member',
+                                type: 'Members',
                                 userId: doc.id,
                                 userName: user.firstName
                             });
