@@ -1781,7 +1781,7 @@ const changeAnonMode = async (req: express.Request, res: express.Response) => {
 try {
         let body = req.body;
 
-        if (body && body.userId && body.anonMode) {
+        if (body && body.userId && body.anonMode != undefined) {
             const userRef = db.collection(collections.user)
             .doc(body.userId);
 
