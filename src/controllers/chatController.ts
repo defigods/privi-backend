@@ -377,18 +377,18 @@ const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, admin
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
-            let users : any[] = [{
+            let usrs : any[] = [{
                 type: 'Admin',
                 userId: adminId,
                 userName: adminName,
                 userConnected: false,
                 lastView: Date.now()
-            }];
+            }, ...users];
             let obj : any = {
                 type: type,
                 name: roomName,
                 private: privacy,
-                users: users,
+                users: usrs,
                 created: Date.now(),
                 lastMessage: null,
                 lastMessageDate: null,
@@ -415,10 +415,10 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
             let users : any[] = [];
             if(!body.private) {
                 if(body.type === 'Pod') {
-                    const podSnap = await db.collection(collections.PodsFT).doc(body.id).get();
+                    const podSnap = await db.collection(collections.podsFT).doc(body.id).get();
                     const podData: any = podSnap.data();
 
-                    const investors = [...podData.Investors.keys()];
+                    const investors = Object.keys(podData.Investors);
 
                     for (const user of investors) {
                         let i = investors.indexOf(user);
@@ -503,7 +503,11 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+        console.log('Error in controllers/chatRoutes -> discordCreateRoom() ' + e);
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
 
@@ -737,7 +741,11 @@ exports.discordModifyAccess = async (req: express.Request, res: express.Response
             });
         } else {
             users[findUserIndex] = {
-                type: body.type
+                type: body.type,
+                userId: users[findUserIndex].userId,
+                userName: users[findUserIndex].userName,
+                userConnected: users[findUserIndex].userConnected,
+                lastView: users[findUserIndex].lastView
             }
         }
 
@@ -753,7 +761,11 @@ exports.discordModifyAccess = async (req: express.Request, res: express.Response
             data: discordRoom
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordModifyAccess() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
 
@@ -906,6 +918,36 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordRemoveAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordGetPossibleUsers() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
     }
 };
+
+exports.discordLikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordLikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+
+exports.discordDislikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordDislikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}

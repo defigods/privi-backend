@@ -24,6 +24,8 @@ router.post('/discord/lastView', authenticateJWT, chatController.discordLastView
 router.post('/discord/provideAccess', authenticateJWT, chatController.discordModifyAccess);
 router.post('/discord/removeAccess', authenticateJWT, chatController.discordRemoveAccess);
 router.post('/discord/getPossibleUsers', authenticateJWT, chatController.discordGetPossibleUsers);
+router.post('/discord/likeMessage', authenticateJWT, chatController.discordLikeMessage);
+router.post('/discord/dislikeMessage', authenticateJWT, chatController.discordDislikeMessage);
 
 
 module.exports = router;
