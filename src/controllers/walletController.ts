@@ -458,7 +458,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
             const fundingToken = doc.data().FundingToken;
             const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
             let latestFundingTokenPrice = 1;    // price of fundingToken per NF Token
-            if (nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
+            if (nftPodSnap.docs[0] && nftPodSnap.docs[0].data && nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
             if (rateOfChange[fundingToken]) sum += rateOfChange[fundingToken] * latestFundingTokenPrice * doc.data().Amount;
         });
 
