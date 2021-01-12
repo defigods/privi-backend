@@ -5,11 +5,12 @@ import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
 import { updateFirebase, updateStatusOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
-import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
+import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 const uuid = require('uuid');
 
@@ -528,8 +529,12 @@ const withdraw = async (
         // Convert value into wei
         const amountWei = web3.utils.toWei(String(amount));
 
+        let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
+
+        console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
+
         // Get SwapManager contract code
-        const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+        const contract = new web3.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(CHAIN_ID.split('x')[1])]["address"]);
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
@@ -593,90 +598,90 @@ const withdraw = async (
 
 }
 
-const _withdraw = async (params: any) => {
+// const _withdraw = async (params: any) => {
 
-    // const input = {
-    //     From: params.publicId,
-    //     userAddress: params.userAddress,
-    //     To: params.to,
-    //     Type: params.action,
-    //     Token: params.token,
-    //     Amount: params.amount,
-    //     Date: params.lastUpdate,
-    //     Id: params.random,
-    //     Caller: 'PRIVI'
-    // }
+//     // const input = {
+//     //     From: params.publicId,
+//     //     userAddress: params.userAddress,
+//     //     To: params.to,
+//     //     Type: params.action,
+//     //     Token: params.token,
+//     //     Amount: params.amount,
+//     //     Date: params.lastUpdate,
+//     //     Id: params.random,
+//     //     Caller: 'PRIVI'
+//     // }
 
-    // console.log(`Input for burn: \n`, input);
+//     // console.log(`Input for burn: \n`, input);
 
-    // Withdraw in Fabric
-    const response = await withdrawFab(
-        params.action,
-        params.userAddress,
-        params.to,
-        params.amount,
-        params.token,
-        params.lastUpdate,
-        params.random,
-        'PRIVI'
-    );
+//     // Withdraw in Fabric
+//     const response = await withdrawFab(
+//         params.action,
+//         params.userAddress,
+//         params.to,
+//         params.amount,
+//         params.token,
+//         params.lastUpdate,
+//         params.random,
+//         'PRIVI'
+//     );
 
-    if (response && response.success) {
+//     if (response && response.success) {
 
-        // Update balances in Firestore
-        // updateFirebase(response);
+//         // Update balances in Firestore
+//         // updateFirebase(response);
 
-        // Convert value into wei
-        const amountWei = web3.utils.toWei(String(params.amount));
+//         // Convert value into wei
+//         const amountWei = web3.utils.toWei(String(params.amount));
 
-        // Get SwapManager contract code
-        const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+//         // Get SwapManager contract code
+//         const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
 
-        // Choose method from SwapManager to be called
-        const method = (params.action === Action.WITHDRAW_ETH)
-            ? contract.methods.withdrawEther(params.to, amountWei).encodeABI()
-            : contract.methods.withdrawERC20Token(params.token, params.to, amountWei).encodeABI();
+//         // Choose method from SwapManager to be called
+//         const method = (params.action === Action.WITHDRAW_ETH)
+//             ? contract.methods.withdrawEther(params.to, amountWei).encodeABI()
+//             : contract.methods.withdrawERC20Token(params.token, params.to, amountWei).encodeABI();
 
-        // Transaction parameters
-        const paramsTX = {
-            chainId: params.chainId,
-            fromAddress: ETH_PRIVI_ADDRESS,
-            fromAddressKey: ETH_PRIVI_KEY,
-            encodedABI: method,
-            toAddress: ETH_SWAP_MANAGER_ADDRESS,
-        };
+//         // Transaction parameters
+//         const paramsTX = {
+//             chainId: params.chainId,
+//             fromAddress: ETH_PRIVI_ADDRESS,
+//             fromAddressKey: ETH_PRIVI_KEY,
+//             encodedABI: method,
+//             toAddress: ETH_SWAP_MANAGER_ADDRESS,
+//         };
 
-        // Execute transaction to withdraw in Ethereum
-        const { success, data } = await executeTX(paramsTX);
-        const paramsTx = {
-            publicId: params.publicId,
-            from: params.from,
-            to: params.to,
-            txHash: 0,
-            random: params.random,
-            chainId: params.chainId,
-            action: params.action,
-            token: params.token,
-            amount: params.amount,
-            description: params.description,
-            status: 'pending',
-            lastUpdate: params.lastUpdate,
-        };
-        console.log('params to be saved in firestore: ', paramsTx)
-        // Send back transaction result to front-end
-        if (success) {
-            console.log('--> Withdraw: TX confirmed in Ethereum');
-            paramsTx.txHash = data.transactionHash,
-                await saveTx(paramsTx);
-        } else {
-            console.log('--> Withdraw: TX failed in Ethereum');
-            await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
-        };
-    } else {
-        console.log('--> Withdraw: TX failed in Fabric');
-        await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
-    }
-};
+//         // Execute transaction to withdraw in Ethereum
+//         const { success, data } = await executeTX(paramsTX);
+//         const paramsTx = {
+//             publicId: params.publicId,
+//             from: params.from,
+//             to: params.to,
+//             txHash: 0,
+//             random: params.random,
+//             chainId: params.chainId,
+//             action: params.action,
+//             token: params.token,
+//             amount: params.amount,
+//             description: params.description,
+//             status: 'pending',
+//             lastUpdate: params.lastUpdate,
+//         };
+//         console.log('params to be saved in firestore: ', paramsTx)
+//         // Send back transaction result to front-end
+//         if (success) {
+//             console.log('--> Withdraw: TX confirmed in Ethereum');
+//             paramsTx.txHash = data.transactionHash,
+//                 await saveTx(paramsTx);
+//         } else {
+//             console.log('--> Withdraw: TX failed in Ethereum');
+//             await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
+//         };
+//     } else {
+//         console.log('--> Withdraw: TX failed in Fabric');
+//         await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
+//     }
+// };
 
 const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     const { userId, userAddress } = req.query;
