@@ -406,7 +406,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     notifications: [],
                     verified: false,
                     anon: false,
-                    anonAvatar: '../../assets/anonAvatars/ToyFaces_Colored_BG_111.jpg'
+                    anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
+                    hasPhoto: false,
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -488,7 +489,6 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
 interface BasicInfo {
     name: string;
-    profilePhoto: string,
     trustScore: number,
     endorsementScore: number,
     awards: any[],
@@ -504,6 +504,7 @@ interface BasicInfo {
     notifications: any[],
     anon: boolean,
     anonAvatar: string,    
+    hasPhoto: boolean,
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -511,9 +512,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [], 
+            name: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [], 
             badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: [],
-            anon: false, anonAvatar: '../../assets/anonAvatars/ToyFaces_Colored_BG_111.jpg'
+            anon: false, anonAvatar: 'ToyFaces_Colored_BG_111.jpg', hasPhoto: false
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
@@ -528,7 +529,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
                 allWallPost.push(data)
             });
             // update return data
-            basicInfo.name = userData.firstName + " " + userData.lastName;
+            basicInfo.name = userData.firstName + (userData.lastName ? " " + userData.lastName : '');
             basicInfo.trustScore = userData.trustScore;
             basicInfo.endorsementScore = userData.endorsementScore;
             basicInfo.creds = userData.creds || [];
@@ -546,6 +547,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
             basicInfo.anon = userData.anon || false;
             basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
+            basicInfo.hasPhoto = userData.hasPhoto || false;
 
             res.send({ success: true, data: basicInfo });
         }
@@ -1311,9 +1313,14 @@ const changeUserProfilePhoto = async (req: express.Request, res: express.Respons
                 .doc(req.file.originalname);
             const userGet = await userRef.get();
             const user: any = userGet.data();
-            if (user.HasPhoto) {
+            if (user.hasPhoto !== undefined) {
                 await userRef.update({
-                    HasPhoto: true
+                    hasPhoto: true
+                });
+            } else {
+                 await userRef.set({
+                     ...user,
+                    hasPhoto: true
                 });
             }
             res.send({ success: true });
