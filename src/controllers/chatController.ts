@@ -530,33 +530,15 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
     try {
         let body = req.body;
 
-        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        let checkIsAdmin : boolean;
+        if(body.adminRequired) {
+            checkIsAdmin = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        } else {
+            checkIsAdmin = true
+        }
 
-        console.log(body);
         if(checkIsAdmin) {
-            const discordRoomRef = db.collection(collections.discordChat)
-              .doc(body.discordChatId).collection(collections.discordRoom)
-              .doc(body.discordRoomId);
-            const discordRoomGet = await discordRoomRef.get();
-            const discordRoom : any = discordRoomGet.data();
-
-            const userSnap = await db.collection(collections.user).doc(body.userId).get();
-            let data : any = userSnap.data();
-
-            let users = [...discordRoom.users];
-            users.push({
-                type: 'Members',
-                userId: body.userId,
-                userName: data.firstName,
-                userConnected: false,
-                lastView: Date.now()
-            })
-
-            await discordRoomRef.update({
-                users: users
-            });
-
-            discordRoom.users = users;
+            let discordRoom = await addUserToRoom(body.discordChatId, body.discordRoomId, body.userId);
 
             res.send({
                 success: true,
@@ -575,6 +557,75 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
             error: e
         });
     }
+}
+
+const addUserToRoom = exports.addUserToRoom = (discordChatId, discordRoomId, userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            console.log(discordChatId, discordRoomId, userId);
+
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(discordChatId).collection(collections.discordRoom)
+              .doc(discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+
+            let users = [...discordRoom.users];
+
+            let findIndexUser = users.findIndex(usr => usr.userId === userId);
+            if(findIndexUser === -1) {
+                const userSnap = await db.collection(collections.user).doc(userId).get();
+                let data : any = userSnap.data();
+
+                users.push({
+                    type: 'Members',
+                    userId: userId,
+                    userName: data.firstName,
+                    userConnected: false,
+                    lastView: Date.now()
+                })
+
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+            }
+
+            resolve(discordRoom)
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+        }
+    })
+}
+const removeUserToRoom = exports.removeUserToRoom = (discordChatId, discordRoomId, userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(discordChatId).collection(collections.discordRoom)
+              .doc(discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+
+            let users = [...discordRoom.users];
+
+            let findIndexUser = users.findIndex(usr => usr.userId === userId);
+            if(findIndexUser !== -1) {
+                if(users[findIndexUser].type !== 'Admin') {
+                    users.splice(findIndexUser, 1);
+                }
+
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+            }
+            resolve(discordRoom)
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+        }
+    })
 }
 
 exports.discordGetMessages = async (req: express.Request, res: express.Response) => {

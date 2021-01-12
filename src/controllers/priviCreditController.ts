@@ -406,23 +406,39 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
                 endorsementMean += borrower.endorsementScore * (borrower.borrowed / totalBorrowed);
             })
 
+            let creditData : any = creditSnap.data();
+
+            const discordChatSnap = await db.collection(collections.discordChat).doc(creditData.DiscordId).get();
+            const discordChatData : any = discordChatSnap.data();
+
+            let discordAdminId : string = '';
+            if(discordChatSnap.exists) {
+                discordAdminId = discordChatData.admin.id;
+            }
+
             const data = {
-                ...creditSnap.data(),
+                ...creditData,
                 id: creditSnap.id,
                 Lenders: lenders,
                 Borrowers: borrowers,
                 BorrowerTrustScore: trustMean,
                 BorrowerEndorsementScore: endorsementMean,
+                DiscordAdminId: discordAdminId
             }
             res.send({ success: true, data: data });
-        }
-        else {
+        } else {
             console.log('Error in controllers/priviCredit -> getPriviCredit(): cant find credit with the given id ', creditId);
-            res.send({ success: false });
+            res.send({
+                success: false,
+                error: 'Error in controllers/priviCredit -> getPriviCredit(): cant find credit with the given id '
+            });
         }
     } catch (err) {
         console.log('Error in controllers/priviCredit -> getPriviCredit(): ', err);
-        res.send({ success: false });
+        res.send({
+            success: false,
+            error: err
+        });
     }
 };
 
