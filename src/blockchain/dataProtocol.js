@@ -12,6 +12,15 @@ module.exports.registerUser = async (orgName, publicId, role, caller) => {
 	return blockchainRes.data;
 };
 
+// attach new user wallet address
+module.exports.attachAddress = async (publicId, publicAddress, caller) => {
+	let blockchainRes = await axios.post(api.blockchainDataProtocolAPI + "/attachAddress", {
+		PublicId: publicId,
+		PublicAddress: publicAddress,
+		Caller: caller
+	});
+	return blockchainRes.data;
+};
 
 // get privacy list of user
 module.exports.getPrivacy = async (publicId) => {

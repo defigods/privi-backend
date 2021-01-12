@@ -7,6 +7,23 @@ import { object } from "firebase-functions/lib/providers/storage";
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
 
+export async function updateStatusOneToOneSwap(swapDocID, _status) {
+    await db.runTransaction(async (transaction) => {
+        // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {status: _status});
+    });
+};
+
+export async function getRecentSwaps(userAddress) {
+    // console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
+    let recentSwaps = {};
+    const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate').limit(5)*/.get();
+    for (const doc of swapQuery.docs) {
+        const swap = doc.data();
+        recentSwaps[doc.id] = swap;
+    }
+    return recentSwaps;
+};
 
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
@@ -128,7 +145,7 @@ export async function updateFirebase(blockchainRes) {
                 let uid = "";
                 let token = "";
                 let tokenType = "";
-                const splitted: string[] = key.split(" ");
+                const splitted: string[] = key.split(" "); // Sarkawt: here it takes the address instead of publicId
                 uid = splitted[0];
                 token = splitted[1];
                 tokenType = await identifyTypeOfToken(token);   // token type colection
