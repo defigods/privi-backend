@@ -118,8 +118,8 @@ router.post('/governance/voteIssue', userController.voteIssue);
 router.post('/governance/responseProposal', userController.responseProposal);
 
 //ANON MODE
-router.post('/user/changeAnonMode', userController.changeAnonMode);
-router.post('/user/changeAnonAvatar', userController.changeAnonAvatar);
+router.post('/changeAnonMode', userController.changeAnonMode);
+router.post('/changeAnonAvatar', userController.changeAnonAvatar);
 
 
 module.exports = router;
