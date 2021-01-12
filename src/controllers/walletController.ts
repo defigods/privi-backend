@@ -1020,7 +1020,7 @@ exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
 
 
 // daily saves the last rate of each token
-exports.saveLastRateOfTheDay = cron.schedule('* * * * *', async () => {
+exports.saveLastRateOfTheDay = cron.schedule('0 0 * * *', async () => {
     try {
         console.log("********* Wallet saveLastRateOfTheDay() cron job started *********");
         const ratesSnap = await db.collection(collections.rates).get();
