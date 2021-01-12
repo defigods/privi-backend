@@ -961,10 +961,9 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
         message.dislikes = dislikes;
         message.numLikes = numLikes;
         message.numDislikes = numDislikes;
-        console.log('like', message);
 
         res.send({
-            success: false,
+            success: true,
             data: message
         });
     } catch (e) {
@@ -1011,10 +1010,9 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
         message.dislikes = dislikes;
         message.numLikes = numLikes;
         message.numDislikes = numDislikes;
-        console.log('dislike', message);
 
         res.send({
-            success: false,
+            success: true,
             data: message
         });
     } catch (e) {
