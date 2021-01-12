@@ -331,6 +331,19 @@ exports.join = async (req: express.Request, res: express.Response) => {
         const commUpdateObj = {};
         commUpdateObj[fields.joinedUsers] = joinedUsers;
         communitySnap.ref.update(commUpdateObj);
+
+        //update discord chat
+        const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
+          .collection(collections.discordRoom).get();
+        if (!discordRoomSnap.empty) {
+            for (const doc of discordRoomSnap.docs) {
+                let data = doc.data()
+                if(!data.private) {
+                    chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                }
+            }
+        }
+
         res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/communityController -> join(): ', err);
@@ -365,6 +378,19 @@ exports.leave = async (req: express.Request, res: express.Response) => {
         const commUpdateObj = {};
         commUpdateObj[fields.joinedUsers] = joinedUsers;
         communitySnap.ref.update(commUpdateObj);
+
+        //update discord chat
+        const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
+          .collection(collections.discordRoom).get();
+        if (!discordRoomSnap.empty) {
+            for (const doc of discordRoomSnap.docs) {
+                let data = doc.data();
+                if(!data.private) {
+                    chatController.removeUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                }
+            }
+        }
+
         res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/communityController -> leave(): ', err);

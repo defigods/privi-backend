@@ -653,6 +653,18 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             else newInvestors[investorId] = amount;
             podSnap.ref.update({ Investors: newInvestors });
 
+            //update discord chat
+            const discordRoomSnap = await db.collection(collections.discordChat).doc(data.DiscordId)
+              .collection(collections.discordRoom).get();
+            if (!discordRoomSnap.empty) {
+                for (const doc of discordRoomSnap.docs) {
+                    let data = doc.data()
+                    if(!data.private) {
+                        chatController.addUserToRoom(data.DiscordId, doc.id, investorId);
+                    }
+                }
+            }
+
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
@@ -1120,6 +1132,10 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
                     pod.rates[doc.id] = rate;
                 }
             });
+
+            const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
+            const discordChatData : any = discordChatSnap.data();
+            pod.DiscordAdminId = discordChatData.admin.id;
 
             res.send({ success: true, data: pod })
         } else {

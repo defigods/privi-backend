@@ -530,33 +530,15 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
     try {
         let body = req.body;
 
-        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        let checkIsAdmin : boolean;
+        if(body.adminRequired) {
+            checkIsAdmin = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        } else {
+            checkIsAdmin = true
+        }
 
-        console.log(body);
         if(checkIsAdmin) {
-            const discordRoomRef = db.collection(collections.discordChat)
-              .doc(body.discordChatId).collection(collections.discordRoom)
-              .doc(body.discordRoomId);
-            const discordRoomGet = await discordRoomRef.get();
-            const discordRoom : any = discordRoomGet.data();
-
-            const userSnap = await db.collection(collections.user).doc(body.userId).get();
-            let data : any = userSnap.data();
-
-            let users = [...discordRoom.users];
-            users.push({
-                type: 'Members',
-                userId: body.userId,
-                userName: data.firstName,
-                userConnected: false,
-                lastView: Date.now()
-            })
-
-            await discordRoomRef.update({
-                users: users
-            });
-
-            discordRoom.users = users;
+            let discordRoom = await addUserToRoom(body.discordChatId, body.discordRoomId, body.userId);
 
             res.send({
                 success: true,
@@ -575,6 +557,75 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
             error: e
         });
     }
+}
+
+const addUserToRoom = exports.addUserToRoom = (discordChatId, discordRoomId, userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            console.log(discordChatId, discordRoomId, userId);
+
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(discordChatId).collection(collections.discordRoom)
+              .doc(discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+
+            let users = [...discordRoom.users];
+
+            let findIndexUser = users.findIndex(usr => usr.userId === userId);
+            if(findIndexUser === -1) {
+                const userSnap = await db.collection(collections.user).doc(userId).get();
+                let data : any = userSnap.data();
+
+                users.push({
+                    type: 'Members',
+                    userId: userId,
+                    userName: data.firstName,
+                    userConnected: false,
+                    lastView: Date.now()
+                })
+
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+            }
+
+            resolve(discordRoom)
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+        }
+    })
+}
+const removeUserToRoom = exports.removeUserToRoom = (discordChatId, discordRoomId, userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(discordChatId).collection(collections.discordRoom)
+              .doc(discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+
+            let users = [...discordRoom.users];
+
+            let findIndexUser = users.findIndex(usr => usr.userId === userId);
+            if(findIndexUser !== -1) {
+                if(users[findIndexUser].type !== 'Admin') {
+                    users.splice(findIndexUser, 1);
+                }
+
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+            }
+            resolve(discordRoom)
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+        }
+    })
 }
 
 exports.discordGetMessages = async (req: express.Request, res: express.Response) => {
@@ -610,6 +661,9 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
                 messages.push(discordMsg)
 
                 if(i === discordRoom.messages.length - 1) {
+                    messages.sort((a, b) => {
+                        return a.created - b.created;
+                    });
                     res.status(200).send({
                         success: true,
                         data: messages
@@ -653,6 +707,9 @@ exports.discordGetReplies = async (req: express.Request, res: express.Response) 
                 data.id = doc.id;
                 messages.push(data);
             }
+            messages.sort((a, b) => {
+                return a.created - b.created;
+            });
             res.status(200).send({
                 success: true,
                 data: messages
@@ -1017,6 +1074,105 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
         });
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordDislikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+exports.discordReplyLikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordMessageReplyRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId).collection(collections.discordMessageReplies)
+          .doc(body.discordMessageReplyId);
+        const discordMessageReplyGet = await discordMessageReplyRef.get();
+        const discordMessageReply: any = discordMessageReplyGet.data();
+
+        let likes = [...discordMessageReply.likes];
+        let dislikes = [...discordMessageReply.dislikes];
+        let numLikes = discordMessageReply.numLikes + 1;
+        let numDislikes = discordMessageReply.numDislikes;
+        likes.push(body.userId);
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+
+        if(dislikeIndex !== -1) {
+            dislikes.splice(dislikeIndex, 1);
+            numDislikes = numDislikes - 1;
+        }
+
+        await discordMessageReplyRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        let message = {...discordMessageReply};
+        message.id = discordMessageReplyGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+
+        res.send({
+            success: true,
+            data: message
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordReplyLikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+
+exports.discordReplyDislikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordMessageReplyRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId).collection(collections.discordMessageReplies)
+          .doc(body.discordMessageReplyId);
+        const discordMessageReplyGet = await discordMessageReplyRef.get();
+        const discordMessageReply: any = discordMessageReplyGet.data();
+
+        let dislikes = [...discordMessageReply.dislikes];
+        let likes = [...discordMessageReply.likes];
+        let numLikes = discordMessageReply.numLikes;
+        let numDislikes = discordMessageReply.numDislikes + 1;
+        dislikes.push(body.userId);
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+
+        if(likeIndex !== -1) {
+            likes.splice(likeIndex, 1);
+            numLikes = numLikes - 1;
+        }
+
+        await discordMessageReplyRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        let message = {...discordMessageReply};
+        message.id = discordMessageReplyGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+
+        res.send({
+            success: true,
+            data: message
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordReplyDislikeMessage() ' + e)
         res.send({
             success: false,
             error: e
