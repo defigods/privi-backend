@@ -1820,8 +1820,8 @@ try {
             .doc(body.userId);
 
             await userRef.update({
-            anonAvatar: body.anonAvatar,
-        });
+                anonAvatar: body.anonAvatar,
+            });
 
             res.send({ success: true });
 

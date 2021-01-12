@@ -223,7 +223,11 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getChatRoomById()' + e)
+        console.log('Error in controllers/chatRoutes -> getChatRoomById()' + e)
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getMessages():' + e
+        });
     }
 };
 
@@ -677,7 +681,11 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordGetMessages()' + e)
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> discordGetMessages():' + e
+        });
     }
 }
 
