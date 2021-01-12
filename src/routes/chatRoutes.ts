@@ -26,6 +26,8 @@ router.post('/discord/removeAccess', authenticateJWT, chatController.discordRemo
 router.post('/discord/getPossibleUsers', authenticateJWT, chatController.discordGetPossibleUsers);
 router.post('/discord/likeMessage', authenticateJWT, chatController.discordLikeMessage);
 router.post('/discord/dislikeMessage', authenticateJWT, chatController.discordDislikeMessage);
+router.post('/discord/reply/likeMessage', authenticateJWT, chatController.discordReplyLikeMessage);
+router.post('/discord/reply/dislikeMessage', authenticateJWT, chatController.discordReplyDislikeMessage);
 
 
 module.exports = router;
