@@ -9,6 +9,7 @@ import fields from '../firebase/fields';
 import { user } from 'firebase-functions/lib/providers/auth';
 
 const notificationsController = require('./notificationsController');
+const chatController = require('./chatController');
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -111,6 +112,10 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                     }
                 });
             })
+
+            const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, userData.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general');
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements');
 
             res.send({ success: true, data: { id: creditAddress, date: date } });
         }
@@ -403,6 +408,7 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
 
             const data = {
                 ...creditSnap.data(),
+                id: creditSnap.id,
                 Lenders: lenders,
                 Borrowers: borrowers,
                 BorrowerTrustScore: trustMean,

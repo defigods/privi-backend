@@ -394,8 +394,10 @@ export const startSocket = (env: Env) => {
           from: message.from,
           created: Date.now(),
           seen: [],
-          likes: 0,
-          dislikes: 0,
+          likes: [],
+          dislikes: [],
+          numLikes: 0,
+          numDislikes: 0,
           numReplies: 0
         });
       });
@@ -437,8 +439,10 @@ export const startSocket = (env: Env) => {
         },
         created: Date.now(),
         seen: [],
-        likes: 0,
-        dislikes: 0,
+        likes: [],
+        dislikes: [],
+        numLikes: 0,
+        numDislikes: 0,
         numReplies: 0,
         id: uid
       });
@@ -459,8 +463,11 @@ export const startSocket = (env: Env) => {
           from: message.from,
           created: Date.now(),
           seen: [],
-          likes: 0,
-          dislikes: 0
+          likes: [],
+          dislikes: [],
+          numLikes: 0,
+          numDislikes: 0,
+          numReplies: 0
         });
       });
       const discordMessageRef = db.collection(collections.discordMessage)

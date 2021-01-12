@@ -17,11 +17,15 @@ router.post('/newChat', authenticateJWT, chatController.createChat);
 router.post('/discord/getChat', authenticateJWT, chatController.discordGetChat);
 router.post('/discord/createChat', authenticateJWT, chatController.discordCreateChat);
 router.post('/discord/createRoom', authenticateJWT, chatController.discordCreateRoom);
+router.post('/discord/addUserToRoom', authenticateJWT, chatController.discordAddUserToRoom);
 router.post('/discord/getMessages', authenticateJWT, chatController.discordGetMessages);
 router.post('/discord/getReplies', authenticateJWT, chatController.discordGetReplies);
 router.post('/discord/lastView', authenticateJWT, chatController.discordLastView);
 router.post('/discord/provideAccess', authenticateJWT, chatController.discordModifyAccess);
 router.post('/discord/removeAccess', authenticateJWT, chatController.discordRemoveAccess);
+router.post('/discord/getPossibleUsers', authenticateJWT, chatController.discordGetPossibleUsers);
+router.post('/discord/likeMessage', authenticateJWT, chatController.discordLikeMessage);
+router.post('/discord/dislikeMessage', authenticateJWT, chatController.discordDislikeMessage);
 
 
 module.exports = router;

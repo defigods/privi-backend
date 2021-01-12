@@ -293,12 +293,32 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 /**
  * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
  */
+module.exports.getTokensRateChange = async (req: express.Request, res: express.Response) => {
+    try {
+        const retData = {};
+        const ratesSnap = await db.collection(collections.rates).get();
+        ratesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            const currRate = data.rate ?? 1;
+            const lastRate = data.lastRate ?? 1;
+            retData[doc.id] = (currRate - lastRate) / lastRate;
+        });
+        res.send({ success: true, data: retData });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTokensRateChange()', err);
+        res.send({ success: false });
+    }
+}
+
+/**
+ * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
+ */
 module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
         let { userId } = req.query;
         userId = userId!.toString();
         if (!userId) {
-            console.log('error: userId empty');
+            console.log('userId error');
             res.send({ success: false });
             return;
         }
@@ -308,12 +328,12 @@ module.exports.getAllTokenBalances = async (req: express.Request, res: express.R
             // get Crypto
             const cryptoSnap = await walletSnap.ref.collection(collections.crypto).get();
             cryptoSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.crypto, Name: doc.id, daily_change: 0.23 };
+                data[doc.id] = { ...doc.data(), Type: collections.crypto, Name: doc.id, dailyChange: 0.23 };
             });
             // get ft
             const ftSnap = await walletSnap.ref.collection(collections.ft).get();
             ftSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.ft, Name: doc.id, daily_change: 0.23 };
+                data[doc.id] = { ...doc.data(), Type: collections.ft, Name: doc.id, dailyChange: 0.23 };
             });
             // get nft
             const nftSnap = await walletSnap.ref.collection(collections.nft).get();
@@ -325,12 +345,12 @@ module.exports.getAllTokenBalances = async (req: express.Request, res: express.R
                         history.push(historyDoc.data());
                     });
                 })
-                data[doc.id] = { ...doc.data(), Type: collections.nft, Name: doc.id, History: history, daily_change: 0.23 };
+                data[doc.id] = { ...doc.data(), Type: collections.nft, Name: doc.id, History: history, dailyChange: 0.23 };
             });
             // get social
             const socialSnap = await walletSnap.ref.collection(collections.social).get();
             socialSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.social, Name: doc.id, daily_change: 0.23 };
+                data[doc.id] = { ...doc.data(), Type: collections.social, Name: doc.id, dailyChange: 0.23 };
             });
             res.send({ success: true, data: data });
         } else {
@@ -348,7 +368,7 @@ module.exports.getAllTokenBalances = async (req: express.Request, res: express.R
  */
 module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res: express.Response) => {
     try {
-        const data = {};
+        const retData = {};
         let { userId } = req.query;
         userId = userId!.toString();
         if (!userId) {
@@ -358,7 +378,7 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
         }
         // crypto
         const crytoHistory: any[] = [];
-        const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.crypto).orderBy("date", "asc").get();
+        const cryptoSnap = await db.collection(collections.wallet).doc(userId).collection(collections.cryptoHistory).orderBy("date", "asc").get();
         cryptoSnap.forEach((doc) => {
             const data = doc.data();
             if (data) {
@@ -368,10 +388,10 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
                 });
             }
         });
-        data["crypto"] = crytoHistory;
+        retData["crypto"] = crytoHistory;
         // ft
         const ftHistory: any[] = [];
-        const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ft).orderBy("date", "asc").get();
+        const ftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.ftHistory).orderBy("date", "asc").get();
         ftSnap.forEach((doc) => {
             const data = doc.data();
             if (data) {
@@ -381,10 +401,10 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
                 });
             }
         });
-        data["ft"] = ftHistory;
-        // crypto
+        retData["ft"] = ftHistory;
+        // nft
         const nftHistory: any[] = [];
-        const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nft).orderBy("date", "asc").get();
+        const nftSnap = await db.collection(collections.wallet).doc(userId).collection(collections.nftHistory).orderBy("date", "asc").get();
         cryptoSnap.forEach((doc) => {
             const data = doc.data();
             if (data) {
@@ -394,11 +414,11 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
                 });
             }
         });
-        data["nft"] = nftHistory;
+        retData["nft"] = nftHistory;
         // crypto
         const socialHistory: any[] = [];
-        const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.social).orderBy("date", "asc").get();
-        cryptoSnap.forEach((doc) => {
+        const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.socialHistory).orderBy("date", "asc").get();
+        socialSnap.forEach((doc) => {
             const data = doc.data();
             if (data) {
                 socialHistory.push({
@@ -407,10 +427,10 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
                 });
             }
         });
-        data["social"] = socialHistory;
-        res.send({ success: true, data: data });
+        retData["social"] = socialHistory;
+        res.send({ success: true, data: retData });
     } catch (err) {
-        console.log('Error in controllers/userController -> getEmailUidMap()', err);
+        console.log('Error in controllers/userController -> getBalanceHistoryInTokenTypes()', err);
         res.send({ success: false });
     }
 }
@@ -458,7 +478,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
             const fundingToken = doc.data().FundingToken;
             const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
             let latestFundingTokenPrice = 1;    // price of fundingToken per NF Token
-            if (nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
+            if (nftPodSnap.docs.length > 0 && nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
             if (rateOfChange[fundingToken]) sum += rateOfChange[fundingToken] * latestFundingTokenPrice * doc.data().Amount;
         });
 
@@ -855,6 +875,24 @@ exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
 
         });
     } catch (err) {
+        console.log('Error in controllers/walletController -> saveUserBalanceSum()', err);
+    }
+});
+
+
+// daily saves the last rate of each token
+exports.saveLastRateOfTheDay = cron.schedule('* * * * *', async () => {
+    try {
+        console.log("********* Wallet saveLastRateOfTheDay() cron job started *********");
+        const ratesSnap = await db.collection(collections.rates).get();
+        ratesSnap.forEach((doc) => {
+            const data: any = doc.data();
+            doc.ref.update({
+                lastRate: data.rate ?? 1
+            });
+        });
+    }
+    catch (err) {
         console.log('Error in controllers/walletController -> saveUserBalanceSum()', err);
     }
 });

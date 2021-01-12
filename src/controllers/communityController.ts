@@ -106,6 +106,10 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
             await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
 
+            const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general');
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements');
+
             db.collection(collections.community).doc(communityAddress).set({
                 HasPhoto: hasPhoto || false,
                 Name: name || '',
@@ -116,6 +120,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 OpenAdvertising: openAdvertising || false,
                 PaymentsAllowed: paymentsAllowed || false,
                 DiscordId: discordChatCreation.id || '',
+                JarrId: discordChatJarrCreation.id || '',
                 TwitterId: twitterId || '',
                 EthereumAddress: ethereumAddr || '',
 
