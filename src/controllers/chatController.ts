@@ -610,6 +610,9 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
                 messages.push(discordMsg)
 
                 if(i === discordRoom.messages.length - 1) {
+                    messages.sort((a, b) => {
+                        return a.created - b.created;
+                    });
                     res.status(200).send({
                         success: true,
                         data: messages
@@ -653,6 +656,9 @@ exports.discordGetReplies = async (req: express.Request, res: express.Response) 
                 data.id = doc.id;
                 messages.push(data);
             }
+            messages.sort((a, b) => {
+                return a.created - b.created;
+            });
             res.status(200).send({
                 success: true,
                 data: messages
