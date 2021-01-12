@@ -337,7 +337,10 @@ exports.join = async (req: express.Request, res: express.Response) => {
           .collection(collections.discordRoom).get();
         if (!discordRoomSnap.empty) {
             for (const doc of discordRoomSnap.docs) {
-                chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                let data = doc.data()
+                if(!data.private) {
+                    chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                }
             }
         }
 
@@ -376,15 +379,15 @@ exports.leave = async (req: express.Request, res: express.Response) => {
         commUpdateObj[fields.joinedUsers] = joinedUsers;
         communitySnap.ref.update(commUpdateObj);
 
-        console.log(commData.DiscordId, userSnap.id)
         //update discord chat
         const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
           .collection(collections.discordRoom).get();
         if (!discordRoomSnap.empty) {
             for (const doc of discordRoomSnap.docs) {
-                console.log(commData.DiscordId, doc.id, userSnap.id)
-
-                chatController.removeUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                let data = doc.data();
+                if(!data.private) {
+                    chatController.removeUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                }
             }
         }
 

@@ -653,6 +653,18 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             else newInvestors[investorId] = amount;
             podSnap.ref.update({ Investors: newInvestors });
 
+            //update discord chat
+            const discordRoomSnap = await db.collection(collections.discordChat).doc(data.DiscordId)
+              .collection(collections.discordRoom).get();
+            if (!discordRoomSnap.empty) {
+                for (const doc of discordRoomSnap.docs) {
+                    let data = doc.data()
+                    if(!data.private) {
+                        chatController.addUserToRoom(data.DiscordId, doc.id, investorId);
+                    }
+                }
+            }
+
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
