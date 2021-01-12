@@ -1027,33 +1027,34 @@ exports.discordReplyLikeMessage = async (req: express.Request, res: express.Resp
     try {
         let body = req.body;
 
-        /*const discordMessageRef = db.collection(collections.discordMessage)
-          .doc(body.discordMessageId);
-        const discordMessageGet = await discordMessageRef.get();
-        const discordMessage: any = discordMessageGet.data();
+        const discordMessageReplyRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId).collection(collections.discordMessageReplies)
+          .doc(body.discordMessageReplyId);
+        const discordMessageReplyGet = await discordMessageReplyRef.get();
+        const discordMessageReply: any = discordMessageReplyGet.data();
 
-        let likes = [...discordMessage.likes];
-        let dislikes = [...discordMessage.dislikes];
-        let numLikes = discordMessage.numLikes + 1;
-        let numDislikes = discordMessage.numDislikes;
+        let likes = [...discordMessageReply.likes];
+        let dislikes = [...discordMessageReply.dislikes];
+        let numLikes = discordMessageReply.numLikes + 1;
+        let numDislikes = discordMessageReply.numDislikes;
         likes.push(body.userId);
 
         let dislikeIndex = dislikes.findIndex(user => user === body.userId);
-        console.log(dislikeIndex, dislikes)
+
         if(dislikeIndex !== -1) {
             dislikes.splice(dislikeIndex, 1);
             numDislikes = numDislikes - 1;
         }
 
-        await discordMessageRef.update({
+        await discordMessageReplyRef.update({
             likes: likes,
             dislikes: dislikes,
             numLikes: numLikes,
             numDislikes: numDislikes
         });
 
-        let message = {...discordMessage};
-        message.id = discordMessageGet.id;
+        let message = {...discordMessageReply};
+        message.id = discordMessageReplyGet.id;
         message.likes = likes;
         message.dislikes = dislikes;
         message.numLikes = numLikes;
@@ -1062,7 +1063,7 @@ exports.discordReplyLikeMessage = async (req: express.Request, res: express.Resp
         res.send({
             success: true,
             data: message
-        });*/
+        });
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordReplyLikeMessage() ' + e)
         res.send({
@@ -1076,33 +1077,34 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
     try {
         let body = req.body;
 
-        /*const discordMessageRef = db.collection(collections.discordMessage)
-          .doc(body.discordMessageId);
-        const discordMessageGet = await discordMessageRef.get();
-        const discordMessage: any = discordMessageGet.data();
+        const discordMessageReplyRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId).collection(collections.discordMessageReplies)
+          .doc(body.discordMessageReplyId);
+        const discordMessageReplyGet = await discordMessageReplyRef.get();
+        const discordMessageReply: any = discordMessageReplyGet.data();
 
-        let dislikes = [...discordMessage.dislikes];
-        let likes = [...discordMessage.likes];
-        let numLikes = discordMessage.numLikes;
-        let numDislikes = discordMessage.numDislikes + 1;
+        let dislikes = [...discordMessageReply.dislikes];
+        let likes = [...discordMessageReply.likes];
+        let numLikes = discordMessageReply.numLikes;
+        let numDislikes = discordMessageReply.numDislikes + 1;
         dislikes.push(body.userId);
 
         let likeIndex = likes.findIndex(user => user === body.userId);
+
         if(likeIndex !== -1) {
             likes.splice(likeIndex, 1);
             numLikes = numLikes - 1;
         }
 
-        await discordMessageRef.update({
+        await discordMessageReplyRef.update({
             likes: likes,
             dislikes: dislikes,
             numLikes: numLikes,
             numDislikes: numDislikes
         });
 
-
-        let message = {...discordMessage};
-        message.id = discordMessageGet.id;
+        let message = {...discordMessageReply};
+        message.id = discordMessageReplyGet.id;
         message.likes = likes;
         message.dislikes = dislikes;
         message.numLikes = numLikes;
@@ -1111,7 +1113,7 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
         res.send({
             success: true,
             data: message
-        });*/
+        });
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordReplyDislikeMessage() ' + e)
         res.send({
