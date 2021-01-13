@@ -272,3 +272,105 @@ exports.makeResponseBlogPost = async (req: express.Request, res: express.Respons
     res.send({ success: false });
   }
 };
+
+exports.likePost = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.itemPostId && body.userId) {
+      const blogPostRef = db.collection(collections.blogPost)
+        .doc(body.itemPostId);
+      const blogPostGet = await blogPostRef.get();
+      const blogPost: any = blogPostGet.data();
+
+      let likes = [...blogPost.likes];
+      let dislikes = [...blogPost.dislikes];
+      let numLikes = blogPost.numLikes;
+      let numDislikes = blogPost.numDislikes;
+
+      let likeIndex = likes.findIndex(user => user === body.userId);
+      if(likeIndex === -1) {
+        likes.push(body.userId);
+        numLikes = blogPost.numLikes + 1;
+      }
+
+      let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+      if(dislikeIndex !== -1) {
+        dislikes.splice(dislikeIndex, 1);
+        numDislikes = numDislikes - 1;
+      }
+
+      await blogPostRef.update({
+        likes: likes,
+        dislikes: dislikes,
+        numLikes: numLikes,
+        numDislikes: numDislikes
+      });
+
+      blogPost.likes = likes;
+      blogPost.dislikes = dislikes;
+      blogPost.numLikes = numLikes;
+      blogPost.numDislikes = numDislikes;
+
+      res.send({ success: true, data: blogPost });
+
+    } else {
+      console.log('Error in controllers/blogController -> likePost()', "Info not provided");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> likePost()', err);
+    res.send({ success: false });
+  }
+};
+
+exports.dislikePost = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.itemPostId && body.userId) {
+      const blogPostRef = db.collection(collections.blogPost)
+        .doc(body.itemPostId);
+      const blogPostGet = await blogPostRef.get();
+      const blogPost: any = blogPostGet.data();
+
+      let dislikes = [...blogPost.dislikes];
+      let likes = [...blogPost.likes];
+      let numLikes = blogPost.numLikes;
+      let numDislikes = blogPost.numDislikes;
+
+      let likeIndex = likes.findIndex(user => user === body.userId);
+      if(likeIndex !== -1) {
+        likes.splice(likeIndex, 1);
+        numLikes = numLikes - 1;
+      }
+
+      let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+      if(dislikeIndex === -1) {
+        dislikes.push(body.userId);
+        numDislikes = blogPost.numDislikes + 1
+      }
+
+      await blogPostRef.update({
+        likes: likes,
+        dislikes: dislikes,
+        numLikes: numLikes,
+        numDislikes: numDislikes
+      });
+
+      blogPost.likes = likes;
+      blogPost.dislikes = dislikes;
+      blogPost.numLikes = numLikes;
+      blogPost.numDislikes = numDislikes;
+
+      res.send({ success: true, data: blogPost });
+
+    } else {
+      console.log('Error in controllers/blogController -> likePost()', "Info not provided");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> likePost()', err);
+    res.send({ success: false });
+  }
+};

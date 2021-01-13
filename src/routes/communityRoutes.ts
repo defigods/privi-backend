@@ -77,6 +77,8 @@ router.post('/blog/changePostDescriptionPhotos/:blogPostId', authenticateJWT, up
 router.get('/blog/getPostPhoto/:blogPostId', blogController.getBlogPostPhotoById);
 router.get('/blog/getDescriptionPostPhoto/:blogPostId/:photoId', blogController.getBlogPostDescriptionPhotoById);
 router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBlogPost);
+router.post('/blog/likePost', authenticateJWT, blogController.likePost);
+router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
 
 
