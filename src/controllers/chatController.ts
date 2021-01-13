@@ -4,6 +4,8 @@ import collections from '../firebase/collections';
 import {generateUniqueId} from "../functions/functions";
 import {user} from "firebase-functions/lib/providers/auth";
 
+const userController = require('./userController');
+
 exports.getChats =  async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
@@ -1007,7 +1009,7 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
         likes.push(body.userId);
 
         let dislikeIndex = dislikes.findIndex(user => user === body.userId);
-        console.log(dislikeIndex, dislikes)
+
         if(dislikeIndex !== -1) {
             dislikes.splice(dislikeIndex, 1);
             numDislikes = numDislikes - 1;
@@ -1026,6 +1028,10 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
         message.dislikes = dislikes;
         message.numLikes = numLikes;
         message.numDislikes = numDislikes;
+
+        if(discordMessage.from !== body.userId) {
+            await userController.updateUserCred(discordMessage.from, true);
+        }
 
         res.send({
             success: true,
@@ -1076,6 +1082,10 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
         message.numLikes = numLikes;
         message.numDislikes = numDislikes;
 
+        if(discordMessage.from !== body.userId) {
+            await userController.updateUserCred(discordMessage.from, false);
+        }
+
         res.send({
             success: true,
             data: message
@@ -1124,6 +1134,8 @@ exports.discordReplyLikeMessage = async (req: express.Request, res: express.Resp
         message.dislikes = dislikes;
         message.numLikes = numLikes;
         message.numDislikes = numDislikes;
+
+        await userController.updateUserCred(discordMessageReply.from, true);
 
         res.send({
             success: true,
@@ -1174,6 +1186,8 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
         message.dislikes = dislikes;
         message.numLikes = numLikes;
         message.numDislikes = numDislikes;
+
+        await userController.updateUserCred(discordMessageReply.from, false);
 
         res.send({
             success: true,

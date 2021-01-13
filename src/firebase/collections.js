@@ -83,6 +83,7 @@ module.exports = {
     blogPost: "BlogPost",
 
     wallPost: "WallPost",
+    ad: "Ad",
     chat: "Chat",
     message: "Message",
     discordChat: "DiscordChat",

@@ -387,7 +387,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     endorsementScore: 0.5,
                     trustScore: 0.5,
                     awards: [],
-                    creds: [],
+                    creds: 0,
                     badges: [],
                     followings: [],
                     numFollowings: 0,
@@ -492,7 +492,7 @@ interface BasicInfo {
     trustScore: number,
     endorsementScore: number,
     awards: any[],
-    creds: any[],
+    creds: number,
     badges: any[],
     numFollowers: number,
     numFollowings: number,
@@ -512,7 +512,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [], 
+            name: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: 0,
             badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: [],
             anon: false, anonAvatar: 'ToyFaces_Colored_BG_111.jpg', hasPhoto: false
         };
@@ -532,7 +532,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.name = userData.firstName + (userData.lastName ? " " + userData.lastName : '');
             basicInfo.trustScore = userData.trustScore;
             basicInfo.endorsementScore = userData.endorsementScore;
-            basicInfo.creds = userData.creds || [];
+            basicInfo.creds = userData.creds || 0;
             basicInfo.awards = userData.awards || [];
             basicInfo.badges = userData.badges || [];
             basicInfo.numFollowers = userData.numFollowers || 0;
@@ -832,6 +832,10 @@ const likePost = async (req: express.Request, res: express.Response) => {
         wallPost.numLikes = numLikes;
         wallPost.numDislikes = numDislikes;
 
+        if(wallPost.fromUserId !== body.userId) {
+            await updateUserCred(wallPost.fromUserId, true);
+        }
+
         res.send({
             success: true,
             data: wallPost
@@ -879,6 +883,10 @@ const dislikePost = async (req: express.Request, res: express.Response) => {
         wallPost.dislikes = dislikes;
         wallPost.numLikes = numLikes;
         wallPost.numDislikes = numDislikes;
+
+        if(wallPost.fromUserId !== body.userId) {
+            await updateUserCred(wallPost.fromUserId, false);
+        }
 
         res.send({
             success: true,
@@ -1939,6 +1947,34 @@ try {
 }
 
 
+const updateUserCred = (userId, sum) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const userRef = db.collection(collections.user).doc(userId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            let creds = user.creds;
+            if(sum) {
+                creds = creds + 1;
+            } else {
+                creds = creds - 1;
+            }
+
+            await userRef.update({
+                creds: creds
+            });
+
+            user.creds = creds;
+
+            resolve(user);
+        } catch (e) {
+            console.log('Error sumCredUser(): ' + e)
+            resolve('Error sumCredUser(): ' + e)
+        }
+    })
+}
+
 
 module.exports = {
     emailValidation,
@@ -1984,5 +2020,6 @@ module.exports = {
     changeAnonMode,
     changeAnonAvatar,
     likePost,
-    dislikePost
+    dislikePost,
+    updateUserCred
 };

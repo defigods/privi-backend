@@ -14,6 +14,8 @@ import express from 'express';
 import path from 'path';
 import fs from "fs";
 
+const userController = require('./userController');
+
 exports.blogCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -312,6 +314,10 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
       blogPost.numLikes = numLikes;
       blogPost.numDislikes = numDislikes;
 
+      if(blogPost.createdBy !== body.userId) {
+        await userController.updateUserCred(blogPost.createdBy, true);
+      }
+
       res.send({ success: true, data: blogPost });
 
     } else {
@@ -363,6 +369,10 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       blogPost.numLikes = numLikes;
       blogPost.numDislikes = numDislikes;
 
+      if(blogPost.createdBy !== body.userId) {
+        await userController.updateUserCred(blogPost.createdBy, false);
+      }
+
       res.send({ success: true, data: blogPost });
 
     } else {
@@ -371,6 +381,211 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
     }
   } catch (err) {
     console.log('Error in controllers/blogController -> likePost()', err);
+    res.send({ success: false });
+  }
+};
+
+exports.adCreate = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    const comments = body.comments || false; // allow comments?
+    const name = body.name;
+    const type = body.type;
+    const textShort = body.textShort;
+    const schedulePost = body.schedulePost || Date.now();
+    const mainHashtag = body.mainHashtag;
+    const hashtags = body.hashtags;
+    const communityId = body.communityId || '';
+    const creditPoolId = body.creditPoolId || '';
+    // const selectedFormat = body.selectedFormat; // 0 story 1 wall post
+    const description = body.description;
+    const descriptionArray = body.descriptionArray;
+
+    const uid = generateUniqueId();
+
+    if (name && textShort) {
+      let data : any = {
+        comments: comments,
+        name: name,
+        textShort: textShort,
+
+        schedulePost: schedulePost,
+        mainHashtag: mainHashtag,
+        hashtags: hashtags,
+        communityId: communityId,
+        creditPoolId: creditPoolId,
+        description: description,
+        descriptionArray: descriptionArray,
+        descriptionImages: [],
+        responses: [],
+        hasPhoto: false,
+        createdBy: req.body.priviUser.id,
+        createdAt: Date.now(),
+        updatedAt: null,
+      };
+
+      await db.runTransaction(async (transaction) => {
+        transaction.set(db.collection(collections.add).doc('' + uid), data);
+      });
+
+      let ret = {id: uid, ...data};
+
+      const commRef = db.collection(collections.community).doc(communityId);
+      const commGet = await commRef.get();
+      const community: any = commGet.data();
+
+      let obj : any = {};
+      obj[type] = uid;
+      await commRef.update(obj)
+
+      res.send({success: true, data: ret});
+    } else {
+      console.log('parameters required');
+      res.send({ success: false, message: "Error in controllers/blogController -> adCreate(): parameters required" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> adCreate()', err);
+    res.send({ success: false });
+  }
+}
+
+
+exports.changeAdPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const adRef = db.collection(collections.ad)
+        .doc(req.file.originalname);
+      const adGet = await adRef.get();
+      const adPost: any = adGet.data();
+      if (adPost.HasPhoto) {
+        await adRef.update({
+          HasPhoto: true
+        });
+      }
+
+      let dir = 'uploads/ad/' + 'photos-' + req.file.originalname;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/blogController -> changeAdPhoto()', "There's no file...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> changeAdPhoto()', err);
+    res.send({ success: false });
+  }
+}
+
+exports.changeAdDescriptionPhotos = async (req: express.Request, res: express.Response) => {
+  try {
+    let adId = req.params.adId;
+    let files : any[] = [];
+    let fileKeys : any[] = Object.keys(req.files);
+
+    fileKeys.forEach(function(key) {
+      files.push(req.files[key]);
+    });
+
+    if (files) {
+      let filesName : string[] = [];
+      const adRef = db.collection(collections.ad)
+        .doc(adId);
+      const adGet = await adRef.get();
+      const adPost: any = adGet.data();
+
+      for(let i = 0; i < files.length; i++) {
+        filesName.push('/' + adId + '/' + files[i].originalname)
+      }
+      console.log(req.params.blogPostId, filesName)
+      await adRef.update({
+        descriptionImages: filesName
+      });
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/blogController -> changeAdDescriptionPhotos()', "There's no file...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> changeAdDescriptionPhotos()', err);
+    res.send({ success: false });
+  }
+}
+
+
+exports.getAdPostPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let adId = req.params.adId;
+    if (adId) {
+      const directoryPath = path.join('uploads', 'ad');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'ad', adId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/blogController -> getAdPostPhotoById()', "There's no post id...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getAdPostPhotoById()', err);
+    res.send({ success: false });
+  }
+};
+exports.getAdPostDescriptionPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let adId = req.params.adId;
+    let photoId = req.params.photoId;
+    console.log('adId', adId, photoId);
+    if (adId && photoId) {
+      const directoryPath = path.join('uploads', 'ad', 'photos-' + adId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'ad', 'photos-' + adId, photoId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/blogController -> getAdPostDescriptionPhotoById()', "There's no post id...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/blogController -> getAdPostDescriptionPhotoById()', err);
     res.send({ success: false });
   }
 };

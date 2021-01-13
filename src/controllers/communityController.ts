@@ -12,6 +12,7 @@ import path from "path";
 import fs from "fs";
 
 const chatController = require('./chatController');
+
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI";
@@ -479,7 +480,16 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         const data: any = communitySnap.data();
         const id: any = communitySnap.id;
         const extraData = getExtraData(data, rateOfChange);
-        res.send({ success: true, data: { ...data, ...extraData, id: id } });
+
+        const ads : any[] = [];
+        if(data.GeneralAd && data.GeneralAd !== '') {
+            const adRef = db.collection(collections.ad).doc(data.GeneralAd);
+            const adGet = await adRef.get();
+            const ad: any = adGet.data();
+            ads.push({GeneralAd: ad});
+        }
+
+        res.send({ success: true, data: { ...data, ...extraData, id: id, ads: ads } });
     } catch (e) {
         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
     }

@@ -80,6 +80,10 @@ router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBl
 router.post('/blog/likePost', authenticateJWT, blogController.likePost);
 router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
-
+router.post('/ad/create', authenticateJWT, blogController.adCreate);
+router.post('/ad/changePhoto', authenticateJWT, upload3.single('image'), blogController.changeAdPhoto);
+router.post('/ad/changeDescriptionPhotos/:blogPostId', authenticateJWT, upload2.array('image'), blogController.changeAdDescriptionPhotos);
+router.get('/ad/getPhoto/:blogPostId', blogController.getAdPostPhotoById);
+router.get('/ad/getDescriptionPhoto/:blogPostId/:photoId', blogController.getAdPostDescriptionPhotoById);
 
 module.exports = router;
