@@ -14,6 +14,7 @@ module.exports = {
     socialHistory: "SocialHistory",
     unknown: "UNKNOWN",
     tokens: "Tokens",
+    priviScan: "PriviScan",
     history: "History",
     allTransactions: "AllTransaction",
     ethTransactions: "EthTransactions",

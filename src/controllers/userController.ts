@@ -7,7 +7,7 @@ import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import badge from "../blockchain/badge";
-import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail, generateUniqueId } from "../functions/functions";
+import { getUidFromEmail, generateUniqueId, addZerosToHistory } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
@@ -485,6 +485,12 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
             // ------------------------- attach address only test net ----------------------------
             await attachAddress(userPublicId);
+
+            // ------------------------- add zero to balance history to make graph prettier ----------------------------
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.cryptoHistory), 'balance');
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.ftHistory), 'balance');
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.nftHistory), 'balance');
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.socialHistory), 'balance');
 
             // ------------------------- Provisional for TestNet ---------------------------------
             // give user some balance in each tokens (50/tokenRate).

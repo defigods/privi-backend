@@ -1,6 +1,6 @@
 import {
     updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getBuyTokenAmount, getBuyTokenAmountPod, getRateOfChangeAsList, generateUniqueId,
-    isEmail, getEmailUidMap
+    isEmail, getEmailUidMap, getTokenToTypeMap, getEmailAddressMap
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
@@ -11,6 +11,7 @@ const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
 import { identifyTypeOfToken } from '../functions/functions';
 import cron from 'node-cron';
+import { user } from "firebase-functions/lib/providers/auth";
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
@@ -95,86 +96,72 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const fromUid = body.fromUid;
-        const to = body.to; // could be email or uid
-        const amount = body.amount;
-        const token = body.token;
-        const type = body.type;
 
-        // convert recipient to uid in case it's given in email
-        let toUid = to;
-        if (isEmail(to)) {
-            const emailUidMap = await getEmailUidMap();
-            toUid = emailUidMap[to];
-        }
-        if (!toUid) {
-            res.send({ success: false, message: "'to' argument is required" });
-            return;
-        }
+        const userId = body.userId;
+        const from = body.From;
+        const to = body.To; // could be email or uid
+        const amount = body.Amount;
+        const token = body.Token;
+        const type = body.Type;
+        const hash = body.Hash;
+        const signature = body.Signature;
+
+        console.log(body)
         // check that fromUid is same as user in jwt
-        if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
+        if (!req.body.priviUser.id || (req.body.priviUser.id != userId)) {
             console.log("error: jwt user is not the same as fromUid ban?");
             res.send({ success: false, message: "jwt user is not the same as fromUid" });
             return;
         }
 
-        const tid = generateUniqueId();
-        const timestamp = Date.now();
-        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, apiKey);
+        const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
+        console.log(blockchainRes)
+
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            let senderName = fromUid;
-            let receiverName = toUid;
-            const senderSnap = await db.collection(collections.user).doc(fromUid).get();
-            const receiverSnap = await db.collection(collections.user).doc(toUid).get();
-            const senderData = senderSnap.data();
-            const receriverData = receiverSnap.data();
-            if (senderData !== undefined && receriverData !== undefined) {
-                senderName = senderData.firstName;
-                receiverName = receriverData.firstName;
-                // notification to sender
-                createNotification(fromUid, "Transfer - Sent",
-                    `You have succesfully send ${amount} ${token} to ${receiverName}!`,
-                    notificationTypes.transferSend
-                );
-                await notificationsController.addNotification({
-                    userId: senderSnap.id,
-                    notification: {
-                        type: 8,
-                        typeItemId: 'user',
-                        itemId: receiverSnap.id,
-                        follower: receiverName,
-                        pod: '',
-                        comment: '',
-                        token: token,
-                        amount: amount,
-                        onlyInformation: false,
-                    }
-                });
+            // let senderName = fromUid;
+            // let receiverName = toUid;
+            // const senderSnap = await db.collection(collections.user).doc(userId).get();
+            // const receiverSnap = await db.collection(collections.user).doc(toUid).get();
+            // const senderData = senderSnap.data();
+            // const receriverData = receiverSnap.data();
+            // if (senderData !== undefined && receriverData !== undefined) {
+            //     senderName = senderData.firstName;
+            //     receiverName = receriverData.firstName;
+            //     notification to sender
+            //     await notificationsController.addNotification({
+            //         userId: senderSnap.id,
+            //         notification: {
+            //             type: 8,
+            //             typeItemId: 'user',
+            //             itemId: receiverSnap.id,
+            //             follower: receiverName,
+            //             pod: '',
+            //             comment: '',
+            //             token: token,
+            //             amount: amount,
+            //             onlyInformation: false,
+            //         }
+            //     });
 
-                // notification to receiver
-                createNotification(fromUid, "Transfer - Received",
-                    `You have succesfully received ${amount} ${token} from ${senderName}!`,
-                    notificationTypes.transferReceive
-                );
-                await notificationsController.addNotification({
-                    userId: receiverSnap.id,
-                    notification: {
-                        type: 7,
-                        typeItemId: 'user',
-                        itemId: senderSnap.id,
-                        follower: senderName,
-                        pod: '',
-                        comment: '',
-                        token: token,
-                        amount: amount,
-                        onlyInformation: false,
-                    }
-                });
-            }
+            //     await notificationsController.addNotification({
+            //         userId: receiverSnap.id,
+            //         notification: {
+            //             type: 7,
+            //             typeItemId: 'user',
+            //             itemId: senderSnap.id,
+            //             follower: senderName,
+            //             pod: '',
+            //             comment: '',
+            //             token: token,
+            //             amount: amount,
+            //             onlyInformation: false,
+            //         }
+            //     });
+            // }
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/walletController -> send()');
+            console.log('Error in controllers/walletController -> send(), blockchain returned false', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
@@ -255,6 +242,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         const tid = generateUniqueId();
         const timestamp = Date.now();
         const blockchainRes = await coinBalance.mint(type, from, to, amount, token, timestamp, tid, apiKey);
+        console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(to, "Swap - Complete",
@@ -285,7 +273,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 
-} // deposit
+}
 
 
 ///////////////////////////// gets //////////////////////////////
@@ -337,47 +325,21 @@ module.exports.getTokensRateChange = async (req: express.Request, res: express.R
  */
 module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
-        let { userId } = req.query;
-        userId = userId!.toString();
-        if (!userId) {
-            console.log('userId error');
-            res.send({ success: false });
-            return;
-        }
-        const walletSnap = await db.collection(collections.wallet).doc(userId).get();
+        let address = req.params.address;
         const data = {};
-        if (walletSnap.exists) {
-            // get Crypto
-            const cryptoSnap = await walletSnap.ref.collection(collections.crypto).get();
-            cryptoSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.crypto, Name: doc.id, dailyChange: 0.23 };
-            });
-            // get ft
-            const ftSnap = await walletSnap.ref.collection(collections.ft).get();
-            ftSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.ft, Name: doc.id, dailyChange: 0.23 };
-            });
-            // get nft
-            const nftSnap = await walletSnap.ref.collection(collections.nft).get();
-            nftSnap.forEach((doc) => {
-                const historySnap = doc.ref.collection(collections.history).get();
-                const history: any[] = [];
-                historySnap.then((snap) => {
-                    snap.forEach((historyDoc) => {
-                        history.push(historyDoc.data());
-                    });
-                })
-                data[doc.id] = { ...doc.data(), Type: collections.nft, Name: doc.id, History: history, dailyChange: 0.23 };
-            });
-            // get social
-            const socialSnap = await walletSnap.ref.collection(collections.social).get();
-            socialSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.social, Name: doc.id, dailyChange: 0.23 };
+        const tokenToTypeMap = await getTokenToTypeMap();
+        const blockchainRes = await coinBalance.getBalancesOfAddress(address, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            let userBalances = blockchainRes.output;
+            userBalances.forEach((balanceObj) => {
+                let token = balanceObj.Token;
+                let type = tokenToTypeMap[token] ?? collections.unknown;
+                data[token] = { ...balanceObj, Type: type, Name: token }
             });
             res.send({ success: true, data: data });
         } else {
-            console.log("cant find wallet snap");
-            res.send({ success: true, data: {} });
+            console.log('Error in controllers/walletController -> getAllTokenBalances() blockchainRes = false', blockchainRes.message);
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/walletController -> getAllTokenBalances()', err);
@@ -547,6 +509,7 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
 
     try {
         let { userId, userAddress } = req.query;
+        console.log(req.query);
         userId = userId!.toString()
         userAddress = userAddress!.toString();
         console.log('getTotalBalance_v2 is called', userAddress)
@@ -935,6 +898,20 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
         res.send({ success: false });
     }
 }
+
+/**
+ * Function to get email-address map
+ */
+module.exports.getEmailToAddressMap = async (req: express.Request, res: express.Response) => {
+    try {
+        const data = await getEmailAddressMap();
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getEmailToAddressMap()', err);
+        res.send({ success: false });
+    }
+}
+
 
 /**
  * Function to get email-uid map

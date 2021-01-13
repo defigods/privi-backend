@@ -10,7 +10,7 @@ const uuid = require('uuid');
 export async function updateStatusOneToOneSwap(swapDocID, _status) {
     await db.runTransaction(async (transaction) => {
         // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
-        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {status: _status});
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), { status: _status });
     });
 };
 
@@ -158,13 +158,14 @@ export async function updateFirebase(blockchainRes) {
         }
         // update transactions (for each txn, save to from's colection and to's colection)
         if (updateTransactions) {
-            let key: string = "";
-            let val: any = null;
-            for ([key, val] of Object.entries(updateTransactions)) {
-                const from = val.From;
-                const to = val.To;
-                if (from) transaction.set(db.collection(collections.history).doc(collections.history).collection(from).doc(key), val);
-                if (to) transaction.set(db.collection(collections.history).doc(collections.history).collection(to).doc(key), val);
+            let tid: string = "";
+            let txnArray: any = [];
+            for ([tid, txnArray] of Object.entries(updateTransactions)) {
+                // const from = val.From;
+                // const to = val.To;
+                // if (from) transaction.set(db.collection(collections.history).doc(collections.history).collection(from).doc(key), val);
+                // if (to) transaction.set(db.collection(collections.history).doc(collections.history).collection(to).doc(key), val);
+                transaction.set(db.collection(collections.priviScan).doc(tid), { Transactions: txnArray });
             }
         }
         // update pods (FT and NFT)
@@ -522,6 +523,18 @@ export async function getCurrencyRatesUsdBase() {
     return rates;
 }
 
+export async function getEmailAddressMap() {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).get();
+    usersQuery.forEach((doc) => {
+        const data: any = doc.data();
+        const email = data.email;
+        const address = data.address;
+        if (email && address) res[email] = address;
+    })
+    return res;
+};
+
 // return object that maps uid to email and viceversa - this would be very big soon avoid when you can
 export async function getEmailUidMap() {
     let res = {};
@@ -567,7 +580,7 @@ export function isEmail(email: string) {
 }
 
 // given a string return the type of token (CRYPTO, FTPOD...)
-export const identifyTypeOfToken = async function (token: string): Promise<string> {
+export async function identifyTypeOfToken(token: string): Promise<string> {
     const tokenSnap = await db.collection(collections.tokens).doc(token).get();
     if (tokenSnap.exists) {
         const data = tokenSnap.data();
@@ -575,7 +588,17 @@ export const identifyTypeOfToken = async function (token: string): Promise<strin
     }
     return collections.unknown;
 }
-//module.exports.identifyTypeOfToken = identifyTypeOfToken;
+
+export async function getTokenToTypeMap() {
+    const map = {};
+    const tokensSnap = await db.collection(collections.tokens).get();
+    tokensSnap.forEach((doc) => {
+        const data: any = doc.data();
+        map[doc.id] = data.TokenType;
+    })
+    return map;
+}
+
 
 // used to filter the trending ones, that is the top 10 with most followers in the last week
 export function filterTrending(allElems) {

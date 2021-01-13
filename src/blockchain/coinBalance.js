@@ -7,12 +7,12 @@ module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
-		url: api.blockchainCoinBalanceAPI + "/getBalancesOfAddress", 
+		url: api.blockchainCoinBalanceAPI + "/getBalancesOfAddress",
 		data: JSON.stringify({
 			Address: userAddress,
 			Caller: caller,
 		})
-    }
+	}
 	let blockchainRes = await axios(config);
 	// console.log('result blockchain', blockchainRes.data)
 	return blockchainRes.data;
@@ -23,13 +23,13 @@ module.exports.getBalancesByType = async (userAddress, type, caller) => {
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
-		url: api.blockchainCoinBalanceAPI + "/getBalancesByType", 
+		url: api.blockchainCoinBalanceAPI + "/getBalancesByType",
 		data: JSON.stringify({
 			PublicId: userAddress,
 			Type: type,
 			Caller: caller,
 		})
-    }
+	}
 	let blockchainRes = await axios(config);
 	// console.log('result blockchain', blockchainRes.data)
 	return blockchainRes.data;
@@ -57,15 +57,15 @@ module.exports.updateTokenInfo = async (name, tokenType, symbol, caller) => {
 	return blockchainRes.data;
 };
 
-module.exports.transfer = async (from, to, amount, coin, id, date, type, caller) => {
+module.exports.transfer = async (from, to, amount, coin, type, hash, signature, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/transfer", {
 		Token: coin,
 		From: from,
 		To: to,
 		Amount: amount,
-		Id: id,
-		Date: date,
 		Type: type,
+		Hash: hash,
+		Signature: signature,
 		Caller: caller
 	});
 	return blockchainRes.data;
