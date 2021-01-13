@@ -192,6 +192,7 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
  * @param fromAddress User account to retrieve the balance
  */
 const getERC20Balance = async (req: express.Request, res: express.Response) => {
+    console.log('Sarkawt: should be depricated');
     const { fromAddress, chainId } = req.query;
 
     if (chainId === '3') { // Ropsten

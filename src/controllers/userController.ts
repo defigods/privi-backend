@@ -310,9 +310,9 @@ const attachAddress = async (userPublicId: string) => {
             const pubKey = await privateToPublic(wallet._privateKey);
             const publicKey = '0x04' + pubKey.toString("hex");
             const address = '0x' + await publicToAddress(pubKey).toString('hex');
-            const addressCheckSum = await toChecksumAddress(address);
+            // const addressCheckSum = await toChecksumAddress(address);
 
-            const blockchainRes = await dataProtocol.attachAddress(userPublicId, addressCheckSum, caller);
+            const blockchainRes = await dataProtocol.attachAddress(userPublicId, address, caller);
 
             if (blockchainRes && blockchainRes.success) {
 
@@ -323,13 +323,13 @@ const attachAddress = async (userPublicId: string) => {
                     transaction.update(db.collection(collections.user).doc(userPublicId), {
                         mnemonic: mnemonic,
                         pubKey: publicKey,
-                        address: addressCheckSum,
+                        address: address,
                         lastUpdate: lastUpdate,
                     });
 
                 });
 
-                resolve({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
+                resolve({ success: true, uid: userPublicId, address: address, lastUpdate: lastUpdate });
 
             } else {
                 console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);

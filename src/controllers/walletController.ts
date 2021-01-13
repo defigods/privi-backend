@@ -232,17 +232,16 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const token = body.token;
 
-        // check that publicId is same as user in jwt
-        if (!req.body.priviUser.id || (req.body.priviUser.id != to)) {
-            console.log("error: jwt user is not the same as publicId ban?");
-            res.send({ success: false, message: "jwt user is not the same as publicId" });
-            return;
-        }
+        // // check that publicId is same as user in jwt
+        // if (!req.body.priviUser.id || (req.body.priviUser.id != to)) {
+        //     console.log("error: jwt user is not the same as publicId ban?");
+        //     res.send({ success: false, message: "jwt user is not the same as publicId" });
+        //     return;
+        // }
 
         const tid = generateUniqueId();
         const timestamp = Date.now();
         const blockchainRes = await coinBalance.mint(type, from, to, amount, token, timestamp, tid, apiKey);
-        console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(to, "Swap - Complete",
