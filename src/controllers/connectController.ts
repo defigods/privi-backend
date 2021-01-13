@@ -457,8 +457,6 @@ const swap = async (
             userAddress,
             amount,
             token,
-            lastUpdate,
-            txHash,
             'PRIVI'
         );
 
@@ -506,8 +504,8 @@ const withdraw = async (
     date: string,
     chainId: string
 ) => {
-    console.log('wothdraw called with',swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
-    
+    console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
+
     // set swap doc to in progress
     updateStatusOneToOneSwap(swapDocId, 'inProgress');
     // first burn fabric token
@@ -518,15 +516,13 @@ const withdraw = async (
         toEthAddress,
         amount,
         token,
-        date,
-        'Wd_' + uuid.v4(),
         'PRIVI'
     );
 
     if (response && response.success) {
         console.log('burn fab', response.success)
         // second send coin to user on eth
-        
+
         // Convert value into wei
         const amountWei = web3.utils.toWei(String(amount));
 
@@ -548,7 +544,7 @@ const withdraw = async (
 
         // Transaction parameters
         const paramsTX = {
-            chainId:chainId,
+            chainId: chainId,
             fromAddress: ETH_PRIVI_ADDRESS,
             fromAddressKey: ETH_PRIVI_KEY,
             encodedABI: method,
@@ -557,7 +553,7 @@ const withdraw = async (
 
         // Execute transaction to withdraw in Ethereum
         const { success, data } = await executeTX(paramsTX);
-        
+
         if (success) {
             console.log('--> Withdraw: TX confirmed in Ethereum', data);
             // paramsTx.txHash = data.transactionHash,
@@ -575,12 +571,10 @@ const withdraw = async (
                 fromFabricAddress,
                 amount,
                 token,
-                date,
-                'Wd_' + uuid.v4(),
                 'PRIVI'
             );
 
-            if(mintBack.success){
+            if (mintBack.success) {
                 console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
                 updateStatusOneToOneSwap(swapDocId, 'failed with return');
             } else {
@@ -588,9 +582,9 @@ const withdraw = async (
                 updateStatusOneToOneSwap(swapDocId, 'failed without return');
             }
         };
-    
 
-    
+
+
     } else {
         console.log('fabric burn fail', response);
         // set back swap doc to pending, so it can be tried later
@@ -690,9 +684,9 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     const recentSwaps = await loadRecentSwaps(userAddress);
     // console.log('recentSwaps', recentSwaps)
     if (recentSwaps) {
-        res.send({success: true, data: recentSwaps});
+        res.send({ success: true, data: recentSwaps });
     } else {
-        res.send({success: false});
+        res.send({ success: false });
     }
 }
 

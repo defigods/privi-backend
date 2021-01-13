@@ -1,10 +1,10 @@
 import express from "express";
-import {db} from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
-import {generateUniqueId} from "../functions/functions";
-import {user} from "firebase-functions/lib/providers/auth";
+import { generateUniqueId } from "../functions/functions";
+import { user } from "firebase-functions/lib/providers/auth";
 
-exports.getChats =  async (req: express.Request, res: express.Response) => {
+exports.getChats = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
 
@@ -35,7 +35,7 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
         let body = req.body;
         let room;
 
-        if(body.users && body.users.userFrom && body.users.userTo) {
+        if (body.users && body.users.userFrom && body.users.userTo) {
             let userFrom = body.users.userFrom;
             let userTo = body.users.userTo;
 
@@ -46,7 +46,7 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
             }
 
             const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
-            if(!chatQuery.empty) {
+            if (!chatQuery.empty) {
                 for (const doc of chatQuery.docs) {
                     let data = doc.data();
                     data.id = doc.id;
@@ -102,7 +102,7 @@ exports.getMessagesNotSeen = async (req: express.Request, res: express.Response)
     try {
         let body = req.body;
 
-        if(body.userId) {
+        if (body.userId) {
             const messageQuery = await db.collection(collections.message)
                 .where("to", "==", body.userId)
                 .where("seen", "==", false).get();
@@ -127,11 +127,11 @@ exports.lastView = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
 
-        if(body.userId && body.room) {
+        if (body.userId && body.room) {
             const chatUserToQuery = await db.collection(collections.chat)
                 .where("room", "==", body.room)
                 .where("users.userTo.userId", "==", body.userId).get();
-            if(!chatUserToQuery.empty) {
+            if (!chatUserToQuery.empty) {
                 for (const doc of chatUserToQuery.docs) {
                     let data = doc.data();
 
@@ -143,7 +143,7 @@ exports.lastView = async (req: express.Request, res: express.Response) => {
             const chatUserFromQuery = await db.collection(collections.chat)
                 .where("room", "==", body.room)
                 .where("users.userFrom.userId", "==", body.userId).get();
-            if(!chatUserFromQuery.empty) {
+            if (!chatUserFromQuery.empty) {
                 for (const doc of chatUserFromQuery.docs) {
                     let data = doc.data();
 
@@ -156,7 +156,7 @@ exports.lastView = async (req: express.Request, res: express.Response) => {
                 .where("room", "==", body.room)
                 .where("to", "==", body.userId)
                 .where("seen", "==", false).get();
-            if(!messageQuery.empty) {
+            if (!messageQuery.empty) {
                 for (const doc of messageQuery.docs) {
                     let data = doc.data();
 
@@ -165,7 +165,7 @@ exports.lastView = async (req: express.Request, res: express.Response) => {
                     });
                 }
             }
-            res.status(200).send({success: true});
+            res.status(200).send({ success: true });
         } else {
             res.status(200).send({
                 success: false,
@@ -182,21 +182,21 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
 
-        if(body.room) {
+        if (body.room) {
             const chatQuery = await db.collection(collections.chat)
                 .where("room", "==", body.room).get();
-            let messages : any[] = [];
+            let messages: any[] = [];
 
-            if(!chatQuery.empty) {
+            if (!chatQuery.empty) {
                 for (const doc of chatQuery.docs) {
                     let data = doc.data();
-                    if(data && data.messages) {
-                        for(let i = 0 ; i < data.messages.length; i++){
+                    if (data && data.messages) {
+                        for (let i = 0; i < data.messages.length; i++) {
                             const messageGet = await db.collection(collections.message)
                                 .doc(data.messages[i]).get();
                             messages.push(messageGet.data())
 
-                            if(i === data.messages.length - 1) {
+                            if (i === data.messages.length - 1) {
                                 res.status(200).send({
                                     success: true,
                                     data: messages
@@ -231,10 +231,10 @@ exports.getChatRoomById = async (req: express.Request, res: express.Response) =>
     try {
         let body = req.body;
 
-        if(body.room) {
+        if (body.room) {
             const chatQuery = await db.collection(collections.chat)
                 .where("room", "==", body.room).get();
-            if(!chatQuery.empty) {
+            if (!chatQuery.empty) {
                 for (const doc of chatQuery.docs) {
                     res.status(200).send({
                         success: true,
@@ -277,10 +277,10 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
 
-        let users : any[] = [];
+        let users: any[] = [];
 
         const userQuery = await db.collection(collections.user).get();
-        if(!userQuery.empty) {
+        if (!userQuery.empty) {
             for (const doc of userQuery.docs) {
                 let data = doc.data();
                 data.id = doc.id;
@@ -301,18 +301,18 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
         let body = req.body;
 
         let discordChat: any = {};
-        let discordRooms : any[] = [];
+        let discordRooms: any[] = [];
         const discordChatRef = db.collection(collections.discordChat).doc(body.discordChat);
         const discordChatGet = await discordChatRef.get();
-        const discordChatData : any = discordChatGet.data();
+        const discordChatData: any = discordChatGet.data();
 
         const discordRoomGet = await discordChatRef.collection(collections.discordRoom).get();
         discordRoomGet.forEach((doc) => {
-            let data = {...doc.data()}
+            let data = { ...doc.data() }
             data.room = doc.id;
             discordRooms.push(data)
         });
-        discordChat = {...discordChatData};
+        discordChat = { ...discordChatData };
         discordChat.id = discordChatGet.id;
         discordChat.discordRooms = [...discordRooms];
         res.send({
@@ -328,8 +328,8 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
     try {
         let body = req.body;
 
-        const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
-        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false, []);
+        const discordChatCreation: any = await createDiscordChat(body.adminId, body.adminName);
+        const discordRoomCreation: any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false, []);
 
         res.send({
             success: true,
@@ -344,7 +344,7 @@ const createDiscordChat = exports.createDiscordChat = async (adminId, adminName)
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
-            let users : any[] = [{
+            let users: any[] = [{
                 id: adminId,
                 name: adminName
             }]
@@ -377,14 +377,14 @@ const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, admin
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
-            let usrs : any[] = [{
+            let usrs: any[] = [{
                 type: 'Admin',
                 userId: adminId,
                 userName: adminName,
                 userConnected: false,
                 lastView: Date.now()
             }, ...users];
-            let obj : any = {
+            let obj: any = {
                 type: type,
                 name: roomName,
                 private: privacy,
@@ -400,7 +400,7 @@ const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, admin
             obj.id = uid;
             resolve(obj);
         } catch (e) {
-            reject('Error in controllers/chatRoutes -> createDiscordChat()' + e)
+            reject('Error in controllers/chatRoutes -> createDiscordRoom()' + e)
         }
     })
 };
@@ -409,12 +409,12 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
     try {
         let body = req.body;
 
-        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
+        const checkIsAdmin: boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
 
-        if(checkIsAdmin) {
-            let users : any[] = [];
-            if(!body.private) {
-                if(body.type === 'Pod') {
+        if (checkIsAdmin) {
+            let users: any[] = [];
+            if (!body.private) {
+                if (body.type === 'Pod') {
                     const podSnap = await db.collection(collections.podsFT).doc(body.id).get();
                     const podData: any = podSnap.data();
 
@@ -423,7 +423,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                     for (const user of investors) {
                         let i = investors.indexOf(user);
                         const userSnap = await db.collection(collections.user).doc(user).get();
-                        let data : any = userSnap.data();
+                        let data: any = userSnap.data();
 
                         users.push({
                             type: 'Members',
@@ -433,14 +433,14 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                             lastView: Date.now()
                         })
                     }
-                } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
+                } else if (body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
                     const communitySnap = await db.collection(collections.community).doc(body.id).get();
                     const communityData: any = communitySnap.data();
 
 
                     for (const user of communityData.Members) {
                         const userSnap = await db.collection(collections.user).doc(user.id).get();
-                        let data : any = userSnap.data();
+                        let data: any = userSnap.data();
 
                         users.push({
                             type: 'Members',
@@ -450,13 +450,13 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                             lastView: Date.now()
                         })
                     }
-                } else if(body.type === 'Credit-Pool') {
+                } else if (body.type === 'Credit-Pool') {
                     const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
-                      .collection(collections.priviCreditsBorrowing).get();
+                        .collection(collections.priviCreditsBorrowing).get();
                     const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
-                      .collection(collections.priviCreditsLending).get();
+                        .collection(collections.priviCreditsLending).get();
 
-                    if(!creditPoolBorrowersSnap.empty) {
+                    if (!creditPoolBorrowersSnap.empty) {
                         for (const doc of creditPoolBorrowersSnap.docs) {
                             const userRef = db.collection(collections.user).doc(doc.id);
                             const userGet = await userRef.get();
@@ -470,7 +470,7 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                         }
                     }
 
-                    if(!creditPoolLendersSnap.empty) {
+                    if (!creditPoolLendersSnap.empty) {
                         for (const doc of creditPoolLendersSnap.docs) {
                             for (const doc of creditPoolBorrowersSnap.docs) {
                                 const userRef = db.collection(collections.user).doc(doc.id);
@@ -485,12 +485,12 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
                             }
                         }
                     }
-                } else if(body.type === 'Insurance') {
+                } else if (body.type === 'Insurance') {
 
                 }
             }
 
-            const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private, users);
+            const discordRoomCreation: any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private, users);
 
             res.send({
                 success: true,
@@ -511,14 +511,14 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
     }
 }
 
-const checkIfUserIsAdmin = (chatId, adminId) : Promise<boolean> => {
+const checkIfUserIsAdmin = (chatId, adminId): Promise<boolean> => {
     return new Promise(async (resolve, reject) => {
         const discordChatRef = db.collection(collections.discordChat)
-          .doc(chatId);
+            .doc(chatId);
         const discordChatGet = await discordChatRef.get();
-        const discordChat : any = discordChatGet.data();
+        const discordChat: any = discordChatGet.data();
 
-        if(discordChat && discordChat.admin && discordChat.admin.id && discordChat.admin.id === adminId) {
+        if (discordChat && discordChat.admin && discordChat.admin.id && discordChat.admin.id === adminId) {
             resolve(true);
         } else {
             resolve(false);
@@ -530,18 +530,18 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
     try {
         let body = req.body;
 
-        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        const checkIsAdmin: boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
 
         console.log(body);
-        if(checkIsAdmin) {
+        if (checkIsAdmin) {
             const discordRoomRef = db.collection(collections.discordChat)
-              .doc(body.discordChatId).collection(collections.discordRoom)
-              .doc(body.discordRoomId);
+                .doc(body.discordChatId).collection(collections.discordRoom)
+                .doc(body.discordRoomId);
             const discordRoomGet = await discordRoomRef.get();
-            const discordRoom : any = discordRoomGet.data();
+            const discordRoom: any = discordRoomGet.data();
 
             const userSnap = await db.collection(collections.user).doc(body.userId).get();
-            let data : any = userSnap.data();
+            let data: any = userSnap.data();
 
             let users = [...discordRoom.users];
             users.push({
@@ -585,15 +585,15 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
             .doc(body.discordChatId).collection(collections.discordRoom)
             .doc(body.discordRoom);
         const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();
+        const discordRoom: any = discordRoomGet.data();
 
-        let messages : any[] = [];
-        if(discordRoom.messages && discordRoom.messages.length > 0) {
-            for(let i = 0 ; i < discordRoom.messages.length; i++){
+        let messages: any[] = [];
+        if (discordRoom.messages && discordRoom.messages.length > 0) {
+            for (let i = 0; i < discordRoom.messages.length; i++) {
                 const messageGet = await db.collection(collections.discordMessage)
                     .doc(discordRoom.messages[i]).get();
 
-                let discordMsg : any = messageGet.data();
+                let discordMsg: any = messageGet.data();
 
                 const userRef = db.collection(collections.user).doc(discordMsg.from);
                 const userGet = await userRef.get();
@@ -609,7 +609,7 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
                 discordMsg.id = messageGet.id;
                 messages.push(discordMsg)
 
-                if(i === discordRoom.messages.length - 1) {
+                if (i === discordRoom.messages.length - 1) {
                     res.status(200).send({
                         success: true,
                         data: messages
@@ -635,8 +635,8 @@ exports.discordGetReplies = async (req: express.Request, res: express.Response) 
             .doc(body.discordMessageId).collection(collections.discordMessageReplies);
         const discordMessageRepliesGet = await discordMessageRepliesRef.get();
 
-        let messages : any[] = [];
-        if(!discordMessageRepliesGet.empty) {
+        let messages: any[] = [];
+        if (!discordMessageRepliesGet.empty) {
             for (const doc of discordMessageRepliesGet.docs) {
                 let data = doc.data();
 
@@ -676,13 +676,13 @@ exports.discordLastView = async (req: express.Request, res: express.Response) =>
     try {
         let body = req.body;
 
-        if(body.userId && body.discordChat && body.discordRoom) {
+        if (body.userId && body.discordChat && body.discordRoom) {
             const discordRoomRef = db.collection(collections.discordChat)
                 .doc(body.discordChat).collection(collections.discordRoom)
                 .doc(body.discordRoom);
             const discordRoomGet = await discordRoomRef.get();
-            const discordRoom : any = discordRoomGet.data();
-            if(discordRoom) {
+            const discordRoom: any = discordRoomGet.data();
+            if (discordRoom) {
                 let users = [...discordRoom.users];
                 let userIndex = users.findIndex((usr, i) => usr.userId === body.userId);
                 users[userIndex].lastView = body.lastView;
@@ -692,10 +692,10 @@ exports.discordLastView = async (req: express.Request, res: express.Response) =>
             }
             const messageQuery = await db.collection(collections.discordMessage)
                 .where("room", "==", body.room).get();
-            if(!messageQuery.empty) {
+            if (!messageQuery.empty) {
                 for (const doc of messageQuery.docs) {
                     let data = doc.data();
-                    if(!data.seen.includes(body.userId)) {
+                    if (!data.seen.includes(body.userId)) {
                         let usersSeen = [...data.seen];
                         usersSeen.push(body.userId);
                         await db.collection(collections.discordMessage).doc(doc.id).update({
@@ -704,7 +704,7 @@ exports.discordLastView = async (req: express.Request, res: express.Response) =>
                     }
                 }
             }
-            res.status(200).send({success: true});
+            res.status(200).send({ success: true });
         } else {
             res.status(200).send({
                 success: false,
@@ -725,13 +725,13 @@ exports.discordModifyAccess = async (req: express.Request, res: express.Response
             .doc(body.discordChatId).collection(collections.discordRoom)
             .doc(body.discordRoomId);
         const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();
+        const discordRoom: any = discordRoomGet.data();
 
-        let users : any[] = [...discordRoom.users];
+        let users: any[] = [...discordRoom.users];
 
         let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
 
-        if(findUserIndex === -1) {
+        if (findUserIndex === -1) {
             users.push({
                 type: body.type,
                 userId: body.userId,
@@ -773,20 +773,20 @@ exports.discordRemoveAccess = async (req: express.Request, res: express.Response
     try {
         let body = req.body;
 
-        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        const checkIsAdmin: boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
 
-        if(checkIsAdmin) {
+        if (checkIsAdmin) {
             const discordRoomRef = db.collection(collections.discordChat)
-              .doc(body.discordChatId).collection(collections.discordRoom)
-              .doc(body.discordRoomId);
+                .doc(body.discordChatId).collection(collections.discordRoom)
+                .doc(body.discordRoomId);
             const discordRoomGet = await discordRoomRef.get();
-            const discordRoom : any = discordRoomGet.data();
+            const discordRoom: any = discordRoomGet.data();
 
-            let users : any[] = [...discordRoom.users];
+            let users: any[] = [...discordRoom.users];
 
             let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
 
-            if(findUserIndex === -1) {
+            if (findUserIndex === -1) {
                 res.send({
                     success: false,
                     data: 'User not found'
@@ -823,13 +823,13 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
     try {
         let body = req.body;
 
-        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
+        const checkIsAdmin: boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
 
 
-        if(checkIsAdmin) {
-            let users : any[] = [];
+        if (checkIsAdmin) {
+            let users: any[] = [];
 
-            if(body.type === 'Pod') {
+            if (body.type === 'Pod') {
                 console.log(body.id);
                 const podSnap = await db.collection(collections.podsFT).doc(body.id).get();
 
@@ -840,7 +840,7 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                 for (const user of investors) {
                     let i = investors.indexOf(user);
                     const userSnap = await db.collection(collections.user).doc(user).get();
-                    let data : any = userSnap.data();
+                    let data: any = userSnap.data();
 
                     users.push({
                         type: 'Members',
@@ -848,14 +848,14 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                         userName: data.firstName
                     })
                 }
-            } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
+            } else if (body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
                 const communitySnap = await db.collection(collections.community).doc(body.id).get();
                 const communityData: any = communitySnap.data();
 
 
                 for (const user of communityData.Members) {
                     const userSnap = await db.collection(collections.user).doc(user.id).get();
-                    let data : any = userSnap.data();
+                    let data: any = userSnap.data();
 
                     users.push({
                         type: 'Members',
@@ -865,13 +865,13 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                         lastView: Date.now()
                     })
                 }
-            } else if(body.type === 'Credit-Pool') {
+            } else if (body.type === 'Credit-Pool') {
                 const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
-                  .collection(collections.priviCreditsBorrowing).get();
+                    .collection(collections.priviCreditsBorrowing).get();
                 const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
-                  .collection(collections.priviCreditsLending).get();
+                    .collection(collections.priviCreditsLending).get();
 
-                if(!creditPoolBorrowersSnap.empty) {
+                if (!creditPoolBorrowersSnap.empty) {
                     for (const doc of creditPoolBorrowersSnap.docs) {
                         const userRef = db.collection(collections.user).doc(doc.id);
                         const userGet = await userRef.get();
@@ -885,7 +885,7 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                     }
                 }
 
-                if(!creditPoolLendersSnap.empty) {
+                if (!creditPoolLendersSnap.empty) {
                     for (const doc of creditPoolLendersSnap.docs) {
                         for (const doc of creditPoolBorrowersSnap.docs) {
                             const userRef = db.collection(collections.user).doc(doc.id);
@@ -931,7 +931,7 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
         let body = req.body;
 
         const discordMessageRef = db.collection(collections.discordMessage)
-          .doc(body.discordMessageId);
+            .doc(body.discordMessageId);
         const discordMessageGet = await discordMessageRef.get();
         const discordMessage: any = discordMessageGet.data();
 
@@ -943,7 +943,7 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
 
         let dislikeIndex = dislikes.findIndex(user => user === body.userId);
         console.log(dislikeIndex, dislikes)
-        if(dislikeIndex !== -1) {
+        if (dislikeIndex !== -1) {
             dislikes.splice(dislikeIndex, 1);
             numDislikes = numDislikes - 1;
         }
@@ -955,7 +955,7 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
             numDislikes: numDislikes
         });
 
-        let message = {...discordMessage};
+        let message = { ...discordMessage };
         message.id = discordMessageGet.id;
         message.likes = likes;
         message.dislikes = dislikes;
@@ -980,7 +980,7 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
         let body = req.body;
 
         const discordMessageRef = db.collection(collections.discordMessage)
-          .doc(body.discordMessageId);
+            .doc(body.discordMessageId);
         const discordMessageGet = await discordMessageRef.get();
         const discordMessage: any = discordMessageGet.data();
 
@@ -991,7 +991,7 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
         dislikes.push(body.userId);
 
         let likeIndex = likes.findIndex(user => user === body.userId);
-        if(likeIndex !== -1) {
+        if (likeIndex !== -1) {
             likes.splice(likeIndex, 1);
             numLikes = numLikes - 1;
         }
@@ -1004,7 +1004,7 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
         });
 
 
-        let message = {...discordMessage};
+        let message = { ...discordMessage };
         message.id = discordMessageGet.id;
         message.likes = likes;
         message.dislikes = dislikes;

@@ -2,10 +2,19 @@ import { db, firebase } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
-import { object } from "firebase-functions/lib/providers/storage";
+const { mnemonicToSeed } = require('bip39')
+const { fromMasterSeed } = require('hdkey')
+const { ecsign, toRpcSig, keccak } = require("ethereumjs-util")
+
+const BigFloat32 = require('bigfloat').BigFloat32;
 
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
+
+const apiKey = "PRIVI"; // just for now
+// require('dotenv').config();
+//const apiKey = process.env.API_KEY;
+
 
 export async function updateStatusOneToOneSwap(swapDocID, _status) {
     await db.runTransaction(async (transaction) => {
@@ -447,7 +456,7 @@ export async function getRateOfChangeAsList() {
 // traditional lending interest harcoded in firebase
 export async function getLendingInterest() {
     const res = {};
-    const blockchainRes = await coinBalance.getTokenList();
+    const blockchainRes = await coinBalance.getTokenListByType("CRYPTO", apiKey);
     if (blockchainRes && blockchainRes.success) {
         const tokenList: string[] = blockchainRes.output;
         tokenList.forEach((token) => {
@@ -475,7 +484,7 @@ export async function getLendingInterest() {
 // traditional staking interest harcoded in firebase
 export async function getStakingInterest() {
     const res = {};
-    const blockchainRes = await coinBalance.getTokenList();
+    const blockchainRes = await coinBalance.getTokenListByType("CRYPTO", apiKey);
     if (blockchainRes && blockchainRes.success) {
         const tokenList: string[] = blockchainRes.output;
         tokenList.forEach((token) => {
@@ -754,8 +763,12 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
             }
             return multiplier * integral / 3;
         case 'EXPONENTIAL':
-            if (targetSupply) multiplier = targetPrice / Math.exp(-targetSupply);
-            integral = upperBound - lowerBound;
+            if (targetSupply) {
+                let divident = Math.exp(-targetSupply);
+                if (divident == 0) divident += 0.000000000000001;   // run out of precision
+                multiplier = targetPrice / divident;
+            }
+            integral = Math.exp(upperBound) - Math.exp(lowerBound);
             if (integral < 0) {
                 console.log("error calculating integral, area negative", integral);
                 return -1;
@@ -774,7 +787,7 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
     return -1;
 }
 
-// calculates the amount of funding tokens to receive after selling an amount of pod/community tokens (Buying)
+// calculate the amount of funding tokens to receive after selling an amount of pod/community tokens (Buying)
 export function getBuyTokenAmount(amm: string, supplyReleased: number, initialSupply: number = 0, amount, targetPrice: number = 0, targetSupply: number = 0) {
     const effectiveSupply: number = supplyReleased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
@@ -786,7 +799,7 @@ export function getBuyTokenAmount(amm: string, supplyReleased: number, initialSu
     return fundingAmount;
 }
 
-// calculates the amount of funding tokens to get after investing some amount of funding token (Selling)
+// calculate the amount of funding tokens to get after investing some amount of funding token (Selling)
 export function getSellTokenAmount(amm: string, supplyReleased: number, initialSupply: number = 0, amount, spread, targetPrice: number = 0, targetSupply: number = 0) {
     const effectiveSupply: number = supplyReleased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
@@ -851,4 +864,20 @@ export async function addZerosToHistory(colRef, fieldName) {
         obj.date = date.getTime();
         colRef.add(obj);
     });
+}
+
+// sign the transaction by mnemonic and txnObj returning [hash, signature]
+export async function singTransaction(mnemonic, transaction) {
+    // Derive Public and Private key from mnemonic //
+    const derivationPath = "m/44'/60'/0'/0/0";
+    const seed = await mnemonicToSeed(mnemonic);
+    const node = fromMasterSeed(seed)
+    const hdKey = node.derive(derivationPath);
+    // Generate transaction hash //
+    let transactionString = JSON.stringify(transaction);
+    let transactionHash = keccak(Buffer.from(transactionString));
+    // Generate signature //
+    const { v, r, s } = ecsign(transactionHash, hdKey._privateKey);
+    let signature = toRpcSig(v, r, s);
+    return [transactionHash.toString('hex'), signature]
 }

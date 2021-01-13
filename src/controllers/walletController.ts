@@ -18,12 +18,15 @@ require('dotenv').config();
 const apiKey = "PRIVI"; // just for now
 const notificationsController = require('./notificationsController');
 
+
+// ---------------------- CALLED FROM POSTMAN -------------------------------
+
 // Should be called each time the blockchain restarts (or we resert firestore) to register all the crypto tokens to the system
 // as well as adding this tokens info (type, supply..etc) to firestore
 module.exports.registerTokens = async (req: express.Request, res: express.Response) => {
     try {
         const type = "CRYPTO";
-        const addressId = "PRIVI";
+        const addressId = "0x7b559b648bc133d5f471436b4d3ff69f0d5a6640"; // any registered user address works
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
             { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
@@ -92,6 +95,8 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
         res.send({ success: false });
     }
 }
+// -----------------------------------------------------------------
+
 
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
@@ -187,9 +192,7 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
             return;
         }
 
-        const tid = generateUniqueId();
-        const timestamp = Date.now();
-        const blockchainRes = await coinBalance.burn(type, from, to, amount, token, timestamp, tid, apiKey);
+        const blockchainRes = await coinBalance.burn(type, from, to, amount, token, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(from, "Withdraw - Complete",
@@ -239,9 +242,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         //     return;
         // }
 
-        const tid = generateUniqueId();
-        const timestamp = Date.now();
-        const blockchainRes = await coinBalance.mint(type, from, to, amount, token, timestamp, tid, apiKey);
+        const blockchainRes = await coinBalance.mint(type, from, to, amount, token, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(to, "Swap - Complete",

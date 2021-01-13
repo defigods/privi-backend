@@ -35,6 +35,22 @@ module.exports.getBalancesByType = async (userAddress, type, caller) => {
 	return blockchainRes.data;
 };
 
+module.exports.getTokenListByType = async (tokenType, caller) => {
+	// console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/getTokenListByType",
+		data: JSON.stringify({
+			TokenType: tokenType,
+			Caller: caller,
+		})
+	}
+	let blockchainRes = await axios(config);
+	// console.log('result blockchain', blockchainRes.data)
+	return blockchainRes.data;
+};
+
 module.exports.registerToken = async (name, type, symbol, supply, addressId, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/registerToken", {
 		Name: name,
@@ -79,38 +95,26 @@ module.exports.balanceOf = async (publicId, caller) => {
 	return blockchainRes.data;
 };
 
-module.exports.getHistory = async (publicId, timestamp, caller) => {
-	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/getHistory", {
-		PublicId: publicId,
-		Timestamp: timestamp,
-		Caller: caller
-	});
-	return blockchainRes.data;
-};
 
-module.exports.mint = async (type, from, to, amount, coin, date, txnId, caller) => {
+module.exports.mint = async (type, from, to, amount, coin, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/mint", {
 		From: from,
 		To: to,
 		Type: type,
 		Token: coin,
 		Amount: amount,
-		Date: date,
-		Id: txnId,
 		Caller: caller
 	});
 	return blockchainRes.data;
 }
 
-module.exports.burn = async (type, from, to, amount, coin, date, txnId, caller) => {
+module.exports.burn = async (type, from, to, amount, coin, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/burn", {
 		From: from,
 		To: to,
 		Type: type,
 		Token: coin,
 		Amount: amount,
-		Date: date,
-		Id: txnId,
 		Caller: caller
 	});
 	return blockchainRes.data;
@@ -127,11 +131,6 @@ module.exports.spendFunds = async (publicId, amount, coin, providerId, caller) =
 	return blockchainRes.data;
 }
 
-module.exports.getTokenList = async () => {
-	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/getTokenList", {
-	});
-	return blockchainRes.data;
-}
 
 module.exports.multitransfer = async (arrayObj, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/multitransfer", {

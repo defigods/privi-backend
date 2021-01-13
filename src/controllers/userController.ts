@@ -7,7 +7,7 @@ import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import badge from "../blockchain/badge";
-import { getUidFromEmail, generateUniqueId, addZerosToHistory } from "../functions/functions";
+import { getUidFromEmail, generateUniqueId, addZerosToHistory, getRateOfChangeAsMap, singTransaction, updateFirebase } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
@@ -24,7 +24,7 @@ const hdkey = require("hdkey");
 const { privateToPublic, publicToAddress, toChecksumAddress } = require("ethereumjs-util");
 const { PRIVI_WALLET_PATH } = require('../constants/configuration');
 
-require('dotenv').config();
+// require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const notificationsController = require('./notificationsController');
 
@@ -494,40 +494,24 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
             // ------------------------- Provisional for TestNet ---------------------------------
             // give user some balance in each tokens (50/tokenRate).
-            // const coinsVal = 50; // value in USD to be sent
-            // const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
-            // const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
-            // const arrayMultiTransfer: {}[] = [];
-            // let token: string = "";
-            // let rate: any = null;
-            // for ([token, rate] of Object.entries(rateOfChange)) { // build multitransfer array object by looping in rateOfChange
-            //     // rateOfChange also cointains podTokens, we dont need them
-            //     const tid = generateUniqueId();
-            //     const date = Date.now();
-            //     if (token.length <= 8) {
-            //         const amount = coinsVal / rateOfChange[token];
-            //         const transferObj = {
-            //             Type: "transfer",
-            //             Token: token,
-            //             From: fromUid,
-            //             To: uid,
-            //             Amount: amount,
-            //             Id: tid,
-            //             date: date
-            //         };
-            //         arrayMultiTransfer.push(transferObj);
-            //     }
-            // }
-            // console.log('signUp arrayMultiTransfer', arrayMultiTransfer)
+            const updatedUserSnap = await db.collection(collections.user).doc(uid).get();
+            const updatedUserData: any = updatedUserSnap.data();
+            const userAddress = updatedUserData.address;
+            const coinsVal = 50; // value in USD to be sent
+            const blockchainRes2 = await coinBalance.getTokenListByType("CRYPTO", apiKey);
+            const registeredCryptoTokens: string[] = blockchainRes2.output ?? [];
+            const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
+            registeredCryptoTokens.forEach((token) => {
+                const rate = rateOfChange[token] ?? 1;
+                const amount = coinsVal / rate;
+                coinBalance.mint("transfer", "", userAddress, amount, token, apiKey).then((blockchainRes3) => {
+                    console.log(blockchainRes3)
+                    if (!blockchainRes3.success) {
+                        console.log(`user ${uid} dindt get ${token}, ${blockchainRes3.message}`)
+                    }
+                });
+            })
 
-            // const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer, caller);
-            // if (blockchainRes2 && blockchainRes2.success) {
-            //     console.log('User initial gift sent: 50 USD in each token');
-            //     updateFirebase(blockchainRes2);
-            // }
-            // else {
-            //     console.log('Error at sending initial 50 coins, blockchain success = false.', blockchainRes2.message);
-            // }
             // ------------------------------------------------------------------------------------
 
             // send email validation here
