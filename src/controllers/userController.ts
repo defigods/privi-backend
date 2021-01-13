@@ -729,7 +729,11 @@ const postToWall = async (req: express.Request, res: express.Response) => {
           fromUserId: req.body.priviUser.id, // who posted to the wall
           date: Date.now(),
           updatedAt: null,
-          hasPhoto: false
+          hasPhoto: false,
+          likes: [],
+          dislikes: [],
+          numLikes: 0,
+          numDislikes: 0,
         });
       });
 
@@ -742,12 +746,15 @@ const postToWall = async (req: express.Request, res: express.Response) => {
           fromUserId: req.body.priviUser.id, // who posted to the wall
           date: Date.now(),
           updatedAt: null,
-          hasPhoto: false
+          hasPhoto: false,
+          likes: [],
+          dislikes: [],
+          numLikes: 0,
+          numDislikes: 0,
         }
       };
       res.send(data);
 
-      console.log("to emit new wall post");
       // send message back to socket
       if (sockets[req.body.priviUser.id]) {
         sockets[req.body.priviUser.id].emit("new wall post", data);
@@ -783,6 +790,102 @@ const changePostPhoto = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/userController -> changePostPhoto()', err);
+        res.send({ success: false });
+    }
+}
+
+const likePost = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const wallPostRef = db.collection(collections.wallPost)
+          .doc(body.wallPostId);
+        const wallPostGet = await wallPostRef.get();
+        const wallPost: any = wallPostGet.data();
+
+        let likes = [...wallPost.likes];
+        let dislikes = [...wallPost.dislikes];
+        let numLikes = wallPost.numLikes;
+        let numDislikes = wallPost.numDislikes;
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+        if(likeIndex === -1) {
+            likes.push(body.userId);
+            numLikes = wallPost.numLikes + 1;
+        }
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+        if(dislikeIndex !== -1) {
+            dislikes.splice(dislikeIndex, 1);
+            numDislikes = numDislikes - 1;
+        }
+
+        await wallPostRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        wallPost.likes = likes;
+        wallPost.dislikes = dislikes;
+        wallPost.numLikes = numLikes;
+        wallPost.numDislikes = numDislikes;
+
+        res.send({
+            success: true,
+            data: wallPost
+        });
+    } catch (err) {
+        console.log('Error in controllers/userController -> likePost()', err);
+        res.send({ success: false });
+    }
+}
+
+const dislikePost = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const wallPostRef = db.collection(collections.wallPost)
+          .doc(body.wallPostId);
+        const wallPostGet = await wallPostRef.get();
+        const wallPost: any = wallPostGet.data();
+
+        let dislikes = [...wallPost.dislikes];
+        let likes = [...wallPost.likes];
+        let numLikes = wallPost.numLikes;
+        let numDislikes = wallPost.numDislikes;
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+        if(likeIndex !== -1) {
+            likes.splice(likeIndex, 1);
+            numLikes = numLikes - 1;
+        }
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+        if(dislikeIndex === -1) {
+            dislikes.push(body.userId);
+            numDislikes = wallPost.numDislikes + 1
+        }
+
+        await wallPostRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        wallPost.likes = likes;
+        wallPost.dislikes = dislikes;
+        wallPost.numLikes = numLikes;
+        wallPost.numDislikes = numDislikes;
+
+        res.send({
+            success: true,
+            data: wallPost
+        });
+    } catch (err) {
+        console.log('Error in controllers/userController -> dislikePost()', err);
         res.send({ success: false });
     }
 }
@@ -1879,5 +1982,7 @@ module.exports = {
     getPostPhotoById,
     getBadgePhotoById,
     changeAnonMode,
-    changeAnonAvatar
+    changeAnonAvatar,
+    likePost,
+    dislikePost
 };
