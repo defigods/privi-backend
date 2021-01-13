@@ -404,14 +404,25 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
         for (let i in snapshot.docs) {
             const doc = snapshot.docs[i].data();
             const docId = snapshot.docs[i].id;
-            if (doc.action === Action.SWAP_APPROVE_ERC20 ||
+            if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
                 doc.action === Action.WITHDRAW_ETH ||
                 doc.action === Action.WITHDRAW_ERC20) {
                 console.log('performing withdraw');
                 withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
+            } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
+                const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                /* 
+                    confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                */
+               if (confirmations > MIN_ETH_CONFIRMATION) {
+                console.log('approve should be set to confirmed');
+                updateStatusOneToOneSwap(docId, 'confirmed');
+                return;
+            };
             } else {
                 const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, confirmations > MIN_ETH_CONFIRMATION)
+                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                 /* 
                     confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                 */
