@@ -20,8 +20,8 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       let posts : any[] = [];
 
-      if(insurance && insurance.posts) {
-        let insurancePosts = [...insurance.posts];
+      if(insurance && insurance.Posts) {
+        let insurancePosts = [...insurance.Posts];
         insurancePosts.push(ret.id);
         posts = insurancePosts;
       } else {
@@ -215,10 +215,10 @@ exports.makeResponseInsuranceWallPost = async (req: express.Request, res: expres
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.insuranceWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const insuranceWallPostRef = db.collection(collections.insuranceWallPost)
-        .doc(body.creditWallPostId);
+        .doc(body.blogPostId);
       const insuranceWallPostGet = await insuranceWallPostRef.get();
       const insuranceWallPost: any = insuranceWallPostGet.data();
 

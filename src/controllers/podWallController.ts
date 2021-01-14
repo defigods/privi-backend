@@ -20,8 +20,8 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       let posts : any[] = [];
 
-      if(pod && pod.posts) {
-        let podPosts = [...pod.posts];
+      if(pod && pod.Posts) {
+        let podPosts = [...pod.Posts];
         podPosts.push(ret.id);
         posts = podPosts;
       } else {
@@ -215,10 +215,10 @@ exports.makeResponsePodWallPost = async (req: express.Request, res: express.Resp
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.podWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const podWallPostRef = db.collection(collections.podWallPost)
-        .doc(body.podWallPostId);
+        .doc(body.blogPostId);
       const podWallPostGet = await podWallPostRef.get();
       const podWallPost: any = podWallPostGet.data();
 

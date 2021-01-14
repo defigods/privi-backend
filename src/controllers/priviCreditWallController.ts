@@ -20,8 +20,8 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       let posts : any[] = [];
 
-      if(priviCredit && priviCredit.posts) {
-        let priviCreditPosts = [...priviCredit.posts];
+      if(priviCredit && priviCredit.Posts) {
+        let priviCreditPosts = [...priviCredit.Posts];
         priviCreditPosts.push(ret.id);
         posts = priviCreditPosts;
       } else {
@@ -215,10 +215,10 @@ exports.makeResponseCreditWallPost = async (req: express.Request, res: express.R
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.creditWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const creditWallPostRef = db.collection(collections.creditWallPost)
-        .doc(body.creditWallPostId);
+        .doc(body.blogPostId);
       const creditWallPostGet = await creditWallPostRef.get();
       const creditWallPost: any = creditWallPostGet.data();
 
