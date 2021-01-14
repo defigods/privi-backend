@@ -4,7 +4,7 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase, updateStatusOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
+import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
@@ -574,14 +574,16 @@ const withdraw = async (
         
         if (success) {
             console.log('--> Withdraw: TX confirmed in Ethereum', data);
-            // paramsTx.txHash = data.transactionHash,
+            const txHash = data.transactionHash;
             //     await saveTx(paramsTx);
             updateStatusOneToOneSwap(swapDocId, 'confirmed');
+            updateTxOneToOneSwap(swapDocId, txHash);
         } else {
             console.warn('--> Withdraw: TX failed in Ethereum', data);
             console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
-
+            const txHash = data.transactionHash;
             updateStatusOneToOneSwap(swapDocId, 'failed');
+            updateTxOneToOneSwap(swapDocId, txHash);
 
             const mintBack = await swapFab(
                 'CRYPTO',
