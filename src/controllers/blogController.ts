@@ -385,11 +385,11 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.adCreate = async (req: express.Request, res: express.Response) => {
+/*exports.adCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    const comments = body.comments || false; // allow comments?
+    //const comments = body.comments || false; // allow comments?
     const name = body.name;
     const type = body.type;
     const textShort = body.textShort;
@@ -406,10 +406,9 @@ exports.adCreate = async (req: express.Request, res: express.Response) => {
 
     if (name && textShort) {
       let data : any = {
-        comments: comments,
+        //comments: comments,
         name: name,
         textShort: textShort,
-
         schedulePost: schedulePost,
         mainHashtag: mainHashtag,
         hashtags: hashtags,
@@ -418,7 +417,7 @@ exports.adCreate = async (req: express.Request, res: express.Response) => {
         description: description,
         descriptionArray: descriptionArray,
         descriptionImages: [],
-        responses: [],
+        //responses: [],
         hasPhoto: false,
         createdBy: req.body.priviUser.id,
         createdAt: Date.now(),
@@ -426,7 +425,7 @@ exports.adCreate = async (req: express.Request, res: express.Response) => {
       };
 
       await db.runTransaction(async (transaction) => {
-        transaction.set(db.collection(collections.add).doc('' + uid), data);
+        transaction.set(db.collection(collections.ad).doc('' + uid), data);
       });
 
       let ret = {id: uid, ...data};
@@ -449,7 +448,6 @@ exports.adCreate = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 }
-
 
 exports.changeAdPhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -588,4 +586,164 @@ exports.getAdPostDescriptionPhotoById = async (req: express.Request, res: expres
     console.log('Error in controllers/blogController -> getAdPostDescriptionPhotoById()', err);
     res.send({ success: false });
   }
-};
+};*/
+
+const createPost = exports.createPost = (body, collection, userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const comments = body.comments || false; // allow comments?
+      const name = body.name;
+      const textShort = body.textShort;
+      const schedulePost = body.schedulePost || Date.now();
+      const mainHashtag = body.mainHashtag;
+      const hashtags = body.hashtags;
+      const selectedFormat = body.selectedFormat; // 0 story 1 wall post
+      const description = body.description;
+      const descriptionArray = body.descriptionArray;
+
+      /*let blogPostGet = await db.collection(collections.blogPost).get();
+      let newId = blogPostGet.size + 1;*/
+
+      const uid = generateUniqueId();
+
+      if (name && textShort) {
+        let data: any = {
+          comments: comments,
+          name: name,
+          textShort: textShort,
+          schedulePost: schedulePost,
+          mainHashtag: mainHashtag,
+          hashtags: hashtags,
+          selectedFormat: selectedFormat,
+          description: description,
+          descriptionArray: descriptionArray,
+          descriptionImages: [],
+          responses: [],
+          hasPhoto: false,
+          createdBy: userId,
+          createdAt: Date.now(),
+          updatedAt: null,
+        };
+
+        if(collection === 'blogPost') {
+          data.communityId = body.communityId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(db.collection(collections.blogPost).doc('' + uid), data);
+          });
+        } else if(collection === 'podWallPost') {
+          data.podId = body.podId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(db.collection(collections.podWallPost).doc('' + uid), data);
+          });
+        } else if(collection === 'creditWallPost') {
+          data.creditPoolId = body.creditPoolId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(db.collection(collections.creditWallPost).doc('' + uid), data);
+          });
+        } else if(collection === 'insuranceWallPost') {
+          data.insuranceId = body.insuranceId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(db.collection(collections.insuranceWallPost).doc('' + uid), data);
+          });
+        }
+
+        let ret = {id: uid, ...data};
+
+        resolve(ret);
+      } else {
+        console.log('parameters required missing');
+        reject('Error in createPost: ' + 'parameters required missing')
+      }
+    } catch (e) {
+      reject('Error in createPost: ' + e)
+    }
+  });
+}
+
+const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
+  return new Promise(async(resolve, reject) => {
+    try {
+      let likes = [...dbItem.likes];
+      let dislikes = [...dbItem.dislikes];
+      let numLikes = dbItem.numLikes;
+      let numDislikes = dbItem.numDislikes;
+
+      let likeIndex = likes.findIndex(user => user === userId);
+      if(likeIndex === -1) {
+        likes.push(userId);
+        numLikes = dbItem.numLikes + 1;
+      }
+
+      let dislikeIndex = dislikes.findIndex(user => user === userId);
+      if(dislikeIndex !== -1) {
+        dislikes.splice(dislikeIndex, 1);
+        numDislikes = numDislikes - 1;
+      }
+
+      await dbRef.update({
+        likes: likes,
+        dislikes: dislikes,
+        numLikes: numLikes,
+        numDislikes: numDislikes
+      });
+
+      dbItem.likes = likes;
+      dbItem.dislikes = dislikes;
+      dbItem.numLikes = numLikes;
+      dbItem.numDislikes = numDislikes;
+
+      if(creator !== userId) {
+        await userController.updateUserCred(creator, true);
+      }
+
+      resolve(dbItem);
+    } catch (e) {
+      console.log('Error in controllers/blogController -> likeItemPost()', e)
+      reject('Error in controllers/blogController -> likeItemPost()' + e)
+    }
+  })
+}
+
+const dislikeItemPost = exports.dislikeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
+  return new Promise(async(resolve, reject) => {
+    try {
+      let likes = [...dbItem.likes];
+      let dislikes = [...dbItem.dislikes];
+      let numLikes = dbItem.numLikes;
+      let numDislikes = dbItem.numDislikes;
+
+      let likeIndex = likes.findIndex(user => user === userId);
+      if(likeIndex !== -1) {
+        likes.splice(likeIndex, 1);
+        numLikes = numLikes - 1;
+      }
+
+      let dislikeIndex = dislikes.findIndex(user => user === userId);
+      if(dislikeIndex === -1) {
+        dislikes.push(userId);
+        numDislikes = dbItem.numDislikes + 1
+      }
+
+      await dbRef.update({
+        likes: likes,
+        dislikes: dislikes,
+        numLikes: numLikes,
+        numDislikes: numDislikes
+      });
+
+      dbItem.likes = likes;
+      dbItem.dislikes = dislikes;
+      dbItem.numLikes = numLikes;
+      dbItem.numDislikes = numDislikes;
+
+      if(creator !== userId) {
+        await userController.updateUserCred(creator, true);
+      }
+
+      resolve(dbItem);
+    } catch (e) {
+      console.log('Error in controllers/blogController -> dislikeItemPost()', e)
+      reject('Error in controllers/blogController -> dislikeItemPost()' + e)
+    }
+  })
+}

@@ -44,6 +44,34 @@ let upload3 = multer({
     storage: storage3
 });
 
+/*let storage4 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/ad')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload4 = multer({
+    storage: storage4
+});
+
+
+let storage5 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/ad/' + 'photos-' + req.params.blogPostId)
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload5 = multer({
+    storage: storage5
+});*/
+
+
 router.post('/votation/create', authenticateJWT, communityController.createVotation);
 router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
 
@@ -80,10 +108,10 @@ router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBl
 router.post('/blog/likePost', authenticateJWT, blogController.likePost);
 router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
-router.post('/ad/create', authenticateJWT, blogController.adCreate);
-router.post('/ad/changePhoto', authenticateJWT, upload3.single('image'), blogController.changeAdPhoto);
-router.post('/ad/changeDescriptionPhotos/:blogPostId', authenticateJWT, upload2.array('image'), blogController.changeAdDescriptionPhotos);
-router.get('/ad/getPhoto/:blogPostId', blogController.getAdPostPhotoById);
-router.get('/ad/getDescriptionPhoto/:blogPostId/:photoId', blogController.getAdPostDescriptionPhotoById);
+/*router.post('/ad/create', authenticateJWT, blogController.adCreate);
+router.post('/ad/changePhoto', authenticateJWT, upload4.single('image'), blogController.changeAdPhoto);
+router.post('/ad/changeDescriptionPhotos/:adId', authenticateJWT, upload5.array('image'), blogController.changeAdDescriptionPhotos);
+router.get('/ad/getPhoto/:adId', blogController.getAdPostPhotoById);
+router.get('/ad/getDescriptionPhoto/:adId/:photoId', blogController.getAdPostDescriptionPhotoById);*/
 
 module.exports = router;

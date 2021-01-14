@@ -456,7 +456,8 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 
             db.collection(collections.podsFT).doc(podId).set({
                 InterstDue: interestDue,
-                DiscordId: discordChatCreation.id
+                DiscordId: discordChatCreation.id,
+                Posts: []
             }, { merge: true });
 
             //     createNotification(creator, "FT Pod - Pod Created",
@@ -1132,6 +1133,15 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
                     pod.rates[doc.id] = rate;
                 }
             });
+            pod.PostsArray = [];
+            if(pod.Posts && pod.Posts.length > 0) {
+                for(const post of pod.Posts) {
+                    const podWallPostSnap = await db.collection(collections.podWallPost).doc(post).get();
+                    const podWallPostData : any = podWallPostSnap.data();
+                    podWallPostData.id = podWallPostSnap.id;
+                    pod.PostsArray.push(podWallPostData);
+                }
+            }
 
             const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
             const discordChatData : any = discordChatSnap.data();
