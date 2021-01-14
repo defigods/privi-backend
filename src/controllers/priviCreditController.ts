@@ -64,7 +64,8 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 EthereumAddress: ethereumAddress,
                 Admins: admins,
                 Insurers: insurers,
-                UserRoles: userRoles
+                UserRoles: userRoles,
+                Posts: []
             }, { merge: true })
 
             // add transaction to credit doc
@@ -432,6 +433,16 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
             })
 
             let creditData : any = creditSnap.data();
+
+            creditData.PostsArray = [];
+            if(creditData.Posts && creditData.Posts.length > 0) {
+                for(const post of creditData.Posts) {
+                    const creditWallPostSnap = await db.collection(collections.creditWallPost).doc(post).get();
+                    const creditWallPostData : any = creditWallPostSnap.data();
+                    creditWallPostData.id = creditWallPostSnap.id;
+                    creditData.PostsArray.push(creditWallPostData);
+                }
+            }
 
             const discordChatSnap = await db.collection(collections.discordChat).doc(creditData.DiscordId).get();
             const discordChatData : any = discordChatSnap.data();

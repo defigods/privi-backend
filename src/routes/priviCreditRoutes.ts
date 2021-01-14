@@ -8,7 +8,7 @@ const priviCreditWallController = require('../controllers/priviCreditWallControl
 
 let storage3 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/podWallPost')
+    cb(null, 'uploads/creditWallPost')
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -22,7 +22,7 @@ let upload3 = multer({
 
 let storage2 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/podWallPost/' + 'photos-' + req.params.podWallPostId)
+    cb(null, 'uploads/creditWallPost/' + 'photos-' + req.params.creditWallPostId)
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);

@@ -215,31 +215,31 @@ exports.makeResponseCreditWallPost = async (req: express.Request, res: express.R
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.podWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.creditWallPostId && body.response && body.userId && body.userName) {
 
-      const podWallPostRef = db.collection(collections.podWallPost)
-        .doc(body.podWallPostId);
-      const podWallPostGet = await podWallPostRef.get();
-      const podWallPost: any = podWallPostGet.data();
+      const creditWallPostRef = db.collection(collections.creditWallPost)
+        .doc(body.creditWallPostId);
+      const creditWallPostGet = await creditWallPostRef.get();
+      const creditWallPost: any = creditWallPostGet.data();
 
-      let responses : any[] = [...podWallPost.responses];
+      let responses : any[] = [...creditWallPost.responses];
       responses.push({
         userId: body.userId,
         userName: body.userName,
         response: body.response,
         date: Date.now()
       })
-      await podWallPostRef.update({
+      await creditWallPostRef.update({
         responses: responses
       });
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/podWallController -> makeResponsePodWallPost()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> makeResponseCreditWallPost()', "There's no post id...");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> makeResponsePodWallPost()', err);
+    console.log('Error in controllers/priviCreditWallController -> makeResponseCreditWallPost()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -248,22 +248,22 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.podWallPostId && body.userId) {
-      const podWallPostRef = db.collection(collections.podWallPost)
-        .doc(body.podWallPostId);
-      const podWallPostGet = await podWallPostRef.get();
-      const podWallPost: any = podWallPostGet.data();
+    if (body && body.creditWallPostId && body.userId) {
+      const creditWallPostRef = db.collection(collections.creditWallPost)
+        .doc(body.creditWallPostId);
+      const creditWallPostGet = await creditWallPostRef.get();
+      const creditWallPost: any = creditWallPostGet.data();
 
-      let podPost = await blogController.likeItemPost(podWallPostRef, podWallPostGet, podWallPost, body.userId, podWallPost.createdBy)
+      let creditPost = await blogController.likeItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.userId, creditWallPost.createdBy)
 
-      res.send({ success: true, data: podPost });
+      res.send({ success: true, data: creditPost });
 
     } else {
-      console.log('Error in controllers/podWallController -> likePost()', "Info not provided");
+      console.log('Error in controllers/priviCreditWallController -> likePost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> likePost()', err);
+    console.log('Error in controllers/priviCreditWallController -> likePost()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -273,21 +273,21 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
     let body = req.body;
 
     if (body && body.podWallPostId && body.userId) {
-      const podWallPostRef = db.collection(collections.podWallPost)
-        .doc(body.podWallPostId);
-      const podWallPostGet = await podWallPostRef.get();
-      const podWallPost: any = podWallPostGet.data();
+      const creditWallPostRef = db.collection(collections.creditWallPost)
+        .doc(body.creditWallPostId);
+      const creditWallPostGet = await creditWallPostRef.get();
+      const creditWallPost: any = creditWallPostGet.data();
 
-      let podPost = await blogController.dislikeItemPost(podWallPostRef, podWallPostGet, podWallPost, body.userId, podWallPost.createdBy)
+      let creditPost = await blogController.dislikeItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.userId, creditWallPost.createdBy);
 
-      res.send({ success: true, data: podPost });
+      res.send({ success: true, data: creditPost });
 
     } else {
-      console.log('Error in controllers/podWallController -> dislikePost()', "Info not provided");
+      console.log('Error in controllers/priviCreditWallController -> dislikePost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> dislikePost()', err);
+    console.log('Error in controllers/priviCreditWallController -> dislikePost()', err);
     res.send({ success: false, error: err });
   }
 };
