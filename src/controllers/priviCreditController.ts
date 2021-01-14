@@ -9,6 +9,7 @@ import fields from '../firebase/fields';
 import { user } from 'firebase-functions/lib/providers/auth';
 
 const notificationsController = require('./notificationsController');
+const chatController = require('./chatController');
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -63,7 +64,8 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 EthereumAddress: ethereumAddress,
                 Admins: admins,
                 Insurers: insurers,
-                UserRoles: userRoles
+                UserRoles: userRoles,
+                Posts: []
             }, { merge: true })
 
             // add transaction to credit doc
@@ -112,6 +114,10 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 });
             })
 
+            const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, userData.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
+
             res.send({ success: true, data: { id: creditAddress, date: date } });
         }
         else {
@@ -150,27 +156,9 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
             });
 
-            createNotification(address, "Privi Credit - Credit Deposited",
-                `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
-                notificationTypes.priviCreditDeposited
-            );
-
             const userSnap = await db.collection(collections.user).doc(address).get();
             const userData: any = userSnap.data();
-            await notificationsController.addNotification({
-                userId: address,
-                notification: {
-                    type: 17,
-                    typeItemId: 'token',
-                    itemId: '',
-                    follower: '',
-                    pod: '',
-                    comment: '',
-                    token: '',
-                    amount: 0,
-                    onlyInformation: false,
-                }
-            });
+
             userData.followers.forEach(async (item, i) => {
                 await notificationsController.addNotification({
                     userId: item.user,
@@ -197,6 +185,36 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 TotalDeposited: totalDeposited
             });
 
+            //update discord chat
+            const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
+              .collection(collections.discordRoom).get();
+            if (!discordRoomSnap.empty) {
+                for (const doc of discordRoomSnap.docs) {
+                    let data = doc.data()
+                    if(!data.private) {
+                        chatController.addUserToRoom(priviCreditData.DiscordId, doc.id, address);
+                    }
+                }
+            }
+
+            createNotification(address, "Privi Credit - Credit Deposited",
+              `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
+              notificationTypes.priviCreditDeposited
+            );
+            await notificationsController.addNotification({
+                userId: address,
+                notification: {
+                    type: 17,
+                    typeItemId: 'token',
+                    itemId: '',
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                }
+            });
             res.send({ success: true });
         }
         else {
@@ -237,13 +255,32 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj);
             });
 
-            createNotification(address, "Privi Credit - Loan Borrowed",
-                `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
-                notificationTypes.priviCreditBorrowed
-            );
-
             const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
             const priviCreditData: any = priviCreditSnap.data();
+
+            // update total borrowed
+            let totalBorrowed = priviCreditData.TotalBorrowed ?? 0;
+            totalBorrowed += amount;
+            priviCreditSnap.ref.update({
+                TotalBorrowed: totalBorrowed
+            })
+
+            //update discord chat
+            const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
+              .collection(collections.discordRoom).get();
+            if (!discordRoomSnap.empty) {
+                for (const doc of discordRoomSnap.docs) {
+                    let data = doc.data()
+                    if(!data.private) {
+                        chatController.addUserToRoom(priviCreditData.DiscordId, doc.id, address);
+                    }
+                }
+            }
+
+            createNotification(address, "Privi Credit - Loan Borrowed",
+              `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
+              notificationTypes.priviCreditBorrowed
+            );
             await notificationsController.addNotification({
                 userId: priviCreditData.Creator,
                 notification: {
@@ -258,12 +295,6 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                 }
             });
-            // update total borrowed
-            let totalBorrowed = priviCreditData.TotalBorrowed ?? 0;
-            totalBorrowed += amount;
-            priviCreditSnap.ref.update({
-                TotalBorrowed: totalBorrowed
-            })
 
             res.send({ success: true });
         }
@@ -401,22 +432,49 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
                 endorsementMean += borrower.endorsementScore * (borrower.borrowed / totalBorrowed);
             })
 
+            let creditData : any = creditSnap.data();
+
+            creditData.PostsArray = [];
+            if(creditData.Posts && creditData.Posts.length > 0) {
+                for(const post of creditData.Posts) {
+                    const creditWallPostSnap = await db.collection(collections.creditWallPost).doc(post).get();
+                    const creditWallPostData : any = creditWallPostSnap.data();
+                    creditWallPostData.id = creditWallPostSnap.id;
+                    creditData.PostsArray.push(creditWallPostData);
+                }
+            }
+
+            const discordChatSnap = await db.collection(collections.discordChat).doc(creditData.DiscordId).get();
+            const discordChatData : any = discordChatSnap.data();
+
+            let discordAdminId : string = '';
+            if(discordChatSnap.exists) {
+                discordAdminId = discordChatData.admin.id;
+            }
+
             const data = {
-                ...creditSnap.data(),
+                ...creditData,
+                id: creditSnap.id,
                 Lenders: lenders,
                 Borrowers: borrowers,
                 BorrowerTrustScore: trustMean,
                 BorrowerEndorsementScore: endorsementMean,
+                DiscordAdminId: discordAdminId
             }
             res.send({ success: true, data: data });
-        }
-        else {
+        } else {
             console.log('Error in controllers/priviCredit -> getPriviCredit(): cant find credit with the given id ', creditId);
-            res.send({ success: false });
+            res.send({
+                success: false,
+                error: 'Error in controllers/priviCredit -> getPriviCredit(): cant find credit with the given id '
+            });
         }
     } catch (err) {
         console.log('Error in controllers/priviCredit -> getPriviCredit(): ', err);
-        res.send({ success: false });
+        res.send({
+            success: false,
+            error: err
+        });
     }
 };
 

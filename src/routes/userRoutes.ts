@@ -64,6 +64,8 @@ router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.ge
 router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
 router.get('/wall/getNotifications/:userId', authenticateJWT, userController.getNotifications);
 router.post('/wall/', authenticateJWT, userController.postToWall);
+router.post('/wall/likePost', authenticateJWT, userController.likePost);
+router.post('/wall/dislikePost', authenticateJWT, userController.dislikePost);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), userController.changePostPhoto);
 router.get('/wall/getPostPhoto/:postId', userController.getPostPhotoById);
 
@@ -118,8 +120,8 @@ router.post('/governance/voteIssue', userController.voteIssue);
 router.post('/governance/responseProposal', userController.responseProposal);
 
 //ANON MODE
-router.post('/user/changeAnonMode', userController.changeAnonMode);
-router.post('/user/changeAnonAvatar', userController.changeAnonAvatar);
+router.post('/changeAnonMode', userController.changeAnonMode);
+router.post('/changeAnonAvatar', userController.changeAnonAvatar);
 
 
 module.exports = router;

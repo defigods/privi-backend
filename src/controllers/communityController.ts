@@ -12,6 +12,7 @@ import path from "path";
 import fs from "fs";
 
 const chatController = require('./chatController');
+
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI";
@@ -103,8 +104,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const user: any = userGet.data();
 
             const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
-            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
-            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
+
+            const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
             db.collection(collections.community).doc(communityAddress).set({
                 HasPhoto: hasPhoto || false,
@@ -116,6 +121,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 OpenAdvertising: openAdvertising || false,
                 PaymentsAllowed: paymentsAllowed || false,
                 DiscordId: discordChatCreation.id || '',
+                JarrId: discordChatJarrCreation.id || '',
                 TwitterId: twitterId || '',
                 EthereumAddress: ethereumAddr || '',
 
@@ -326,6 +332,19 @@ exports.join = async (req: express.Request, res: express.Response) => {
         const commUpdateObj = {};
         commUpdateObj[fields.joinedUsers] = joinedUsers;
         communitySnap.ref.update(commUpdateObj);
+
+        //update discord chat
+        const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
+          .collection(collections.discordRoom).get();
+        if (!discordRoomSnap.empty) {
+            for (const doc of discordRoomSnap.docs) {
+                let data = doc.data()
+                if(!data.private) {
+                    chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                }
+            }
+        }
+
         res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/communityController -> join(): ', err);
@@ -360,6 +379,19 @@ exports.leave = async (req: express.Request, res: express.Response) => {
         const commUpdateObj = {};
         commUpdateObj[fields.joinedUsers] = joinedUsers;
         communitySnap.ref.update(commUpdateObj);
+
+        //update discord chat
+        const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
+          .collection(collections.discordRoom).get();
+        if (!discordRoomSnap.empty) {
+            for (const doc of discordRoomSnap.docs) {
+                let data = doc.data();
+                if(!data.private) {
+                    chatController.removeUserToRoom(commData.DiscordId, doc.id, userSnap.id);
+                }
+            }
+        }
+
         res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/communityController -> leave(): ', err);
@@ -448,7 +480,16 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         const data: any = communitySnap.data();
         const id: any = communitySnap.id;
         const extraData = getExtraData(data, rateOfChange);
-        res.send({ success: true, data: { ...data, ...extraData, id: id } });
+
+        const ads : any[] = [];
+        if(data.GeneralAd && data.GeneralAd !== '') {
+            const adRef = db.collection(collections.ad).doc(data.GeneralAd);
+            const adGet = await adRef.get();
+            const ad: any = adGet.data();
+            ads.push({GeneralAd: ad});
+        }
+
+        res.send({ success: true, data: { ...data, ...extraData, id: id, ads: ads } });
     } catch (e) {
         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
     }

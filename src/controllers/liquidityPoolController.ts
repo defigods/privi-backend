@@ -221,6 +221,38 @@ exports.getLiquidityPools = async (req: express.Request, res: express.Response) 
     }
 };
 
+// get liquidity pools basic info
+exports.getOtherLiquidityPools = async (req: express.Request, res: express.Response) => {
+    try {
+        let poolToken = req.params.poolToken;
+        const retData: any[] = [];
+        const rateOfChange = await getRateOfChangeAsMap();
+        const liquidityPoolSnap = await db.collection(collections.liquidityPools).get();
+        liquidityPoolSnap.forEach((doc) => {
+            if (doc.id != poolToken) {
+                const data: any = doc.data();
+                const token = data.PoolToken ?? '';
+                // get staked amount in Privi
+                const amount = data.StakedAmount ?? 0;
+                const amountInUSD = rateOfChange[token] ? rateOfChange[token] * amount : amount; // to usd
+                const amountInPrivi = rateOfChange["PRIVI"] ? rateOfChange['PRIVI'] * amountInUSD : amountInUSD; // to PRIVI
+
+                retData.push({
+                    PoolToken: doc.id,
+                    NumProviders: Object.keys(data.Providers ?? {}).length,
+                    DailyAccumulatedFee: data.DailyAccumulatedFee ?? 0,
+                    StakedAmount: amount,
+                    StakedAmountInPrivi: amountInPrivi,
+                });
+            }
+        });
+        res.send({ success: true, data: retData });
+    } catch (err) {
+        console.log('Error in controllers/liquiityPoolController -> getOtherLiquidityPools(): ', err);
+        res.send({ success: false });
+    }
+};
+
 exports.getLiquidityPool = async (req: express.Request, res: express.Response) => {
     try {
         let poolToken = req.params.poolToken;
@@ -240,7 +272,7 @@ exports.getLiquidityPool = async (req: express.Request, res: express.Response) =
 
 
             res.send({
-                sucess: true, data: {
+                success: true, data: {
                     ...data,
                     StakedAmountInPrivi: amountInPrivi,
                     RewardedAmountInPrivi: rewardedAmountInPrivi,

@@ -16,8 +16,10 @@ router.post('/protectLiquidityPool', authenticateJWT, poolController.protectLiqu
 
 // GETS
 router.get('/getLiquidityPools', authenticateJWT, poolController.getLiquidityPools);
+router.get('/getOtherLiquidityPools/:poolToken', authenticateJWT, poolController.getOtherLiquidityPools);
 router.get('/getLiquidityPool/:poolToken', authenticateJWT, poolController.getLiquidityPool);
 router.get('/getLiquidityHistory/:poolToken', authenticateJWT, poolController.getLiquidityHistory);
 router.get('/getRewardHistory/:poolToken', authenticateJWT, poolController.getRewardHistory);
+
 
 module.exports = router;

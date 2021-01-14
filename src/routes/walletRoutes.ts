@@ -14,12 +14,12 @@ router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosR
 
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
 
-
+router.get('/getTokensRateChange', authenticateJWT, walletController.getTokensRateChange);  // tokens rate change respect last day
 router.get('/getTotalBalance', authenticateJWT, walletController.getTotalBalance);  // sum of balance in some token
 router.get('/getTokenBalances', authenticateJWT, walletController.getTokenBalances);    // rateOfChange token balances
 router.get('/getAllTokenBalances', authenticateJWT, walletController.getAllTokenBalances);  // all token balances
 router.get('/getAllTokensWithBuyingPrice', walletController.getAllTokensWithBuyingPrice);  // all token balances
-router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes);
+router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes);  // for evoluction graphs
 router.get('/getTransfers', authenticateJWT, walletController.getTransfers);
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
 

@@ -4,6 +4,8 @@ import collections from '../firebase/collections';
 import {generateUniqueId} from "../functions/functions";
 import {user} from "firebase-functions/lib/providers/auth";
 
+const userController = require('./userController');
+
 exports.getChats =  async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
@@ -223,7 +225,11 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getChatRoomById()' + e)
+        console.log('Error in controllers/chatRoutes -> getChatRoomById()' + e)
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getMessages():' + e
+        });
     }
 };
 
@@ -329,7 +335,7 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
         let body = req.body;
 
         const discordChatCreation : any = await createDiscordChat(body.adminId, body.adminName);
-        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false);
+        const discordRoomCreation : any = await createDiscordRoom(discordChatCreation.chatId, 'Discussions', body.adminId, body.adminName, body.roomName, false, []);
 
         res.send({
             success: true,
@@ -373,22 +379,22 @@ const createDiscordChat = exports.createDiscordChat = async (adminId, adminName)
     })
 };
 
-const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName, privacy) => {
+const createDiscordRoom = exports.createDiscordRoom = async (chatId, type, adminId, adminName, roomName, privacy, users) => {
     return new Promise(async (resolve, reject) => {
         try {
             const uid = generateUniqueId();
-            let users : any[] = [{
+            let usrs : any[] = [{
                 type: 'Admin',
                 userId: adminId,
                 userName: adminName,
                 userConnected: false,
                 lastView: Date.now()
-            }];
+            }, ...users];
             let obj : any = {
                 type: type,
                 name: roomName,
                 private: privacy,
-                users: users,
+                users: usrs,
                 created: Date.now(),
                 lastMessage: null,
                 lastMessageDate: null,
@@ -412,7 +418,85 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
         const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
 
         if(checkIsAdmin) {
-            const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private);
+            let users : any[] = [];
+            if(!body.private) {
+                if(body.type === 'Pod') {
+                    const podSnap = await db.collection(collections.podsFT).doc(body.id).get();
+                    const podData: any = podSnap.data();
+
+                    const investors = Object.keys(podData.Investors);
+
+                    for (const user of investors) {
+                        let i = investors.indexOf(user);
+                        const userSnap = await db.collection(collections.user).doc(user).get();
+                        let data : any = userSnap.data();
+
+                        users.push({
+                            type: 'Members',
+                            userId: user,
+                            userName: data.firstName,
+                            userConnected: false,
+                            lastView: Date.now()
+                        })
+                    }
+                } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
+                    const communitySnap = await db.collection(collections.community).doc(body.id).get();
+                    const communityData: any = communitySnap.data();
+
+
+                    for (const user of communityData.Members) {
+                        const userSnap = await db.collection(collections.user).doc(user.id).get();
+                        let data : any = userSnap.data();
+
+                        users.push({
+                            type: 'Members',
+                            userId: user.id,
+                            userName: data.firstName,
+                            userConnected: false,
+                            lastView: Date.now()
+                        })
+                    }
+                } else if(body.type === 'Credit-Pool') {
+                    const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
+                      .collection(collections.priviCreditsBorrowing).get();
+                    const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
+                      .collection(collections.priviCreditsLending).get();
+
+                    if(!creditPoolBorrowersSnap.empty) {
+                        for (const doc of creditPoolBorrowersSnap.docs) {
+                            const userRef = db.collection(collections.user).doc(doc.id);
+                            const userGet = await userRef.get();
+                            const user: any = userGet.data();
+
+                            users.push({
+                                type: 'Members',
+                                userId: doc.id,
+                                userName: user.firstName
+                            });
+                        }
+                    }
+
+                    if(!creditPoolLendersSnap.empty) {
+                        for (const doc of creditPoolLendersSnap.docs) {
+                            for (const doc of creditPoolBorrowersSnap.docs) {
+                                const userRef = db.collection(collections.user).doc(doc.id);
+                                const userGet = await userRef.get();
+                                const user: any = userGet.data();
+
+                                users.push({
+                                    type: 'Members',
+                                    userId: doc.id,
+                                    userName: user.firstName
+                                });
+                            }
+                        }
+                    }
+                } else if(body.type === 'Insurance') {
+
+                }
+            }
+
+            const discordRoomCreation : any = await createDiscordRoom(body.chatId, body.roomType, body.adminId, body.adminName, body.roomName, body.private, users);
 
             res.send({
                 success: true,
@@ -425,7 +509,11 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+        console.log('Error in controllers/chatRoutes -> discordCreateRoom() ' + e);
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
 
@@ -440,6 +528,108 @@ const checkIfUserIsAdmin = (chatId, adminId) : Promise<boolean> => {
             resolve(true);
         } else {
             resolve(false);
+        }
+    })
+}
+
+exports.discordAddUserToRoom = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        let checkIsAdmin : boolean;
+        if(body.adminRequired) {
+            checkIsAdmin = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
+        } else {
+            checkIsAdmin = true
+        }
+
+        if(checkIsAdmin) {
+            let discordRoom = await addUserToRoom(body.discordChatId, body.discordRoomId, body.userId);
+
+            res.send({
+                success: true,
+                data: discordRoom
+            });
+        } else {
+            res.send({
+                success: false,
+                error: 'Non permissions'
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordAddUserToRoom() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+
+const addUserToRoom = exports.addUserToRoom = (discordChatId, discordRoomId, userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            console.log(discordChatId, discordRoomId, userId);
+
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(discordChatId).collection(collections.discordRoom)
+              .doc(discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+
+            let users = [...discordRoom.users];
+
+            let findIndexUser = users.findIndex(usr => usr.userId === userId);
+            if(findIndexUser === -1) {
+                const userSnap = await db.collection(collections.user).doc(userId).get();
+                let data : any = userSnap.data();
+
+                users.push({
+                    type: 'Members',
+                    userId: userId,
+                    userName: data.firstName,
+                    userConnected: false,
+                    lastView: Date.now()
+                })
+
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+            }
+
+            resolve(discordRoom)
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+        }
+    })
+}
+const removeUserToRoom = exports.removeUserToRoom = (discordChatId, discordRoomId, userId) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(discordChatId).collection(collections.discordRoom)
+              .doc(discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
+
+            let users = [...discordRoom.users];
+
+            let findIndexUser = users.findIndex(usr => usr.userId === userId);
+            if(findIndexUser !== -1) {
+                if(users[findIndexUser].type !== 'Admin') {
+                    users.splice(findIndexUser, 1);
+                }
+
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+            }
+            resolve(discordRoom)
+        } catch (e) {
+            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
         }
     })
 }
@@ -477,6 +667,9 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
                 messages.push(discordMsg)
 
                 if(i === discordRoom.messages.length - 1) {
+                    messages.sort((a, b) => {
+                        return a.created - b.created;
+                    });
                     res.status(200).send({
                         success: true,
                         data: messages
@@ -490,7 +683,11 @@ exports.discordGetMessages = async (req: express.Request, res: express.Response)
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordGetMessages()' + e)
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> discordGetMessages():' + e
+        });
     }
 }
 
@@ -520,6 +717,9 @@ exports.discordGetReplies = async (req: express.Request, res: express.Response) 
                 data.id = doc.id;
                 messages.push(data);
             }
+            messages.sort((a, b) => {
+                return a.created - b.created;
+            });
             res.status(200).send({
                 success: true,
                 data: messages
@@ -608,7 +808,11 @@ exports.discordModifyAccess = async (req: express.Request, res: express.Response
             });
         } else {
             users[findUserIndex] = {
-                type: body.type
+                type: body.type,
+                userId: users[findUserIndex].userId,
+                userName: users[findUserIndex].userName,
+                userConnected: users[findUserIndex].userConnected,
+                lastView: users[findUserIndex].lastView
             }
         }
 
@@ -617,13 +821,18 @@ exports.discordModifyAccess = async (req: express.Request, res: express.Response
         });
 
         discordRoom.users = users;
+        discordRoom.id = discordRoomGet.id;
 
         res.send({
             success: true,
             data: discordRoom
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordModifyAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordModifyAccess() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
 
@@ -631,36 +840,364 @@ exports.discordRemoveAccess = async (req: express.Request, res: express.Response
     try {
         let body = req.body;
 
-        const discordRoomRef = db.collection(collections.discordChat)
-            .doc(body.discordChatId).collection(collections.discordRoom)
-            .doc(body.discordRoomId);
-        const discordRoomGet = await discordRoomRef.get();
-        const discordRoom : any = discordRoomGet.data();
+        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
 
-        let users : any[] = [...discordRoom.users];
+        if(checkIsAdmin) {
+            const discordRoomRef = db.collection(collections.discordChat)
+              .doc(body.discordChatId).collection(collections.discordRoom)
+              .doc(body.discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom : any = discordRoomGet.data();
 
-        let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
+            let users : any[] = [...discordRoom.users];
 
-        if(findUserIndex === -1) {
+            let findUserIndex = users.findIndex((user, i) => body.userId === user.userId);
+
+            if(findUserIndex === -1) {
+                res.send({
+                    success: false,
+                    data: 'User not found'
+                });
+            } else {
+                users.splice(findUserIndex, 1);
+                await discordRoomRef.update({
+                    users: users
+                });
+
+                discordRoom.users = users;
+
+                res.send({
+                    success: true,
+                    data: discordRoom
+                });
+            }
+        } else {
             res.send({
                 success: false,
-                data: 'User not found'
+                error: 'Non permissions'
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordRemoveAccess() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+
+exports.discordGetPossibleUsers = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const checkIsAdmin : boolean = await checkIfUserIsAdmin(body.chatId, body.adminId);
+
+
+        if(checkIsAdmin) {
+            let users : any[] = [];
+
+            if(body.type === 'Pod') {
+                console.log(body.id);
+                const podSnap = await db.collection(collections.podsFT).doc(body.id).get();
+
+                const podData: any = podSnap.data();
+
+                const investors = Object.keys(podData.Investors);
+
+                for (const user of investors) {
+                    let i = investors.indexOf(user);
+                    const userSnap = await db.collection(collections.user).doc(user).get();
+                    let data : any = userSnap.data();
+
+                    users.push({
+                        type: 'Members',
+                        userId: user,
+                        userName: data.firstName
+                    })
+                }
+            } else if(body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
+                const communitySnap = await db.collection(collections.community).doc(body.id).get();
+                const communityData: any = communitySnap.data();
+
+
+                for (const user of communityData.Members) {
+                    const userSnap = await db.collection(collections.user).doc(user.id).get();
+                    let data : any = userSnap.data();
+
+                    users.push({
+                        type: 'Members',
+                        userId: user.id,
+                        userName: data.firstName,
+                        userConnected: false,
+                        lastView: Date.now()
+                    })
+                }
+            } else if(body.type === 'Credit-Pool') {
+                const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
+                  .collection(collections.priviCreditsBorrowing).get();
+                const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
+                  .collection(collections.priviCreditsLending).get();
+
+                if(!creditPoolBorrowersSnap.empty) {
+                    for (const doc of creditPoolBorrowersSnap.docs) {
+                        const userRef = db.collection(collections.user).doc(doc.id);
+                        const userGet = await userRef.get();
+                        const user: any = userGet.data();
+
+                        users.push({
+                            type: 'Members',
+                            userId: doc.id,
+                            userName: user.firstName
+                        });
+                    }
+                }
+
+                if(!creditPoolLendersSnap.empty) {
+                    for (const doc of creditPoolLendersSnap.docs) {
+                        for (const doc of creditPoolBorrowersSnap.docs) {
+                            const userRef = db.collection(collections.user).doc(doc.id);
+                            const userGet = await userRef.get();
+                            const user: any = userGet.data();
+
+                            users.push({
+                                type: 'Members',
+                                userId: doc.id,
+                                userName: user.firstName
+                            });
+                        }
+                    }
+                }
+            } else {
+                res.send({
+                    success: false,
+                    error: 'No type provided'
+                });
+            }
+
+            res.send({
+                success: true,
+                data: users
             });
         } else {
-            users.splice(findUserIndex, 1);
+            res.send({
+                success: false,
+                error: 'Non permissions'
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordGetPossibleUsers() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+};
+
+exports.discordLikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordMessageRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId);
+        const discordMessageGet = await discordMessageRef.get();
+        const discordMessage: any = discordMessageGet.data();
+
+        let likes = [...discordMessage.likes];
+        let dislikes = [...discordMessage.dislikes];
+        let numLikes = discordMessage.numLikes + 1;
+        let numDislikes = discordMessage.numDislikes;
+        likes.push(body.userId);
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+
+        if(dislikeIndex !== -1) {
+            dislikes.splice(dislikeIndex, 1);
+            numDislikes = numDislikes - 1;
         }
 
-        await discordRoomRef.update({
-            users: users
+        await discordMessageRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
         });
 
-        discordRoom.users = users;
+        let message = {...discordMessage};
+        message.id = discordMessageGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+
+        if(discordMessage.from !== body.userId) {
+            await userController.updateUserCred(discordMessage.from, true);
+        }
 
         res.send({
             success: true,
-            data: discordRoom
+            data: message
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordRemoveAccess()' + e)
+        console.log('Error in controllers/chatRoutes -> discordLikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+
+exports.discordDislikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordMessageRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId);
+        const discordMessageGet = await discordMessageRef.get();
+        const discordMessage: any = discordMessageGet.data();
+
+        let dislikes = [...discordMessage.dislikes];
+        let likes = [...discordMessage.likes];
+        let numLikes = discordMessage.numLikes;
+        let numDislikes = discordMessage.numDislikes + 1;
+        dislikes.push(body.userId);
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+        if(likeIndex !== -1) {
+            likes.splice(likeIndex, 1);
+            numLikes = numLikes - 1;
+        }
+
+        await discordMessageRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+
+        let message = {...discordMessage};
+        message.id = discordMessageGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+
+        if(discordMessage.from !== body.userId) {
+            await userController.updateUserCred(discordMessage.from, false);
+        }
+
+        res.send({
+            success: true,
+            data: message
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordDislikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+exports.discordReplyLikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordMessageReplyRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId).collection(collections.discordMessageReplies)
+          .doc(body.discordMessageReplyId);
+        const discordMessageReplyGet = await discordMessageReplyRef.get();
+        const discordMessageReply: any = discordMessageReplyGet.data();
+
+        let likes = [...discordMessageReply.likes];
+        let dislikes = [...discordMessageReply.dislikes];
+        let numLikes = discordMessageReply.numLikes + 1;
+        let numDislikes = discordMessageReply.numDislikes;
+        likes.push(body.userId);
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+
+        if(dislikeIndex !== -1) {
+            dislikes.splice(dislikeIndex, 1);
+            numDislikes = numDislikes - 1;
+        }
+
+        await discordMessageReplyRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        let message = {...discordMessageReply};
+        message.id = discordMessageReplyGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+
+        await userController.updateUserCred(discordMessageReply.from, true);
+
+        res.send({
+            success: true,
+            data: message
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordReplyLikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
+    }
+}
+
+exports.discordReplyDislikeMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordMessageReplyRef = db.collection(collections.discordMessage)
+          .doc(body.discordMessageId).collection(collections.discordMessageReplies)
+          .doc(body.discordMessageReplyId);
+        const discordMessageReplyGet = await discordMessageReplyRef.get();
+        const discordMessageReply: any = discordMessageReplyGet.data();
+
+        let dislikes = [...discordMessageReply.dislikes];
+        let likes = [...discordMessageReply.likes];
+        let numLikes = discordMessageReply.numLikes;
+        let numDislikes = discordMessageReply.numDislikes + 1;
+        dislikes.push(body.userId);
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+
+        if(likeIndex !== -1) {
+            likes.splice(likeIndex, 1);
+            numLikes = numLikes - 1;
+        }
+
+        await discordMessageReplyRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        let message = {...discordMessageReply};
+        message.id = discordMessageReplyGet.id;
+        message.likes = likes;
+        message.dislikes = dislikes;
+        message.numLikes = numLikes;
+        message.numDislikes = numDislikes;
+
+        await userController.updateUserCred(discordMessageReply.from, false);
+
+        res.send({
+            success: true,
+            data: message
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordReplyDislikeMessage() ' + e)
+        res.send({
+            success: false,
+            error: e
+        });
     }
 }
