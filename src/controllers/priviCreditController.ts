@@ -114,8 +114,8 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             })
 
             const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, userData.firstName);
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general');
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements');
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
 
             res.send({ success: true, data: { id: creditAddress, date: date } });
         }

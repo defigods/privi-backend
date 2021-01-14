@@ -104,12 +104,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const user: any = userGet.data();
 
             const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
-            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
-            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
             const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, user.firstName);
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general');
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements');
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
             db.collection(collections.community).doc(communityAddress).set({
                 HasPhoto: hasPhoto || false,
