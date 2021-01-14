@@ -179,7 +179,7 @@ exports.getCreditWallPostDescriptionPhotoById = async (req: express.Request, res
     let photoId = req.params.photoId;
     console.log('postId', postId, photoId);
     if (postId && photoId) {
-      const directoryPath = path.join('uploads', 'podWallPost', 'photos-' + postId);
+      const directoryPath = path.join('uploads', 'creditWallPost', 'photos-' + postId);
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
@@ -195,7 +195,7 @@ exports.getCreditWallPostDescriptionPhotoById = async (req: express.Request, res
 
       // stream the image back by loading the file
       res.setHeader('Content-Type', 'image');
-      let raw = fs.createReadStream(path.join('uploads', 'podWallPost', 'photos-' + postId, photoId + '.png'));
+      let raw = fs.createReadStream(path.join('uploads', 'creditWallPost', 'photos-' + postId, photoId + '.png'));
       raw.on('error', function (err) {
         console.log(err)
         res.sendStatus(400);

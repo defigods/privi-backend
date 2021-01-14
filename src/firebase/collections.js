@@ -88,6 +88,8 @@ module.exports = {
     creditWallPost: "CreditWallPost",
     insuranceWallPost: "InsuranceWallPost",
 
+    insurance: "Insurance",
+
     chat: "Chat",
     message: "Message",
     discordChat: "DiscordChat",
