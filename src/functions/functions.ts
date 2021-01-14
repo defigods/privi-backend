@@ -764,9 +764,8 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
             return multiplier * integral / 3;
         case 'EXPONENTIAL':
             if (targetSupply) {
-                let divident = Math.exp(-targetSupply);
-                if (divident == 0) divident += 0.000000000000001;   // run out of precision
-                multiplier = targetPrice / divident;
+                const dividend = Math.exp(-targetSupply) ?? Number.MIN_VALUE; // floating point precision problem
+                multiplier = targetPrice * dividend;
             }
             integral = Math.exp(upperBound) - Math.exp(lowerBound);
             if (integral < 0) {

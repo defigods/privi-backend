@@ -1,9 +1,21 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
+module.exports.balanceOf = async (userAddress, token) => {
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/balanceOf",
+		params: {
+			PublicId: userAddress,
+			Token: token,
+		}
+	}
+	let blockchainRes = await axios(config);
+	return blockchainRes.data;
+};
 
 module.exports.getBalancesOfAddress = async (userAddress, caller) => {
-	// console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
@@ -14,12 +26,10 @@ module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 		})
 	}
 	let blockchainRes = await axios(config);
-	// console.log('result blockchain', blockchainRes.data)
 	return blockchainRes.data;
 };
 
 module.exports.getBalancesByType = async (userAddress, type, caller) => {
-	// console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
@@ -31,12 +41,10 @@ module.exports.getBalancesByType = async (userAddress, type, caller) => {
 		})
 	}
 	let blockchainRes = await axios(config);
-	// console.log('result blockchain', blockchainRes.data)
 	return blockchainRes.data;
 };
 
 module.exports.getTokenListByType = async (tokenType, caller) => {
-	// console.log('calling blockchain', api.blockchainCoinBalanceAPI + "/getBalancesOfAddress, address:", userAddress, "caller:", caller)
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
@@ -47,7 +55,6 @@ module.exports.getTokenListByType = async (tokenType, caller) => {
 		})
 	}
 	let blockchainRes = await axios(config);
-	// console.log('result blockchain', blockchainRes.data)
 	return blockchainRes.data;
 };
 
@@ -82,14 +89,6 @@ module.exports.transfer = async (from, to, amount, coin, type, hash, signature, 
 		Type: type,
 		Hash: hash,
 		Signature: signature,
-		Caller: caller
-	});
-	return blockchainRes.data;
-};
-
-module.exports.balanceOf = async (publicId, caller) => {
-	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/balanceOf", {
-		PublicId: publicId,
 		Caller: caller
 	});
 	return blockchainRes.data;

@@ -625,8 +625,7 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
 module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.Response) => {
     try {
         let { userId, userAddress } = req.query;
-        userId = userId!.toString()
-        userAddress = userAddress!.toString()
+        if (!userAddress) userAddress = req.params.address;
         const retData: {}[] = [];
         const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
         if (blockchainRes && blockchainRes.success) {
@@ -758,41 +757,12 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
  */
 module.exports.getUserTokenBalance = async (req: express.Request, res: express.Response) => {
     const body = req.body;
-    const userId = body.userId;
+    const userAddress = body.userAddress;
     const token = body.token;
-    const userWalletSnap = await db.collection(collections.wallet).doc(userId).get();
-    if (userWalletSnap.exists && token) {
-        let balance = 0;
-        // crypto
-        const crypto = await userWalletSnap.ref.collection(collections.crypto).doc(token).get();
-        if (crypto.exists) {
-            const data: any = crypto.data();
-            balance = data.Amount;
-        }
-        // pod ft
-        if (!balance) {
-            const ft = await userWalletSnap.ref.collection(collections.ft).doc(token).get();
-            if (ft.exists) {
-                const data: any = ft.data();
-                balance = data.Amount;
-            }
-        }
-        // pod nft
-        if (!balance) {
-            const nft = await userWalletSnap.ref.collection(collections.nft).doc(token).get();
-            if (nft.exists) {
-                const data: any = nft.data();
-                balance = data.Amount;
-            }
-        }
-        // social
-        if (!balance) {
-            const social = await userWalletSnap.ref.collection(collections.social).doc(token).get();
-            if (social.exists) {
-                const data: any = social.data();
-                balance = data.Amount;
-            }
-        }
+    const blockchainRes = await coinBalance.balanceOf(userAddress, token);
+    console.log(blockchainRes);
+    if (blockchainRes && blockchainRes.success) {
+        const balance = blockchainRes.output.Amount;
         res.send({ success: true, data: balance });
     }
     else res.send({ success: false });

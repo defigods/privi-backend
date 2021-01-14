@@ -497,7 +497,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
             const updatedUserSnap = await db.collection(collections.user).doc(uid).get();
             const updatedUserData: any = updatedUserSnap.data();
             const userAddress = updatedUserData.address;
-            const coinsVal = 50; // value in USD to be sent
+            const coinsVal = 100; // value in USD to be sent
             const blockchainRes2 = await coinBalance.getTokenListByType("CRYPTO", apiKey);
             const registeredCryptoTokens: string[] = blockchainRes2.output ?? [];
             const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
