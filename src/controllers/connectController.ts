@@ -271,22 +271,22 @@ const saveTx = async (params: any) => {
  * @param txHash Transaction hash
  * @param newStatus New transaction status
  */
-const updateTx = async (txHash: string, newStatus: string) => {
+// const updateTx = async (txHash: string, newStatus: string) => {
 
-    // Retrieve TX doc
-    const snapshot = await db
-        .collection(collections.ethTransactions)
-        .where('txHash', '==', txHash)
-        .get();
+//     // Retrieve TX doc
+//     const snapshot = await db
+//         .collection(collections.ethTransactions)
+//         .where('txHash', '==', txHash)
+//         .get();
 
-    // Update TX status
-    for (var i in snapshot.docs) {
-        const res = await db
-            .collection(collections.ethTransactions)
-            .doc(snapshot.docs[i].id)
-            .set({ status: newStatus }, { merge: true });
-    };
-};
+//     // Update TX status
+//     for (var i in snapshot.docs) {
+//         const res = await db
+//             .collection(collections.ethTransactions)
+//             .doc(snapshot.docs[i].id)
+//             .set({ status: newStatus }, { merge: true });
+//     };
+// };
 
 /**
  * @notice Sends status of the transaction back to the front-end
@@ -296,28 +296,28 @@ const updateTx = async (txHash: string, newStatus: string) => {
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param status Transaction status (pending, failed)
  */
-const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
+// const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
 
-    // Update TX status in Firestore
-    (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-        ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
-        : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
+//     // Update TX status in Firestore
+//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
+//         ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
+//         : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
 
-    // Remove TX from Queue
-    (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-        ? txQueue = txQueue.filter(elem => elem != random)
-        : txQueue = txQueue.filter(elem => elem != txHash);
+//     // Remove TX from Queue
+//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
+//         ? txQueue = txQueue.filter(elem => elem != random)
+//         : txQueue = txQueue.filter(elem => elem != txHash);
 
-    // Send TX confirmation back to user through websocket
-    if (users.get(publicId)) {
-        users.get(publicId).sendUTF(JSON.stringify({
-            txHash: txHash,
-            random: random,
-            status: status,
-            action: action,
-        }));
-    };
-};
+//     // Send TX confirmation back to user through websocket
+//     if (users.get(publicId)) {
+//         users.get(publicId).sendUTF(JSON.stringify({
+//             txHash: txHash,
+//             random: random,
+//             status: status,
+//             action: action,
+//         }));
+//     };
+// };
 
 /**
  * @notice Check number of confirmations of a transaction in Ethereum
@@ -488,7 +488,10 @@ const swap = async (
             // await sendTxBack(txHash, publicId, action, random, 'OK');
         } else {
             console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful', response);
-            await sendTxBack(txHash, publicId, action, random, 'KO');
+            // next line will not be needed
+            // await sendTxBack(txHash, publicId, action, random, 'KO');
+
+            // if we leave the status pending the back end will try later to make the swap
         };
     } catch (err) {
         console.log('Error in connectController.ts->swap(): ', err);
@@ -550,7 +553,7 @@ const withdraw = async (
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
-        // console.log('contract.address, contractBalanceWei', contract.address, contractBalanceWei)
+        // console.log('contract.address, contractBalanceWei', contract.options.address, contractBalanceWei)
 
         // Choose method from SwapManager to be called
         const method = (action === Action.WITHDRAW_ETH)
