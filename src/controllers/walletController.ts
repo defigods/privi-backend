@@ -567,22 +567,26 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
             console.error('blockchain call failed', collections.social, blockchainSocialRes)
         }
 
-        // get user currency
+        // // get user currency
+        // let amountInUserCurrency = sum;
+        // const userSnap = await db.collection(collections.user).doc(userId).get();
+        // const userData = userSnap.data();
+        // let currency = "Unknown";
+        // if (userData) {
+        //     currency = userData.currency;
+        //     const currencyRate = await getCurrencyRatesUsdBase()
+        //     if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
+        // }
+
+        // ----------- for testnet in PRIVI ----------
         let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
+        if (rateOfChange['PRIVI']) amountInUserCurrency /= rateOfChange['PRIVI'];
 
         const data = {
             amount: amountInUserCurrency,   // total balance in users currency
             tokens: rateOfChange["PC"] ? sum / rateOfChange["PC"] : 0,  // total balance in PC
-            currency: currency,
-            currency_symbol: currencySymbol.symbol(currency),
+            // currency: currency,
+            // currency_symbol: currencySymbol.symbol(currency),
             debt: 0,
             daily_return: 0,
             weekly_return: 0,
