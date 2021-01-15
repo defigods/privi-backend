@@ -88,6 +88,7 @@ module.exports = {
     podWallPost: "PodWallPost",
     creditWallPost: "CreditWallPost",
     insuranceWallPost: "InsuranceWallPost",
+    communityWallPost: "CommunityWallPost",
 
     insurance: "Insurance",
 

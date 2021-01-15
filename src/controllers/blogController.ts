@@ -646,6 +646,11 @@ const createPost = exports.createPost = (body, collection, userId) => {
           await db.runTransaction(async (transaction) => {
             transaction.set(db.collection(collections.insuranceWallPost).doc('' + uid), data);
           });
+        } else if(collection === 'communityWallPost') {
+          data.communityId = body.communityId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(db.collection(collections.communityWallPost).doc('' + uid), data);
+          });
         }
 
         let ret = {id: uid, ...data};
