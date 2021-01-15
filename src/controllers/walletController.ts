@@ -29,9 +29,9 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
         const addressId = "0x7b559b648bc133d5f471436b4d3ff69f0d5a6640"; // any registered user address works
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -43,6 +43,7 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
             { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
             { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+            { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
             const blockchainRes = await coinBalance.registerToken(token.Name, type, token.Symbol, token.Supply, addressId, apiKey);
@@ -65,9 +66,9 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
         const type = "CRYPTO";
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -79,6 +80,7 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
             { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
             { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+            { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
             const blockchainRes = await coinBalance.updateTokenInfo(token.Name, type, token.Symbol, apiKey);

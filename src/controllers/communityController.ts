@@ -47,6 +47,15 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const [communityAddress, communityObj]: [any, any] = Object.entries(updateCommunities)[0];
             const ammAddress = communityObj.AMMAddress;
 
+            // update user level info
+            let numCreatedCommunities = 0;
+            const userlevelSnap = await db.collection(collections.levels).doc(creator).get();
+            const data: any = userlevelSnap.data();
+            if (data.NumCreatedCommunities) numCreatedCommunities = data.NumCreatedCommunities;
+            numCreatedCommunities += 1;
+            userlevelSnap.ref.set({ NumCreatedCommunities: numCreatedCommunities }, { merge: true });
+
+
             // add other common infos
             const name = body.Name;
             const description = body.Description;
@@ -146,12 +155,10 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             // add txn to community
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == ammAddress || obj.To == ammAddress) {
-                    db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).add(obj);
-                }
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
             }
 
             res.send({ success: true });
