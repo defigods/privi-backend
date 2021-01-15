@@ -6,5 +6,6 @@ const votingController = require('../controllers/votingController');
 
 router.post('/voting/create', authenticateJWT, votingController.createVotation);
 router.post('/voting/vote', authenticateJWT, votingController.makeVote);
+router.get('/voting/get', authenticateJWT, votingController.getVotationInfo);
 
 module.exports = router;

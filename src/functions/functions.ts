@@ -332,7 +332,7 @@ export async function updateFirebase(blockchainRes) {
             let votationId: string = '';
             let votationObj: any = {};
             for ([votationId, votationObj] of Object.entries(updateVotations)) {
-                transaction.set(db.collection(collections.votation).doc(votationId), votationObj, { merge: true });
+                transaction.set(db.collection(collections.voting).doc(votationId), votationObj, {merge: true});
             }
         }
         // update votations state
