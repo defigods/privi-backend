@@ -35,6 +35,7 @@ module.exports = {
     votation: 'Votation',
     votationState: 'VotationState',
     voter: 'Voter',
+    voting: 'Voting',
 
     podsFT: "PodsFT",
     buyingOffers: "BuyingOffers",
