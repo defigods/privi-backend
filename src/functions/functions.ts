@@ -2,11 +2,44 @@ import { db, firebase } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
-import { object } from "firebase-functions/lib/providers/storage";
+const { mnemonicToSeed } = require('bip39')
+const { fromMasterSeed } = require('hdkey')
+const { ecsign, toRpcSig, keccak } = require("ethereumjs-util")
+
+const BigFloat32 = require('bigfloat').BigFloat32;
 
 const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
 
+const apiKey = "PRIVI"; // just for now
+// require('dotenv').config();
+//const apiKey = process.env.API_KEY;
+
+
+export async function updateStatusOneToOneSwap(swapDocID, _status) {
+    await db.runTransaction(async (transaction) => {
+        // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), { status: _status });
+    });
+};
+
+export async function updateTxOneToOneSwap(swapDocID, txId) {
+    await db.runTransaction(async (transaction) => {
+        // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {txHash: txId});
+    });
+};
+
+export async function getRecentSwaps(userAddress) {
+    // console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
+    let recentSwaps = {};
+    const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate', 'desc').limit(10)*/.get();
+    for (const doc of swapQuery.docs) {
+        const swap = doc.data();
+        recentSwaps[doc.id] = swap;
+    }
+    return recentSwaps;
+};
 
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
@@ -128,7 +161,7 @@ export async function updateFirebase(blockchainRes) {
                 let uid = "";
                 let token = "";
                 let tokenType = "";
-                const splitted: string[] = key.split(" ");
+                const splitted: string[] = key.split(" "); // Sarkawt: here it takes the address instead of publicId
                 uid = splitted[0];
                 token = splitted[1];
                 tokenType = await identifyTypeOfToken(token);   // token type colection
@@ -141,13 +174,14 @@ export async function updateFirebase(blockchainRes) {
         }
         // update transactions (for each txn, save to from's colection and to's colection)
         if (updateTransactions) {
-            let key: string = "";
-            let val: any = null;
-            for ([key, val] of Object.entries(updateTransactions)) {
-                const from = val.From;
-                const to = val.To;
-                if (from) transaction.set(db.collection(collections.history).doc(collections.history).collection(from).doc(key), val);
-                if (to) transaction.set(db.collection(collections.history).doc(collections.history).collection(to).doc(key), val);
+            let tid: string = "";
+            let txnArray: any = [];
+            for ([tid, txnArray] of Object.entries(updateTransactions)) {
+                // const from = val.From;
+                // const to = val.To;
+                // if (from) transaction.set(db.collection(collections.history).doc(collections.history).collection(from).doc(key), val);
+                // if (to) transaction.set(db.collection(collections.history).doc(collections.history).collection(to).doc(key), val);
+                transaction.set(db.collection(collections.priviScan).doc(tid), { Transactions: txnArray });
             }
         }
         // update pods (FT and NFT)
@@ -429,7 +463,7 @@ export async function getRateOfChangeAsList() {
 // traditional lending interest harcoded in firebase
 export async function getLendingInterest() {
     const res = {};
-    const blockchainRes = await coinBalance.getTokenList();
+    const blockchainRes = await coinBalance.getTokenListByType("CRYPTO", apiKey);
     if (blockchainRes && blockchainRes.success) {
         const tokenList: string[] = blockchainRes.output;
         tokenList.forEach((token) => {
@@ -457,7 +491,7 @@ export async function getLendingInterest() {
 // traditional staking interest harcoded in firebase
 export async function getStakingInterest() {
     const res = {};
-    const blockchainRes = await coinBalance.getTokenList();
+    const blockchainRes = await coinBalance.getTokenListByType("CRYPTO", apiKey);
     if (blockchainRes && blockchainRes.success) {
         const tokenList: string[] = blockchainRes.output;
         tokenList.forEach((token) => {
@@ -505,6 +539,18 @@ export async function getCurrencyRatesUsdBase() {
     return rates;
 }
 
+export async function getEmailAddressMap() {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).get();
+    usersQuery.forEach((doc) => {
+        const data: any = doc.data();
+        const email = data.email;
+        const address = data.address;
+        if (email && address) res[email] = address;
+    })
+    return res;
+};
+
 // return object that maps uid to email and viceversa - this would be very big soon avoid when you can
 export async function getEmailUidMap() {
     let res = {};
@@ -550,7 +596,7 @@ export function isEmail(email: string) {
 }
 
 // given a string return the type of token (CRYPTO, FTPOD...)
-export const identifyTypeOfToken = async function (token: string): Promise<string> {
+export async function identifyTypeOfToken(token: string): Promise<string> {
     const tokenSnap = await db.collection(collections.tokens).doc(token).get();
     if (tokenSnap.exists) {
         const data = tokenSnap.data();
@@ -558,7 +604,17 @@ export const identifyTypeOfToken = async function (token: string): Promise<strin
     }
     return collections.unknown;
 }
-//module.exports.identifyTypeOfToken = identifyTypeOfToken;
+
+export async function getTokenToTypeMap() {
+    const map = {};
+    const tokensSnap = await db.collection(collections.tokens).get();
+    tokensSnap.forEach((doc) => {
+        const data: any = doc.data();
+        map[doc.id] = data.TokenType;
+    })
+    return map;
+}
+
 
 // used to filter the trending ones, that is the top 10 with most followers in the last week
 export function filterTrending(allElems) {
@@ -714,8 +770,11 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
             }
             return multiplier * integral / 3;
         case 'EXPONENTIAL':
-            if (targetSupply) multiplier = targetPrice / Math.exp(-targetSupply);
-            integral = upperBound - lowerBound;
+            if (targetSupply) {
+                const dividend = Math.exp(-targetSupply) ?? Number.MIN_VALUE; // floating point precision problem
+                multiplier = targetPrice * dividend;
+            }
+            integral = Math.exp(upperBound) - Math.exp(lowerBound);
             if (integral < 0) {
                 console.log("error calculating integral, area negative", integral);
                 return -1;
@@ -734,7 +793,7 @@ const integral = (amm: string, upperBound: number, lowerBound: number, targetPri
     return -1;
 }
 
-// calculates the amount of funding tokens to receive after selling an amount of pod/community tokens (Buying)
+// calculate the amount of funding tokens to receive after selling an amount of pod/community tokens (Buying)
 export function getBuyTokenAmount(amm: string, supplyReleased: number, initialSupply: number = 0, amount, targetPrice: number = 0, targetSupply: number = 0) {
     const effectiveSupply: number = supplyReleased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
@@ -746,7 +805,7 @@ export function getBuyTokenAmount(amm: string, supplyReleased: number, initialSu
     return fundingAmount;
 }
 
-// calculates the amount of funding tokens to get after investing some amount of funding token (Selling)
+// calculate the amount of funding tokens to get after investing some amount of funding token (Selling)
 export function getSellTokenAmount(amm: string, supplyReleased: number, initialSupply: number = 0, amount, spread, targetPrice: number = 0, targetSupply: number = 0) {
     const effectiveSupply: number = supplyReleased - initialSupply;
     if (effectiveSupply < 0) { // ERROR
@@ -811,4 +870,20 @@ export async function addZerosToHistory(colRef, fieldName) {
         obj.date = date.getTime();
         colRef.add(obj);
     });
+}
+
+// sign the transaction by mnemonic and txnObj returning [hash, signature]
+export async function singTransaction(mnemonic, transaction) {
+    // Derive Public and Private key from mnemonic //
+    const derivationPath = "m/44'/60'/0'/0/0";
+    const seed = await mnemonicToSeed(mnemonic);
+    const node = fromMasterSeed(seed)
+    const hdKey = node.derive(derivationPath);
+    // Generate transaction hash //
+    let transactionString = JSON.stringify(transaction);
+    let transactionHash = keccak(Buffer.from(transactionString));
+    // Generate signature //
+    const { v, r, s } = ecsign(transactionHash, hdKey._privateKey);
+    let signature = toRpcSig(v, r, s);
+    return [transactionHash.toString('hex'), signature]
 }

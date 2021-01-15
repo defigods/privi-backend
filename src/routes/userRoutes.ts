@@ -51,6 +51,7 @@ let upload3 = multer({
 router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
 router.post('/signUp', userController.signUp);
+// router.post('/createMnemonic', userController.createMnemonic);
 //router.get('/:userId', userController.signIn);
 router.get('/email_validation/:validation_slug', userController.emailValidation);
 router.post('/resend_email_validation', userController.resendEmailValidation);

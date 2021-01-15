@@ -20,43 +20,42 @@ const apiKey = "PRIVI";
 ///////////////////////////// POST ///////////////////////////////
 
 exports.createCommunity = async (req: express.Request, res: express.Response) => {
-    try { 
+    try {
         const body = req.body;
-        // for blockchain call
-        const communityToken = body.CommunityToken; // determines if the above parameters are given or not
-
         const creator = body.Creator;
-
-        const amm = body.PriceDirection.toUpperCase();
-        const targetSupply = Number(body.TargetSupply);
-        const targetPrice = Number(body.TargetPrice);
-        const tradingSpread = Number(body.TradingSpread) / 100;
+        const amm = body.AMM;
+        const initialSupply = body.InitialSupply;
+        const targetSupply = body.TargetSupply;
+        const targetPrice = body.TargetPrice;
+        const spreadDividend = body.SpreadDividend;
         const fundingToken = body.FundingToken;
-        const tokenSymbol = body.TokenId;
+        const tokenSymbol = body.TokenSymbol;
         const tokenName = body.TokenName;
-        const frequency = body.Frequency.toUpperCase();
-        const initialSupply = Number(body.InitialSupply);
-        const dateLockUpDate = 0;   // just for now
+        const frequency = body.Frequency;
+        const lockupDate = body.LockUpDate;   // just for now
 
-        const ammAddress = generateUniqueId();
-        const communityAddress = generateUniqueId();
-        const votationAddress = generateUniqueId();
-        const stakingAddress = generateUniqueId();
-        const date = Date.now();
-        const txnId = generateUniqueId();
+        const hash = body.Hash;
+        const signature = body.Signature;
 
         console.log(body);
 
-        if (!communityToken) {  // not implemented this case yet
-            console.log('Not Community Token case not implemented yet');
-            res.send({ success: false });
-            return;
-        }
-
-        const blockchainRes = await community.createCommunity(creator, communityAddress, ammAddress, votationAddress, stakingAddress, amm, targetSupply, targetPrice, tradingSpread, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, date,
-            dateLockUpDate, txnId, apiKey);
+        const blockchainRes = await community.createCommunity(creator, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply,
+            lockupDate, hash, signature, apiKey);
+        console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);
+            const updateCommunities = blockchainRes.output.UpdateCommunities;
+            const [communityAddress, communityObj]: [any, any] = Object.entries(updateCommunities)[0];
+            const ammAddress = communityObj.AMMAddress;
+
+            // update user level info
+            let numCreatedCommunities = 0;
+            const userlevelSnap = await db.collection(collections.levels).doc(creator).get();
+            const data: any = userlevelSnap.data();
+            if (data.NumCreatedCommunities) numCreatedCommunities = data.NumCreatedCommunities;
+            numCreatedCommunities += 1;
+            userlevelSnap.ref.set({ NumCreatedCommunities: numCreatedCommunities }, { merge: true });
+
 
             // add other common infos
             const name = body.Name;
@@ -103,11 +102,11 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const userGet = await userRef.get();
             const user: any = userGet.data();
 
-            const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
             await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
             await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
-            const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, user.firstName);
+            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
             await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
             await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
@@ -157,12 +156,10 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             // add txn to community
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == ammAddress || obj.To == ammAddress) {
-                    db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).add(obj);
-                }
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
             }
 
             res.send({ success: true });
@@ -181,27 +178,24 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 exports.sellCommunityToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investor = body.investor;
-        const communityAddress = body.communityAddress;
-        const amount = body.amount;
+        const investor = body.Investor;
+        const communityAddress = body.CommunityAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        console.log(body)
-        const date = Date.now();
-        const txnId = generateUniqueId();
-
-        const blockchainRes = await community.sellCommunityToken(investor, communityAddress, amount, date, txnId, apiKey);
+        const blockchainRes = await community.sellCommunityToken(investor, communityAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
             // add txn to community
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).add(obj); // add all because some of them dont have From or To (tokens are burned)
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
             }
-
             res.send({ success: true });
         }
         else {
@@ -217,17 +211,15 @@ exports.sellCommunityToken = async (req: express.Request, res: express.Response)
 exports.buyCommunityToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investor = body.investor;
-        const communityAddress = body.communityAddress;
-        const amount = body.amount;
+        const investor = body.Investor;
+        const communityAddress = body.CommunityAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
-
-        const blockchainRes = await community.buyCommunityToken(investor, communityAddress, amount, date, txnId, apiKey);
+        const blockchainRes = await community.buyCommunityToken(investor, communityAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-
             // add txn to community
             const commSnap = await db.collection(collections.community).doc(communityAddress).get();
             const data: any = commSnap.data();
@@ -241,8 +233,6 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
                     commSnap.ref.collection(collections.communityTransactions).add(obj)
                 }
             }
-
-
             res.send({ success: true });
         }
         else {
@@ -258,14 +248,14 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
 exports.stakeCommunityFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const lpAddress = body.lpAddress;
-        const communityAddress = body.communityAddress;
-        const stakingToken = body.stakingToken;
+        const lpAddress = body.LPAddress;
+        const communityAddress = body.CommunityAddress;
+        const amount = body.Amount;
+        const stakingToken = body.StakingToken;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
-
-        const blockchainRes = await community.stakeCommunityFunds(lpAddress, communityAddress, stakingToken, date, txnId, apiKey);
+        const blockchainRes = await community.stakeCommunityFunds(lpAddress, communityAddress, amount, stakingToken, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             res.send({ success: true });
@@ -335,11 +325,11 @@ exports.join = async (req: express.Request, res: express.Response) => {
 
         //update discord chat
         const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
-          .collection(collections.discordRoom).get();
+            .collection(collections.discordRoom).get();
         if (!discordRoomSnap.empty) {
             for (const doc of discordRoomSnap.docs) {
                 let data = doc.data()
-                if(!data.private) {
+                if (!data.private) {
                     chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
                 }
             }
@@ -382,11 +372,11 @@ exports.leave = async (req: express.Request, res: express.Response) => {
 
         //update discord chat
         const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
-          .collection(collections.discordRoom).get();
+            .collection(collections.discordRoom).get();
         if (!discordRoomSnap.empty) {
             for (const doc of discordRoomSnap.docs) {
                 let data = doc.data();
-                if(!data.private) {
+                if (!data.private) {
                     chatController.removeUserToRoom(commData.DiscordId, doc.id, userSnap.id);
                 }
             }
@@ -424,7 +414,6 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
         const commSnap = await db.collection(collections.community).doc(communityAddress).get();
         const data: any = commSnap.data();
         const communityTokens = getSellTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.SpreadDividend, data.TargetPrice, data.TargetSupply);
-        console.log(communityTokens);
         res.send({ success: true, data: communityTokens });
     } catch (err) {
         console.log('Error in controllers/communityController -> getFundingTokenAmount(): ', err);
@@ -435,11 +424,16 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 
 /////////////////////////// GETS /////////////////////////////
 // get some extra data needed for FE, they are not stored at firebase
-const getExtraData = (data, rateOfChange) => {
-    const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
-    // convert market price to Privi 
-    const priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PC ? price * (rateOfChange[data.FundingToken] / rateOfChange.PC) : 0;
-    const mcap = data.ReleasedSupply ? data.ReleasedSupply * priceInPrivi : 0;
+const getExtraData = async (data, rateOfChange) => {
+    //const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
+    let price = 0;
+    let priceInPrivi = 0;
+    const blockchainRes = await community.getBalancesOfAddress(data.CommunityAddress, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+        price = blockchainRes.output;
+        priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PC ? price * (rateOfChange[data.FundingToken] / rateOfChange.PC) : 0;
+    }
+    const mcap = data.SupplyReleased ? data.SupplyReleased * priceInPrivi : 0;
     return {
         Price: price,
         MCAP: mcap
@@ -452,13 +446,14 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         const allCommunities: any[] = [];
         const communitiesSnap = await db.collection(collections.community).get();
         const rateOfChange = await getRateOfChangeAsMap();
-        communitiesSnap.forEach((doc) => {
-            const data : any = doc.data();
-            const id : any = doc.id;
-            const extraData = getExtraData(data, rateOfChange);
+        const docs = communitiesSnap.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+            const data: any = doc.data();
+            const id: any = doc.id;
+            const extraData = await getExtraData(data, rateOfChange);
             allCommunities.push({ ...data, ...extraData, id: id });
-        });
-
+        }
         const trendingCommunities = filterTrending(allCommunities);
         res.send({
             success: true, data: {
@@ -481,12 +476,12 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         const id: any = communitySnap.id;
         const extraData = getExtraData(data, rateOfChange);
 
-        const ads : any[] = [];
-        if(data.GeneralAd && data.GeneralAd !== '') {
+        const ads: any[] = [];
+        if (data.GeneralAd && data.GeneralAd !== '') {
             const adRef = db.collection(collections.ad).doc(data.GeneralAd);
             const adGet = await adRef.get();
             const ad: any = adGet.data();
-            ads.push({GeneralAd: ad});
+            ads.push({ GeneralAd: ad });
         }
 
         res.send({ success: true, data: { ...data, ...extraData, id: id, ads: ads } });
@@ -501,7 +496,7 @@ exports.getBadges = async (req: express.Request, res: express.Response) => {
         let creator = req.params.communityAddress;
         const allBadges: any[] = [];
         const badgesSnap = await db.collection(collections.badges)
-        .where("creator", "==", creator).get();
+            .where("creator", "==", creator).get();
 
         badgesSnap.forEach((doc) => {
             const data: any = doc.data();
@@ -510,10 +505,10 @@ exports.getBadges = async (req: express.Request, res: express.Response) => {
         });
 
         res.send({
-            success: true, 
+            success: true,
             data: {
                 all: allBadges
-                }
+            }
         });
     } catch (e) {
         return ('Error in controllers/communityController -> getBadges()' + e)
@@ -532,12 +527,12 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
         const txid = generateUniqueId();
 
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
-        if (blockchainRes && blockchainRes.success) {  
-           
+        if (blockchainRes && blockchainRes.success) {
+
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc(''+txid), {
+                transaction.set(db.collection(collections.badges).doc('' + txid), {
                     creator: creator,
-                    name: name, 
+                    name: name,
                     description: description,
                     classification: classification,
                     symbol: name,
@@ -549,7 +544,7 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
                     hasPhoto: false
                 });
             });
-    
+
             res.send({
                 success: true, data: {
                     creator: creator,
@@ -562,7 +557,7 @@ exports.createBadge = async (req: express.Request, res: express.Response) => {
                     royalty: royalty,
                     txnId: txid,
                     hasPhoto: false
-                 }
+                }
             });
         }
         else {
@@ -579,7 +574,7 @@ exports.changeBadgePhoto = async (req: express.Request, res: express.Response) =
         if (req.file) {
             const badgeRef = db.collection(collections.badges)
                 .doc(req.file.originalname);
-    
+
             const badgeGet = await badgeRef.get();
             const badge: any = await badgeGet.data();
 

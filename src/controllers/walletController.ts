@@ -1,6 +1,6 @@
 import {
     updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getBuyTokenAmount, getBuyTokenAmountPod, getRateOfChangeAsList, generateUniqueId,
-    isEmail, getEmailUidMap
+    isEmail, getEmailUidMap, getTokenToTypeMap, getEmailAddressMap
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
@@ -11,23 +11,27 @@ const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
 import { identifyTypeOfToken } from '../functions/functions';
 import cron from 'node-cron';
+import { user } from "firebase-functions/lib/providers/auth";
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = "PRIVI"; // just for now
 const notificationsController = require('./notificationsController');
 
+
+// ---------------------- CALLED FROM POSTMAN -------------------------------
+
 // Should be called each time the blockchain restarts (or we resert firestore) to register all the crypto tokens to the system
 // as well as adding this tokens info (type, supply..etc) to firestore
 module.exports.registerTokens = async (req: express.Request, res: express.Response) => {
     try {
         const type = "CRYPTO";
-        const addressId = "PRIVI";
+        const addressId = "0x7b559b648bc133d5f471436b4d3ff69f0d5a6640"; // any registered user address works
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -39,6 +43,7 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
             { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
             { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+            { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
             const blockchainRes = await coinBalance.registerToken(token.Name, type, token.Symbol, token.Supply, addressId, apiKey);
@@ -61,9 +66,9 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
         const type = "CRYPTO";
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -75,6 +80,7 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
             { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
             { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+            { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
             const blockchainRes = await coinBalance.updateTokenInfo(token.Name, type, token.Symbol, apiKey);
@@ -91,90 +97,78 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
         res.send({ success: false });
     }
 }
+// -----------------------------------------------------------------
+
 
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const fromUid = body.fromUid;
-        const to = body.to; // could be email or uid
-        const amount = body.amount;
-        const token = body.token;
-        const type = body.type;
 
-        // convert recipient to uid in case it's given in email
-        let toUid = to;
-        if (isEmail(to)) {
-            const emailUidMap = await getEmailUidMap();
-            toUid = emailUidMap[to];
-        }
-        if (!toUid) {
-            res.send({ success: false, message: "'to' argument is required" });
-            return;
-        }
+        const userId = body.userId;
+        const from = body.From;
+        const to = body.To; // could be email or uid
+        const amount = body.Amount;
+        const token = body.Token;
+        const type = body.Type;
+        const hash = body.Hash;
+        const signature = body.Signature;
+
+        console.log(body)
         // check that fromUid is same as user in jwt
-        if (!req.body.priviUser.id || (req.body.priviUser.id != fromUid)) {
+        if (!req.body.priviUser.id || (req.body.priviUser.id != userId)) {
             console.log("error: jwt user is not the same as fromUid ban?");
             res.send({ success: false, message: "jwt user is not the same as fromUid" });
             return;
         }
 
-        const tid = generateUniqueId();
-        const timestamp = Date.now();
-        const blockchainRes = await coinBalance.transfer(fromUid, toUid, amount, tid, timestamp, token, type, apiKey);
+        const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
+        console.log(blockchainRes)
+
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            let senderName = fromUid;
-            let receiverName = toUid;
-            const senderSnap = await db.collection(collections.user).doc(fromUid).get();
-            const receiverSnap = await db.collection(collections.user).doc(toUid).get();
-            const senderData = senderSnap.data();
-            const receriverData = receiverSnap.data();
-            if (senderData !== undefined && receriverData !== undefined) {
-                senderName = senderData.firstName;
-                receiverName = receriverData.firstName;
-                // notification to sender
-                createNotification(fromUid, "Transfer - Sent",
-                    `You have succesfully send ${amount} ${token} to ${receiverName}!`,
-                    notificationTypes.transferSend
-                );
-                await notificationsController.addNotification({
-                    userId: senderSnap.id,
-                    notification: {
-                        type: 8,
-                        typeItemId: 'user',
-                        itemId: receiverSnap.id,
-                        follower: receiverName,
-                        pod: '',
-                        comment: '',
-                        token: token,
-                        amount: amount,
-                        onlyInformation: false,
-                    }
-                });
+            // let senderName = fromUid;
+            // let receiverName = toUid;
+            // const senderSnap = await db.collection(collections.user).doc(userId).get();
+            // const receiverSnap = await db.collection(collections.user).doc(toUid).get();
+            // const senderData = senderSnap.data();
+            // const receriverData = receiverSnap.data();
+            // if (senderData !== undefined && receriverData !== undefined) {
+            //     senderName = senderData.firstName;
+            //     receiverName = receriverData.firstName;
+            //     notification to sender
+            //     await notificationsController.addNotification({
+            //         userId: senderSnap.id,
+            //         notification: {
+            //             type: 8,
+            //             typeItemId: 'user',
+            //             itemId: receiverSnap.id,
+            //             follower: receiverName,
+            //             pod: '',
+            //             comment: '',
+            //             token: token,
+            //             amount: amount,
+            //             onlyInformation: false,
+            //         }
+            //     });
 
-                // notification to receiver
-                createNotification(fromUid, "Transfer - Received",
-                    `You have succesfully received ${amount} ${token} from ${senderName}!`,
-                    notificationTypes.transferReceive
-                );
-                await notificationsController.addNotification({
-                    userId: receiverSnap.id,
-                    notification: {
-                        type: 7,
-                        typeItemId: 'user',
-                        itemId: senderSnap.id,
-                        follower: senderName,
-                        pod: '',
-                        comment: '',
-                        token: token,
-                        amount: amount,
-                        onlyInformation: false,
-                    }
-                });
-            }
+            //     await notificationsController.addNotification({
+            //         userId: receiverSnap.id,
+            //         notification: {
+            //             type: 7,
+            //             typeItemId: 'user',
+            //             itemId: senderSnap.id,
+            //             follower: senderName,
+            //             pod: '',
+            //             comment: '',
+            //             token: token,
+            //             amount: amount,
+            //             onlyInformation: false,
+            //         }
+            //     });
+            // }
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/walletController -> send()');
+            console.log('Error in controllers/walletController -> send(), blockchain returned false', blockchainRes.message);
             res.send({ success: false });
         }
     } catch (err) {
@@ -200,9 +194,7 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
             return;
         }
 
-        const tid = generateUniqueId();
-        const timestamp = Date.now();
-        const blockchainRes = await coinBalance.burn(type, from, to, amount, token, timestamp, tid, apiKey);
+        const blockchainRes = await coinBalance.burn(type, from, to, amount, token, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(from, "Withdraw - Complete",
@@ -245,16 +237,14 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         const amount = body.amount;
         const token = body.token;
 
-        // check that publicId is same as user in jwt
-        if (!req.body.priviUser.id || (req.body.priviUser.id != to)) {
-            console.log("error: jwt user is not the same as publicId ban?");
-            res.send({ success: false, message: "jwt user is not the same as publicId" });
-            return;
-        }
+        // // check that publicId is same as user in jwt
+        // if (!req.body.priviUser.id || (req.body.priviUser.id != to)) {
+        //     console.log("error: jwt user is not the same as publicId ban?");
+        //     res.send({ success: false, message: "jwt user is not the same as publicId" });
+        //     return;
+        // }
 
-        const tid = generateUniqueId();
-        const timestamp = Date.now();
-        const blockchainRes = await coinBalance.mint(type, from, to, amount, token, timestamp, tid, apiKey);
+        const blockchainRes = await coinBalance.mint(type, from, to, amount, token, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             createNotification(to, "Swap - Complete",
@@ -285,10 +275,32 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 
-} // deposit
+}
 
 
 ///////////////////////////// gets //////////////////////////////
+
+module.exports.getBalancesOfAddress = async (req: express.Request, res: express.Response) => {
+    try {
+        console.log('getBalancesOfAddress req.query', req.query);
+        let { userId, userAddress } = req.query;
+        userId = userId!.toString();
+        userAddress = userAddress!.toString();
+
+        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            // console.log('getBalancesOfAddress: data send to front', blockchainRes.output)
+            res.send({ success: true, data: blockchainRes.output });
+        } else {
+            console.log("cant getBalancesOfAddress for", userAddress);
+            res.send({ success: false, data: {} });
+        }
+
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getBalancesOfAddress()', err);
+        res.send({ success: false });
+    }
+}
 
 /**
  * Returns the balance of all tokens structured in this way {token: tokenObj}, this function is used in wallet page
@@ -315,47 +327,21 @@ module.exports.getTokensRateChange = async (req: express.Request, res: express.R
  */
 module.exports.getAllTokenBalances = async (req: express.Request, res: express.Response) => {
     try {
-        let { userId } = req.query;
-        userId = userId!.toString();
-        if (!userId) {
-            console.log('userId error');
-            res.send({ success: false });
-            return;
-        }
-        const walletSnap = await db.collection(collections.wallet).doc(userId).get();
+        let address = req.params.address;
         const data = {};
-        if (walletSnap.exists) {
-            // get Crypto
-            const cryptoSnap = await walletSnap.ref.collection(collections.crypto).get();
-            cryptoSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.crypto, Name: doc.id, dailyChange: 0.23 };
-            });
-            // get ft
-            const ftSnap = await walletSnap.ref.collection(collections.ft).get();
-            ftSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.ft, Name: doc.id, dailyChange: 0.23 };
-            });
-            // get nft
-            const nftSnap = await walletSnap.ref.collection(collections.nft).get();
-            nftSnap.forEach((doc) => {
-                const historySnap = doc.ref.collection(collections.history).get();
-                const history: any[] = [];
-                historySnap.then((snap) => {
-                    snap.forEach((historyDoc) => {
-                        history.push(historyDoc.data());
-                    });
-                })
-                data[doc.id] = { ...doc.data(), Type: collections.nft, Name: doc.id, History: history, dailyChange: 0.23 };
-            });
-            // get social
-            const socialSnap = await walletSnap.ref.collection(collections.social).get();
-            socialSnap.forEach((doc) => {
-                data[doc.id] = { ...doc.data(), Type: collections.social, Name: doc.id, dailyChange: 0.23 };
+        const tokenToTypeMap = await getTokenToTypeMap();
+        const blockchainRes = await coinBalance.getBalancesOfAddress(address, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            let userBalances = blockchainRes.output;
+            userBalances.forEach((balanceObj) => {
+                let token = balanceObj.Token;
+                let type = tokenToTypeMap[token] ?? collections.unknown;
+                data[token] = { ...balanceObj, Type: type, Name: token }
             });
             res.send({ success: true, data: data });
         } else {
-            console.log("cant find wallet snap");
-            res.send({ success: true, data: {} });
+            console.log('Error in controllers/walletController -> getAllTokenBalances() blockchainRes = false', blockchainRes.message);
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/walletController -> getAllTokenBalances()', err);
@@ -447,9 +433,11 @@ module.exports.getCryptosRateAsMap = async (req: express.Request, res: express.R
 }
 
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
+    console.log('getTotalBalancemust be depricated')
     try {
-        let { userId } = req.query;
+        let { userId, userAddress } = req.query;
         userId = userId!.toString()
+        userAddress = userAddress!.toString();
         if (!userId) {
             console.log('error: userId empty');
             res.send({ success: false });
@@ -459,9 +447,11 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
         // get user currency in usd
         let sum = 0;    // in user currency
         // crypto
-        const userWalletRef = db.collection(collections.wallet).doc(userId);
+        const userWalletRef = db.collection(collections.wallet).doc(userAddress);
         const cryptoWallet = await userWalletRef.collection(collections.crypto).get();
         cryptoWallet.forEach((doc) => {
+            // console.log('rateOfChange[doc.id]', rateOfChange[doc.id])
+            // console.log('doc.data().Amount', doc.data().Amount)
             if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
             else sum += doc.data().Amount;
         });
@@ -517,8 +507,97 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     }
 }
 
+module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Response) => {
+
+    try {
+        let { userId, userAddress } = req.query;
+        console.log(req.query);
+        userId = userId!.toString()
+        userAddress = userAddress!.toString();
+        console.log('getTotalBalance_v2 is called', userAddress)
+        const rateOfChange = await getRateOfChangeAsMap();
+        // get user currency in usd
+        let sum = 0;    // in user currency
+        // crypto
+        const blockchainCryptoRes = await coinBalance.getBalancesByType(userAddress, collections.crypto, apiKey);
+        if (blockchainCryptoRes.success) {
+            const output = blockchainCryptoRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.crypto, blockchainCryptoRes)
+        }
+        // ft
+        const blockchainFtRes = await coinBalance.getBalancesByType(userAddress, collections.ft, apiKey);
+        if (blockchainFtRes.success) {
+            const output = blockchainFtRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.ft, blockchainFtRes)
+        }
+        // nft
+        const blockchainNftRes = await coinBalance.getBalancesByType(userAddress, collections.nft, apiKey);
+        if (blockchainNftRes.success) {
+            const output = blockchainNftRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.nft, blockchainNftRes)
+        }
+        // social
+        const blockchainSocialRes = await coinBalance.getBalancesByType(userAddress, collections.social, apiKey);
+        if (blockchainSocialRes.success) {
+            const output = blockchainSocialRes.output;
+            // console.log('getTotalBalance_v2 blockchain output', output)
+            for (let balance of Object.keys(output)) {
+                if (rateOfChange[output[balance].Token]) sum += rateOfChange[output[balance].Token] * output[balance].Amount;
+                else sum += output[balance].Amount;
+            }
+        } else {
+            console.error('blockchain call failed', collections.social, blockchainSocialRes)
+        }
+
+        // get user currency
+        let amountInUserCurrency = sum;
+        const userSnap = await db.collection(collections.user).doc(userId).get();
+        const userData = userSnap.data();
+        let currency = "Unknown";
+        if (userData) {
+            currency = userData.currency;
+            const currencyRate = await getCurrencyRatesUsdBase()
+            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
+        }
+
+        const data = {
+            amount: amountInUserCurrency,   // total balance in users currency
+            tokens: rateOfChange["PC"] ? sum / rateOfChange["PC"] : 0,  // total balance in PC
+            currency: currency,
+            currency_symbol: currencySymbol.symbol(currency),
+            debt: 0,
+            daily_return: 0,
+            weekly_return: 0,
+            monthly_return: 0
+        }
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTotalBalance_v2()', err);
+        res.send({ success: false });
+    }
+}
+
 // get rateOfChange token balances as array
 module.exports.getTokenBalances = async (req: express.Request, res: express.Response) => {
+    console.log('getTokenBalances to be depricated')
     try {
         let { userId } = req.query;
         userId = userId!.toString();
@@ -541,6 +620,30 @@ module.exports.getTokenBalances = async (req: express.Request, res: express.Resp
         res.send({ success: true, data: retData });
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokenBalances()', err);
+        res.send({ success: false });
+    }
+}
+
+module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.Response) => {
+    try {
+        let { userId, userAddress } = req.query;
+        if (!userAddress) userAddress = req.params.address;
+        const retData: {}[] = [];
+        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const output = blockchainRes.output;
+            // console.log('getTokenBalances_v2 blockchain output', output)
+            for (let balance of output) {
+                retData.push({ token: balance.Token, value: balance.Amount });
+            }
+            // console.log('getTokenBalances_v2 blockchain retData', retData)
+            res.send({ success: true, data: retData });
+        } else {
+            console.log("cant getTokenBalances_v2 for", userAddress);
+            res.send({ success: false, retData: {} });
+        }
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getTokenBalances_v2()', err);
         res.send({ success: false });
     }
 }
@@ -656,41 +759,12 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
  */
 module.exports.getUserTokenBalance = async (req: express.Request, res: express.Response) => {
     const body = req.body;
-    const userId = body.userId;
+    const userAddress = body.userAddress;
     const token = body.token;
-    const userWalletSnap = await db.collection(collections.wallet).doc(userId).get();
-    if (userWalletSnap.exists && token) {
-        let balance = 0;
-        // crypto
-        const crypto = await userWalletSnap.ref.collection(collections.crypto).doc(token).get();
-        if (crypto.exists) {
-            const data: any = crypto.data();
-            balance = data.Amount;
-        }
-        // pod ft
-        if (!balance) {
-            const ft = await userWalletSnap.ref.collection(collections.ft).doc(token).get();
-            if (ft.exists) {
-                const data: any = ft.data();
-                balance = data.Amount;
-            }
-        }
-        // pod nft
-        if (!balance) {
-            const nft = await userWalletSnap.ref.collection(collections.nft).doc(token).get();
-            if (nft.exists) {
-                const data: any = nft.data();
-                balance = data.Amount;
-            }
-        }
-        // social
-        if (!balance) {
-            const social = await userWalletSnap.ref.collection(collections.social).doc(token).get();
-            if (social.exists) {
-                const data: any = social.data();
-                balance = data.Amount;
-            }
-        }
+    const blockchainRes = await coinBalance.balanceOf(userAddress, token);
+    console.log(blockchainRes);
+    if (blockchainRes && blockchainRes.success) {
+        const balance = blockchainRes.output.Amount;
         res.send({ success: true, data: balance });
     }
     else res.send({ success: false });
@@ -796,6 +870,20 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
         res.send({ success: false });
     }
 }
+
+/**
+ * Function to get email-address map
+ */
+module.exports.getEmailToAddressMap = async (req: express.Request, res: express.Response) => {
+    try {
+        const data = await getEmailAddressMap();
+        res.send({ success: true, data: data });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getEmailToAddressMap()', err);
+        res.send({ success: false });
+    }
+}
+
 
 /**
  * Function to get email-uid map
