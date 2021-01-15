@@ -432,84 +432,85 @@ module.exports.getCryptosRateAsMap = async (req: express.Request, res: express.R
 
 module.exports.getTotalBalance = async (req: express.Request, res: express.Response) => {
     console.log('getTotalBalancemust be depricated')
-    try {
-        let { userId, userAddress } = req.query;
-        userId = userId!.toString()
-        userAddress = userAddress!.toString();
-        if (!userId) {
-            console.log('error: userId empty');
-            res.send({ success: false });
-            return;
-        }
-        const rateOfChange = await getRateOfChangeAsMap();
-        // get user currency in usd
-        let sum = 0;    // in user currency
-        // crypto
-        const userWalletRef = db.collection(collections.wallet).doc(userAddress);
-        const cryptoWallet = await userWalletRef.collection(collections.crypto).get();
-        cryptoWallet.forEach((doc) => {
-            // console.log('rateOfChange[doc.id]', rateOfChange[doc.id])
-            // console.log('doc.data().Amount', doc.data().Amount)
-            if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
-            else sum += doc.data().Amount;
-        });
-        // ft
-        const ftWallet = await userWalletRef.collection(collections.ft).get();
-        ftWallet.forEach((doc) => {
-            if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
-            else sum += doc.data().Amount;
-        });
+    // try {
+    //     let { userId, userAddress } = req.query;
+    //     userId = userId!.toString()
+    //     userAddress = userAddress!.toString();
+    //     if (!userId) {
+    //         console.log('error: userId empty');
+    //         res.send({ success: false });
+    //         return;
+    //     }
+    //     const rateOfChange = await getRateOfChangeAsMap();
+    //     // get user currency in usd
+    //     let sum = 0;    // in user currency
+    //     // crypto
+    //     const userWalletRef = db.collection(collections.wallet).doc(userAddress);
+    //     const cryptoWallet = await userWalletRef.collection(collections.crypto).get();
+    //     cryptoWallet.forEach((doc) => {
+    //         // console.log('rateOfChange[doc.id]', rateOfChange[doc.id])
+    //         // console.log('doc.data().Amount', doc.data().Amount)
+    //         if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
+    //         else sum += doc.data().Amount;
+    //     });
+    //     // ft
+    //     const ftWallet = await userWalletRef.collection(collections.ft).get();
+    //     ftWallet.forEach((doc) => {
+    //         if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
+    //         else sum += doc.data().Amount;
+    //     });
 
-        // nft
-        const nftWallet = await userWalletRef.collection(collections.nft).get();
-        nftWallet.forEach(async (doc) => {
-            const fundingToken = doc.data().FundingToken;
-            const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
-            let latestFundingTokenPrice = 1;    // price of fundingToken per NF Token
-            if (nftPodSnap.docs.length > 0 && nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
-            if (rateOfChange[fundingToken]) sum += rateOfChange[fundingToken] * latestFundingTokenPrice * doc.data().Amount;
-        });
+    //     // nft
+    //     const nftWallet = await userWalletRef.collection(collections.nft).get();
+    //     nftWallet.forEach(async (doc) => {
+    //         const fundingToken = doc.data().FundingToken;
+    //         const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
+    //         let latestFundingTokenPrice = 1;    // price of fundingToken per NF Token
+    //         if (nftPodSnap.docs.length > 0 && nftPodSnap.docs[0].data().price) latestFundingTokenPrice = nftPodSnap.docs[0].data().price;
+    //         if (rateOfChange[fundingToken]) sum += rateOfChange[fundingToken] * latestFundingTokenPrice * doc.data().Amount;
+    //     });
 
-        // social
-        const socialWallet = await userWalletRef.collection(collections.social).get();
-        socialWallet.forEach((doc) => {
-            if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
-            else sum += doc.data().Amount;
-        });
+    //     // social
+    //     const socialWallet = await userWalletRef.collection(collections.social).get();
+    //     socialWallet.forEach((doc) => {
+    //         if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
+    //         else sum += doc.data().Amount;
+    //     });
 
-        // get user currency
-        let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
+    //     // get user currency
+    //     let amountInUserCurrency = sum;
+    //     const userSnap = await db.collection(collections.user).doc(userId).get();
+    //     const userData = userSnap.data();
+    //     let currency = "Unknown";
+    //     if (userData) {
+    //         currency = userData.currency;
+    //         const currencyRate = await getCurrencyRatesUsdBase()
+    //         if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
+    //     }
 
-        const data = {
-            amount: amountInUserCurrency,   // total balance in users currency
-            tokens: rateOfChange["PC"] ? sum / rateOfChange["PC"] : 0,  // total balance in PC
-            currency: currency,
-            currency_symbol: currencySymbol.symbol(currency),
-            debt: 0,
-            daily_return: 0,
-            weekly_return: 0,
-            monthly_return: 0
-        }
-        res.send({ success: true, data: data });
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getTotalBalance()', err);
-        res.send({ success: false });
-    }
+    //     const data = {
+    //         amount: amountInUserCurrency,   // total balance in users currency
+    //         tokens: rateOfChange["PC"] ? sum / rateOfChange["PC"] : 0,  // total balance in PC
+    //         currency: currency,
+    //         currency_symbol: currencySymbol.symbol(currency),
+    //         debt: 0,
+    //         daily_return: 0,
+    //         weekly_return: 0,
+    //         monthly_return: 0
+    //     }
+    //     res.send({ success: true, data: data });
+    // } catch (err) {
+    //     console.log('Error in controllers/walletController -> getTotalBalance()', err);
+    //     res.send({ success: false });
+    // }
+    res.send({ success: false });
 }
 
 module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Response) => {
 
     try {
         let { userId, userAddress } = req.query;
-        console.log(req.query);
+        console.warn('getTotalBalance_v2, req.query: ',req.query);
         userId = userId!.toString()
         userAddress = userAddress!.toString();
         console.log('getTotalBalance_v2 is called', userAddress)
