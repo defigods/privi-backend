@@ -4,14 +4,19 @@ module.exports = {
     wallet: "Wallet",
     walletNFT: "WalletNFT",
     walletFT: "WalletFT",
-    crypto: "CRYPTO",
-    nft: "NFTPOD",
-    ft: "FTPOD",
-    social: "SOCIAL",
+
+    cryptoToken: "CRYPTO",
+    nftToken: "NFTPOD",
+    ftToken: "FTPOD",
+    socialToken: "SOCIAL",
+    communityToken: "COMMUNITY",
+
     cryptoHistory: "CryptoHistory",
     nftHistory: "NftHistory",
     ftHistory: "FtHistory",
     socialHistory: "SocialHistory",
+    communityHistory: "CommunityHistory",
+
     unknown: "UNKNOWN",
     tokens: "Tokens",
     priviScan: "PriviScan",

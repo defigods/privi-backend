@@ -37,25 +37,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         const hash = body.Hash;
         const signature = body.Signature;
 
-        console.log(body);
-
         const blockchainRes = await community.createCommunity(creator, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply,
             lockupDate, hash, signature, apiKey);
-        console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);
             const updateCommunities = blockchainRes.output.UpdateCommunities;
             const [communityAddress, communityObj]: [any, any] = Object.entries(updateCommunities)[0];
             const ammAddress = communityObj.AMMAddress;
-
-            // update user level info
-            let numCreatedCommunities = 0;
-            const userlevelSnap = await db.collection(collections.levels).doc(creator).get();
-            const data: any = userlevelSnap.data();
-            if (data.NumCreatedCommunities) numCreatedCommunities = data.NumCreatedCommunities;
-            numCreatedCommunities += 1;
-            userlevelSnap.ref.set({ NumCreatedCommunities: numCreatedCommunities }, { merge: true });
-
 
             // add other common infos
             const name = body.Name;

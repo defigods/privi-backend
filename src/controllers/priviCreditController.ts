@@ -1,6 +1,6 @@
 import express from 'express';
 import priviCredit from "../blockchain/priviCredit";
-import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay, follow, unfollow } from "../functions/functions";
+import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay, follow, unfollow, addZerosToHistory } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
@@ -31,14 +31,20 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
         const p_premium = body.Parameters.P_premium;
         const dateExpiration = body.Parameters.DateExpiration;
 
-        const trustScore = body.TrustScore;
-        const endorsementScore = body.EndorsementScore;
-        const collateralsAccepted = body.CollateralsAccepted;
-        const ccr = body.CCR;
+        const trustScore = body.Requirements.TrustScore;
+        const endorsementScore = body.Requirements.EndorsementScore;
+        const collateralsAccepted = body.Requirements.CollateralsAccepted;
+        const ccr = body.Requirements.CCR;
 
         const initialDeposit = body.Initialisation.InitialDeposit;
         const hash = body.Initialisation.Hash;
         const signature = body.Initialisation.Signature;
+
+        if (!body.priviUser || !body.priviUser.id || body.priviUser.id != creator) {
+            console.log("creator not matching jwt user");
+            res.send({ success: false, message: "creator not matching jwt user" });
+            return;
+        }
 
         const blockchainRes = await priviCredit.initiatePRIVIcredit(creator, creditName, lendingToken, maxFunds, interest, frequency, p_incentive,
             p_premium, dateExpiration, trustScore, endorsementScore, collateralsAccepted, ccr, initialDeposit, hash, signature, apiKey);
@@ -48,21 +54,13 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             const updatedCreditInfo = output.UpdatedCreditInfo;
             const creditAddress = Object.keys(updatedCreditInfo)[0];
 
-            // update user levels
-            let numCreatedPriviCredits = 0;
-            const userLevelSnap = await db.collection(collections.levels).doc(creator).get();
-            const data: any = userLevelSnap.data();
-            if (data.NumCreatedPriviCredits) numCreatedPriviCredits = data.NumCreatedPriviCredits;
-            numCreatedPriviCredits += 1;
-            userLevelSnap.ref.set({ NumCreatedPriviCredits: numCreatedPriviCredits });
-
             // add some more data to firebase
-            const description = body.description;
-            const discordId = body.discordId;
-            const ethereumAddress = body.ethereumAddress;
-            const admins = body.admins; // string[]
-            const insurers = body.insurers; // string[]
-            const userRoles = body.userRoles;   // {name, role, status}[]
+            const description = body.Description;
+            const discordId = body.DiscordId;
+            const ethereumAddress = body.EthereumAddress;
+            const admins = body.Admins; // string[]
+            const insurers = body.Insurers; // string[]
+            const userRoles = body.UserRoles;   // {name, role, status}[]
             db.collection(collections.priviCredits).doc(creditAddress).set({
                 Description: description,
                 DiscordId: discordId,
@@ -80,6 +78,22 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             for ([tid, txnArray] of Object.entries(transactions)) {
                 db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).doc(tid).set({ Transactions: txnArray });
             }
+
+            // update user levels
+            let numCreatedPriviCredits = 0;
+            const userLevelSnap = await db.collection(collections.levels).doc(creator).get();
+            const data: any = userLevelSnap.data();
+            if (data && data.NumCreatedPriviCredits) numCreatedPriviCredits = data.NumCreatedPriviCredits;
+            numCreatedPriviCredits += 1;
+            userLevelSnap.ref.set({ NumCreatedPriviCredits: numCreatedPriviCredits });
+
+            // add zeros to graph
+            const creditRef = db.collection(collections.priviCredits).doc(creditAddress);
+            addZerosToHistory(creditRef.collection(collections.priviCreditAvailableHistory), "available");
+            addZerosToHistory(creditRef.collection(collections.priviCreditBorrowedHistory), "borrowed");
+            addZerosToHistory(creditRef.collection(collections.priviCreditDepositedHistory), "deposited");
+            addZerosToHistory(creditRef.collection(collections.priviCreditInterestHistory), "interest");
+
 
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
@@ -121,12 +135,14 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             res.send({ success: true, data: { id: creditAddress } });
         }
         else {
-            console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
+            console.log('Error in controllers/priviCredit -> initiateCredit(): success = false', blockchainRes.message);
             res.send({ success: false });
+            return;
         }
     } catch (err) {
         console.log('Error in controllers/priviCredit -> initiateCredit(): ', err);
         res.send({ success: false });
+        return;
     }
 };
 
