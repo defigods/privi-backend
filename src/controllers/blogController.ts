@@ -619,6 +619,7 @@ const createPost = exports.createPost = (body, collection, userId) => {
           descriptionArray: descriptionArray,
           descriptionImages: [],
           responses: [],
+          pinned: false,
           hasPhoto: false,
           createdBy: userId,
           createdAt: Date.now(),
@@ -744,6 +745,22 @@ const dislikeItemPost = exports.dislikeItemPost = (dbRef, dbGet, dbItem, userId,
     } catch (e) {
       console.log('Error in controllers/blogController -> dislikeItemPost()', e)
       reject('Error in controllers/blogController -> dislikeItemPost()' + e)
+    }
+  })
+}
+
+const pinItemPost = exports.pinItemPost = (dbRef, dbGet, dbItem, pinned) => {
+  return new Promise(async(resolve, reject) => {
+    try {
+      await dbRef.update({
+        pinned: pinned
+      });
+
+      dbItem.pinned = pinned;
+      resolve(dbItem);
+    } catch (e) {
+      console.log('Error in controllers/blogController -> pinItemPost()', e)
+      reject('Error in controllers/blogController -> pinItemPost()' + e)
     }
   })
 }
