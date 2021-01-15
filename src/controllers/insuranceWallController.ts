@@ -296,9 +296,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.podWallPostId && body.userId) {
+    if (body && body.wallPostId) {
       const insuranceWallPostRef = db.collection(collections.insuranceWallPost)
-        .doc(body.insuranceWallPostId);
+        .doc(body.wallPostId);
       const insuranceWallPostGet = await insuranceWallPostRef.get();
       const insuranceWallPost: any = insuranceWallPostGet.data();
 

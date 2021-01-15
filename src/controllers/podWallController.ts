@@ -296,9 +296,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.podWallPostId && body.userId) {
+    if (body && body.wallPostId) {
       const podWallPostRef = db.collection(collections.podWallPost)
-        .doc(body.podWallPostId);
+        .doc(body.wallPostId);
       const podWallPostGet = await podWallPostRef.get();
       const podWallPost: any = podWallPostGet.data();
 
