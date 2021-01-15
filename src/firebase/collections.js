@@ -90,4 +90,6 @@ module.exports = {
     discordRoom: "DiscordRoom",
     discordMessage: "DiscordMessage",
     discordMessageReplies: "DiscordMessageReplies",
+
+    levels: "Levels",
 }
