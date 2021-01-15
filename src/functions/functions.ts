@@ -24,7 +24,7 @@ export async function updateTxOneToOneSwap(swapDocID, txId) {
 export async function getRecentSwaps(userAddress) {
     // console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
     let recentSwaps = {};
-    const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate').limit(5)*/.get();
+    const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate', 'desc').limit(10)*/.get();
     for (const doc of swapQuery.docs) {
         const swap = doc.data();
         recentSwaps[doc.id] = swap;

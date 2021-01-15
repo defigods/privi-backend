@@ -5,7 +5,7 @@ import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
 import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
-import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
+import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
@@ -387,53 +387,55 @@ const wsListen = () => {
  * approve or withdraw
  */
 const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
-    // console.log('cronJob called');
-    // Start WS server if not initialized yet
-    (!runOnce) ? wsListen() : null;
+    if (SHOULD_HANDLE_SWAP) {
+        // console.log('cronJob called');
+        // Start WS server if not initialized yet
+        (!runOnce) ? wsListen() : null;
 
-    //Retrieve all pending TX from Firestore
-    const snapshot = await db
-        .collection(collections.ethTransactions)
-        .where('status', '==', 'pending')
-        .where('chainId', '==', CHAIN_ID)
-        .get();
+        //Retrieve all pending TX from Firestore
+        const snapshot = await db
+            .collection(collections.ethTransactions)
+            .where('status', '==', 'pending')
+            .where('chainId', '==', CHAIN_ID)
+            .get();
 
-    // Process outstanding TX
-    if (!snapshot.empty) {
-        console.log('should check Tx for swap?', !snapshot.empty);
-        for (let i in snapshot.docs) {
-            const doc = snapshot.docs[i].data();
-            const docId = snapshot.docs[i].id;
-            if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
-                doc.action === Action.WITHDRAW_ETH ||
-                doc.action === Action.WITHDRAW_ERC20) {
-                console.log('performing withdraw');
-                withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
-            } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
-                const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
-                /* 
-                    confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
-                */
-               if (confirmations > MIN_ETH_CONFIRMATION) {
-                console.log('approve should be set to confirmed');
-                updateStatusOneToOneSwap(docId, 'confirmed');
-                return;
-            };
-            } else {
-                const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
-                /* 
-                    confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
-                */
+        // Process outstanding TX
+        if (!snapshot.empty) {
+            console.log('should check Tx for swap?', !snapshot.empty);
+            for (let i in snapshot.docs) {
+                const doc = snapshot.docs[i].data();
+                const docId = snapshot.docs[i].id;
+                if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
+                    doc.action === Action.WITHDRAW_ETH ||
+                    doc.action === Action.WITHDRAW_ERC20) {
+                    console.log('performing withdraw');
+                    withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
+                } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
+                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    /* 
+                        confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                    */
                 if (confirmations > MIN_ETH_CONFIRMATION) {
-                    console.log('performing swap');
-                    swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                    console.log('approve should be set to confirmed');
+                    updateStatusOneToOneSwap(docId, 'confirmed');
                     return;
                 };
-            }
+                } else {
+                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    /* 
+                        confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                    */
+                    if (confirmations > MIN_ETH_CONFIRMATION) {
+                        console.log('performing swap');
+                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                        return;
+                    };
+                }
+            };
         };
-    };
+    }
 });
 
 /**
