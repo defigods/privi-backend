@@ -287,8 +287,71 @@ module.exports.getBalancesOfAddress = async (req: express.Request, res: express.
 
         const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            // console.log('getBalancesOfAddress: data send to front', blockchainRes.output)
-            res.send({ success: true, data: blockchainRes.output });
+            let dataOutput = blockchainRes.output;
+            // get balance by type:
+            // crypto
+            let cryptoArray = [];
+            const cryptoTypeRes = await coinBalance.getTokenListByType('CRYPTO', apiKey);
+            if (cryptoTypeRes && cryptoTypeRes.success) {
+                cryptoArray = cryptoTypeRes.output !== null? cryptoTypeRes.output: [];
+            }
+            // community
+            let communityArray = [];
+            const communityTypeRes = await coinBalance.getTokenListByType('COMMUNITY', apiKey);
+            if (communityTypeRes && communityTypeRes.success) {
+                communityArray = communityTypeRes.output !== null? communityTypeRes.output: [];
+            }
+            // social
+            let socialArray = [];
+            const socialTypeRes = await coinBalance.getTokenListByType('SOCIAL', apiKey);
+            if (socialTypeRes && socialTypeRes.success) {
+                socialArray = socialTypeRes.output !== null? socialTypeRes.output: [];
+            }
+            // ftpod
+            let ftpodArray = [];
+            const ftpodTypeRes = await coinBalance.getTokenListByType('FTPOD', apiKey);
+            if (ftpodTypeRes && ftpodTypeRes.success) {
+                ftpodArray = ftpodTypeRes.output !== null? ftpodTypeRes.output: [];
+            }
+            // nftpod
+            let nftpodArray = [];
+            const nftpodTypeRes = await coinBalance.getTokenListByType('NFTPOD', apiKey);
+            if (nftpodTypeRes && nftpodTypeRes.success) {
+                nftpodArray = nftpodTypeRes.output !== null? nftpodTypeRes.output: [];
+            }
+            dataOutput.forEach((element, index) => {
+                cryptoArray.forEach( crypto => {
+                    if (crypto === element.Token) {
+                        dataOutput[index].Type = 'CRYPTO'
+                    }
+                });
+
+                communityArray.forEach( comunity => {
+                    if (comunity === element.Token) {
+                        dataOutput[index].Type = 'COMMUNITY'
+                    }
+                });
+
+                socialArray.forEach( social => {
+                    if (social === element.Token) {
+                        dataOutput[index].Type = 'SOCIAL'
+                    }
+                });
+
+                ftpodArray.forEach( ftpod => {
+                    if (ftpod === element.Token) {
+                        dataOutput[index].Type = 'FTPOD'
+                    }
+                });
+
+                nftpodArray.forEach( nftpod => {
+                    if (nftpod === element.Token) {
+                        dataOutput[index].Type = 'NFTPOD'
+                    }
+                });
+            });
+            // console.log('getBalancesOfAddress: data send to front', dataOutput)
+            res.send({ success: true, data: dataOutput });
         } else {
             console.log("cant getBalancesOfAddress for", userAddress);
             res.send({ success: false, data: {} });
@@ -399,7 +462,7 @@ module.exports.getBalanceHistoryInTokenTypes = async (req: express.Request, res:
             }
         });
         retData["nft"] = nftHistory;
-        // crypto
+        // social
         const socialHistory: any[] = [];
         const socialSnap = await db.collection(collections.wallet).doc(userId).collection(collections.socialHistory).orderBy("date", "asc").get();
         socialSnap.forEach((doc) => {
