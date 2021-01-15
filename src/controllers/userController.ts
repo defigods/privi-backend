@@ -7,7 +7,7 @@ import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
 import badge from "../blockchain/badge";
-import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification, getUidFromEmail, generateUniqueId } from "../functions/functions";
+import { getUidFromEmail, generateUniqueId, addZerosToHistory, getRateOfChangeAsMap, singTransaction, updateFirebase } from "../functions/functions";
 import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
@@ -19,8 +19,12 @@ import { accessSync } from 'fs';
 const jwt = require('jsonwebtoken');
 const crypto = require("crypto");
 import { sendForgotPasswordEmail, sendEmailValidation } from "../email_templates/emailTemplates";
+const bip39 = require('bip39');
+const hdkey = require("hdkey");
+const { privateToPublic, publicToAddress, toChecksumAddress } = require("ethereumjs-util");
+const { PRIVI_WALLET_PATH } = require('../constants/configuration');
 
-require('dotenv').config();
+// require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const notificationsController = require('./notificationsController');
 
@@ -207,7 +211,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
                     allWallPost.push(data)
                 });
                 if (!data.notifications) {
-                  data.notifications = [];
+                    data.notifications = [];
                 }
                 data.notifications.concat(allWallPost);
 
@@ -281,6 +285,61 @@ const signIn = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/user.ts -> signIn(): ', err);
     }
 
+};
+
+const attachAddress = async (userPublicId: string) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            console.log('got call from', userPublicId)
+            // const role = body.role; // role should not be coming from user input?
+            const role = "USER";
+            const caller = apiKey;
+            const lastUpdate = Date.now();
+
+            // generate mnemonic and save it in DB ** only for testnet
+            /*
+                this is a bad approach and must be moved to frontend
+                and mnemonic should be encripted with a password and saved in user local machine
+            */
+            const mnemonic = bip39.generateMnemonic();
+            const seed = await bip39.mnemonicToSeed(mnemonic);
+            const path = PRIVI_WALLET_PATH;
+            const hdwallet = await hdkey.fromMasterSeed(seed);
+            const wallet = hdwallet.derive(path);
+            //    const privateKey = '0x' + wallet._privateKey.toString('hex');
+            const pubKey = await privateToPublic(wallet._privateKey);
+            const publicKey = '0x04' + pubKey.toString("hex");
+            const address = '0x' + await publicToAddress(pubKey).toString('hex');
+            // const addressCheckSum = await toChecksumAddress(address);
+
+            const blockchainRes = await dataProtocol.attachAddress(userPublicId, address, caller);
+
+            if (blockchainRes && blockchainRes.success) {
+
+                // set address and mnemonic in User DB
+                await db.runTransaction(async (transaction) => {
+
+                    // userData - no check if firestore insert works? TODO
+                    transaction.update(db.collection(collections.user).doc(userPublicId), {
+                        mnemonic: mnemonic,
+                        pubKey: publicKey,
+                        address: address,
+                        lastUpdate: lastUpdate,
+                    });
+
+                });
+
+                resolve({ success: true, uid: userPublicId, address: address, lastUpdate: lastUpdate });
+
+            } else {
+                console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
+                reject({ success: false });
+            }
+        } catch (err) {
+            console.log('Error in controllers/user.ts -> attachaddress(): ', err);
+            reject({ success: false });
+        }
+    });
 };
 
 const signUp = async (req: express.Request, res: express.Response) => {
@@ -408,6 +467,9 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     anon: false,
                     anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
                     hasPhoto: false,
+                    mnemonic: '',
+                    pubKey: '',
+                    address: '',
                 });
 
                 /* // since we do not have any data for this- remove for now according to Marta
@@ -422,40 +484,35 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
             });
 
+            // ------------------------- attach address only test net ----------------------------
+            await attachAddress(userPublicId);
+
+            // ------------------------- add zero to balance history to make graph prettier ----------------------------
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.cryptoHistory), 'balance');
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.ftHistory), 'balance');
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.nftHistory), 'balance');
+            addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.socialHistory), 'balance');
+
             // ------------------------- Provisional for TestNet ---------------------------------
             // give user some balance in each tokens (50/tokenRate).
-            const coinsVal = 50; // value in USD to be sent
-            const fromUid = "k3Xpi5IB61fvG3xNM4POkjnCQnx1"; // Privi UID
+            const updatedUserSnap = await db.collection(collections.user).doc(uid).get();
+            const updatedUserData: any = updatedUserSnap.data();
+            const userAddress = updatedUserData.address;
+            const coinsVal = 100; // value in USD to be sent
+            const blockchainRes2 = await coinBalance.getTokenListByType("CRYPTO", apiKey);
+            const registeredCryptoTokens: string[] = blockchainRes2.output ?? [];
             const rateOfChange: any = await getRateOfChangeAsMap();   // get rate of tokens
-            const arrayMultiTransfer: {}[] = [];
-            let token: string = "";
-            let rate: any = null;
-            for ([token, rate] of Object.entries(rateOfChange)) { // build multitransfer array object by looping in rateOfChange
-                // rateOfChange also cointains podTokens, we dont need them
-                const tid = generateUniqueId();
-                const date = Date.now();
-                if (token.length <= 8) {
-                    const amount = coinsVal / rateOfChange[token];
-                    const transferObj = {
-                        Type: "transfer",
-                        Token: token,
-                        From: fromUid,
-                        To: uid,
-                        Amount: amount,
-                        Id: tid,
-                        date: date
-                    };
-                    arrayMultiTransfer.push(transferObj);
-                }
-            }
-            const blockchainRes2 = await coinBalance.multitransfer(arrayMultiTransfer, caller);
-            if (blockchainRes2 && blockchainRes2.success) {
-                console.log('User initial gift sent: 50 USD in each token');
-                updateFirebase(blockchainRes2);
-            }
-            else {
-                console.log('Error at sending initial 50 coins, blockchain success = false.', blockchainRes2.message);
-            }
+            registeredCryptoTokens.forEach((token) => {
+                const rate = rateOfChange[token] ?? 1;
+                const amount = coinsVal / rate;
+                coinBalance.mint("transfer", "", userAddress, amount, token, apiKey).then((blockchainRes3) => {
+                    console.log(blockchainRes3)
+                    if (!blockchainRes3.success) {
+                        console.log(`user ${uid} dindt get ${token}, ${blockchainRes3.message}`)
+                    }
+                });
+            })
+
             // ------------------------------------------------------------------------------------
 
             // send email validation here
@@ -483,6 +540,61 @@ const signUp = async (req: express.Request, res: express.Response) => {
     }
 };
 
+// const createMnemonic = async (req: express.Request, res: express.Response) => {
+//     try {
+//         const body = req.body;
+//         const userPublicId = body.userId;
+//         console.log('got call from', userPublicId)
+//         // const role = body.role; // role should not be coming from user input?
+//         const role = "USER";
+//         const caller = apiKey;
+//         const lastUpdate = Date.now();
+
+//         // generate mnemonic and save it in DB ** only for testnet
+//         /*
+//             this is a bad approach and must be moved to frontend
+//             and mnemonic should be encripted with a password and saved in user local machine
+//         */
+//         const mnemonic = bip39.generateMnemonic();
+//         const seed = await bip39.mnemonicToSeed(mnemonic);
+//         const path = PRIVI_WALLET_PATH;
+//         const hdwallet = await hdkey.fromMasterSeed(seed);
+//         const wallet = hdwallet.derive(path);
+//         //    const privateKey = '0x' + wallet._privateKey.toString('hex');
+//         const pubKey =  await privateToPublic(wallet._privateKey);   
+//         const publicKey = '0x04' + pubKey.toString("hex");
+//         const address = '0x' + await publicToAddress(pubKey).toString('hex');
+//         const addressCheckSum = await toChecksumAddress(address);
+
+//         const blockchainRes = await dataProtocol.attachAddress(userPublicId, publicKey, caller);
+
+//         if (blockchainRes && blockchainRes.success) {
+
+//             // set address and mnemonic in User DB
+//             await db.runTransaction(async (transaction) => {
+
+//                 // userData - no check if firestore insert works? TODO
+//                 transaction.update(db.collection(collections.user).doc(userPublicId), {
+//                     mnemonic: mnemonic,
+//                     pubKey: publicKey,
+//                     address: addressCheckSum,
+//                     lastUpdate: lastUpdate,
+//                 });
+
+//             });
+
+//             res.send({ success: true, uid: userPublicId, address: addressCheckSum, lastUpdate: lastUpdate });
+
+//         } else {
+//             console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
+//             res.send({ success: false });
+//         }
+//     } catch (err) {
+//         console.log('Error in controllers/user.ts -> attachaddress(): ', err);
+//         res.send({ success: false });
+//     }
+// };
+
 // MY WALL FUNCTIONS
 
 // ----------------------------- Basic Info --------------------------
@@ -503,7 +615,7 @@ interface BasicInfo {
     instagram: string,
     notifications: any[],
     anon: boolean,
-    anonAvatar: string,    
+    anonAvatar: string,
     hasPhoto: boolean,
 }
 
@@ -578,7 +690,7 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
                 allWallPost.push(data)
             });
             if (!userData.notifications) {
-              userData.notifications = [];
+                userData.notifications = [];
             }
 
             userData.notifications = userData.notifications.concat(allWallPost);
@@ -697,7 +809,7 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
         });
         console.log(allWallPost);
         if (!userData.notifications) {
-          userData.notifications = [];
+            userData.notifications = [];
         }
         userData.notifications = userData.notifications.concat(allWallPost);
         userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
@@ -711,63 +823,63 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
 }
 
 const postToWall = async (req: express.Request, res: express.Response) => {
-  try {
-    const body = req.body;
+    try {
+        const body = req.body;
 
-    const wallContent = body.wallContent;
-    const wallId = body.wallId;
+        const wallContent = body.wallContent;
+        const wallId = body.wallId;
 
-    let wallPostGet = await db.collection(collections.wallPost).get();
-    let uid = generateUniqueId();
+        let wallPostGet = await db.collection(collections.wallPost).get();
+        let uid = generateUniqueId();
 
-    if (wallContent && wallId) {
+        if (wallContent && wallId) {
 
-      await db.runTransaction(async (transaction) => {
-        transaction.set(db.collection(collections.wallPost).doc(uid), {
-          wallContent: wallContent,
-          wallId: wallId, // whose wall was posted to
-          fromUserId: req.body.priviUser.id, // who posted to the wall
-          date: Date.now(),
-          updatedAt: null,
-          hasPhoto: false,
-          likes: [],
-          dislikes: [],
-          numLikes: 0,
-          numDislikes: 0,
-        });
-      });
+            await db.runTransaction(async (transaction) => {
+                transaction.set(db.collection(collections.wallPost).doc(uid), {
+                    wallContent: wallContent,
+                    wallId: wallId, // whose wall was posted to
+                    fromUserId: req.body.priviUser.id, // who posted to the wall
+                    date: Date.now(),
+                    updatedAt: null,
+                    hasPhoto: false,
+                    likes: [],
+                    dislikes: [],
+                    numLikes: 0,
+                    numDislikes: 0,
+                });
+            });
 
-      let data = {
-        success: true,
-        data: {
-          id: uid,
-          wallContent: wallContent,
-          wallId: wallId, // whose wall was posted to
-          fromUserId: req.body.priviUser.id, // who posted to the wall
-          date: Date.now(),
-          updatedAt: null,
-          hasPhoto: false,
-          likes: [],
-          dislikes: [],
-          numLikes: 0,
-          numDislikes: 0,
+            let data = {
+                success: true,
+                data: {
+                    id: uid,
+                    wallContent: wallContent,
+                    wallId: wallId, // whose wall was posted to
+                    fromUserId: req.body.priviUser.id, // who posted to the wall
+                    date: Date.now(),
+                    updatedAt: null,
+                    hasPhoto: false,
+                    likes: [],
+                    dislikes: [],
+                    numLikes: 0,
+                    numDislikes: 0,
+                }
+            };
+            res.send(data);
+
+            // send message back to socket
+            if (sockets[req.body.priviUser.id]) {
+                sockets[req.body.priviUser.id].emit("new wall post", data);
+            }
+        } else {
+            console.log('parameters required');
+            res.send({ success: false, message: "parameters required" });
         }
-      };
-      res.send(data);
 
-      // send message back to socket
-      if (sockets[req.body.priviUser.id]) {
-        sockets[req.body.priviUser.id].emit("new wall post", data);
-      }
-    } else {
-      console.log('parameters required');
-      res.send({ success: false, message: "parameters required" });
+    } catch (err) {
+        console.log('Error in controllers/userController -> postToWall()', err);
+        res.send({ success: false });
     }
-
-  } catch (err) {
-    console.log('Error in controllers/userController -> postToWall()', err);
-    res.send({ success: false });
-  }
 
 }
 
@@ -799,7 +911,7 @@ const likePost = async (req: express.Request, res: express.Response) => {
         let body = req.body;
 
         const wallPostRef = db.collection(collections.wallPost)
-          .doc(body.wallPostId);
+            .doc(body.wallPostId);
         const wallPostGet = await wallPostRef.get();
         const wallPost: any = wallPostGet.data();
 
@@ -809,13 +921,13 @@ const likePost = async (req: express.Request, res: express.Response) => {
         let numDislikes = wallPost.numDislikes;
 
         let likeIndex = likes.findIndex(user => user === body.userId);
-        if(likeIndex === -1) {
+        if (likeIndex === -1) {
             likes.push(body.userId);
             numLikes = wallPost.numLikes + 1;
         }
 
         let dislikeIndex = dislikes.findIndex(user => user === body.userId);
-        if(dislikeIndex !== -1) {
+        if (dislikeIndex !== -1) {
             dislikes.splice(dislikeIndex, 1);
             numDislikes = numDislikes - 1;
         }
@@ -832,7 +944,7 @@ const likePost = async (req: express.Request, res: express.Response) => {
         wallPost.numLikes = numLikes;
         wallPost.numDislikes = numDislikes;
 
-        if(wallPost.fromUserId !== body.userId) {
+        if (wallPost.fromUserId !== body.userId) {
             await updateUserCred(wallPost.fromUserId, true);
         }
 
@@ -851,7 +963,7 @@ const dislikePost = async (req: express.Request, res: express.Response) => {
         let body = req.body;
 
         const wallPostRef = db.collection(collections.wallPost)
-          .doc(body.wallPostId);
+            .doc(body.wallPostId);
         const wallPostGet = await wallPostRef.get();
         const wallPost: any = wallPostGet.data();
 
@@ -861,13 +973,13 @@ const dislikePost = async (req: express.Request, res: express.Response) => {
         let numDislikes = wallPost.numDislikes;
 
         let likeIndex = likes.findIndex(user => user === body.userId);
-        if(likeIndex !== -1) {
+        if (likeIndex !== -1) {
             likes.splice(likeIndex, 1);
             numLikes = numLikes - 1;
         }
 
         let dislikeIndex = dislikes.findIndex(user => user === body.userId);
-        if(dislikeIndex === -1) {
+        if (dislikeIndex === -1) {
             dislikes.push(body.userId);
             numDislikes = wallPost.numDislikes + 1
         }
@@ -884,7 +996,7 @@ const dislikePost = async (req: express.Request, res: express.Response) => {
         wallPost.numLikes = numLikes;
         wallPost.numDislikes = numDislikes;
 
-        if(wallPost.fromUserId !== body.userId) {
+        if (wallPost.fromUserId !== body.userId) {
             await updateUserCred(wallPost.fromUserId, false);
         }
 
@@ -1429,8 +1541,8 @@ const changeUserProfilePhoto = async (req: express.Request, res: express.Respons
                     hasPhoto: true
                 });
             } else {
-                 await userRef.set({
-                     ...user,
+                await userRef.set({
+                    ...user,
                     hasPhoto: true
                 });
             }
@@ -1551,7 +1663,7 @@ const getBadges = async (req: express.Request, res: express.Response) => {
         let creator = req.params.userId;
         const allBadges: any[] = [];
         const badgesSnap = await db.collection(collections.badges)
-        .where("creator", "==", creator).get();
+            .where("creator", "==", creator).get();
 
         badgesSnap.forEach((doc) => {
             const data: any = doc.data();
@@ -1560,10 +1672,10 @@ const getBadges = async (req: express.Request, res: express.Response) => {
         });
 
         res.send({
-            success: true, 
+            success: true,
             data: {
                 all: allBadges
-                }
+            }
         });
     } catch (e) {
         return ('Error in controllers/userControllers -> getBadges()' + e)
@@ -1582,13 +1694,13 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         const txid = generateUniqueId();
 
         const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
-        if (blockchainRes && blockchainRes.success) {  
+        if (blockchainRes && blockchainRes.success) {
             //await updateFirebase(blockchainRes);
-           
+
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc(''+txid), {
+                transaction.set(db.collection(collections.badges).doc('' + txid), {
                     creator: creator,
-                    name: name, 
+                    name: name,
                     description: description,
                     classification: classification,
                     symbol: name,
@@ -1608,11 +1720,11 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             //  let badges = [...user.badges];
 
             // console.log('badges', badges, user)
-    
+
             // await userRef.update({
             //     badges: badges.push(txid)
             // });
-    
+
             res.send({
                 success: true, data: {
                     creator: creator,
@@ -1625,7 +1737,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
                     royalty: royalty,
                     txnId: txid,
                     hasPhoto: false
-                 }
+                }
             });
         }
         else {
@@ -1642,7 +1754,7 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
         if (req.file) {
             const badgeRef = db.collection(collections.badges)
                 .doc(req.file.originalname);
-    
+
             const badgeGet = await badgeRef.get();
             const badge: any = await badgeGet.data();
 
@@ -1896,16 +2008,16 @@ const voteIssue = async (req: express.Request, res: express.Response) => {
 //CHANGE ANON MODE
 
 const changeAnonMode = async (req: express.Request, res: express.Response) => {
-try {
+    try {
         let body = req.body;
 
         if (body && body.userId && body.anonMode != undefined) {
             const userRef = db.collection(collections.user)
-            .doc(body.userId);
+                .doc(body.userId);
 
             await userRef.update({
-            anon: body.anonMode,
-        });
+                anon: body.anonMode,
+            });
 
             res.send({ success: true });
 
@@ -1923,12 +2035,12 @@ try {
 //CHANGE ANON AVATAR
 
 const changeAnonAvatar = async (req: express.Request, res: express.Response) => {
-try {
+    try {
         let body = req.body;
 
         if (body && body.userId && body.anonAvatar) {
             const userRef = db.collection(collections.user)
-            .doc(body.userId);
+                .doc(body.userId);
 
             await userRef.update({
                 anonAvatar: body.anonAvatar,
@@ -1955,7 +2067,7 @@ const updateUserCred = (userId, sum) => {
             const user: any = userGet.data();
 
             let creds = user.creds;
-            if(sum) {
+            if (sum) {
                 creds = creds + 1;
             } else {
                 creds = creds - 1;
@@ -1982,6 +2094,7 @@ module.exports = {
     resendEmailValidation,
     signIn,
     signUp,
+    // createMnemonic,
     getFollowPodsInfo,
     getFollowingUserInfo,
     getOwnInfo,

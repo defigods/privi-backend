@@ -4,13 +4,15 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase } from '../functions/functions';
-import { ETH_PRIVI_ADDRESS, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS } from '../constants/configuration';
+import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
+import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
+const uuid = require('uuid');
 
 // TODO: this should be the preferred method to get the private key!
 // Get private key for API calls
@@ -66,7 +68,7 @@ const getChainId = () => {
             console.log('Error in connectController.ts->getChainId(): ', err)
         });
 };
-// getChainId();
+getChainId();
 
 /**
  * @notice Start http & websocket servers to interact with the front-end
@@ -190,6 +192,7 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
  * @param fromAddress User account to retrieve the balance
  */
 const getERC20Balance = async (req: express.Request, res: express.Response) => {
+    console.log('Sarkawt: should be depricated');
     const { fromAddress, chainId } = req.query;
 
     if (chainId === '3') { // Ropsten
@@ -225,12 +228,9 @@ const getERC20Balance = async (req: express.Request, res: express.Response) => {
  */
 const send = async (req: express.Request, res: express.Response) => {
     const body = req.body;
+    // console.log('body', body)
     if (typeof body.action === 'string') {
-        if (body.action === Action.WITHDRAW_ERC20 || body.action === Action.WITHDRAW_ETH) {
-            withdraw(body)
-        } else {
-            await saveTx(body);
-        };
+        await saveTx(body);
         res.send('OK');
     } else {
         res.send('KO');
@@ -242,7 +242,7 @@ const send = async (req: express.Request, res: express.Response) => {
  * @param params Relevant transaction fields to be stored
  */
 const saveTx = async (params: any) => {
-
+    // console.log('saveTx',params)
     // Build object with fields to be stored in Firestore
     const data = {
         txHash: params.txHash,
@@ -250,6 +250,7 @@ const saveTx = async (params: any) => {
         to: params.to,
         random: params.random,
         publicId: params.publicId,
+        address: params.userAddress,
         chainId: params.chainId,
         action: params.action,
         description: params.description,
@@ -270,22 +271,22 @@ const saveTx = async (params: any) => {
  * @param txHash Transaction hash
  * @param newStatus New transaction status
  */
-const updateTx = async (txHash: string, newStatus: string) => {
+// const updateTx = async (txHash: string, newStatus: string) => {
 
-    // Retrieve TX doc
-    const snapshot = await db
-        .collection(collections.ethTransactions)
-        .where('txHash', '==', txHash)
-        .get();
+//     // Retrieve TX doc
+//     const snapshot = await db
+//         .collection(collections.ethTransactions)
+//         .where('txHash', '==', txHash)
+//         .get();
 
-    // Update TX status
-    for (var i in snapshot.docs) {
-        const res = await db
-            .collection(collections.ethTransactions)
-            .doc(snapshot.docs[i].id)
-            .set({ status: newStatus }, { merge: true });
-    };
-};
+//     // Update TX status
+//     for (var i in snapshot.docs) {
+//         const res = await db
+//             .collection(collections.ethTransactions)
+//             .doc(snapshot.docs[i].id)
+//             .set({ status: newStatus }, { merge: true });
+//     };
+// };
 
 /**
  * @notice Sends status of the transaction back to the front-end
@@ -295,28 +296,28 @@ const updateTx = async (txHash: string, newStatus: string) => {
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param status Transaction status (pending, failed)
  */
-const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
+// const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
 
-    // Update TX status in Firestore
-    (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-        ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
-        : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
+//     // Update TX status in Firestore
+//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
+//         ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
+//         : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
 
-    // Remove TX from Queue
-    (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-        ? txQueue = txQueue.filter(elem => elem != random)
-        : txQueue = txQueue.filter(elem => elem != txHash);
+//     // Remove TX from Queue
+//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
+//         ? txQueue = txQueue.filter(elem => elem != random)
+//         : txQueue = txQueue.filter(elem => elem != txHash);
 
-    // Send TX confirmation back to user through websocket
-    if (users.get(publicId)) {
-        users.get(publicId).sendUTF(JSON.stringify({
-            txHash: txHash,
-            random: random,
-            status: status,
-            action: action,
-        }));
-    };
-};
+//     // Send TX confirmation back to user through websocket
+//     if (users.get(publicId)) {
+//         users.get(publicId).sendUTF(JSON.stringify({
+//             txHash: txHash,
+//             random: random,
+//             status: status,
+//             action: action,
+//         }));
+//     };
+// };
 
 /**
  * @notice Check number of confirmations of a transaction in Ethereum
@@ -386,37 +387,55 @@ const wsListen = () => {
  * approve or withdraw
  */
 const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
+    if (SHOULD_HANDLE_SWAP) {
+        // console.log('cronJob called');
+        // Start WS server if not initialized yet
+        (!runOnce) ? wsListen() : null;
 
-    // Start WS server if not initialized yet
-    (!runOnce) ? wsListen() : null;
+        //Retrieve all pending TX from Firestore
+        const snapshot = await db
+            .collection(collections.ethTransactions)
+            .where('status', '==', 'pending')
+            .where('chainId', '==', CHAIN_ID)
+            .get();
 
-    //Retrieve all pending TX from Firestore
-    const snapshot = await db
-        .collection(collections.ethTransactions)
-        .where('status', '==', 'pending')
-        .where('chainId', '==', CHAIN_ID)
-        .get();
-
-    // Process outstanding TX
-    if (!snapshot.empty) {
-        for (let i in snapshot.docs) {
-            const doc = snapshot.docs[i].data();
-            const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-            if (confirmations > 0) {
-                if (!txQueue.includes(doc.txHash)) {
-                    txQueue.push(doc.txHash);
-                    if (doc.action === Action.SWAP_APPROVE_ERC20 ||
-                        doc.action === Action.WITHDRAW_ETH ||
-                        doc.action === Action.WITHDRAW_ERC20) {
-                        sendTxBack(doc.txHash, doc.publicId, doc.action, doc.random, 'OK');
-                    } else {
-                        swap(doc.publicId, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+        // Process outstanding TX
+        if (!snapshot.empty) {
+            console.log('should check Tx for swap?', !snapshot.empty);
+            for (let i in snapshot.docs) {
+                const doc = snapshot.docs[i].data();
+                const docId = snapshot.docs[i].id;
+                if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
+                    doc.action === Action.WITHDRAW_ETH ||
+                    doc.action === Action.WITHDRAW_ERC20) {
+                    console.log('performing withdraw');
+                    withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
+                } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
+                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    /* 
+                        confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                    */
+                if (confirmations > MIN_ETH_CONFIRMATION) {
+                    console.log('approve should be set to confirmed');
+                    updateStatusOneToOneSwap(docId, 'confirmed');
+                    return;
+                };
+                } else {
+                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    /* 
+                        confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                    */
+                    if (confirmations > MIN_ETH_CONFIRMATION) {
+                        console.log('performing swap');
+                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
                         return;
                     };
-                };
+                }
             };
         };
-    };
+    }
 });
 
 /**
@@ -431,7 +450,9 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
  * @param lastUpdate Date of the swap in Unix timestamp
  */
 const swap = async (
+    swapDocId: string,
     publicId: string,
+    userAddress: string,
     from: string,
     amount: string,
     token: string,
@@ -443,26 +464,12 @@ const swap = async (
     try {
         console.log('--> Swap: TX confirmed in Ethereum');
 
-        const mint = {
-            From: from,
-            To: publicId,
-            Type: action,
-            Token: token,
-            Amount: amount,
-            Date: lastUpdate,
-            Id: txHash,
-            Caller: 'PRIVI'
-        }
-        console.log('Mint params: ', mint)
-
         const response = await swapFab(
             action,
             from,
-            publicId,
+            userAddress,
             amount,
             token,
-            lastUpdate,
-            txHash,
             'PRIVI'
         );
 
@@ -470,13 +477,21 @@ const swap = async (
             console.log('--> Swap: TX confirmed in Fabric: ', response);
 
             // Update balances in Firestore
-            updateFirebase(response);
+            // updateFirebase(response);
+
+            // confirm swap: ** this could be moved to updateFireBase
+            console.log('should confirm swap doc id', swapDocId)
+            updateStatusOneToOneSwap(swapDocId, 'confirmed');
 
             // Update TX
-            await sendTxBack(txHash, publicId, action, random, 'OK');
+            // Sarkawt: i don't know why
+            // await sendTxBack(txHash, publicId, action, random, 'OK');
         } else {
             console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful', response);
-            await sendTxBack(txHash, publicId, action, random, 'KO');
+            // next line will not be needed
+            // await sendTxBack(txHash, publicId, action, random, 'KO');
+
+            // if we leave the status pending the back end will try later to make the swap
         };
     } catch (err) {
         console.log('Error in connectController.ts->swap(): ', err);
@@ -494,52 +509,58 @@ const swap = async (
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param action Action to be performed (swap ETH or swap ERC20 token)
  */
-const withdraw = async (params: any) => {
 
-    const input = {
-        From: params.publicId,
-        To: params.to,
-        Type: params.action,
-        Token: params.token,
-        Amount: params.amount,
-        Date: params.lastUpdate,
-        Id: params.random,
-        Caller: 'PRIVI'
-    }
+const withdraw = async (
+    swapDocId: string,
+    fromFabricAddress: string,
+    toEthAddress: string,
+    amount: any,
+    action: string,
+    token: string,
+    date: string,
+    chainId: string
+) => {
+    console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
 
-    console.log(`Input for burn: \n`, input);
-
+    // set swap doc to in progress
+    updateStatusOneToOneSwap(swapDocId, 'inProgress');
+    // first burn fabric token
     // Withdraw in Fabric
     const response = await withdrawFab(
-        params.action,
-        params.publicId,
-        params.to,
-        params.amount,
-        params.token,
-        params.lastUpdate,
-        params.random,
+        action,
+        fromFabricAddress,
+        toEthAddress,
+        amount,
+        token,
         'PRIVI'
     );
 
     if (response && response.success) {
-
-        // Update balances in Firestore
-        updateFirebase(response);
+        console.log('burn fab', response.success)
+        // second send coin to user on eth
 
         // Convert value into wei
-        const amountWei = web3.utils.toWei(String(params.amount));
+        const amountWei = web3.utils.toWei(String(amount));
+
+        let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
+
+        console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
 
         // Get SwapManager contract code
-        const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+        const contract = new web3.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(CHAIN_ID.split('x')[1])]["address"]);
+
+        // check if contract has balance
+        // let contractBalanceWei = web3.eth.getBalance(contract.address);
+        // console.log('contract.address, contractBalanceWei', contract.options.address, contractBalanceWei)
 
         // Choose method from SwapManager to be called
-        const method = (params.action === Action.WITHDRAW_ETH)
-            ? contract.methods.withdrawEther(params.to, amountWei).encodeABI()
-            : contract.methods.withdrawERC20Token(params.token, params.to, amountWei).encodeABI();
+        const method = (action === Action.WITHDRAW_ETH)
+            ? contract.methods.withdrawEther(toEthAddress, amountWei).encodeABI()
+            : contract.methods.withdrawERC20Token(token, toEthAddress, amountWei).encodeABI();
 
         // Transaction parameters
         const paramsTX = {
-            chainId: params.chainId,
+            chainId: chainId,
             fromAddress: ETH_PRIVI_ADDRESS,
             fromAddressKey: ETH_PRIVI_KEY,
             encodedABI: method,
@@ -548,38 +569,148 @@ const withdraw = async (params: any) => {
 
         // Execute transaction to withdraw in Ethereum
         const { success, data } = await executeTX(paramsTX);
-        const paramsTx = {
-            publicId: params.publicId,
-            from: params.from,
-            to: params.to,
-            txHash: 0,
-            random: params.random,
-            chainId: params.chainId,
-            action: params.action,
-            token: params.token,
-            amount: params.amount,
-            description: params.description,
-            status: 'pending',
-            lastUpdate: params.lastUpdate,
-        };
-        console.log('params to be saved in firestore: ', paramsTx)
-        // Send back transaction result to front-end
+
         if (success) {
-            console.log('--> Withdraw: TX confirmed in Ethereum');
-            paramsTx.txHash = data.transactionHash,
-                await saveTx(paramsTx);
+            console.log('--> Withdraw: TX confirmed in Ethereum', data);
+            const txHash = data.transactionHash;
+            //     await saveTx(paramsTx);
+            updateStatusOneToOneSwap(swapDocId, 'confirmed');
+            updateTxOneToOneSwap(swapDocId, txHash);
         } else {
-            console.log('--> Withdraw: TX failed in Ethereum');
-            await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
+            console.warn('--> Withdraw: TX failed in Ethereum', data);
+            console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
+            const txHash = data.transactionHash;
+            updateStatusOneToOneSwap(swapDocId, 'failed');
+            updateTxOneToOneSwap(swapDocId, txHash);
+
+            const mintBack = await swapFab(
+                'CRYPTO',
+                toEthAddress,
+                fromFabricAddress,
+                amount,
+                token,
+                'PRIVI'
+            );
+
+            if (mintBack.success) {
+                console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+                updateStatusOneToOneSwap(swapDocId, 'failed with return');
+            } else {
+                console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+                updateStatusOneToOneSwap(swapDocId, 'failed without return');
+            }
         };
+
+
+
     } else {
-        console.log('--> Withdraw: TX failed in Fabric');
-        await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
+        console.log('fabric burn fail', response);
+        // set back swap doc to pending, so it can be tried later
+        updateStatusOneToOneSwap(swapDocId, 'pending');
     }
-};
+
+}
+
+// const _withdraw = async (params: any) => {
+
+//     // const input = {
+//     //     From: params.publicId,
+//     //     userAddress: params.userAddress,
+//     //     To: params.to,
+//     //     Type: params.action,
+//     //     Token: params.token,
+//     //     Amount: params.amount,
+//     //     Date: params.lastUpdate,
+//     //     Id: params.random,
+//     //     Caller: 'PRIVI'
+//     // }
+
+//     // console.log(`Input for burn: \n`, input);
+
+//     // Withdraw in Fabric
+//     const response = await withdrawFab(
+//         params.action,
+//         params.userAddress,
+//         params.to,
+//         params.amount,
+//         params.token,
+//         params.lastUpdate,
+//         params.random,
+//         'PRIVI'
+//     );
+
+//     if (response && response.success) {
+
+//         // Update balances in Firestore
+//         // updateFirebase(response);
+
+//         // Convert value into wei
+//         const amountWei = web3.utils.toWei(String(params.amount));
+
+//         // Get SwapManager contract code
+//         const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
+
+//         // Choose method from SwapManager to be called
+//         const method = (params.action === Action.WITHDRAW_ETH)
+//             ? contract.methods.withdrawEther(params.to, amountWei).encodeABI()
+//             : contract.methods.withdrawERC20Token(params.token, params.to, amountWei).encodeABI();
+
+//         // Transaction parameters
+//         const paramsTX = {
+//             chainId: params.chainId,
+//             fromAddress: ETH_PRIVI_ADDRESS,
+//             fromAddressKey: ETH_PRIVI_KEY,
+//             encodedABI: method,
+//             toAddress: ETH_SWAP_MANAGER_ADDRESS,
+//         };
+
+//         // Execute transaction to withdraw in Ethereum
+//         const { success, data } = await executeTX(paramsTX);
+//         const paramsTx = {
+//             publicId: params.publicId,
+//             from: params.from,
+//             to: params.to,
+//             txHash: 0,
+//             random: params.random,
+//             chainId: params.chainId,
+//             action: params.action,
+//             token: params.token,
+//             amount: params.amount,
+//             description: params.description,
+//             status: 'pending',
+//             lastUpdate: params.lastUpdate,
+//         };
+//         console.log('params to be saved in firestore: ', paramsTx)
+//         // Send back transaction result to front-end
+//         if (success) {
+//             console.log('--> Withdraw: TX confirmed in Ethereum');
+//             paramsTx.txHash = data.transactionHash,
+//                 await saveTx(paramsTx);
+//         } else {
+//             console.log('--> Withdraw: TX failed in Ethereum');
+//             await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
+//         };
+//     } else {
+//         console.log('--> Withdraw: TX failed in Fabric');
+//         await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
+//     }
+// };
+
+const getRecentSwaps = async (req: express.Request, res: express.Response) => {
+    const { userId, userAddress } = req.query;
+    // console.log('getRecentSwaps', userAddress)
+    const recentSwaps = await loadRecentSwaps(userAddress);
+    // console.log('recentSwaps', recentSwaps)
+    if (recentSwaps) {
+        res.send({ success: true, data: recentSwaps });
+    } else {
+        res.send({ success: false });
+    }
+}
 
 module.exports = {
     getERC20Balance,
     send,
     checkTx,
+    getRecentSwaps
 };
