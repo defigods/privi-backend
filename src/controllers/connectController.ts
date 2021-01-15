@@ -4,8 +4,8 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase, updateStatusOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
-import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION } from '../constants/configuration';
+import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
+import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
 import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
@@ -271,22 +271,22 @@ const saveTx = async (params: any) => {
  * @param txHash Transaction hash
  * @param newStatus New transaction status
  */
-const updateTx = async (txHash: string, newStatus: string) => {
+// const updateTx = async (txHash: string, newStatus: string) => {
 
-    // Retrieve TX doc
-    const snapshot = await db
-        .collection(collections.ethTransactions)
-        .where('txHash', '==', txHash)
-        .get();
+//     // Retrieve TX doc
+//     const snapshot = await db
+//         .collection(collections.ethTransactions)
+//         .where('txHash', '==', txHash)
+//         .get();
 
-    // Update TX status
-    for (var i in snapshot.docs) {
-        const res = await db
-            .collection(collections.ethTransactions)
-            .doc(snapshot.docs[i].id)
-            .set({ status: newStatus }, { merge: true });
-    };
-};
+//     // Update TX status
+//     for (var i in snapshot.docs) {
+//         const res = await db
+//             .collection(collections.ethTransactions)
+//             .doc(snapshot.docs[i].id)
+//             .set({ status: newStatus }, { merge: true });
+//     };
+// };
 
 /**
  * @notice Sends status of the transaction back to the front-end
@@ -296,28 +296,28 @@ const updateTx = async (txHash: string, newStatus: string) => {
  * @param random Random generated from the front-end as identifier for a withdraw request
  * @param status Transaction status (pending, failed)
  */
-const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
+// const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
 
-    // Update TX status in Firestore
-    (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-        ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
-        : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
+//     // Update TX status in Firestore
+//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
+//         ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
+//         : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
 
-    // Remove TX from Queue
-    (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-        ? txQueue = txQueue.filter(elem => elem != random)
-        : txQueue = txQueue.filter(elem => elem != txHash);
+//     // Remove TX from Queue
+//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
+//         ? txQueue = txQueue.filter(elem => elem != random)
+//         : txQueue = txQueue.filter(elem => elem != txHash);
 
-    // Send TX confirmation back to user through websocket
-    if (users.get(publicId)) {
-        users.get(publicId).sendUTF(JSON.stringify({
-            txHash: txHash,
-            random: random,
-            status: status,
-            action: action,
-        }));
-    };
-};
+//     // Send TX confirmation back to user through websocket
+//     if (users.get(publicId)) {
+//         users.get(publicId).sendUTF(JSON.stringify({
+//             txHash: txHash,
+//             random: random,
+//             status: status,
+//             action: action,
+//         }));
+//     };
+// };
 
 /**
  * @notice Check number of confirmations of a transaction in Ethereum
@@ -387,42 +387,55 @@ const wsListen = () => {
  * approve or withdraw
  */
 const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
-    // console.log('cronJob called');
-    // Start WS server if not initialized yet
-    (!runOnce) ? wsListen() : null;
+    if (SHOULD_HANDLE_SWAP) {
+        // console.log('cronJob called');
+        // Start WS server if not initialized yet
+        (!runOnce) ? wsListen() : null;
 
-    //Retrieve all pending TX from Firestore
-    const snapshot = await db
-        .collection(collections.ethTransactions)
-        .where('status', '==', 'pending')
-        .where('chainId', '==', CHAIN_ID)
-        .get();
+        //Retrieve all pending TX from Firestore
+        const snapshot = await db
+            .collection(collections.ethTransactions)
+            .where('status', '==', 'pending')
+            .where('chainId', '==', CHAIN_ID)
+            .get();
 
-    // Process outstanding TX
-    if (!snapshot.empty) {
-        console.log('should check Tx for swap?', !snapshot.empty);
-        for (let i in snapshot.docs) {
-            const doc = snapshot.docs[i].data();
-            const docId = snapshot.docs[i].id;
-            if (doc.action === Action.SWAP_APPROVE_ERC20 ||
-                doc.action === Action.WITHDRAW_ETH ||
-                doc.action === Action.WITHDRAW_ERC20) {
-                console.log('performing withdraw');
-                withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
-            } else {
-                const confirmations = await checkTxConfirmations(doc.txHash) || 0;
-                console.log('is confirmation > ', MIN_ETH_CONFIRMATION, confirmations > MIN_ETH_CONFIRMATION)
-                /* 
-                    confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
-                */
+        // Process outstanding TX
+        if (!snapshot.empty) {
+            console.log('should check Tx for swap?', !snapshot.empty);
+            for (let i in snapshot.docs) {
+                const doc = snapshot.docs[i].data();
+                const docId = snapshot.docs[i].id;
+                if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
+                    doc.action === Action.WITHDRAW_ETH ||
+                    doc.action === Action.WITHDRAW_ERC20) {
+                    console.log('performing withdraw');
+                    withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
+                } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
+                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    /* 
+                        confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                    */
                 if (confirmations > MIN_ETH_CONFIRMATION) {
-                    console.log('performing swap');
-                    swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                    console.log('approve should be set to confirmed');
+                    updateStatusOneToOneSwap(docId, 'confirmed');
                     return;
                 };
-            }
+                } else {
+                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    /* 
+                        confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
+                    */
+                    if (confirmations > MIN_ETH_CONFIRMATION) {
+                        console.log('performing swap');
+                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                        return;
+                    };
+                }
+            };
         };
-    };
+    }
 });
 
 /**
@@ -475,7 +488,10 @@ const swap = async (
             // await sendTxBack(txHash, publicId, action, random, 'OK');
         } else {
             console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful', response);
-            await sendTxBack(txHash, publicId, action, random, 'KO');
+            // next line will not be needed
+            // await sendTxBack(txHash, publicId, action, random, 'KO');
+
+            // if we leave the status pending the back end will try later to make the swap
         };
     } catch (err) {
         console.log('Error in connectController.ts->swap(): ', err);
@@ -535,7 +551,7 @@ const withdraw = async (
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
-        // console.log('contract.address, contractBalanceWei', contract.address, contractBalanceWei)
+        // console.log('contract.address, contractBalanceWei', contract.options.address, contractBalanceWei)
 
         // Choose method from SwapManager to be called
         const method = (action === Action.WITHDRAW_ETH)
@@ -556,14 +572,16 @@ const withdraw = async (
 
         if (success) {
             console.log('--> Withdraw: TX confirmed in Ethereum', data);
-            // paramsTx.txHash = data.transactionHash,
+            const txHash = data.transactionHash;
             //     await saveTx(paramsTx);
             updateStatusOneToOneSwap(swapDocId, 'confirmed');
+            updateTxOneToOneSwap(swapDocId, txHash);
         } else {
             console.warn('--> Withdraw: TX failed in Ethereum', data);
             console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
-
+            const txHash = data.transactionHash;
             updateStatusOneToOneSwap(swapDocId, 'failed');
+            updateTxOneToOneSwap(swapDocId, txHash);
 
             const mintBack = await swapFab(
                 'CRYPTO',
