@@ -48,6 +48,14 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             const updatedCreditInfo = output.UpdatedCreditInfo;
             const creditAddress = Object.keys(updatedCreditInfo)[0];
 
+            // update user levels
+            let numCreatedPriviCredits = 0;
+            const userLevelSnap = await db.collection(collections.levels).doc(creator).get();
+            const data: any = userLevelSnap.data();
+            if (data.NumCreatedPriviCredits) numCreatedPriviCredits = data.NumCreatedPriviCredits;
+            numCreatedPriviCredits += 1;
+            userLevelSnap.ref.set({ NumCreatedPriviCredits: numCreatedPriviCredits });
+
             // add some more data to firebase
             const description = body.description;
             const discordId = body.discordId;
