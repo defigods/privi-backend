@@ -807,8 +807,8 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
             data.type = 'post';
             allWallPost.push(data)
         });
-        console.log(allWallPost);
-        if (!userData.notifications) {
+
+        if (!userData || !userData.notifications) {
             userData.notifications = [];
         }
         userData.notifications = userData.notifications.concat(allWallPost);
