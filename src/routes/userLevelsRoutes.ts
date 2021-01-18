@@ -10,3 +10,5 @@ router.post('/checkLevel', authenticateJWT, userLevelsController.checkLevel);
 router.post('/pointsWonToday', authenticateJWT, userLevelsController.pointsWonToday);
 router.get('/getUserRank', authenticateJWT, userLevelsController.getUserRank);
 router.get('/getNumberOfUsersPerLevel', authenticateJWT, userLevelsController.getNumberOfUsersPerLevel);
+
+module.exports = router;
