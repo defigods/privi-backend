@@ -217,7 +217,7 @@ exports.getCommunityWallPostPhotoById = async (req: express.Request, res: expres
 };
 exports.getCommunityWallPostDescriptionPhotoById = async (req: express.Request, res: express.Response) => {
   try {
-    let postId = req.params.communityWallPostid;
+    let postId = req.params.communityWallPostId;
     let photoId = req.params.photoId;
     console.log('postId', postId, photoId);
     if (postId && photoId) {
