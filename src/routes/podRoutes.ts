@@ -4,6 +4,7 @@ const router = express.Router();
 
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const podController = require('../controllers/podController');
+const podWallController = require('../controllers/podWallController');
 
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
@@ -19,6 +20,34 @@ let storage = multer.diskStorage({
 let upload = multer({
     storage: storage
 });
+
+let storage3 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/podWallPost')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload3 = multer({
+    storage: storage3
+});
+
+
+let storage2 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/podWallPost/' + 'photos-' + req.params.podWallPostId)
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload2 = multer({
+    storage: storage2
+});
+
 
 // COMMON
 
@@ -70,5 +99,15 @@ router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT
 router.get('/NFT/getTrendingPods/:userId', authenticateJWT, podController.getTrendingPodsNFT);
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
 
+router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
+router.get('/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPost);
+router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), podWallController.changePostPhoto);
+router.post('/wall/changePostDescriptionPhotos/:podWallPostId', authenticateJWT, upload2.array('image'), podWallController.changePostDescriptionPhotos);
+router.get('/wall/getPostPhoto/:podWallPostId', podWallController.getPodWallPostPhotoById);
+router.get('/wall/getDescriptionPostPhoto/:podWallPostId/:photoId', podWallController.getPodWallPostDescriptionPhotoById);
+router.post('/wall/makeResponse', authenticateJWT, podWallController.makeResponsePodWallPost);
+router.post('/wall/likePost', authenticateJWT, podWallController.likePost);
+router.post('/wall/dislikePost', authenticateJWT, podWallController.dislikePost);
+router.post('/wall/pinPost', authenticateJWT, podWallController.pinPost);
 
 module.exports = router;

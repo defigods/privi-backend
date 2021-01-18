@@ -446,7 +446,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     endorsementScore: 0.5,
                     trustScore: 0.5,
                     awards: [],
-                    creds: [],
+                    creds: 0,
                     badges: [],
                     followings: [],
                     numFollowings: 0,
@@ -465,7 +465,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
                     notifications: [],
                     verified: false,
                     anon: false,
-                    anonAvatar: '../../assets/anonAvatars/ToyFaces_Colored_BG_111.jpg',
+                    anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
+                    hasPhoto: false,
                     mnemonic: '',
                     pubKey: '',
                     address: '',
@@ -600,11 +601,10 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
 interface BasicInfo {
     name: string;
-    profilePhoto: string,
     trustScore: number,
     endorsementScore: number,
     awards: any[],
-    creds: any[],
+    creds: number,
     badges: any[],
     numFollowers: number,
     numFollowings: number,
@@ -616,6 +616,7 @@ interface BasicInfo {
     notifications: any[],
     anon: boolean,
     anonAvatar: string,
+    hasPhoto: boolean,
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -623,9 +624,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         let userId = req.params.userId;
 
         let basicInfo: BasicInfo = {
-            name: "", profilePhoto: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: [],
+            name: "", trustScore: 0.5, endorsementScore: 0.5, numFollowers: 0, awards: [], creds: 0,
             badges: [], numFollowings: 0, bio: '', level: 1, twitter: '', instagram: '', facebook: '', notifications: [],
-            anon: false, anonAvatar: '../../assets/anonAvatars/ToyFaces_Colored_BG_111.jpg'
+            anon: false, anonAvatar: 'ToyFaces_Colored_BG_111.jpg', hasPhoto: false
         };
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
@@ -640,10 +641,10 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
                 allWallPost.push(data)
             });
             // update return data
-            basicInfo.name = userData.firstName + " " + userData.lastName;
+            basicInfo.name = userData.firstName + (userData.lastName ? " " + userData.lastName : '');
             basicInfo.trustScore = userData.trustScore;
             basicInfo.endorsementScore = userData.endorsementScore;
-            basicInfo.creds = userData.creds || [];
+            basicInfo.creds = userData.creds || 0;
             basicInfo.awards = userData.awards || [];
             basicInfo.badges = userData.badges || [];
             basicInfo.numFollowers = userData.numFollowers || 0;
@@ -658,6 +659,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
             basicInfo.anon = userData.anon || false;
             basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
+            basicInfo.hasPhoto = userData.hasPhoto || false;
 
             res.send({ success: true, data: basicInfo });
         }
@@ -805,15 +807,18 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
             data.type = 'post';
             allWallPost.push(data)
         });
-        console.log(allWallPost);
-        if (!userData.notifications) {
-            userData.notifications = [];
+
+        if(!userSnap.exists && userData) {
+            if (!userData || !userData.notifications) {
+                userData.notifications = [];
+            }
+            userData.notifications = userData.notifications.concat(allWallPost);
+            userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
+
+            res.send({ success: true, data: userData.notifications });
+        } else {
+            res.send({ success: true, data: [] });
         }
-        userData.notifications = userData.notifications.concat(allWallPost);
-        userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
-
-        res.send({ success: true, data: userData.notifications });
-
     } catch (err) {
         console.log('Error in controllers/profile -> getNotifications()', err);
         res.send({ success: false });
@@ -839,7 +844,11 @@ const postToWall = async (req: express.Request, res: express.Response) => {
                     fromUserId: req.body.priviUser.id, // who posted to the wall
                     date: Date.now(),
                     updatedAt: null,
-                    hasPhoto: false
+                    hasPhoto: false,
+                    likes: [],
+                    dislikes: [],
+                    numLikes: 0,
+                    numDislikes: 0,
                 });
             });
 
@@ -852,12 +861,15 @@ const postToWall = async (req: express.Request, res: express.Response) => {
                     fromUserId: req.body.priviUser.id, // who posted to the wall
                     date: Date.now(),
                     updatedAt: null,
-                    hasPhoto: false
+                    hasPhoto: false,
+                    likes: [],
+                    dislikes: [],
+                    numLikes: 0,
+                    numDislikes: 0,
                 }
             };
             res.send(data);
 
-            console.log("to emit new wall post");
             // send message back to socket
             if (sockets[req.body.priviUser.id]) {
                 sockets[req.body.priviUser.id].emit("new wall post", data);
@@ -893,6 +905,110 @@ const changePostPhoto = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/userController -> changePostPhoto()', err);
+        res.send({ success: false });
+    }
+}
+
+const likePost = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const wallPostRef = db.collection(collections.wallPost)
+            .doc(body.wallPostId);
+        const wallPostGet = await wallPostRef.get();
+        const wallPost: any = wallPostGet.data();
+
+        let likes = [...wallPost.likes];
+        let dislikes = [...wallPost.dislikes];
+        let numLikes = wallPost.numLikes;
+        let numDislikes = wallPost.numDislikes;
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+        if (likeIndex === -1) {
+            likes.push(body.userId);
+            numLikes = wallPost.numLikes + 1;
+        }
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+        if (dislikeIndex !== -1) {
+            dislikes.splice(dislikeIndex, 1);
+            numDislikes = numDislikes - 1;
+        }
+
+        await wallPostRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        wallPost.likes = likes;
+        wallPost.dislikes = dislikes;
+        wallPost.numLikes = numLikes;
+        wallPost.numDislikes = numDislikes;
+
+        if (wallPost.fromUserId !== body.userId) {
+            await updateUserCred(wallPost.fromUserId, true);
+        }
+
+        res.send({
+            success: true,
+            data: wallPost
+        });
+    } catch (err) {
+        console.log('Error in controllers/userController -> likePost()', err);
+        res.send({ success: false });
+    }
+}
+
+const dislikePost = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const wallPostRef = db.collection(collections.wallPost)
+            .doc(body.wallPostId);
+        const wallPostGet = await wallPostRef.get();
+        const wallPost: any = wallPostGet.data();
+
+        let dislikes = [...wallPost.dislikes];
+        let likes = [...wallPost.likes];
+        let numLikes = wallPost.numLikes;
+        let numDislikes = wallPost.numDislikes;
+
+        let likeIndex = likes.findIndex(user => user === body.userId);
+        if (likeIndex !== -1) {
+            likes.splice(likeIndex, 1);
+            numLikes = numLikes - 1;
+        }
+
+        let dislikeIndex = dislikes.findIndex(user => user === body.userId);
+        if (dislikeIndex === -1) {
+            dislikes.push(body.userId);
+            numDislikes = wallPost.numDislikes + 1
+        }
+
+        await wallPostRef.update({
+            likes: likes,
+            dislikes: dislikes,
+            numLikes: numLikes,
+            numDislikes: numDislikes
+        });
+
+        wallPost.likes = likes;
+        wallPost.dislikes = dislikes;
+        wallPost.numLikes = numLikes;
+        wallPost.numDislikes = numDislikes;
+
+        if (wallPost.fromUserId !== body.userId) {
+            await updateUserCred(wallPost.fromUserId, false);
+        }
+
+        res.send({
+            success: true,
+            data: wallPost
+        });
+    } catch (err) {
+        console.log('Error in controllers/userController -> dislikePost()', err);
         res.send({ success: false });
     }
 }
@@ -1423,9 +1539,14 @@ const changeUserProfilePhoto = async (req: express.Request, res: express.Respons
                 .doc(req.file.originalname);
             const userGet = await userRef.get();
             const user: any = userGet.data();
-            if (user.HasPhoto) {
+            if (user.hasPhoto !== undefined) {
                 await userRef.update({
-                    HasPhoto: true
+                    hasPhoto: true
+                });
+            } else {
+                await userRef.set({
+                    ...user,
+                    hasPhoto: true
                 });
             }
             res.send({ success: true });
@@ -1893,7 +2014,7 @@ const changeAnonMode = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
 
-        if (body && body.userId && body.anonMode) {
+        if (body && body.userId && body.anonMode != undefined) {
             const userRef = db.collection(collections.user)
                 .doc(body.userId);
 
@@ -1941,6 +2062,34 @@ const changeAnonAvatar = async (req: express.Request, res: express.Response) => 
 }
 
 
+const updateUserCred = (userId, sum) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const userRef = db.collection(collections.user).doc(userId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            let creds = user.creds;
+            if (sum) {
+                creds = creds + 1;
+            } else {
+                creds = creds - 1;
+            }
+
+            await userRef.update({
+                creds: creds
+            });
+
+            user.creds = creds;
+
+            resolve(user);
+        } catch (e) {
+            console.log('Error sumCredUser(): ' + e)
+            resolve('Error sumCredUser(): ' + e)
+        }
+    })
+}
+
 
 module.exports = {
     emailValidation,
@@ -1985,5 +2134,8 @@ module.exports = {
     getPostPhotoById,
     getBadgePhotoById,
     changeAnonMode,
-    changeAnonAvatar
+    changeAnonAvatar,
+    likePost,
+    dislikePost,
+    updateUserCred
 };

@@ -295,7 +295,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
         // update pod
         const podSnap = await db.collection(podRef).doc(podId).get();
         let followerArray: any[] = [];
-        const podData : any = podSnap.data();
+        const podData: any = podSnap.data();
         if (podData && podData.Followers) followerArray = podData.Followers;
         followerArray.push({
             date: Date.now(),
@@ -376,7 +376,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
         // update pod
         const podSnap = await db.collection(podRef).doc(podId).get();
         let followerArray: any[] = [];
-        const podData : any = podSnap.data();
+        const podData: any = podSnap.data();
         if (podData && podData.Followers) followerArray = podData.Followers;
         followerArray = followerArray.filter((val, index, arr) => {
             return val.id && val.id !== userId;
@@ -450,13 +450,14 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
             const userGet = await userRef.get();
             const user: any = userGet.data();
 
-            const discordChatCreation : any = await chatController.createDiscordChat(creator, user.firstName);
-            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general');
-            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements');
+            const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
             db.collection(collections.podsFT).doc(podId).set({
                 InterstDue: interestDue,
-                DiscordId: discordChatCreation.id
+                DiscordId: discordChatCreation.id,
+                Posts: []
             }, { merge: true });
 
             //     createNotification(creator, "FT Pod - Pod Created",
@@ -505,13 +506,10 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                     }
                 });
             });
-            // Create Pod Rate Doc
-            const newPodRate = 0.01;
-            db.collection(collections.rates).doc(podId).set({ type: collections.ft, rate: newPodRate });
-            db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
-                rateUSD: newPodRate,
-                timestamp: Date.now()
-            });
+
+            // // Create Pod Rate Doc
+            // const newPodRate = 0.01;
+            // db.collection(collections.rates).doc(podId).set({ type: collections.ftToken, rate: newPodRate });
 
             let myFTPods: any[] = user.myNFTPods || [];
             myFTPods.push(podId)
@@ -652,6 +650,18 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             if (newInvestors[investorId]) newInvestors[investorId] += amount;
             else newInvestors[investorId] = amount;
             podSnap.ref.update({ Investors: newInvestors });
+
+            //update discord chat
+            const discordRoomSnap = await db.collection(collections.discordChat).doc(data.DiscordId)
+                .collection(collections.discordRoom).get();
+            if (!discordRoomSnap.empty) {
+                for (const doc of discordRoomSnap.docs) {
+                    let data = doc.data()
+                    if (!data.private) {
+                        chatController.addUserToRoom(data.DiscordId, doc.id, investorId);
+                    }
+                }
+            }
 
             createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
@@ -1120,6 +1130,21 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
                     pod.rates[doc.id] = rate;
                 }
             });
+            pod.PostsArray = [];
+            if (pod.Posts && pod.Posts.length > 0) {
+                for (const post of pod.Posts) {
+                    const podWallPostSnap = await db.collection(collections.podWallPost).doc(post).get();
+                    const podWallPostData: any = podWallPostSnap.data();
+                    podWallPostData.id = podWallPostSnap.id;
+                    pod.PostsArray.push(podWallPostData);
+                }
+            }
+
+            const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
+            const discordChatData: any = discordChatSnap.data();
+            if(discordChatData && discordChatData.admin) {
+                pod.DiscordAdminId = discordChatData.admin.id;
+            }
 
             res.send({ success: true, data: pod })
         } else {

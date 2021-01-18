@@ -29,9 +29,9 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
         const addressId = "0x7b559b648bc133d5f471436b4d3ff69f0d5a6640"; // any registered user address works
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -43,6 +43,7 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
             { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
             { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+            { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
             const blockchainRes = await coinBalance.registerToken(token.Name, type, token.Symbol, token.Supply, addressId, apiKey);
@@ -65,9 +66,9 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
         const type = "CRYPTO";
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
+            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
+            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
+            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -79,6 +80,7 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
             { "Name": "Tether", "Symbol": "USDT", "Supply": 0 },
             { "Name": "Wrapped Bitcoin", "Symbol": "WBTC", "Supply": 0 },
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
+            { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
         tokens.forEach(async (token) => {
             const blockchainRes = await coinBalance.updateTokenInfo(token.Name, type, token.Symbol, apiKey);
@@ -293,58 +295,58 @@ module.exports.getBalancesOfAddress = async (req: express.Request, res: express.
             let cryptoArray = [];
             const cryptoTypeRes = await coinBalance.getTokenListByType('CRYPTO', apiKey);
             if (cryptoTypeRes && cryptoTypeRes.success) {
-                cryptoArray = cryptoTypeRes.output !== null? cryptoTypeRes.output: [];
+                cryptoArray = cryptoTypeRes.output !== null ? cryptoTypeRes.output : [];
             }
             // community
             let communityArray = [];
             const communityTypeRes = await coinBalance.getTokenListByType('COMMUNITY', apiKey);
             if (communityTypeRes && communityTypeRes.success) {
-                communityArray = communityTypeRes.output !== null? communityTypeRes.output: [];
+                communityArray = communityTypeRes.output !== null ? communityTypeRes.output : [];
             }
             // social
             let socialArray = [];
             const socialTypeRes = await coinBalance.getTokenListByType('SOCIAL', apiKey);
             if (socialTypeRes && socialTypeRes.success) {
-                socialArray = socialTypeRes.output !== null? socialTypeRes.output: [];
+                socialArray = socialTypeRes.output !== null ? socialTypeRes.output : [];
             }
             // ftpod
             let ftpodArray = [];
             const ftpodTypeRes = await coinBalance.getTokenListByType('FTPOD', apiKey);
             if (ftpodTypeRes && ftpodTypeRes.success) {
-                ftpodArray = ftpodTypeRes.output !== null? ftpodTypeRes.output: [];
+                ftpodArray = ftpodTypeRes.output !== null ? ftpodTypeRes.output : [];
             }
             // nftpod
             let nftpodArray = [];
             const nftpodTypeRes = await coinBalance.getTokenListByType('NFTPOD', apiKey);
             if (nftpodTypeRes && nftpodTypeRes.success) {
-                nftpodArray = nftpodTypeRes.output !== null? nftpodTypeRes.output: [];
+                nftpodArray = nftpodTypeRes.output !== null ? nftpodTypeRes.output : [];
             }
             dataOutput.forEach((element, index) => {
-                cryptoArray.forEach( crypto => {
+                cryptoArray.forEach(crypto => {
                     if (crypto === element.Token) {
                         dataOutput[index].Type = 'CRYPTO'
                     }
                 });
 
-                communityArray.forEach( comunity => {
+                communityArray.forEach(comunity => {
                     if (comunity === element.Token) {
                         dataOutput[index].Type = 'COMMUNITY'
                     }
                 });
 
-                socialArray.forEach( social => {
+                socialArray.forEach(social => {
                     if (social === element.Token) {
                         dataOutput[index].Type = 'SOCIAL'
                     }
                 });
 
-                ftpodArray.forEach( ftpod => {
+                ftpodArray.forEach(ftpod => {
                     if (ftpod === element.Token) {
                         dataOutput[index].Type = 'FTPOD'
                     }
                 });
 
-                nftpodArray.forEach( nftpod => {
+                nftpodArray.forEach(nftpod => {
                     if (nftpod === element.Token) {
                         dataOutput[index].Type = 'NFTPOD'
                     }
@@ -509,7 +511,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     //     let sum = 0;    // in user currency
     //     // crypto
     //     const userWalletRef = db.collection(collections.wallet).doc(userAddress);
-    //     const cryptoWallet = await userWalletRef.collection(collections.crypto).get();
+    //     const cryptoWallet = await userWalletRef.collection(collections.cryptoToken).get();
     //     cryptoWallet.forEach((doc) => {
     //         // console.log('rateOfChange[doc.id]', rateOfChange[doc.id])
     //         // console.log('doc.data().Amount', doc.data().Amount)
@@ -517,14 +519,14 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     //         else sum += doc.data().Amount;
     //     });
     //     // ft
-    //     const ftWallet = await userWalletRef.collection(collections.ft).get();
+    //     const ftWallet = await userWalletRef.collection(collections.ftToken).get();
     //     ftWallet.forEach((doc) => {
     //         if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
     //         else sum += doc.data().Amount;
     //     });
 
     //     // nft
-    //     const nftWallet = await userWalletRef.collection(collections.nft).get();
+    //     const nftWallet = await userWalletRef.collection(collections.nftToken).get();
     //     nftWallet.forEach(async (doc) => {
     //         const fundingToken = doc.data().FundingToken;
     //         const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
@@ -534,7 +536,7 @@ module.exports.getTotalBalance = async (req: express.Request, res: express.Respo
     //     });
 
     //     // social
-    //     const socialWallet = await userWalletRef.collection(collections.social).get();
+    //     const socialWallet = await userWalletRef.collection(collections.socialToken).get();
     //     socialWallet.forEach((doc) => {
     //         if (rateOfChange[doc.id]) sum += rateOfChange[doc.id] * doc.data().Amount;
     //         else sum += doc.data().Amount;
@@ -573,7 +575,7 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
 
     try {
         let { userId, userAddress } = req.query;
-        console.warn('getTotalBalance_v2, req.query: ',req.query);
+        console.warn('getTotalBalance_v2, req.query: ', req.query);
         userId = userId!.toString()
         userAddress = userAddress!.toString();
         console.log('getTotalBalance_v2 is called', userAddress)
@@ -581,7 +583,7 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
         // get user currency in usd
         let sum = 0;    // in user currency
         // crypto
-        const blockchainCryptoRes = await coinBalance.getBalancesByType(userAddress, collections.crypto, apiKey);
+        const blockchainCryptoRes = await coinBalance.getBalancesByType(userAddress, collections.cryptoToken, apiKey);
         if (blockchainCryptoRes.success) {
             const output = blockchainCryptoRes.output;
             // console.log('getTotalBalance_v2 blockchain output', output)
@@ -590,10 +592,10 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
                 else sum += output[balance].Amount;
             }
         } else {
-            console.error('blockchain call failed', collections.crypto, blockchainCryptoRes)
+            console.error('blockchain call failed', collections.cryptoToken, blockchainCryptoRes)
         }
         // ft
-        const blockchainFtRes = await coinBalance.getBalancesByType(userAddress, collections.ft, apiKey);
+        const blockchainFtRes = await coinBalance.getBalancesByType(userAddress, collections.ftToken, apiKey);
         if (blockchainFtRes.success) {
             const output = blockchainFtRes.output;
             // console.log('getTotalBalance_v2 blockchain output', output)
@@ -602,10 +604,10 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
                 else sum += output[balance].Amount;
             }
         } else {
-            console.error('blockchain call failed', collections.ft, blockchainFtRes)
+            console.error('blockchain call failed', collections.ftToken, blockchainFtRes)
         }
         // nft
-        const blockchainNftRes = await coinBalance.getBalancesByType(userAddress, collections.nft, apiKey);
+        const blockchainNftRes = await coinBalance.getBalancesByType(userAddress, collections.nftToken, apiKey);
         if (blockchainNftRes.success) {
             const output = blockchainNftRes.output;
             // console.log('getTotalBalance_v2 blockchain output', output)
@@ -614,10 +616,10 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
                 else sum += output[balance].Amount;
             }
         } else {
-            console.error('blockchain call failed', collections.nft, blockchainNftRes)
+            console.error('blockchain call failed', collections.nftToken, blockchainNftRes)
         }
         // social
-        const blockchainSocialRes = await coinBalance.getBalancesByType(userAddress, collections.social, apiKey);
+        const blockchainSocialRes = await coinBalance.getBalancesByType(userAddress, collections.socialToken, apiKey);
         if (blockchainSocialRes.success) {
             const output = blockchainSocialRes.output;
             // console.log('getTotalBalance_v2 blockchain output', output)
@@ -626,25 +628,29 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
                 else sum += output[balance].Amount;
             }
         } else {
-            console.error('blockchain call failed', collections.social, blockchainSocialRes)
+            console.error('blockchain call failed', collections.socialToken, blockchainSocialRes)
         }
 
-        // get user currency
+        // // get user currency
+        // let amountInUserCurrency = sum;
+        // const userSnap = await db.collection(collections.user).doc(userId).get();
+        // const userData = userSnap.data();
+        // let currency = "Unknown";
+        // if (userData) {
+        //     currency = userData.currency;
+        //     const currencyRate = await getCurrencyRatesUsdBase()
+        //     if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
+        // }
+
+        // ----------- for testnet in PRIVI ----------
         let amountInUserCurrency = sum;
-        const userSnap = await db.collection(collections.user).doc(userId).get();
-        const userData = userSnap.data();
-        let currency = "Unknown";
-        if (userData) {
-            currency = userData.currency;
-            const currencyRate = await getCurrencyRatesUsdBase()
-            if (currency == "EUR" || currency == "GBP") amountInUserCurrency = amountInUserCurrency * currencyRate[currency];
-        }
+        if (rateOfChange['PRIVI']) amountInUserCurrency /= rateOfChange['PRIVI'];
 
         const data = {
             amount: amountInUserCurrency,   // total balance in users currency
             tokens: rateOfChange["PC"] ? sum / rateOfChange["PC"] : 0,  // total balance in PC
-            currency: currency,
-            currency_symbol: currencySymbol.symbol(currency),
+            // currency: currency,
+            // currency_symbol: currencySymbol.symbol(currency),
             debt: 0,
             daily_return: 0,
             weekly_return: 0,
@@ -845,7 +851,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
         tokensSnap.forEach((doc) => {
             const data: any = doc.data();
             const type = data.TokenType;
-            if (type && type == collections.crypto) {
+            if (type && type == collections.cryptoToken) {
                 retData.push({
                     token: doc.id,
                     type: type,
@@ -866,7 +872,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
             });
             retData.push({
                 token: token,
-                type: collections.ft,
+                type: collections.ftToken,
                 payments: payments
             });
         });
@@ -905,7 +911,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
             }
             retData.push({
                 token: token,
-                type: collections.nft,
+                type: collections.nftToken,
                 payments: payments
             });
         }
@@ -921,7 +927,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
             });
             retData.push({
                 token: token,
-                type: collections.social,
+                type: collections.socialToken,
                 payments: payments
             });
         });
@@ -973,7 +979,7 @@ exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
         walletSnap.forEach(async (userWallet) => {
             // crypto
             let cryptoSum = 0; // in usd
-            const cryptoWallet = await userWallet.ref.collection(collections.crypto).get();
+            const cryptoWallet = await userWallet.ref.collection(collections.cryptoToken).get();
             cryptoWallet.forEach((doc) => {
                 if (rateOfChange[doc.id]) cryptoSum += rateOfChange[doc.id] * doc.data().Amount;
                 else cryptoSum += doc.data().Amount;
@@ -985,7 +991,7 @@ exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
 
             // ft
             let ftSum = 0; // in usd
-            const ftWallet = await userWallet.ref.collection(collections.ft).get();
+            const ftWallet = await userWallet.ref.collection(collections.ftToken).get();
             ftWallet.forEach((doc) => {
                 if (rateOfChange[doc.id]) ftSum += rateOfChange[doc.id] * doc.data().Amount;
                 else ftSum += doc.data().Amount;
@@ -997,7 +1003,7 @@ exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
 
             // nft
             let nftSum = 0; // in usd
-            const nftWallet = await userWallet.ref.collection(collections.nft).get();
+            const nftWallet = await userWallet.ref.collection(collections.nftToken).get();
             nftWallet.forEach(async (doc) => {
                 const fundingToken = doc.data().FundingToken;
                 const nftPodSnap = await db.collection(collections.podsNFT).doc(doc.id).collection(collections.priceHistory).orderBy("date", "desc").limit(1).get();
@@ -1012,7 +1018,7 @@ exports.saveUserBalanceSum = cron.schedule('0 0 * * *', async () => {
 
             // social
             let socialSum = 0; // in usd
-            const socialWallet = await userWallet.ref.collection(collections.social).get();
+            const socialWallet = await userWallet.ref.collection(collections.socialToken).get();
             socialWallet.forEach((doc) => {
                 if (rateOfChange[doc.id]) socialSum += rateOfChange[doc.id] * doc.data().Amount;
                 else socialSum += doc.data().Amount;

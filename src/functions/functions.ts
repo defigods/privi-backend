@@ -26,7 +26,7 @@ export async function updateStatusOneToOneSwap(swapDocID, _status) {
 export async function updateTxOneToOneSwap(swapDocID, txId) {
     await db.runTransaction(async (transaction) => {
         // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
-        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), {txHash: txId});
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), { txHash: txId });
     });
 };
 
@@ -366,7 +366,7 @@ export async function updateFirebase(blockchainRes) {
             let votationId: string = '';
             let votationObj: any = {};
             for ([votationId, votationObj] of Object.entries(updateVotations)) {
-                transaction.set(db.collection(collections.votation).doc(votationId), votationObj, { merge: true });
+                transaction.set(db.collection(collections.voting).doc(votationId), votationObj, {merge: true});
             }
         }
         // update votations state
@@ -431,15 +431,12 @@ export async function getRateOfChangeAsMap() {
         res[doc.id] = rate;
     }
     // still don't have these Token conversion rates in firebase, so we add them manually
-    res["BC"] = 1;
-    res["DC"] = res["PC"];
     return res;
 };
 
 // rate of all tokens in ratesOfChange colection (that is all cryptos and ft pods) as []
 export async function getRateOfChangeAsList() {
     const data: {}[] = [];
-    let dcRate = 0.014;
     try {
         const ratesSnap = await db.collection(collections.rates).get();
         for (const doc of ratesSnap.docs) {
@@ -447,12 +444,7 @@ export async function getRateOfChangeAsList() {
             const token = doc.id;
             const rate = doc.data().rate;
             if (name) data.push({ token: token, name: name, rate: rate });
-
-            if (token == "PC") dcRate = rate;
         }
-        data.push({ token: "BC", name: "Base Coin", rate: 1 });
-        data.push({ token: "DC", name: "Data Coin", rate: dcRate });   // DC same rate as PRIVI for now
-
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokensRate()', err);
     }

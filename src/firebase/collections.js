@@ -4,14 +4,19 @@ module.exports = {
     wallet: "Wallet",
     walletNFT: "WalletNFT",
     walletFT: "WalletFT",
-    crypto: "CRYPTO",
-    nft: "NFTPOD",
-    ft: "FTPOD",
-    social: "SOCIAL",
+
+    cryptoToken: "CRYPTO",
+    nftToken: "NFTPOD",
+    ftToken: "FTPOD",
+    socialToken: "SOCIAL",
+    communityToken: "COMMUNITY",
+
     cryptoHistory: "CryptoHistory",
     nftHistory: "NftHistory",
     ftHistory: "FtHistory",
     socialHistory: "SocialHistory",
+    communityHistory: "CommunityHistory",
+
     unknown: "UNKNOWN",
     tokens: "Tokens",
     priviScan: "PriviScan",
@@ -36,6 +41,7 @@ module.exports = {
     votation: 'Votation',
     votationState: 'VotationState',
     voter: 'Voter',
+    voting: 'Voting',
 
     podsFT: "PodsFT",
     buyingOffers: "BuyingOffers",
@@ -84,6 +90,14 @@ module.exports = {
     blogPost: "BlogPost",
 
     wallPost: "WallPost",
+
+    podWallPost: "PodWallPost",
+    creditWallPost: "CreditWallPost",
+    insuranceWallPost: "InsuranceWallPost",
+    communityWallPost: "CommunityWallPost",
+
+    insurance: "Insurance",
+
     chat: "Chat",
     message: "Message",
     discordChat: "DiscordChat",
