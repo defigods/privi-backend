@@ -808,14 +808,17 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
             allWallPost.push(data)
         });
 
-        if (!userData || !userData.notifications) {
-            userData.notifications = [];
+        if(!userSnap.exists && userData) {
+            if (!userData || !userData.notifications) {
+                userData.notifications = [];
+            }
+            userData.notifications = userData.notifications.concat(allWallPost);
+            userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
+
+            res.send({ success: true, data: userData.notifications });
+        } else {
+            res.send({ success: true, data: [] });
         }
-        userData.notifications = userData.notifications.concat(allWallPost);
-        userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
-
-        res.send({ success: true, data: userData.notifications });
-
     } catch (err) {
         console.log('Error in controllers/profile -> getNotifications()', err);
         res.send({ success: false });
