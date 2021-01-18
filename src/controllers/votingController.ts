@@ -23,46 +23,59 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             StartingDate: body.StartingDate,
             EndingDate: body.EndingDate
         }
-        if (voting.Type === 'staking') {
-            voting.VotationAddress = body.VotationAddress;
-            voting.VotationToken = body.VotationToken;
-            voting.QuorumRequiered = body.QuorumRequiered;
-            voting.Hash = body.Hash;
-            voting.Signature = body.Signature;
 
-            const blockchainRes = await votation.createVotation(voting);
-            if (blockchainRes && blockchainRes.success) {
-                updateFirebase(blockchainRes);
+        if(voting.Type && voting.ItemType) {
+            if (voting.Type === 'staking') {
+                voting.VotationAddress = body.VotationAddress;
+                voting.VotationToken = body.VotationToken;
+                voting.QuorumRequiered = body.QuorumRequiered;
+                voting.Hash = body.Hash;
+                voting.Signature = body.Signature;
+
+                const blockchainRes = await votation.createVotation(voting);
+                if (blockchainRes && blockchainRes.success) {
+                    updateFirebase(blockchainRes);
+                } else {
+                    console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
+                    res.send({success: false, error: blockchainRes.message})
+                }
+            } else if (voting.Type === 'regular') {
+                await db.runTransaction(async (transaction) => {
+                    transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
+                })
             } else {
-                console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
-                res.send({success: false, error: blockchainRes.message})
+                console.log('Error in controllers/votingController -> createVotation()', 'Voting type is unknown');
+                res.send({success: false, error: 'Voting type is unknown'})
             }
-        } else if (voting.Type === 'regular') {
-            await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
-            })
+
+            if (voting.ItemType === 'Pod') {
+                const podRef = db.collection(collections.podsFT).doc(body.ItemId);
+                const podGet = await podRef.get();
+                const pod: any = podGet.data();
+
+                await updateItemTypeVoting(podRef, podGet, pod, uid, voting);
+
+            } else if(voting.ItemType === 'Community') {
+                const communityRef = db.collection(collections.community).doc(body.ItemId);
+                const communityGet = await communityRef.get();
+                const community: any = communityGet.data();
+
+                await updateItemTypeVoting(communityRef, communityGet, community, uid, voting);
+
+            } else if(voting.ItemType === 'CreditPool') {
+                const priviCreditsRef = db.collection(collections.priviCredits).doc(body.ItemId);
+                const priviCreditsGet = await priviCreditsRef.get();
+                const priviCredits: any = priviCreditsGet.data();
+
+                await updateItemTypeVoting(priviCreditsRef, priviCreditsGet, priviCredits, uid, voting);
+
+            } else {
+                console.log('Error in controllers/votingController -> createVotation()', 'Voting ItemType is unknown');
+                res.send({success: false, error: 'Voting ItemType is unknown'})
+            }
         } else {
-            console.log('Error in controllers/votingController -> createVotation()', 'Voting type is unknown');
-            res.send({success: false, error: 'Voting type is unknown'})
-        }
-
-        if (voting.ItemType === 'Pod') {
-            const podRef = db.collection(collections.podsFT).doc(body.ItemId);
-            const podGet = await podRef.get();
-            const pod: any = podGet.data();
-
-            let votingsIdArray: any[] = [];
-            if (pod && pod.Votings) {
-                let podVotings = [...pod.Votings];
-                podVotings.push(uid);
-                votingsIdArray = podVotings;
-            } else {
-                votingsIdArray.push(voting.VotationId)
-            }
-
-            await podRef.update({
-                Votings: votingsIdArray
-            })
+            console.log('Error in controllers/votingController -> createVotation()', 'Voting Type or ItemType is unknown');
+            res.send({success: false, error: 'Voting Type or ItemType is unknown'})
         }
 
         res.send({
@@ -72,6 +85,29 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
         console.log('Error in controllers/votingController -> createVoting()', e);
         res.send({success: false, error: e});
     }
+}
+
+const updateItemTypeVoting = (itemRef, itemGet, item, uid, voting) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let votingsIdArray: any[] = [];
+            if (item && item.Votings) {
+                let communityVotings = [...item.Votings];
+                communityVotings.push(uid);
+                votingsIdArray = communityVotings;
+            } else {
+                votingsIdArray.push(voting.VotationId)
+            }
+
+            await itemRef.update({
+                Votings: votingsIdArray
+            });
+
+            resolve(true)
+        } catch(e) {
+            reject('Error in updateItemTypeVoting: ' + e);
+        }
+    });
 }
 
 exports.makeVote = async (req: express.Request, res: express.Response) => {

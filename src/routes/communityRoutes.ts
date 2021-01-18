@@ -138,9 +138,10 @@ router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
 
 router.post('/wall/createPost', authenticateJWT, communityWallController.postCreate);
+router.post('/wall/deletePost', authenticateJWT, communityWallController.postDelete);
 router.get('/wall/getPodPosts/:podId', authenticateJWT, communityWallController.getCommunityPost);
-router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), communityWallController.changePostPhoto);
-router.post('/wall/changePostDescriptionPhotos/:communityWallPostId', authenticateJWT, upload2.array('image'), communityWallController.changePostDescriptionPhotos);
+router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), communityWallController.changePostPhoto);
+router.post('/wall/changePostDescriptionPhotos/:communityWallPostId', authenticateJWT, upload4.array('image'), communityWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:communityWallPostId', communityWallController.getCommunityWallPostPhotoById);
 router.get('/wall/getDescriptionPostPhoto/:communityWallPostId/:photoId', communityWallController.getCommunityWallPostDescriptionPhotoById);
 router.post('/wall/makeResponse', authenticateJWT, communityWallController.makeResponseCommunityWallPost);

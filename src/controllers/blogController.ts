@@ -13,6 +13,7 @@ import { db } from "../firebase/firebase";
 import express from 'express';
 import path from 'path';
 import fs from "fs";
+import cron from 'node-cron';
 
 const userController = require('./userController');
 
@@ -666,6 +667,26 @@ const createPost = exports.createPost = (body, collection, userId) => {
   });
 }
 
+const deletePost = exports.deletePost = (itemRef, itemGet, item, id, postCollection) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let posts = [...item.Posts];
+      let indexFound = posts.findIndex(post => post === id);
+
+      posts.splice(indexFound, 1);
+      await itemRef.update({
+        Posts: posts
+      });
+
+      await db.collection(postCollection).doc(id).delete();
+
+      resolve(true)
+    } catch (e) {
+      reject('Error in deletePost: ' + e)
+    }
+  });
+}
+
 const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
   return new Promise(async(resolve, reject) => {
     try {
@@ -768,4 +789,58 @@ const pinItemPost = exports.pinItemPost = (dbRef, dbGet, dbItem, pinned) => {
       reject('Error in controllers/blogController -> pinItemPost()' + e)
     }
   })
+}
+
+exports.removeStories = cron.schedule('* * */1 * *', async () => {
+  // TODO at some point we should add here request with limit and offset to avoid performance issue
+  try {
+    console.log("********* Stories removeStories() cron job started *********");
+
+    // Communities
+    await elementWallPost(collections.communityWallPost, collections.community, 'communityId')
+
+    // Pod
+    await elementWallPost(collections.podWallPost, collections.podsFT, 'podId')
+
+    // Credit
+    await elementWallPost(collections.creditWallPost, collections.priviCredits, 'creditPoolId')
+
+    // Insurance
+    await elementWallPost(collections.insuranceWallPost, collections.insurance, 'insuranceId')
+
+  } catch (err) {
+    console.log('Error in controllers/blogController -> removeStories()', err)
+  }
+});
+
+const elementWallPost = async (postCollection, itemCollection, itemIdLabel) => {
+  let timeStampYesterday = Math.round(new Date().getTime() / 1000) - (24 * 3600);
+  let yesterdayDateTimestamp = new Date(timeStampYesterday*1000).getTime();
+
+  const postQuery = await db.collection(postCollection)
+    .where("createdAt", "<", yesterdayDateTimestamp).get();
+
+  if(!postQuery.empty) {
+    for (const doc of postQuery.docs) {
+      let data = doc.data();
+      let id = doc.id;
+
+      const itemRef = db.collection(itemCollection)
+        .doc(data[itemIdLabel]);
+      const itemGet = await itemRef.get();
+      const item: any = itemGet.data();
+
+      if(item && item.Posts) {
+        let posts = [...item.Posts];
+        let indexFound = posts.findIndex(post => post === id);
+
+        posts.splice(indexFound, 1);
+        await itemRef.update({
+          Posts: posts
+        });
+
+        await db.collection(postCollection).doc(id).delete();
+      }
+    }
+  }
 }
