@@ -3,7 +3,7 @@ import collections from "../firebase/collections";
 import {db} from "../firebase/firebase";
 import {LEVELS, ONE_DAY} from '../constants/userLevels'
 
-exports.getLevelsInfo = async (req: express.Request, res: express.Response) => {
+const getLevelsInfo = async (req: express.Request, res: express.Response) => {
     try {
         const userId = req.params.userId;
 
@@ -183,6 +183,7 @@ const getNumberOfUsersPerLevel = () => {
 }
 
 module.exports = {
+    getLevelsInfo,
     sumPoints,
     checkLevel,
     pointsWonToday,
