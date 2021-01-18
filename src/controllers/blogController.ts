@@ -667,6 +667,26 @@ const createPost = exports.createPost = (body, collection, userId) => {
   });
 }
 
+const deletePost = exports.deletePost = (itemRef, itemGet, item, id, postCollection) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let posts = [...item.Posts];
+      let indexFound = posts.findIndex(post => post === id);
+
+      posts.splice(indexFound, 1);
+      await itemRef.update({
+        Posts: posts
+      });
+
+      await db.collection(postCollection).doc(id).delete();
+
+      resolve(true)
+    } catch (e) {
+      reject('Error in deletePost: ' + e)
+    }
+  });
+}
+
 const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
   return new Promise(async(resolve, reject) => {
     try {
