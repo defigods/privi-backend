@@ -1142,7 +1142,9 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
 
             const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
             const discordChatData: any = discordChatSnap.data();
-            pod.DiscordAdminId = discordChatData.admin.id;
+            if(discordChatData && discordChatData.admin) {
+                pod.DiscordAdminId = discordChatData.admin.id;
+            }
 
             res.send({ success: true, data: pod })
         } else {

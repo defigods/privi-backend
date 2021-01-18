@@ -472,6 +472,16 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
             ads.push({ GeneralAd: ad });
         }
 
+        data.PostsArray = [];
+        if (data.Posts && data.Posts.length > 0) {
+            for (const post of data.Posts) {
+                const communityWallPostSnap = await db.collection(collections.communityWallPost).doc(post).get();
+                const communityWallPostData: any = communityWallPostSnap.data();
+                communityWallPostData.id = communityWallPostSnap.id;
+                data.PostsArray.push(communityWallPostData);
+            }
+        }
+
         res.send({ success: true, data: { ...data, ...extraData, id: id, ads: ads } });
     } catch (e) {
         return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
