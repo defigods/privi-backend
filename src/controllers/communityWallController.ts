@@ -10,7 +10,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.podId) {
+    if(body && body.communityId) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
       const communityRef = db.collection(collections.community)
