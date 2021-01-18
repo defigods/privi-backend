@@ -1,6 +1,6 @@
 import express from 'express';
 import priviCredit from "../blockchain/priviCredit";
-import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay, follow, unfollow } from "../functions/functions";
+import { updateFirebase, createNotification, generateUniqueId, getRateOfChangeAsMap, filterTrending, isPaymentDay, follow, unfollow, addZerosToHistory } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
@@ -19,45 +19,48 @@ const apiKey = "PRIVI"
 
 exports.initiatePriviCredit = async (req: express.Request, res: express.Response) => {
     try {
-
         const body = req.body;
-        const creator = body.creator;
-        const creditName = body.creditName;
-        const lendingToken = body.lendingToken;
-        const maxFunds = body.maxFunds;
-        const interest = body.interest;
-        const frequency = body.frequency.toUpperCase();
-        const p_incentive = body.p_incentive;
-        const p_premium = body.p_premium;
-        const date = body.date; // ini date
-        const dateExpiration = body.dateExpiration; // end date
-        const trustScore = body.trustScore;
-        const endorsementScore = body.endorsementScore;
-        const collateralsAccepted = body.collateralsAccepted;
-        const ccr = body.ccr;
-        const initialDeposit = body.initialDeposit;
 
-        const description = body.description;
-        const discordId = body.discordId;
-        const ethereumAddress = body.ethereumAddress;
+        const creator = body.Parameters.Creator;
+        const creditName = body.Parameters.CreditName;
+        const lendingToken = body.Parameters.LendingToken;
+        const maxFunds = body.Parameters.MaxFunds;
+        const interest = body.Parameters.Interest;
+        const frequency = body.Parameters.Frequency;
+        const p_incentive = body.Parameters.P_incentive;
+        const p_premium = body.Parameters.P_premium;
+        const dateExpiration = body.Parameters.DateExpiration;
 
-        const creditAddress = generateUniqueId();
-        const txnId = generateUniqueId();
+        const trustScore = body.Requirements.TrustScore;
+        const endorsementScore = body.Requirements.EndorsementScore;
+        const collateralsAccepted = body.Requirements.CollateralsAccepted;
+        const ccr = body.Requirements.CCR;
 
-        const admins = body.admins; // string[]
-        const insurers = body.insurers; // string[]
-        const userRoles = body.userRoles;   // {name, role, status}[]
+        const initialDeposit = body.Initialisation.InitialDeposit;
+        const hash = body.Initialisation.Hash;
+        const signature = body.Initialisation.Signature;
 
-        const blockchainRes = await priviCredit.initiatePRIVIcredit(creator, creditName, creditAddress, lendingToken, maxFunds, interest, frequency, p_incentive,
-            p_premium, date, dateExpiration, trustScore, endorsementScore, collateralsAccepted, ccr, initialDeposit, txnId, apiKey);
+        if (!body.priviUser || !body.priviUser.id || body.priviUser.id != creator) {
+            console.log("creator not matching jwt user");
+            res.send({ success: false, message: "creator not matching jwt user" });
+            return;
+        }
+
+        const blockchainRes = await priviCredit.initiatePRIVIcredit(creator, creditName, lendingToken, maxFunds, interest, frequency, p_incentive,
+            p_premium, dateExpiration, trustScore, endorsementScore, collateralsAccepted, ccr, initialDeposit, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);
-            createNotification(creator, "Privi Credit - Loan Offer Created",
-                `You have successfully created a new PRIVI Credit. ${initialDeposit} ${lendingToken} has been added to the PRIVI Credit Pool!`,
-                notificationTypes.priviCreditCreated
-            );
+            const output = blockchainRes.output;
+            const updatedCreditInfo = output.UpdatedCreditInfo;
+            const creditAddress = Object.keys(updatedCreditInfo)[0];
 
             // add some more data to firebase
+            const description = body.Description;
+            const discordId = body.DiscordId;
+            const ethereumAddress = body.EthereumAddress;
+            const admins = body.Admins; // string[]
+            const insurers = body.Insurers; // string[]
+            const userRoles = body.UserRoles;   // {name, role, status}[]
             db.collection(collections.priviCredits).doc(creditAddress).set({
                 Description: description,
                 DiscordId: discordId,
@@ -69,17 +72,28 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             }, { merge: true })
 
             // add transaction to credit doc
-            let objList: any[] = [];
-            const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).doc(tid).set({ Transactions: txnArray });
             }
-            objList.forEach((obj) => {
-                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
-            });
+
+            // update user levels
+            let numCreatedPriviCredits = 0;
+            const userLevelSnap = await db.collection(collections.levels).doc(creator).get();
+            const data: any = userLevelSnap.data();
+            if (data && data.NumCreatedPriviCredits) numCreatedPriviCredits = data.NumCreatedPriviCredits;
+            numCreatedPriviCredits += 1;
+            userLevelSnap.ref.set({ NumCreatedPriviCredits: numCreatedPriviCredits });
+
+            // add zeros to graph
+            const creditRef = db.collection(collections.priviCredits).doc(creditAddress);
+            addZerosToHistory(creditRef.collection(collections.priviCreditAvailableHistory), "available");
+            addZerosToHistory(creditRef.collection(collections.priviCreditBorrowedHistory), "borrowed");
+            addZerosToHistory(creditRef.collection(collections.priviCreditDepositedHistory), "deposited");
+            addZerosToHistory(creditRef.collection(collections.priviCreditInterestHistory), "interest");
+
 
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
@@ -114,19 +128,21 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 });
             })
 
-            const discordChatJarrCreation : any = await chatController.createDiscordChat(creator, userData.firstName);
+            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, userData.firstName);
             await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
             await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
 
-            res.send({ success: true, data: { id: creditAddress, date: date } });
+            res.send({ success: true, data: { id: creditAddress } });
         }
         else {
-            console.log('Error in controllers/priviCredit -> initiateCredit(): success = false');
+            console.log('Error in controllers/priviCredit -> initiateCredit(): success = false', blockchainRes.message);
             res.send({ success: false });
+            return;
         }
     } catch (err) {
         console.log('Error in controllers/priviCredit -> initiateCredit(): ', err);
         res.send({ success: false });
+        return;
     }
 };
 
@@ -187,19 +203,19 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
 
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
-              .collection(collections.discordRoom).get();
+                .collection(collections.discordRoom).get();
             if (!discordRoomSnap.empty) {
                 for (const doc of discordRoomSnap.docs) {
                     let data = doc.data()
-                    if(!data.private) {
+                    if (!data.private) {
                         chatController.addUserToRoom(priviCreditData.DiscordId, doc.id, address);
                     }
                 }
             }
 
             createNotification(address, "Privi Credit - Credit Deposited",
-              `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
-              notificationTypes.priviCreditDeposited
+                `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
+                notificationTypes.priviCreditDeposited
             );
             await notificationsController.addNotification({
                 userId: address,
@@ -267,19 +283,19 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
-              .collection(collections.discordRoom).get();
+                .collection(collections.discordRoom).get();
             if (!discordRoomSnap.empty) {
                 for (const doc of discordRoomSnap.docs) {
                     let data = doc.data()
-                    if(!data.private) {
+                    if (!data.private) {
                         chatController.addUserToRoom(priviCreditData.DiscordId, doc.id, address);
                     }
                 }
             }
 
             createNotification(address, "Privi Credit - Loan Borrowed",
-              `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
-              notificationTypes.priviCreditBorrowed
+                `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
+                notificationTypes.priviCreditBorrowed
             );
             await notificationsController.addNotification({
                 userId: priviCreditData.Creator,
@@ -432,23 +448,23 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
                 endorsementMean += borrower.endorsementScore * (borrower.borrowed / totalBorrowed);
             })
 
-            let creditData : any = creditSnap.data();
+            let creditData: any = creditSnap.data();
 
             creditData.PostsArray = [];
-            if(creditData.Posts && creditData.Posts.length > 0) {
-                for(const post of creditData.Posts) {
+            if (creditData.Posts && creditData.Posts.length > 0) {
+                for (const post of creditData.Posts) {
                     const creditWallPostSnap = await db.collection(collections.creditWallPost).doc(post).get();
-                    const creditWallPostData : any = creditWallPostSnap.data();
+                    const creditWallPostData: any = creditWallPostSnap.data();
                     creditWallPostData.id = creditWallPostSnap.id;
                     creditData.PostsArray.push(creditWallPostData);
                 }
             }
 
             const discordChatSnap = await db.collection(collections.discordChat).doc(creditData.DiscordId).get();
-            const discordChatData : any = discordChatSnap.data();
+            const discordChatData: any = discordChatSnap.data();
 
-            let discordAdminId : string = '';
-            if(discordChatSnap.exists) {
+            let discordAdminId: string = '';
+            if (discordChatSnap.exists) {
                 discordAdminId = discordChatData.admin.id;
             }
 

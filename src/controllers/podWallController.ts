@@ -291,3 +291,27 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
+exports.pinPost = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.wallPostId) {
+      const podWallPostRef = db.collection(collections.podWallPost)
+        .doc(body.wallPostId);
+      const podWallPostGet = await podWallPostRef.get();
+      const podWallPost: any = podWallPostGet.data();
+
+      let podPost = await blogController.pinItemPost(podWallPostRef, podWallPostGet, podWallPost, body.pinned)
+
+      res.send({ success: true, data: podPost });
+
+    } else {
+      console.log('Error in controllers/podWallController -> pinPost()', "Info not provided");
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podWallController -> pinPost()', err);
+    res.send({ success: false, error: err });
+  }
+};

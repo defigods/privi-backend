@@ -55,5 +55,6 @@ router.get('/wall/getDescriptionPostPhoto/:creditWallPostId/:photoId', priviCred
 router.post('/wall/makeResponse', authenticateJWT, priviCreditWallController.makeResponseCreditWallPost);
 router.post('/wall/likePost', authenticateJWT, priviCreditWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, priviCreditWallController.dislikePost);
+router.post('/wall/pinPost', authenticateJWT, priviCreditWallController.pinPost);
 
 module.exports = router;

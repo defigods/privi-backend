@@ -1,5 +1,7 @@
 // const FabricAppServerIP = "207.154.215.199";
-const FabricAppServerIP = "167.99.245.246";	// for testing
+// const FabricAppServerIP = "127.0.0.1"; // for testing local
+const FabricAppServerIP = "64.225.22.17"; // for research
+// const FabricAppServerIP = "167.99.245.246"; // for testing
 const port = 4000;
 const blockchainApi = "http://" + FabricAppServerIP + ":" + port + "/api/fabric";
 

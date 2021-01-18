@@ -108,5 +108,6 @@ router.get('/wall/getDescriptionPostPhoto/:podWallPostId/:photoId', podWallContr
 router.post('/wall/makeResponse', authenticateJWT, podWallController.makeResponsePodWallPost);
 router.post('/wall/likePost', authenticateJWT, podWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, podWallController.dislikePost);
+router.post('/wall/pinPost', authenticateJWT, podWallController.pinPost);
 
 module.exports = router;

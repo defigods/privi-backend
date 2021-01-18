@@ -56,5 +56,6 @@ router.get('/wall/getDescriptionPostPhoto/:insuranceWallPostId/:photoId', insura
 router.post('/wall/makeResponse', authenticateJWT, insuranceWallController.makeResponseInsuranceWallPost);
 router.post('/wall/likePost', authenticateJWT, insuranceWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, insuranceWallController.dislikePost);
+router.post('/wall/pinPost', authenticateJWT, insuranceWallController.pinPost);
 
 module.exports = router;

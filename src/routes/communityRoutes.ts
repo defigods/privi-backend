@@ -4,6 +4,7 @@ import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from "multer";
 const communityController = require('../controllers/communityController');
 const blogController = require('../controllers/blogController');
+const communityWallController = require('../controllers/communityWallController');
 
 let storage = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
@@ -42,6 +43,33 @@ let storage3 = multer.diskStorage({
 });
 let upload3 = multer({
     storage: storage3
+});
+
+let storage4 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/communityWallPost/' + 'photos-' + req.params.communityWallPostId)
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+
+let upload4 = multer({
+    storage: storage4
+});
+
+let storage5 = multer.diskStorage({
+    destination: function (req: any, file: any, cb: any) {
+        cb(null, 'uploads/communityWallPost')
+    },
+    filename: function (req: any, file: any, cb: any) {
+        console.log(file);
+        cb(null, file.originalname + '.png')
+    }
+});
+let upload5 = multer({
+    storage: storage5
 });
 
 /*let storage4 = multer.diskStorage({
@@ -107,6 +135,20 @@ router.get('/blog/getDescriptionPostPhoto/:blogPostId/:photoId', blogController.
 router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBlogPost);
 router.post('/blog/likePost', authenticateJWT, blogController.likePost);
 router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
+
+
+router.post('/wall/createPost', authenticateJWT, communityWallController.postCreate);
+router.post('/wall/deletePost', authenticateJWT, communityWallController.postDelete);
+router.get('/wall/getPodPosts/:podId', authenticateJWT, communityWallController.getCommunityPost);
+router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), communityWallController.changePostPhoto);
+router.post('/wall/changePostDescriptionPhotos/:communityWallPostId', authenticateJWT, upload4.array('image'), communityWallController.changePostDescriptionPhotos);
+router.get('/wall/getPostPhoto/:communityWallPostId', communityWallController.getCommunityWallPostPhotoById);
+router.get('/wall/getDescriptionPostPhoto/:communityWallPostId/:photoId', communityWallController.getCommunityWallPostDescriptionPhotoById);
+router.post('/wall/makeResponse', authenticateJWT, communityWallController.makeResponseCommunityWallPost);
+router.post('/wall/likePost', authenticateJWT, communityWallController.likePost);
+router.post('/wall/dislikePost', authenticateJWT, communityWallController.dislikePost);
+router.post('/wall/pinPost', authenticateJWT, communityWallController.pinPost);
+
 
 /*router.post('/ad/create', authenticateJWT, blogController.adCreate);
 router.post('/ad/changePhoto', authenticateJWT, upload4.single('image'), blogController.changeAdPhoto);

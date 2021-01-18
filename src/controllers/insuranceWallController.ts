@@ -291,3 +291,27 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
+exports.pinPost = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.wallPostId) {
+      const insuranceWallPostRef = db.collection(collections.insuranceWallPost)
+        .doc(body.wallPostId);
+      const insuranceWallPostGet = await insuranceWallPostRef.get();
+      const insuranceWallPost: any = insuranceWallPostGet.data();
+
+      let insurancePost = await blogController.pinItemPost(insuranceWallPostRef, insuranceWallPostGet, insuranceWallPost, body.pinned);
+
+      res.send({ success: true, data: insurancePost });
+
+    } else {
+      console.log('Error in controllers/insuranceWallController -> pinPost()', "Info not provided");
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/insuranceWallController -> pinPost()', err);
+    res.send({ success: false, error: err });
+  }
+};

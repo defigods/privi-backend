@@ -5,6 +5,8 @@ const connectController = require('./connectController');
 const communityController = require('./communityController');
 const walletController = require('./walletController');
 const stakeController = require('./stakeController');
+const votingController = require('./votingController');
+const blogController = require('./blogController');
 
 // Credit
 const priviCreditPayInterest = priviCreditController.payInterest;
@@ -25,7 +27,10 @@ const endVotations = communityController.endVotations;
 // Staking
 const manageStakedAmount = stakeController.manageStakedAmount;
 const manageReturns = stakeController.manageReturns;
-
+// Voting
+const endVoting = votingController.endVoting;
+// Blog
+const removeStories = blogController.removeStories;
 
 // all cron jobs go here, server.ts will import all these functions and start them
 module.exports = {
@@ -41,4 +46,6 @@ module.exports = {
     endVotations,
     manageStakedAmount,
     manageReturns,
+    endVoting,
+    removeStories
 }

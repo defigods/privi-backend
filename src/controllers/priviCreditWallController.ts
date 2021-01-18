@@ -291,3 +291,28 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
+
+exports.pinPost = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.wallPostId) {
+      const creditWallPostRef = db.collection(collections.creditWallPost)
+        .doc(body.wallPostId);
+      const creditWallPostGet = await creditWallPostRef.get();
+      const creditWallPost: any = creditWallPostGet.data();
+
+      let creditPost = await blogController.pinItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.pinned);
+
+      res.send({ success: true, data: creditPost });
+
+    } else {
+      console.log('Error in controllers/priviCreditWallController -> pinPost()', "Info not provided");
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/priviCreditWallController -> pinPost()', err);
+    res.send({ success: false, error: err });
+  }
+};
