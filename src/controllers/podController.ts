@@ -599,13 +599,14 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
 exports.investFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investorId = body.investorId;
-        const podId = body.podId;
-        const amount = body.amount;
-
-        const date = Date.now();
-        const txnId = generateUniqueId();
-        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, date, txnId, apiKey);
+        console.log('investFTPOD body',body)
+        const investorId = body.Investor;
+        const podId = body.PodAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        
+        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 

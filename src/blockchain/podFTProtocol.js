@@ -39,13 +39,13 @@ module.exports.deletePod = async (publicId, podId) => {
     return blockchainRes.data;
 };
 
-module.exports.investPOD = async (investorId, podId, amount, date, txnId, caller) => {
+module.exports.investPOD = async (investorId, podId, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodAPI + "/investPOD", {
         Investor: investorId,
         PodAddress: podId,
         Amount: amount,
-        Date: date,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
