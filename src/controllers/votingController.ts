@@ -12,16 +12,22 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
         let voting: any = {
             VotationId: uid,
-            Type: body.Type,
-            ItemType: body.ItemType,
-            ItemId: body.ItemId,
-            Question: body.Question,
-            PossibleAnswers: body.PossibleAnswers,
-            CreatorAddress: body.CreatorAddress,
+            Type: body.type,
+            ItemType: body.itemType,
+            ItemId: body.itemId,
+            Question: body.question,
+            PossibleAnswers: body.possibleAnswers,
+            CreatorAddress: body.creatorAddress,
+            CreatorId: body.creatorId,
             Answers: [],
-            OpenVotation: true,
-            StartingDate: body.StartingDate,
-            EndingDate: body.EndingDate
+            OpenVotation: false,
+            Description: body.description,
+            StartingDate: body.startingDate,
+            EndingDate: body.endingDate
+        }
+
+        if(body.StartingDate > Date.now()) {
+            voting.OpenVotation = true
         }
 
         if(voting.Type && voting.ItemType) {
@@ -40,6 +46,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     res.send({success: false, error: blockchainRes.message})
                 }
             } else if (voting.Type === 'regular') {
+                console.log(voting)
                 await db.runTransaction(async (transaction) => {
                     transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
                 })
@@ -49,21 +56,21 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             }
 
             if (voting.ItemType === 'Pod') {
-                const podRef = db.collection(collections.podsFT).doc(body.ItemId);
+                const podRef = db.collection(collections.podsFT).doc(voting.ItemId);
                 const podGet = await podRef.get();
                 const pod: any = podGet.data();
 
                 await updateItemTypeVoting(podRef, podGet, pod, uid, voting);
 
             } else if(voting.ItemType === 'Community') {
-                const communityRef = db.collection(collections.community).doc(body.ItemId);
+                const communityRef = db.collection(collections.community).doc(voting.ItemId);
                 const communityGet = await communityRef.get();
                 const community: any = communityGet.data();
 
                 await updateItemTypeVoting(communityRef, communityGet, community, uid, voting);
 
             } else if(voting.ItemType === 'CreditPool') {
-                const priviCreditsRef = db.collection(collections.priviCredits).doc(body.ItemId);
+                const priviCreditsRef = db.collection(collections.priviCredits).doc(voting.ItemId);
                 const priviCreditsGet = await priviCreditsRef.get();
                 const priviCredits: any = priviCreditsGet.data();
 
