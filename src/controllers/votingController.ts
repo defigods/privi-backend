@@ -158,19 +158,23 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     return
                 }
 
-                if (voting.answers) {
-                    let votingAnswers = [...voting.answers];
-                    votingAnswers.push(vote);
-                    answers = votingAnswers;
+                if (voting.Answers && voting.Answers.length > 0) {
+                    let foundVote = voting.Answers.findIndex(item => item.UserId === body.userId);
+                    if(foundVote !== -1) {
+                        let votingAnswers = [...voting.Answers];
+                        votingAnswers.push(vote);
+                        answers = votingAnswers;
+                    } else {
+                        res.send({success: false, error: "You've already voted"});
+                        return;
+                    }
                 } else {
                     answers.push(vote);
                 }
-
                 await votingRef.update({
-                    answers: answers
+                    Answers: answers
                 })
             }
-
             res.send({success: true, data: vote});
         }
     } catch (err) {
