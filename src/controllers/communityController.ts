@@ -413,13 +413,14 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 /////////////////////////// GETS /////////////////////////////
 // get some extra data needed for FE, they are not stored at firebase
 const getExtraData = async (data, rateOfChange) => {
-    //const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
+    // const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
+    console.log('getExtraData, rateOfChange', rateOfChange)
     let price = 0;
     let priceInPrivi = 0;
     const blockchainRes = await community.getBalancesOfAddress(data.CommunityAddress, apiKey);
     if (blockchainRes && blockchainRes.success) {
         price = blockchainRes.output;
-        priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PC ? price * (rateOfChange[data.FundingToken] / rateOfChange.PC) : 0;
+        priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PRIVI ? price * (rateOfChange[data.FundingToken] / rateOfChange.PRIVI) : 0;
     }
     const mcap = data.SupplyReleased ? data.SupplyReleased * priceInPrivi : 0;
     return {
@@ -440,6 +441,8 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
+            console.log('getCommunities data', data)
+            console.log('getCommunities data', extraData)
             allCommunities.push({ ...data, ...extraData, id: id });
         }
         const trendingCommunities = filterTrending(allCommunities);
