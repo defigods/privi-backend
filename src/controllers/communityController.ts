@@ -138,6 +138,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 UserRoles: userRoles,
                 Admins: admins || [],
                 InvitationUsers: invitedUsers,
+                Posts: [],
+                Votings: []
 
             }, { merge: true });
 
@@ -482,6 +484,16 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
                 const communityWallPostData: any = communityWallPostSnap.data();
                 communityWallPostData.id = communityWallPostSnap.id;
                 data.PostsArray.push(communityWallPostData);
+            }
+        }
+
+        data.VotingsArray = [];
+        if (data.Votings && data.Votings.length > 0) {
+            for (const voting of data.Votings) {
+                const votingSnap = await db.collection(collections.voting).doc(voting).get();
+                const votingData: any = votingSnap.data();
+                votingData.id = votingSnap.id;
+                data.VotingsArray.push(votingData);
             }
         }
 
