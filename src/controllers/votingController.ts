@@ -26,7 +26,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             EndingDate: body.endingDate
         }
 
-        if(body.StartingDate > Date.now()) {
+        if(body.startingDate < Date.now()) {
             voting.OpenVotation = true
         }
 
@@ -121,57 +121,58 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
 
-        if (!(body && body.userId && body.voteIndex)) {
+        if (!body || !body.userId || body.voteIndex === -1 || !body.type || !body.votationId) {
             console.log('Error in controllers/votingController -> makeVote()', 'Info not provided');
             res.send({success: false, error: 'Info not provided'});
-        }
-        let vote: any = {
-            UserId: body.userId,
-            VoteIndex: body.voteIndex,
-            Date: Date.now()
-        }
-
-        if (body.type === 'staking') {
-            vote.VoterAddress = body.voterAddress;
-            vote.VotationId = body.votationId;
-            vote.StakedAmount = body.stakedAmount;
-            vote.VotationAddress = body.votationAddress;
-            vote.Hash = body.hash;
-            vote.Signature = body.signature;
-
-            const blockchainRes = await votation.makeVote(vote);
-            if (blockchainRes && blockchainRes.success) {
-                updateFirebase(blockchainRes);
-            } else {
-                console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
-                res.send({success: false, error: blockchainRes.message})
-            }
-        } else if (body.type === 'regular') {
-            const votingRef = db.collection(collections.Voting).doc(body.votationId);
-            const votingGet = await votingRef.get();
-            const voting: any = votingGet.data();
-
-            let answers: any[] = [];
-            if (!(voting && voting.OpenVotation && voting.StartingDate < Date.now() && voting.EndingDate > Date.now())) {
-                console.log('Error in controllers/votingController -> makeVote()', 'Voting is closed or missing')
-                res.send({success: false, error: 'Voting is closed or missing'});
-                return
+        } else {
+            let vote: any = {
+               UserId: body.userId,
+               VoteIndex: body.voteIndex,
+               Date: Date.now()
             }
 
-            if (voting.answers) {
-                let votingAnswers = [...voting.answers];
-                votingAnswers.push(vote);
-                answers = votingAnswers;
-            } else {
-                answers.push(vote);
+            if (body.type === 'staking') {
+                vote.VoterAddress = body.voterAddress;
+                vote.VotationId = body.votationId;
+                vote.StakedAmount = body.stakedAmount;
+                vote.VotationAddress = body.votationAddress;
+                vote.Hash = body.hash;
+                vote.Signature = body.signature;
+
+                const blockchainRes = await votation.makeVote(vote);
+                if (blockchainRes && blockchainRes.success) {
+                    updateFirebase(blockchainRes);
+                } else {
+                    console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
+                    res.send({success: false, error: blockchainRes.message})
+                }
+            } else if (body.type === 'regular') {
+                const votingRef = db.collection(collections.voting).doc(body.votationId);
+                const votingGet = await votingRef.get();
+                const voting: any = votingGet.data();
+
+                let answers: any[] = [];
+                if (!(voting && voting.OpenVotation && voting.StartingDate < Date.now() && voting.EndingDate > Date.now())) {
+                    console.log('Error in controllers/votingController -> makeVote()', 'Voting is closed or missing')
+                    res.send({success: false, error: 'Voting is closed or missing'});
+                    return
+                }
+
+                if (voting.answers) {
+                    let votingAnswers = [...voting.answers];
+                    votingAnswers.push(vote);
+                    answers = votingAnswers;
+                } else {
+                    answers.push(vote);
+                }
+
+                await votingRef.update({
+                    answers: answers
+                })
             }
 
-            await votingRef.update({
-                answers: answers
-            })
+            res.send({success: true, data: vote});
         }
-
-        res.send({success: true, data: vote});
     } catch (err) {
         console.log('Error in controllers/votingController -> makeVote()', err)
         res.send({success: false, error: err})
@@ -187,7 +188,7 @@ exports.endVoting = cron.schedule('* */1 * * *', async () => {
             let votingData = voting.data()
             let endingDate = votingData.endingDate;
             if (endingDate > Date.now()) {
-                const votingRef = db.collection(collections.Voting).doc(votingData.id);
+                const votingRef = db.collection(collections.voting).doc(votingData.id);
                 votingRef.update({
                     OpenVotation: false
                 });
