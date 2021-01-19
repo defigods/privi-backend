@@ -522,9 +522,11 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
-        const podId = body.podId;
-        const blockchainRes = await podFTProtocol.deletePod(publicId, podId);
+        const publicId = body.Creator;
+        const podId = body.PodAddress;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await podFTProtocol.deletePod(publicId, podId, hash, signature, apiKey);
 
         const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
         const podData: any = podSnap.data();
@@ -599,7 +601,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
 exports.investFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        console.log('investFTPOD body',body)
+        // console.log('investFTPOD body',body)
         const investorId = body.Investor;
         const podId = body.PodAddress;
         const amount = body.Amount;
@@ -721,13 +723,14 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
 exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investorId = body.investorId;
-        const podId = body.podId;
-        const amount = body.amount;
+        // console.log('sellFTPOD', body)
+        const investorId = body.Investor;
+        const podId = body.PodAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
-        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, date, txnId, apiKey);
+        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
