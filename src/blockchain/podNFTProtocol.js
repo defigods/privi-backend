@@ -1,18 +1,16 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.initiatePodNFT = async (creatorId, podAddress, claimingAddress, tokenSymbol, tokenName, supply, royalty, date, dateExpiration, txnId, caller) => {
+module.exports.initiatePodNFT = async (creatorId, tokenSymbol, tokenName, supply, royalty, dateExpiration, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/initiatePOD", {
         Creator: creatorId,
-        PodAddress: podAddress,
-        ClaimingAddress: claimingAddress,
         TokenSymbol: tokenSymbol,
         TokenName: tokenName,
         Supply: supply,
         Royalty: royalty,
-        Date: date,
         DateExpiration: dateExpiration,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
