@@ -12,12 +12,13 @@ import path from 'path';
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
 require('dotenv').config();
-const apiKey = process.env.API_KEY;
+const apiKey = 'PRIVI'; // process.env.API_KEY;
 
 /////////////////////////// COMMON //////////////////////////////
 
 // auxiliar function used to update common fields of both NFT and FT pod (name, desc, hashtags..) 
 async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
+    
     const name = body.Name;
     const description = body.Description;
     const mainHashtag = body.MainHashtag; // recently added
@@ -31,7 +32,6 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
     const requiredTokens = body.RequiredTokens; // {$Token: Amount} recently added (maybe handled by blockchain, thus don't need to add it again here)
     const advertising = body.Advertising;
     const ethereumAddr = body.EthereumContractAddress;
-
 
     let podRef = db.collection(collections.podsFT).doc(podId);
     if (!isPodFT) podRef = db.collection(collections.podsNFT).doc(podId);
@@ -51,6 +51,7 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
         Advertising: advertising || true,
         EthereumAddress: ethereumAddr || ''
     }, { merge: true })
+    
 }
 
 /**
@@ -413,31 +414,19 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
 exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const creator = body.Creator;
-        const fundingToken = body.Token;
-        const duration = body.Duration;
-        const frequency = body.Frequency.toUpperCase();
-        const principal = body.Principal;
-        const interest = Number(body.Interest.toString()) / 100;
-        const liquidationCCR = Number(body.P_liquidation.toString()) / 100;
-        const collaterals = body.Collaterals;
-
-        const address = "Px" + generateUniqueId();
-        const amm = body.Amm.toUpperCase();;
-        const spreadTarget = Number(body.TargetSpread.toString()) / 100;
-        const spreadExchange = Number(body.ExchangeSpread.toString()) / 100;
-        const tokenSymbol = body.TokenSymbol;
-        const tokenName = body.TokenName;
-
-        const date = body.StartDate;
-        const expirationDate = body.ExpirationDate;
+        console.log('initiateFTPOD', body)
+        const creator = body.PodInfo.Creator;
+        const fundingToken = body.PodInfo.FundingToken;
         const interestDue = body.InterestDue;
 
-        const txnId = generateUniqueId();
-
+        let rateOfChangeBody: any = {};
         const rateOfChange = await getRateOfChangeAsMap();
-        const blockchainRes = await podFTProtocol.initiatePOD(creator, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName,
-            fundingToken, duration, frequency, principal, interest, liquidationCCR, date, expirationDate, collaterals, rateOfChange, txnId, apiKey);
+        for (let key in body.RateChange) {
+            rateOfChangeBody[body.RateChange[key]] = rateOfChange[body.RateChange[key]];
+        }
+        
+        const blockchainRes = await podFTProtocol.initiatePOD(body.PodInfo, rateOfChangeBody, body.Hash, body.Signature, apiKey);
+
         if (blockchainRes && blockchainRes.success) {
             console.log(blockchainRes.output);
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
@@ -533,9 +522,11 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const publicId = body.publicId;
-        const podId = body.podId;
-        const blockchainRes = await podFTProtocol.deletePod(publicId, podId);
+        const publicId = body.Creator;
+        const podId = body.PodAddress;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await podFTProtocol.deletePod(publicId, podId, hash, signature, apiKey);
 
         const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
         const podData: any = podSnap.data();
@@ -610,13 +601,14 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
 exports.investFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investorId = body.investorId;
-        const podId = body.podId;
-        const amount = body.amount;
-
-        const date = Date.now();
-        const txnId = generateUniqueId();
-        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, date, txnId, apiKey);
+        // console.log('investFTPOD body',body)
+        const investorId = body.Investor;
+        const podId = body.PodAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        
+        const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
@@ -731,13 +723,14 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
 exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investorId = body.investorId;
-        const podId = body.podId;
-        const amount = body.amount;
+        // console.log('sellFTPOD', body)
+        const investorId = body.Investor;
+        const podId = body.PodAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
-        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, date, txnId, apiKey);
+        const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
