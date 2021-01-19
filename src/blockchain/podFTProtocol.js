@@ -1,34 +1,33 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.initiatePOD = async (creatorId, address, amm, spreadTarget, spreadExchange, tokenSymbol, tokenName, fundingToken, duration, frequency, principal, interest, liquidationCCR, date, dateExpiration,
-    collaterals, rateOfChange, txnId, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodAPI + "/initiatePOD", {
-        PodInfo: {
-            Creator: creatorId,
-
-            PodAddress: address,
-            AMM: amm,
-            SpreadTarget: spreadTarget,
-            SpreadExchange: spreadExchange,
-            TokenSymbol: tokenSymbol,
-            TokenName: tokenName,
-            FundingToken: fundingToken,
-
-            Duration: duration,
-            Frequency: frequency,
-            Principal: principal,
-            Interest: interest,
-            LiquidationCCR: liquidationCCR,
-            Date: date,
-            DateExpiration: dateExpiration,
-
-            Collaterals: collaterals,
+module.exports.initiatePOD = async (podInfo, rateChange, hash, signature, caller) => {
+    // console.log('calling fabric',podInfo, rateChange, hash, signiture, caller)
+    let obj = {
+        PodInfo: {	
+            "Creator": podInfo.Creator,
+            "AMM": podInfo.AMM,
+            "SpreadTarget": podInfo.SpreadTarget,
+            "SpreadExchange": podInfo.SpreadExchange,
+            "TokenSymbol": podInfo.TokenSymbol,
+            "TokenName": podInfo.TokenName,
+            "FundingToken": podInfo.FundingToken,
+            "Principal": podInfo.Principal,
+    
+            "DateExpiration": podInfo.DateExpiration,
+            "Frequency": podInfo.Frequency,
+            "Interest": podInfo.Interest,
+            "LiquidationCCR": podInfo.LiquidationCCR,
+            "Collaterals": {...podInfo.Collaterals}
         },
-        RateChange: rateOfChange,
-        TxnId: txnId,
+        RateChange: {...rateChange},
+        Hash: hash,
+        Signature: signature,
         Caller: caller
-    });
+        
+    }
+    console.log('sending Obj to fabric:', obj)
+    let blockchainRes = await axios.post(api.blockchainPodAPI + "/initiatePOD", obj);
     return blockchainRes.data;
 };
 
