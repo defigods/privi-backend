@@ -89,7 +89,7 @@ export async function updateFirebase(blockchainRes) {
             let key: string = "";
             let val: any = null;
             for ([key, val] of Object.entries(updateBadges)) {
-                transaction.set(db.collection(collections.badges).doc(key), val);
+                transaction.set(db.collection(collections.badges).doc(key), val, { merge: true });
             }
         }
         // update user
@@ -366,7 +366,7 @@ export async function updateFirebase(blockchainRes) {
             let votationId: string = '';
             let votationObj: any = {};
             for ([votationId, votationObj] of Object.entries(updateVotations)) {
-                transaction.set(db.collection(collections.voting).doc(votationId), votationObj, {merge: true});
+                transaction.set(db.collection(collections.voting).doc(votationId), votationObj, { merge: true });
             }
         }
         // update votations state

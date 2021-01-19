@@ -1,18 +1,18 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.createBadge = async (creator, name, symbol, totalSupply, royalty, classification, date, lockUpDate, txnId, caller) => {
+module.exports.createBadge = async (creator, name, symbol, type, totalSupply, royalty, lockUpDate, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainBadgesAPI + "/createBadge", {
         Creator: creator,
         Name: name,
         Symbol: symbol,
+        Type: type,
         TotalSupply: totalSupply,
         Royalty: royalty,
-        Class: classification,
-        Date: date,
         LockUpDate: lockUpDate,
-        TxnId: txnId,
-        Caller: "PRIVI"
+        Hash: hash,
+        Signature: signature,
+        Caller: caller,
     });
     return blockchainRes.data;
 };

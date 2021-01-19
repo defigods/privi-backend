@@ -513,59 +513,64 @@ exports.getBadges = async (req: express.Request, res: express.Response) => {
     }
 }
 
-exports.createBadge = async (req: express.Request, res: express.Response) => {
-    try {
-        const body = req.body;
-        const creator = body.creator;
-        const name = body.name;
-        const description = body.description;
-        const totalSupply = body.totalSupply;
-        const royalty = body.royalty;
-        const classification = body.class;
-        const txid = generateUniqueId();
+// exports.createBadge = async (req: express.Request, res: express.Response) => {
+//     try {
+//         const body = req.body;
+//         const creator = body.Creator;
+//         const name = body.Name;
+//         const symbol = body.Symbol; // same as name
+//         const type = body.Type;
+//         const totalSupply = body.TotalSupply;   // to num
+//         const royalty = body.Royalty;  // to num  
+//         const lockUpDate = body.LockUpDate; // 0
+//         const hash = body.Hash;
+//         const signature = body.Signature;
 
-        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
-        if (blockchainRes && blockchainRes.success) {
+//         const blockchainRes = await badge.createBadge(creator, name, symbol, type, totalSupply, royalty, lockUpDate, hash, signature, apiKey);
+//         console.log(JSON.stringify(blockchainRes, null, 4));
+//         if (blockchainRes && blockchainRes.success) {
 
-            await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc('' + txid), {
-                    creator: creator,
-                    name: name,
-                    description: description,
-                    classification: classification,
-                    symbol: name,
-                    users: [],
-                    totalSupply: totalSupply,
-                    date: Date.now(),
-                    royalty: royalty,
-                    txnId: txid,
-                    hasPhoto: false
-                });
-            });
+//             const txid = '';
+//             const description = body.Description;
+//             await db.runTransaction(async (transaction) => {
+//                 transaction.set(db.collection(collections.badges).doc('' + txid), {
+//                     creator: creator,
+//                     name: name,
+//                     description: description,
+//                     classification: type,
+//                     symbol: name,
+//                     users: [],
+//                     totalSupply: totalSupply,
+//                     date: Date.now(),
+//                     royalty: royalty,
+//                     txnId: txid,
+//                     hasPhoto: false
+//                 });
+//             });
 
-            res.send({
-                success: true, data: {
-                    creator: creator,
-                    name: name,
-                    symbol: name,
-                    classification: classification,
-                    users: [],
-                    totalSupply: totalSupply,
-                    date: Date.now(),
-                    royalty: royalty,
-                    txnId: txid,
-                    hasPhoto: false
-                }
-            });
-        }
-        else {
-            console.log('Error in controllers/communityController -> createBadge(): success = false.', blockchainRes.message);
-            res.send({ success: false });
-        }
-    } catch (e) {
-        return ('Error in controllers/communityController -> createBadge()' + e)
-    }
-}
+//             res.send({
+//                 success: true, data: {
+//                     creator: creator,
+//                     name: name,
+//                     symbol: name,
+//                     classification: type,
+//                     users: [],
+//                     totalSupply: totalSupply,
+//                     date: Date.now(),
+//                     royalty: royalty,
+//                     txnId: txid,
+//                     hasPhoto: false
+//                 }
+//             });
+//         }
+//         else {
+//             console.log('Error in controllers/communityController -> createBadge(): success = false.', blockchainRes.message);
+//             res.send({ success: false });
+//         }
+//     } catch (e) {
+//         return ('Error in controllers/communityController -> createBadge()' + e)
+//     }
+// }
 
 exports.changeBadgePhoto = async (req: express.Request, res: express.Response) => {
     try {
