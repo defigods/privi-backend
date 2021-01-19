@@ -249,7 +249,7 @@ export const startSocket = (env: Env) => {
 
     socket.on('subscribe', async function (users) {
       let room;
-      if (users && users.userFrom && users.userTo) {
+      if (users && users.userFrom && users.userFrom.userName && users.userTo && users.userTo.userName) {
         if (users.userFrom.userName && users.userTo.userName) {
           if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
             room = "" + users.userFrom.userId + "" + users.userTo.userId;
