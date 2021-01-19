@@ -149,29 +149,33 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
 exports.depositFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const creditAddress = body.creditAddress;
-        const address = body.userId;   // user addr
-        const amount = body.amount;
+        const creditAddress = body.CreditAddress;
+        const address = body.Address;   // userId
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
+        if (address != body.priviUser.id) {
+            console.log("UserId doesnt match with jwt");
+            res.send({ sucess: false, message: "UserId doesnt match with jwt" });
+            return;
+        }
 
-        const blockchainRes = await priviCredit.depositFunds(creditAddress, address, amount, date, txnId, apiKey);
+        const blockchainRes = await priviCredit.depositFunds(creditAddress, address, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+
             // add transaction to credit doc
-            let objList: any[] = [];
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).doc(tid).set({ Transactions: txnArray });
             }
-            objList.forEach((obj) => {
-                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj)
-            });
 
+            const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
+            const priviCreditData: any = priviCreditSnap.data();
             const userSnap = await db.collection(collections.user).doc(address).get();
             const userData: any = userSnap.data();
 
@@ -192,15 +196,6 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 });
             });
 
-            // update total deposited
-            const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
-            const priviCreditData: any = priviCreditSnap.data();
-            let totalDeposited = priviCreditData.TotalDeposited ?? 0;
-            totalDeposited += amount;
-            priviCreditSnap.ref.update({
-                TotalDeposited: totalDeposited
-            });
-
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
                 .collection(collections.discordRoom).get();
@@ -213,10 +208,6 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 }
             }
 
-            createNotification(address, "Privi Credit - Credit Deposited",
-                `You have succesfully deposited ${amount} Coins into your Privi Credit loan`,
-                notificationTypes.priviCreditDeposited
-            );
             await notificationsController.addNotification({
                 userId: address,
                 notification: {
@@ -246,41 +237,35 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
 exports.borrowFunds = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const creditAddress = body.creditAddress;
-        const address = body.userId;   // user addr
-        const amount = body.amount;
-        const collaterals = body.collaterals;
+        const creditAddress = body.CreditAddress;
+        const address = body.Address;   // userId
+        const amount = body.Amount;
+        const collaterals = body.Collaterals;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
+        const hash = body.Hash;
+        const signature = body.Signature;
         const rateOfChange = await getRateOfChangeAsMap();
 
-        const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, date, txnId, collaterals, rateOfChange, apiKey);
+        if (address != body.priviUser.id) {
+            console.log("UserId doesnt match with jwt");
+            res.send({ sucess: false, message: "UserId doesnt match with jwt" });
+            return;
+        }
+        const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, collaterals, rateOfChange, hash, signature, apiKey);
+        console.log(JSON.stringify(blockchainRes, null, 4));
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // add transaction to credit doc
-            let objList: any[] = [];
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == creditAddress || obj.To == creditAddress) objList.push(obj);
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).doc(tid).set({ Transactions: txnArray });
             }
-            objList.forEach((obj) => {
-                db.collection(collections.priviCredits).doc(creditAddress).collection(collections.priviCreditsTransactions).add(obj);
-            });
 
             const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
             const priviCreditData: any = priviCreditSnap.data();
-
-            // update total borrowed
-            let totalBorrowed = priviCreditData.TotalBorrowed ?? 0;
-            totalBorrowed += amount;
-            priviCreditSnap.ref.update({
-                TotalBorrowed: totalBorrowed
-            })
-
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
                 .collection(collections.discordRoom).get();

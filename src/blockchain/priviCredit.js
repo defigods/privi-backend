@@ -88,27 +88,27 @@ module.exports.initiatePRIVIcredit = async (creator, creditName, lendingToken, m
     return blockchainRes.data;
 };
 
-module.exports.depositFunds = async (creditAddress, address, amount, date, txnId, caller) => {
+module.exports.depositFunds = async (creditAddress, address, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/depositFunds", {
         CreditAddress: creditAddress,
         Address: address,
         Amount: amount,
-        Date: date,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.borrowFunds = async (creditAddress, address, amount, date, txnId, collateral, rateOfChange, caller) => {
+module.exports.borrowFunds = async (creditAddress, address, amount, collateral, rateOfChange, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPriviLendingAPI + "/borrowFunds", {
         CreditAddress: creditAddress,
         Address: address,
         Amount: amount,
-        Date: date,
-        TxnId: txnId,
         Collaterals: collateral,
         RateChange: rateOfChange,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;

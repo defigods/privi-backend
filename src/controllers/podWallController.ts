@@ -10,7 +10,9 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.podId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.podId);
+
+    if(body && body.podId && isCreator) {
       let ret = await blogController.createPost(body, 'podWallPost', body.priviUser.id)
 
       const podRef = db.collection(collections.podsFT)
@@ -33,6 +35,9 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
       })
 
       res.send({success: true, data: ret});
+    } else if (!isCreator){
+      console.log('Error in controllers/podWallController -> postCreate()', "You can't create a post");
+      res.send({ success: false, error: "You can't create a post"});
     } else {
       console.log('Error in controllers/podWallController -> postCreate()', 'Missing Pod Id');
       res.send({ success: false, error: 'Missing Pod Id'});
@@ -43,6 +48,42 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err});
   }
 }
+
+exports.postDelete = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    let isCreator = await checkIfUserIsCreator(body.userId, body.podId);
+
+    if(body && body.podId && isCreator) {
+      const podRef = db.collection(collections.podsFT)
+        .doc(body.podId);
+      const podGet = await podRef.get();
+      const pod: any = podGet.data();
+
+      let ret = await blogController.deletePost(podRef, podGet, pod, body.postId, collections.podWallPost);
+
+      if(ret) {
+        res.send({success: true});
+      } else {
+        console.log('Error in controllers/podWallController -> postDelete()', 'Post Delete Error');
+        res.send({
+          success: false,
+          error: 'Post Delete Error'
+        });
+      }
+    } else if (!isCreator){
+      console.log('Error in controllers/podWallController -> postDelete()', "You can't delete a post");
+      res.send({ success: false, error: "You can't delete a post"});
+    } else {
+      console.log('Error in controllers/podWallController -> postDelete()', 'Missing Pod Id');
+      res.send({ success: false, error: 'Missing Community Id'});
+    }
+  } catch (err) {
+    console.log('Error in controllers/podWallController -> postDelete()', err);
+    res.send({ success: false, error: err});
+  }
+};
 
 exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -296,7 +337,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.wallPostId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.podId);
+
+    if (body && body.wallPostId && isCreator) {
       const podWallPostRef = db.collection(collections.podWallPost)
         .doc(body.wallPostId);
       const podWallPostGet = await podWallPostRef.get();
@@ -306,6 +349,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: podPost });
 
+    } else if (!isCreator){
+      console.log('Error in controllers/podWallController -> pinPost()', "You can't pin a post");
+      res.send({ success: false, error: "You can't pin a post"});
     } else {
       console.log('Error in controllers/podWallController -> pinPost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
@@ -315,3 +361,18 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
+const checkIfUserIsCreator = (userId, podId) => {
+  return new Promise(async (resolve, reject) => {
+    const podRef = db.collection(collections.podsFT)
+      .doc(podId);
+    const podGet = await podRef.get();
+    const pod: any = podGet.data();
+
+    if (pod && pod.Creator && pod.Creator === userId) {
+      resolve(true);
+    } else {
+      resolve(false);
+    }
+  })
+}

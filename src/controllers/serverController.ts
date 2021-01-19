@@ -26,6 +26,8 @@ const insuranceRoutes = require('../routes/insuranceRoutes');
 const forumRoutes = require('../routes/forumRoutes');
 const communityRoutes = require('../routes/communityRoutes');
 const chatRoutes = require('../routes/chatRoutes');
+const votingRoutes = require('../routes/votingRoutes');
+const userLevelsRoutes = require('../routes/userLevelsRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -72,6 +74,8 @@ export const startServer = (env: Env) => {
   app.use('/insurance', insuranceRoutes);
   app.use('/community', communityRoutes);
   app.use('/chat', chatRoutes);
+  app.use('/voting', votingRoutes);
+  app.use('/user-levels', userLevelsRoutes);
 
   // start all cron jobs
   let name: string;
@@ -245,7 +249,7 @@ export const startSocket = (env: Env) => {
 
     socket.on('subscribe', async function (users) {
       let room;
-      if (users && users.userFrom && users.userTo) {
+      if (users && users.userFrom && users.userFrom.userName && users.userTo && users.userTo.userName) {
         if (users.userFrom.userName && users.userTo.userName) {
           if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
             room = "" + users.userFrom.userId + "" + users.userTo.userId;

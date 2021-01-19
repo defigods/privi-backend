@@ -191,7 +191,8 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
             if (!chatQuery.empty) {
                 for (const doc of chatQuery.docs) {
                     let data = doc.data();
-                    if (data && data.messages) {
+
+                    if (data && data.messages && data.messages.length > 0) {
                         for (let i = 0; i < data.messages.length; i++) {
                             const messageGet = await db.collection(collections.message)
                                 .doc(data.messages[i]).get();
