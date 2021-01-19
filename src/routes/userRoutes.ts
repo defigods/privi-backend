@@ -107,7 +107,7 @@ router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
 // BADGES
-router.post('/badges/getBadges/:userId', authenticateJWT, userController.getBadges);
+router.get('/badges/getBadges', authenticateJWT, userController.getBadges);
 router.post('/badges/create', authenticateJWT, userController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 router.get('/badges/getPhoto/:badgeId', userController.getBadgePhotoById);

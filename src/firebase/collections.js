@@ -10,6 +10,7 @@ module.exports = {
     ftToken: "FTPOD",
     socialToken: "SOCIAL",
     communityToken: "COMMUNITY",
+    badgeToken: "BADGE",
 
     cryptoHistory: "CryptoHistory",
     nftHistory: "NftHistory",
