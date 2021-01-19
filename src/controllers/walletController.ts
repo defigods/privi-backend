@@ -1,6 +1,5 @@
 import {
-    updateFirebase, createNotification, getRateOfChangeAsMap, getCurrencyRatesUsdBase, getBuyTokenAmount, getBuyTokenAmountPod, getRateOfChangeAsList, generateUniqueId,
-    isEmail, getEmailUidMap, getTokenToTypeMap, getEmailAddressMap
+    updateFirebase, createNotification, getRateOfChangeAsMap, getRateOfChangeAsList, getEmailUidMap, getTokenToTypeMap, getEmailAddressMap,
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
@@ -282,78 +281,22 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 
 module.exports.getBalancesOfAddress = async (req: express.Request, res: express.Response) => {
     try {
-        console.log('getBalancesOfAddress req.query', req.query);
         let { userId, userAddress } = req.query;
-        userId = userId!.toString();
         userAddress = userAddress!.toString();
 
+        const retData: any[] = [];
+        const tokenTypeMap = await getTokenToTypeMap();
         const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            let dataOutput = blockchainRes.output;
-            // get balance by type:
-            // crypto
-            let cryptoArray = [];
-            const cryptoTypeRes = await coinBalance.getTokenListByType('CRYPTO', apiKey);
-            if (cryptoTypeRes && cryptoTypeRes.success) {
-                cryptoArray = cryptoTypeRes.output !== null ? cryptoTypeRes.output : [];
-            }
-            // community
-            let communityArray = [];
-            const communityTypeRes = await coinBalance.getTokenListByType('COMMUNITY', apiKey);
-            if (communityTypeRes && communityTypeRes.success) {
-                communityArray = communityTypeRes.output !== null ? communityTypeRes.output : [];
-            }
-            // social
-            let socialArray = [];
-            const socialTypeRes = await coinBalance.getTokenListByType('SOCIAL', apiKey);
-            if (socialTypeRes && socialTypeRes.success) {
-                socialArray = socialTypeRes.output !== null ? socialTypeRes.output : [];
-            }
-            // ftpod
-            let ftpodArray = [];
-            const ftpodTypeRes = await coinBalance.getTokenListByType('FTPOD', apiKey);
-            if (ftpodTypeRes && ftpodTypeRes.success) {
-                ftpodArray = ftpodTypeRes.output !== null ? ftpodTypeRes.output : [];
-            }
-            // nftpod
-            let nftpodArray = [];
-            const nftpodTypeRes = await coinBalance.getTokenListByType('NFTPOD', apiKey);
-            if (nftpodTypeRes && nftpodTypeRes.success) {
-                nftpodArray = nftpodTypeRes.output !== null ? nftpodTypeRes.output : [];
-            }
-            dataOutput.forEach((element, index) => {
-                cryptoArray.forEach(crypto => {
-                    if (crypto === element.Token) {
-                        dataOutput[index].Type = 'CRYPTO'
-                    }
-                });
-
-                communityArray.forEach(comunity => {
-                    if (comunity === element.Token) {
-                        dataOutput[index].Type = 'COMMUNITY'
-                    }
-                });
-
-                socialArray.forEach(social => {
-                    if (social === element.Token) {
-                        dataOutput[index].Type = 'SOCIAL'
-                    }
-                });
-
-                ftpodArray.forEach(ftpod => {
-                    if (ftpod === element.Token) {
-                        dataOutput[index].Type = 'FTPOD'
-                    }
-                });
-
-                nftpodArray.forEach(nftpod => {
-                    if (nftpod === element.Token) {
-                        dataOutput[index].Type = 'NFTPOD'
-                    }
-                });
+            const output = blockchainRes.output;
+            output.forEach((elem) => {
+                const type = tokenTypeMap[elem.Token] ?? collections.cryptoToken;
+                retData.push({
+                    ...elem,
+                    Type: type
+                })
             });
-            // console.log('getBalancesOfAddress: data send to front', dataOutput)
-            res.send({ success: true, data: dataOutput });
+            res.send({ success: true, data: retData });
         } else {
             console.log("cant getBalancesOfAddress for", userAddress);
             res.send({ success: false, data: {} });

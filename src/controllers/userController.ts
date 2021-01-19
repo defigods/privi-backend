@@ -808,7 +808,7 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
             allWallPost.push(data)
         });
 
-        if(!userSnap.exists && userData) {
+        if (!userSnap.exists && userData) {
             if (!userData || !userData.notifications) {
                 userData.notifications = [];
             }
@@ -1688,34 +1688,28 @@ const getBadges = async (req: express.Request, res: express.Response) => {
 const createBadge = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const creator = body.creator;
-        const name = body.name;
-        const description = body.description;
-        const totalSupply = body.totalSupply;
-        const royalty = body.royalty;
-        const classification = body.class;
-        const txid = generateUniqueId();
+        const creator = body.Creator;
+        const name = body.Name;
+        const symbol = body.Symbol;
+        const type = body.Type;
+        const totalSupply = body.TotalSupply;
+        const royalty = body.Royalty;
+        const lockUpDate = body.LockUpDate;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const blockchainRes = await badge.createBadge(creator, name, name, parseInt(totalSupply), parseFloat(royalty), classification, Date.now(), 0, txid, apiKey);
+        const blockchainRes = await badge.createBadge(creator, name, symbol, type, totalSupply, royalty, lockUpDate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            //await updateFirebase(blockchainRes);
-
-            await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.badges).doc('' + txid), {
-                    creator: creator,
-                    name: name,
-                    description: description,
-                    classification: classification,
-                    symbol: name,
-                    users: [],
-                    totalSupply: totalSupply,
-                    date: Date.now(),
-                    royalty: royalty,
-                    txnId: txid,
-                    hasPhoto: false
-                });
+            await updateFirebase(blockchainRes);
+            const output = blockchainRes.output;
+            const updateBadges = output.UpdateBadges;
+            const badgeId = Object.keys(updateBadges)[0];
+            const description = body.Description;
+            db.collection(collections.badges).doc(badgeId).update({
+                description: description,
+                users: [],
+                hasPhoto: false
             });
-
             // add badge to user
             //  const userRef = db.collection(collections.user).doc(creator);
             //  const userGet = await userRef.get();
@@ -1727,21 +1721,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             // await userRef.update({
             //     badges: badges.push(txid)
             // });
-
-            res.send({
-                success: true, data: {
-                    creator: creator,
-                    name: name,
-                    symbol: name,
-                    classification: classification,
-                    users: [],
-                    totalSupply: totalSupply,
-                    date: Date.now(),
-                    royalty: royalty,
-                    txnId: txid,
-                    hasPhoto: false
-                }
-            });
+            res.send({ success: true });
         }
         else {
             console.log('Error in controllers/userController -> createBadge(): success = false.', blockchainRes.message);
