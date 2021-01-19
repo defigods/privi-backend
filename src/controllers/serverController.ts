@@ -28,6 +28,7 @@ const communityRoutes = require('../routes/communityRoutes');
 const chatRoutes = require('../routes/chatRoutes');
 const votingRoutes = require('../routes/votingRoutes');
 const userLevelsRoutes = require('../routes/userLevelsRoutes');
+const socialTokensRoutes = require('../routes/socialTokenRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -76,6 +77,7 @@ export const startServer = (env: Env) => {
   app.use('/chat', chatRoutes);
   app.use('/voting', votingRoutes);
   app.use('/user-levels', userLevelsRoutes);
+  app.use('/social-tokens', socialTokensRoutes);
 
   // start all cron jobs
   let name: string;

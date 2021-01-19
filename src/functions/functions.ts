@@ -84,6 +84,10 @@ export async function updateFirebase(blockchainRes) {
         // staking
         const updateStakings = output.UpdateStakings;
 
+        // social token
+        const updateSocialPools = output.UpdateSocialPools;
+        const updateSocialPoolStates = output.UpdateSocialPoolStates;
+
         // update badges
         if (updateBadges) {
             let key: string = "";
@@ -415,7 +419,25 @@ export async function updateFirebase(blockchainRes) {
             let obj: any = {};
             for ([token, obj] of Object.entries(updateStakings)) {
                 const userAddress = obj.UserAddress;
-                transaction.set(db.collection(collections.stakingDeposit).doc(userAddress), obj, { merge: true });
+                transaction.set(db.collection(collections.stakingDeposit).doc(userAddress), obj, {merge: true});
+            }
+        }
+
+        // update social pools
+        if (updateSocialPools) {
+            let socialPoolToken: string = '';
+            let socialPoolObj: any = {};
+            for ([socialPoolToken, socialPoolObj] of Object.entries(updateSocialPools)) {
+                transaction.set(db.collection(collections.socialPools).doc(socialPoolToken), socialPoolObj, {merge: true});
+            }
+        }
+
+        // update social pools states
+        if (updateSocialPoolStates) {
+            let socialPoolToken: string = '';
+            let socialPoolObj: any = {};
+            for ([socialPoolToken, socialPoolObj] of Object.entries(updateSocialPoolStates)) {
+                transaction.set(db.collection(collections.socialPools).doc(socialPoolToken), socialPoolObj, {merge: true});
             }
         }
     });
