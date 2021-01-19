@@ -1663,25 +1663,29 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 // get all badges
 const getBadges = async (req: express.Request, res: express.Response) => {
     try {
-        let creator = req.params.userId;
-        const allBadges: any[] = [];
-        const badgesSnap = await db.collection(collections.badges)
-            .where("creator", "==", creator).get();
-
-        badgesSnap.forEach((doc) => {
-            const data: any = doc.data();
-            data.id = doc.id;
-            allBadges.push({ ...data });
-        });
-
-        res.send({
-            success: true,
-            data: {
-                all: allBadges
-            }
-        });
+        let { userAddress } = req.query;
+        const retData: any[] = [];
+        const blockchainRes = await coinBalance.getBalancesByType(userAddress, collections.badgeToken, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const badgesBalance = blockchainRes.output;
+            const badgeSnap = await db.collection(collections.badges).get();
+            badgeSnap.forEach((doc) => {
+                let amount = 0;
+                if (badgesBalance[doc.id]) amount = badgesBalance[doc.id].Amount;
+                if (amount > 0) {
+                    retData.push({
+                        ...doc.data(),
+                        Amount: amount
+                    });
+                }
+            })
+            res.send({ success: true, data: retData });
+        } else {
+            console.log("Error in controllers/userController -> getBadges()", blockchainRes.message);
+            res.send({ success: false });
+        }
     } catch (e) {
-        return ('Error in controllers/userControllers -> getBadges()' + e)
+        return ('Error in controllers/userController -> getBadges()' + e)
     }
 }
 
@@ -1706,9 +1710,9 @@ const createBadge = async (req: express.Request, res: express.Response) => {
             const badgeId = Object.keys(updateBadges)[0];
             const description = body.Description;
             db.collection(collections.badges).doc(badgeId).update({
-                description: description,
-                users: [],
-                hasPhoto: false
+                Description: description,
+                Users: [],
+                HasPhoto: false
             });
             // add badge to user
             //  const userRef = db.collection(collections.user).doc(creator);

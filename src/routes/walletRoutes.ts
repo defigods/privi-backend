@@ -21,9 +21,7 @@ router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidM
 router.get('/getEmailToAddressMap', authenticateJWT, walletController.getEmailToAddressMap);
 
 router.get('/getTokensRateChange', authenticateJWT, walletController.getTokensRateChange);  // tokens rate change respect last day
-router.get('/getTotalBalance', authenticateJWT, walletController.getTotalBalance);  // sum of balance in some token
 router.get('/getTotalBalance_v2', authenticateJWT, walletController.getTotalBalance_v2);
-router.get('/getTokenBalances', authenticateJWT, walletController.getTokenBalances);
 router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.getTokenBalances_v2);
 router.get('/getAllTokenBalances/:address', walletController.getAllTokenBalances);  // all token balances of the user with extra data (Type, ...)
 router.get('/getAllTokensWithBuyingPrice', walletController.getAllTokensWithBuyingPrice);
@@ -32,6 +30,7 @@ router.get('/getTransactions', authenticateJWT, walletController.getTransactions
 
 
 router.get('/getBalancesOfAddress', authenticateJWT, walletController.getBalancesOfAddress);
+router.get('/getBalancesByType', authenticateJWT, walletController.getBalancesByType);
 
 
 
