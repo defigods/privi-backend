@@ -18,7 +18,7 @@ const apiKey = 'PRIVI'; // process.env.API_KEY;
 
 // auxiliar function used to update common fields of both NFT and FT pod (name, desc, hashtags..) 
 async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
-    
+
     const name = body.Name;
     const description = body.Description;
     const mainHashtag = body.MainHashtag; // recently added
@@ -31,7 +31,6 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
     const admins = body.Admins;
     const requiredTokens = body.RequiredTokens; // {$Token: Amount} recently added (maybe handled by blockchain, thus don't need to add it again here)
     const advertising = body.Advertising;
-    const ethereumAddr = body.EthereumContractAddress;
 
     let podRef = db.collection(collections.podsFT).doc(podId);
     if (!isPodFT) podRef = db.collection(collections.podsNFT).doc(podId);
@@ -49,9 +48,8 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
         DiscordId: dicordId || '',
         RequiredTokens: requiredTokens || {},
         Advertising: advertising || true,
-        EthereumAddress: ethereumAddr || ''
     }, { merge: true })
-    
+
 }
 
 /**
@@ -424,7 +422,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         for (let key in body.RateChange) {
             rateOfChangeBody[body.RateChange[key]] = rateOfChange[body.RateChange[key]];
         }
-        
+
         const blockchainRes = await podFTProtocol.initiatePOD(body.PodInfo, rateOfChangeBody, body.Hash, body.Signature, apiKey);
 
         if (blockchainRes && blockchainRes.success) {
@@ -607,7 +605,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         const amount = body.Amount;
         const hash = body.Hash;
         const signature = body.Signature;
-        
+
         const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
@@ -1135,7 +1133,7 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
 
             const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
             const discordChatData: any = discordChatSnap.data();
-            if(discordChatData && discordChatData.admin) {
+            if (discordChatData && discordChatData.admin) {
                 pod.DiscordAdminId = discordChatData.admin.id;
             }
 
@@ -1408,32 +1406,28 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const tokenSymbol = body.TokenSymbol;
         const tokenName = body.TokenName;
         const supply = body.Supply;
-        const royalty = body.Royalty ?? 0;
-        const startDate = body.StartDate;
+        const royalty = body.Royalty;
         const expirationDate = body.ExpirationDate;
 
-        const isDigital: boolean = body.IsDigital;
-        const name = body.Name;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const podAddress = generateUniqueId();
-        const claimingAddress = generateUniqueId();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, podAddress, claimingAddress, tokenSymbol, tokenName, supply, royalty, startDate, expirationDate, tid, apiKey);
+        console.log(body);
+
+        const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, tokenSymbol, tokenName, supply, royalty, expirationDate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);   // update blockchain res
+            const output = blockchainRes.output;
+            const podAddress = Object.keys(output.UpdatePods)[0];
 
             updateCommonFields(body, podAddress, false); // update common fields
             const podDocRef = db.collection(collections.podsNFT).doc(podAddress);
 
             // Update fields that only NFT Pods have
+            const isDigital: boolean = body.IsDigital;
             podDocRef.set({ IsDigital: isDigital }, { merge: true });
 
-            // TODO: set correct notification type
-            createNotification(creator, "NFT Pod - Pod Created",
-                ` `,
-                notificationTypes.nftPodCreation
-            );
-
+            const name = body.Name;
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
             await notificationsController.addNotification({
