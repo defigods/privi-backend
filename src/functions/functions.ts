@@ -41,6 +41,10 @@ export async function getRecentSwaps(userAddress) {
     return recentSwaps;
 };
 
+export async function addStakeHistory(blockchainRes, token) {
+    // await db.collection(collections.stakingToken).doc(token).
+};
+
 // updates multiple firebase collection according to blockchain response
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;

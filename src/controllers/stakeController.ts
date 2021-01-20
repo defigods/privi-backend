@@ -26,7 +26,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
         // const date = Date.now();
         const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, hash, signature, apiKey)
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+            // updateFirebase(blockchainRes);
 
             // update stakedAmount and members of the token
             const tokenSnap = await db.collection(collections.stakingToken).doc(token).get();
@@ -87,7 +87,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
         // const date = Date.now();;
         const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+            // updateFirebase(blockchainRes);
 
             // update stakedAmount and members of the token
             const tokenSnap = await db.collection(collections.stakingToken).doc(token).get();
@@ -140,16 +140,29 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
 exports.getStakingAmount = async (req: express.Request, res: express.Response) => {
     try {
         const userId = req.params.userId;
-        console.log(userId);
-        const stakingSnap = await db.collection(collections.stakingDeposit).doc(userId).get();
-        const data = stakingSnap.data();
-        if (data) {
-            const stakedAmount = data.StakedAmount + data.NewStakedAmount;
-            res.send({ success: true, data: stakedAmount });
-        }
-        else {
+        // console.log('getStakingAmount', userId);
+        const blockchainRes = await priviGovernance.getUserStakings(userId, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            let preparedRes: any = {}
+            const data = blockchainRes.output;
+            data.forEach(element => {
+                preparedRes[element.Token] = element;
+            });
+            // console.log('getStakingAmount res',preparedRes)
+            res.send({ success: true, data: preparedRes });
+        } else {
             res.send({ success: false });
         }
+
+        // const stakingSnap = await db.collection(collections.stakingDeposit).doc(userId).get();
+        // const data = stakingSnap.data();
+        // if (data) {
+        //     const stakedAmount = data.StakedAmount + data.NewStakedAmount;
+        //     res.send({ success: true, data: stakedAmount });
+        // }
+        // else {
+        //     res.send({ success: false });
+        // }
     } catch (err) {
         console.log('Error in controllers/stakingController -> getStakings(): ', err);
         res.send({ success: false });
@@ -236,9 +249,9 @@ exports.manageReturns = cron.schedule('0 0 * * *', async () => {
         const tokenDocs = tokensSnap.docs;
         for (let i = 0; i < tokenDocs.length; i++) {
             const token = tokenDocs[i].id;
-            const txnId = generateUniqueId();
+            // const txnId = generateUniqueId();
             const date = Date.now();
-            const blockchainRes = await priviGovernance.payStakingReward(token, txnId, date, apiKey);
+            const blockchainRes = await priviGovernance.payStakingReward(token, apiKey);
             if (blockchainRes && blockchainRes.success) {
                 updateFirebase(blockchainRes);
                 // calculate total return amount

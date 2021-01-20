@@ -26,10 +26,16 @@ module.exports.unstakeToken = async (userAddress, token, amount, hash, signature
 };
 
 module.exports.getUserStakings = async (userAddress, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/getUserStakings", {
-        UserAddress: userAddress,
-        Caller: caller
-    });
+    const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainPriviGovernanceAPI + "/getUserStakings",
+		data: {
+            UserAddress: userAddress,
+            Caller: caller
+        }
+    }
+    let blockchainRes = await axios(config);
     return blockchainRes.data;
 };
 
@@ -51,12 +57,12 @@ module.exports.updateProtocolParameters = async (token, mintingPct, releaseFrequ
     return blockchainRes.data;
 };
 
-module.exports.payStakingReward = async (token, txnId, date, caller) => {
+module.exports.payStakingReward = async (token, caller) => {
+    console.log('payStakingReward call', token, caller)
     let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/payStakingReward", {
         Token: token,
-        TxnId: txnId,
-        Date: date,
         Caller: caller
     });
+    console.log('payStakingReward blockchainRes', blockchainRes.data)
     return blockchainRes.data;
 };
