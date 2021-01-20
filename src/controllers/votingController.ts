@@ -26,7 +26,6 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
         if(voting.Type && voting.ItemType) {
             if (voting.Type === 'staking') {
-                voting.VotationAddress = body.VotationAddress;
                 voting.VotingToken = body.VotingToken;
                 voting.QuorumRequiered = body.QuorumRequiered;
                 voting.Hash = body.Hash;
@@ -127,7 +126,6 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
             vote.VoterAddress = body.VoterAddress;
             vote.VotationId = body.VotationId;
             vote.StakedAmount = body.StakedAmount;
-            vote.VotationAddress = body.VotationAddress;
             vote.Hash = body.Hash;
             vote.Signature = body.Signature;
 
@@ -193,7 +191,6 @@ exports.endVoting = cron.schedule('* */1 * * *', async () => {
             if (endingDate > Date.now()) {
                 let votationEnd = {
                     VotationId: votationData.VotationId,
-                    VotationAddress: votationData.VotationAddress,
                 }
                 const blockchainRes = await votation.endVotation(votationEnd);
 
