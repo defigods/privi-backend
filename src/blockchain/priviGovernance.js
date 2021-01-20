@@ -14,7 +14,6 @@ module.exports.stakeToken = async (userAddress, token, amount, hash, signature, 
 };
 
 module.exports.unstakeToken = async (userAddress, token, amount, hash, signature, caller) => {
-    console.log('unstakeToken', userAddress, token, amount, hash, signature, caller)
     let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/unstakeFunds", {
         UserAddress: userAddress,
         Token: token,
@@ -23,7 +22,6 @@ module.exports.unstakeToken = async (userAddress, token, amount, hash, signature
         Signature: signature,
         Caller: caller
     });
-    console.log('unstakeToken response', blockchainRes.data)
     return blockchainRes.data;
 };
 
