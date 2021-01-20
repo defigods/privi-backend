@@ -1133,6 +1133,16 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
                 }
             }
 
+            pod.VotingsArray = [];
+            if (pod.Votings && pod.Votings.length > 0) {
+                for (const voting of pod.Votings) {
+                    const votingSnap = await db.collection(collections.voting).doc(voting).get();
+                    const votingData: any = votingSnap.data();
+                    votingData.id = votingSnap.id;
+                    pod.VotingsArray.push(votingData);
+                }
+            }
+
             const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
             const discordChatData: any = discordChatSnap.data();
             if(discordChatData && discordChatData.admin) {

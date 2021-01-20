@@ -46,7 +46,6 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     res.send({success: false, error: blockchainRes.message})
                 }
             } else if (voting.Type === 'regular') {
-                console.log(voting)
                 await db.runTransaction(async (transaction) => {
                     transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
                 })
