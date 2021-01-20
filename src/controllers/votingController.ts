@@ -27,7 +27,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
         if(voting.Type && voting.ItemType) {
             if (voting.Type === 'staking') {
                 voting.VotationAddress = body.VotationAddress;
-                voting.VotationToken = body.VotationToken;
+                voting.VotingToken = body.VotingToken;
                 voting.QuorumRequiered = body.QuorumRequiered;
                 voting.Hash = body.Hash;
                 voting.Signature = body.Signature;

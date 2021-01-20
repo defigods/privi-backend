@@ -70,8 +70,7 @@ exports.protectLiquidityPool = async (req: express.Request, res: express.Respons
         const body = req.body;
         const poolToken = body.PoolToken;
         const poolSpread = body.PoolSpread;
-        const date = Date.now();
-        const blockchainRes = await liquidityPool.protectLiquidityPool(poolToken, poolSpread, date, apiKey);
+        const blockchainRes = await liquidityPool.protectLiquidityPool(poolToken, poolSpread, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             res.send({ success: true });
@@ -95,7 +94,6 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
         const amount = body.Amount;
 
         const depositId = generateUniqueId();
-        const txnId = generateUniqueId();
 
         // jwt user check
         const priviUser = body.priviUser;
@@ -105,7 +103,7 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
             return;
         }
 
-        const blockchainRes = await liquidityPool.depositLiquidity(liquidityProviderAddress, poolToken, amount, depositId, txnId, apiKey);
+        const blockchainRes = await liquidityPool.depositLiquidity(liquidityProviderAddress, poolToken, amount, depositId, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
@@ -152,8 +150,6 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
         const amountFrom = body.AmountFrom;
 
         const rate = 1;
-        const date = Date.now();
-        const txnId = generateUniqueId();
         console.log(body)
 
         // jwt user check
@@ -164,7 +160,7 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
             return;
         }
 
-        const blockchainRes = await liquidityPool.swapCrytoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, date, txnId, apiKey);
+        const blockchainRes = await liquidityPool.swapCryptoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             console.log(JSON.stringify(blockchainRes, null, 4))
