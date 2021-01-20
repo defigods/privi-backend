@@ -1,27 +1,29 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.stakeToken = async (userAddress, token, amount, txnId, date, caller) => {
+module.exports.stakeToken = async (userAddress, token, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/stakeFunds", {
         UserAddress: userAddress,
         Token: token,
         Amount: amount,
-        TxnId: txnId,
-        Date: date,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.unstakeToken = async (userAddress, token, amount, txnId, date, caller) => {
+module.exports.unstakeToken = async (userAddress, token, amount, hash, signature, caller) => {
+    console.log('unstakeToken', userAddress, token, amount, hash, signature, caller)
     let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/unstakeFunds", {
         UserAddress: userAddress,
         Token: token,
         Amount: amount,
-        TxnId: txnId,
-        Date: date,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
+    console.log('unstakeToken response', blockchainRes.data)
     return blockchainRes.data;
 };
 

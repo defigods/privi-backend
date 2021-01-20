@@ -8,7 +8,7 @@ import cron from 'node-cron';
 import { user } from "firebase-functions/lib/providers/auth";
 const notificationsController = require('./notificationsController');
 
-const apiKey = process.env.API_KEY;
+const apiKey = 'PRIVI'; //process.env.API_KEY;
 
 // ----------------------------------- POST -------------------------------------------
 
@@ -16,13 +16,15 @@ const apiKey = process.env.API_KEY;
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userAddress = body.userAddress;
-        const token = body.token;
-        const amount = body.amount;
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const txnId = generateUniqueId();
-        const date = Date.now();
-        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, txnId, date, apiKey)
+        // const txnId = generateUniqueId();
+        // const date = Date.now();
+        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, hash, signature, apiKey)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
@@ -75,13 +77,15 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
 exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userAddress = body.userAddress;
-        const token = body.token;
-        const amount = body.amount;
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const txnId = generateUniqueId();
-        const date = Date.now();;
-        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, txnId, date, apiKey);
+        // const txnId = generateUniqueId();
+        // const date = Date.now();;
+        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
