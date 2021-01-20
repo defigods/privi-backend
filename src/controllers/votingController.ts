@@ -137,7 +137,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                 res.send({success: false, error: blockchainRes.message})
             }
         } else if (body.Type === 'regular') {
-            const votingRef = db.collection(collections.Voting).doc(body.VotationId);
+            const votingRef = db.collection(collections.voting).doc(body.VotationId);
             const votingGet = await votingRef.get();
             const voting: any = votingGet.data();
 
@@ -177,7 +177,7 @@ exports.endVoting = cron.schedule('* */1 * * *', async () => {
             let votingData = voting.data()
             let endingDate = votingData.endingDate;
             if (endingDate > Date.now()) {
-                const votingRef = db.collection(collections.Voting).doc(votingData.id);
+                const votingRef = db.collection(collections.voting).doc(votingData.id);
                 votingRef.update({
                     openVotation: false
                 });
@@ -207,13 +207,54 @@ exports.endVoting = cron.schedule('* */1 * * *', async () => {
 exports.getVotationInfo = async (req: express.Request, res: express.Response) => {
     try {
         const votationId = req.params.VotationId;
-        const votingRef = db.collection(collections.Voting).doc(votationId);
+        const votingRef = db.collection(collections.voting).doc(votationId);
         const votingGet = await votingRef.get();
         const voting: any = votingGet.data();
 
         res.send({
             success: true,
             data: voting
+        });
+    } catch (e) {
+        console.log('Error in controllers/votingController -> getVotationInfo()', e);
+        res.send({
+            success: false,
+            message: e
+        });
+    }
+}
+
+exports.getUserVotation = async (req: express.Request, res: express.Response) => {
+    try {
+        const votationId = req.params.VotationId;
+        const voterAddress = req.params.VoterId;
+        const voterRef = db.collection(collections.voter).doc(votationId + voterAddress);
+        const voterGet = await voterRef.get();
+        const voter: any = voterGet.data();
+
+        res.send({
+            success: true,
+            data: voter
+        });
+    } catch (e) {
+        console.log('Error in controllers/votingController -> getUserVotation()', e);
+        res.send({
+            success: false,
+            message: e
+        });
+    }
+}
+
+exports.getVotationState = async (req: express.Request, res: express.Response) => {
+    try {
+        const votationId = req.params.VotationId;
+        const votationStateRef = db.collection(collections.votationState).doc(votationId);
+        const votationStateGet = await votationStateRef.get();
+        const votationState: any = votationStateGet.data();
+
+        res.send({
+            success: true,
+            data: votationState
         });
     } catch (e) {
         console.log('Error in controllers/votingController -> getVotationInfo()', e);

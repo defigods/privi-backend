@@ -385,8 +385,8 @@ export async function updateFirebase(blockchainRes) {
         if (updateVoters) {
             let votationId: string = '';
             let votationObj: any = {};
-            for ([votationId, votationObj] of Object.entries(updatedCreditState)) {
-                transaction.set(db.collection(collections.voter).doc(votationId), votationObj, { merge: true });
+            for ([votationId, votationObj] of Object.entries(updateVoters)) {
+                transaction.set(db.collection(collections.voter).doc(votationId + votationObj.VoterAddress), votationObj, {merge: true});
             }
         }
         // update liquidity pools info
