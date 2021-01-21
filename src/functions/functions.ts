@@ -1,4 +1,4 @@
-import { db, firebase } from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
@@ -80,6 +80,9 @@ export async function updateFirebase(blockchainRes) {
         const updatedProtocolPool = output.UpdatedProtocolPool;
         // staking
         const updateStakings = output.UpdateStakings;
+        // social
+        const updateSocialPools = output.UpdateSocialPools;
+        const updateSocialPoolStates = output.UpdateSocialPoolStates;
 
         // update badges
         if (updateBadges) {
@@ -413,6 +416,22 @@ export async function updateFirebase(blockchainRes) {
             for ([token, obj] of Object.entries(updateStakings)) {
                 const userAddress = obj.UserAddress;
                 transaction.set(db.collection(collections.stakingDeposit).doc(userAddress), obj, { merge: true });
+            }
+        }
+        // update social pool
+        if (updateSocialPools) {
+            let address: string = '';
+            let obj: any = {};
+            for ([address, obj] of Object.entries(updateSocialPools)) {
+                transaction.set((db.collection(collections.socialPools).doc(address)), obj, { merge: true });
+            }
+        }
+        // update social pool state
+        if (updateSocialPoolStates) {
+            let address: string = '';
+            let obj: any = {};
+            for ([address, obj] of Object.entries(updateSocialPoolStates)) {
+                transaction.set((db.collection(collections.socialPools).doc(address)), obj, { merge: true });
             }
         }
     });

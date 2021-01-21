@@ -28,6 +28,7 @@ const communityRoutes = require('../routes/communityRoutes');
 const chatRoutes = require('../routes/chatRoutes');
 const votingRoutes = require('../routes/votingRoutes');
 const userLevelsRoutes = require('../routes/userLevelsRoutes');
+const socialRoutes = require('../routes/socialRoutes');
 
 const crons = require('../controllers/crons');
 
@@ -76,6 +77,7 @@ export const startServer = (env: Env) => {
   app.use('/chat', chatRoutes);
   app.use('/voting', votingRoutes);
   app.use('/user-levels', userLevelsRoutes);
+  app.use('/social', socialRoutes);
 
   // start all cron jobs
   let name: string;
@@ -479,7 +481,7 @@ export const startSocket = (env: Env) => {
       const discordMessageGet = await discordMessageRef.get();
       const discordMessage: any = discordMessageGet.data();
 
-      if(discordMessage && discordMessage.numReplies && discordMessage.numReplies !== 0) {
+      if (discordMessage && discordMessage.numReplies && discordMessage.numReplies !== 0) {
         await discordMessageRef.update({
           numReplies: discordMessage.numReplies + 1
         });
@@ -500,7 +502,7 @@ export const startSocket = (env: Env) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      let updateMessage : any = {...discordMessage};
+      let updateMessage: any = { ...discordMessage };
       updateMessage.numReplies = updateMessage.numReplies + 1;
       console.log('sending room post', updateMessage);
       socket.to(message.discordRoom).emit('update-message-discord', updateMessage);

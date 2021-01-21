@@ -1,11 +1,10 @@
 import express from 'express';
 import priviGovernance from "../blockchain/priviGovernance";
-import { updateFirebase, createNotification, generateUniqueId, addZerosToHistory } from "../functions/functions";
+import { updateFirebase, generateUniqueId, addZerosToHistory } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
-import collections, { stakingDeposit } from "../firebase/collections";
+import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
-import { user } from "firebase-functions/lib/providers/auth";
 const notificationsController = require('./notificationsController');
 
 const apiKey = process.env.API_KEY;
