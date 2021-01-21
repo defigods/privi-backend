@@ -6,9 +6,7 @@ import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
 import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
-// import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
-import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -34,12 +32,7 @@ const users = new Map();
 let connection: any;
 let runOnce = false;
 
-// Web3 settings
-let web3: any;
-web3 = new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
-//web3 = new Web3(new Web3.providers.HttpProvider('http://127.0.0.1:7545'));  // Local Ganache
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-let CHAIN_ID = 'NA';
 const TX_LISTENING_CYCLE = 15; // listen for new transactions in ethereum every N seconds
 
 // Action types
@@ -57,18 +50,6 @@ type PromiseResponse = {
     error: string,
     data: any
 };
-
-// Retrieve current Ethereum chain id
-const getChainId = () => {
-    web3.eth.getChainId()
-        .then((res) => {
-            CHAIN_ID = '0x' + res;
-        })
-        .catch((err) => {
-            console.log('Error in connectController.ts->getChainId(): ', err)
-        });
-};
-getChainId();
 
 /**
  * @notice Start http & websocket servers to interact with the front-end
@@ -114,7 +95,48 @@ const startWS = () => {
     };
 };
 
-const getWeb3forChain = (chainId: string) => {
+/**
+ * @notice Opens a websocket to listen connections from the front-ends. When a User opens
+ * the swap screen in the front-end, automatically sends his/her publicId: this will 
+ * be stored in an array of connections to send back the result of a transaction afterwards
+ */
+const wsListen = () => {
+    try {
+        // Start WS server (only once)
+        runOnce = true;
+        if (startWS()) {
+            wsServer.on('request', (request: any) => {
+                console.log(`Connection established`);
+                // TODO SECURITY: accept only allowed origin
+                connection = request.accept(null, request.origin);
+                let id: string = '';
+                // User sent a ping message (loaded the Swap function)
+                connection.on('message', function (msg: any) {
+                    if (msg.type === 'utf8') {
+                        // Show incoming message
+                        const { publicId, action, message } = JSON.parse(msg.utf8Data);
+                        id = publicId;
+                        // Store connection
+                        if (action === 'ping') {
+                            users.set(publicId, connection);
+                        }
+                    }
+                });
+                // User disconnected: remove connection from array
+                connection.on('close', () => {
+                    users.delete(id);
+                    console.log(`User ${id} disconnected`);
+                });
+                // TODO IMPROVEMENT: check for each User if connection is still 
+                // alive (ping). If not, remove connection from array
+            });
+        };
+    } catch (err) {
+        console.log('Error in connectController -> wsListen(): ', err);
+    };
+};
+
+const getWeb3forChain = (chainId: string): Web3 => {
     if(chainId === '0x3'){
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
@@ -175,20 +197,18 @@ const executeTX = (params: any) => {
     });
 };
 
-/**
- * @notice Retrieves the balance of ethers from the User's Ethereum address 
- * @return balance if the contract call is successful / 0 otherwise
- */
-const callBalance = (contractAddress: string, fromAddress: any) => {
+const getERC20BalnceOf = (contractAddress: string, address: any, chainId: any) => {
     return new Promise<number>(async (resolve) => {
         if (contractAddress !== ZERO_ADDRESS) {
-            let contract = new web3.eth.Contract(ERC20Balance.abi, contractAddress);
-            await contract.methods.balanceOf(fromAddress).call()
+            const web3_l: Web3 = getWeb3forChain(chainId);
+            const abi: any =  ERC20Balance.abi;
+            let contract = new web3_l.eth.Contract(abi, contractAddress);
+            await contract.methods.balanceOf(address).call()
                 .then(result => {
-                    resolve(web3.utils.fromWei((result), 'ether'));
+                    resolve(Number(web3_l.utils.fromWei((result), 'ether')));
                 })
                 .catch(err => {
-                    console.log('Error in connectController.ts -> getERC20Balance(): [call]', err);
+                    console.log('Error in connectController.ts -> callBalance(): [call]', err);
                     resolve(0);
                 })
         } else {
@@ -197,43 +217,50 @@ const callBalance = (contractAddress: string, fromAddress: any) => {
     });
 };
 
-/**
- * @notice Retrieves the balance of all ERC20 token contracts from the User's Ethereum address 
- * @return {success: boolean, balance: number}
- *          success: 'true' if balance was found / 'false' otherwise
- *          balance: balance amount
- * @param token Target ERC20 token (e.g.: DAI, UNI, BAT)
- * @param fromAddress User account to retrieve the balance
- */
-const getERC20Balance = async (req: express.Request, res: express.Response) => {
-    console.log('Sarkawt: should be depricated');
-    const { fromAddress, chainId } = req.query;
+const getEthBalanceOf = async (address: string, chainId: string): Promise<Number> => {
+    const web3_l: Web3 = getWeb3forChain(chainId);
+    const balanceWei = await web3_l.eth.getBalance(address);
+    const balance = Number(web3_l.utils.fromWei(balanceWei, 'ether'));
+    return balance;
+}
 
-    if (chainId === '3') { // Ropsten
-        const amountDAI = await callBalance(CONTRACT.Ropsten.DAI, fromAddress);
-        const amountUNI = await callBalance(CONTRACT.Ropsten.UNI, fromAddress);
-        const amountWETH = await callBalance(CONTRACT.Ropsten.WETH, fromAddress);
-        const result = {
-            DAI: amountDAI,
-            UNI: amountUNI,
-            WETH: amountWETH,
-        };
-        res.send({
-            success: true,
-            amount: result,
-        });
-    } else { // Unknown network
-        const result = {
-            DAI: 0,
-            UNI: 0,
-            WETH: 0,
-        };
-        res.send({
-            success: true,
-            amount: result,
-        });
+const mintERC20PodToken = async (podAddress:string, toAddress: string, amount: string, chainId: string) => {
+    const web3_l: Web3 = getWeb3forChain(chainId);
+    // get factory
+    let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
+    const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
+    
+    // mint token amount
+    // Choose method from PRIVIPodERC20Factory to be called
+    const amountWei = web3_l.utils.toWei(amount, 'ether');
+    const method = factoryContract.methods.podMint(podAddress, toAddress, amountWei).encodeABI();
+    // Transaction parameters
+    const paramsTX = {
+        chainId: chainId,
+        fromAddress: ETH_PRIVI_ADDRESS,
+        fromAddressKey: ETH_PRIVI_KEY,
+        encodedABI: method,
+        toAddress: factoryContract.options.address,
     };
-};
+    // Execute transaction 
+    const { success, data } = await executeTX(paramsTX);
+    // console.log('mintERC20PodToken', success, data)
+    return { success, data };
+}
+
+const getPodTokenDeployedAddress = async (podAddress:string, chainId: string): Promise<string> => {
+    const web3_l: Web3 = getWeb3forChain(chainId);
+    // get factory
+    let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
+    const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
+
+    // add privi to accoutn
+    await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
+    // get deployed address
+    const deployedAddress = await factoryContract.methods.podTokenAddresses(podAddress).call();
+    return deployedAddress;
+
+}
 
 /**
  * @notice Receives a transaction from the front-end and:
@@ -303,37 +330,6 @@ const saveTx = async (params: any) => {
 // };
 
 /**
- * @notice Sends status of the transaction back to the front-end
- * @param txHash  Transaction hash
- * @param publicId User ID
- * @param action Action performed (relevant in the front-end in case of 'SWAP_APPROVE_ERC20')
- * @param random Random generated from the front-end as identifier for a withdraw request
- * @param status Transaction status (pending, failed)
- */
-// const sendTxBack = async (txHash: string, publicId: string, action: string, random: string, status: string) => {
-
-//     // Update TX status in Firestore
-//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-//         ? await updateTx(random, (status === 'OK') ? 'confirmed' : 'failed')
-//         : await updateTx(txHash, (status === 'OK') ? 'confirmed' : 'failed');
-
-//     // Remove TX from Queue
-//     (action === Action.WITHDRAW_ERC20 || action === Action.WITHDRAW_ETH)
-//         ? txQueue = txQueue.filter(elem => elem != random)
-//         : txQueue = txQueue.filter(elem => elem != txHash);
-
-//     // Send TX confirmation back to user through websocket
-//     if (users.get(publicId)) {
-//         users.get(publicId).sendUTF(JSON.stringify({
-//             txHash: txHash,
-//             random: random,
-//             status: status,
-//             action: action,
-//         }));
-//     };
-// };
-
-/**
  * @notice Check number of confirmations of a transaction in Ethereum
  * @param txHash  Transaction hash
  * @return Number of confirmations (for testing, we set to 1 to get results faster)
@@ -355,46 +351,7 @@ const checkTxConfirmations = async (txHash: string, chainId: string) => {
     };
 };
 
-/**
- * @notice Opens a websocket to listen connections from the front-ends. When a User opens
- * the swap screen in the front-end, automatically sends his/her publicId: this will 
- * be stored in an array of connections to send back the result of a transaction afterwards
- */
-const wsListen = () => {
-    try {
-        // Start WS server (only once)
-        runOnce = true;
-        if (startWS()) {
-            wsServer.on('request', (request: any) => {
-                console.log(`Connection established`);
-                // TODO SECURITY: accept only allowed origin
-                connection = request.accept(null, request.origin);
-                let id: string = '';
-                // User sent a ping message (loaded the Swap function)
-                connection.on('message', function (msg: any) {
-                    if (msg.type === 'utf8') {
-                        // Show incoming message
-                        const { publicId, action, message } = JSON.parse(msg.utf8Data);
-                        id = publicId;
-                        // Store connection
-                        if (action === 'ping') {
-                            users.set(publicId, connection);
-                        }
-                    }
-                });
-                // User disconnected: remove connection from array
-                connection.on('close', () => {
-                    users.delete(id);
-                    console.log(`User ${id} disconnected`);
-                });
-                // TODO IMPROVEMENT: check for each User if connection is still 
-                // alive (ping). If not, remove connection from array
-            });
-        };
-    } catch (err) {
-        console.log('Error in connectController -> wsListen(): ', err);
-    };
-};
+
 
 /**
  * @notice Cron that checks every X seconds if there is any transaction stored in the
@@ -402,8 +359,11 @@ const wsListen = () => {
  * approve or withdraw
  */
 const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
-    console.log('********* Swaping ETH <--> PRIVI cron job started *********')
+    
     if (SHOULD_HANDLE_SWAP) {
+
+        console.log('********* Swaping ETH <--> PRIVI cron job - STARTED - *********');
+
         // Start WS server if not initialized yet
         (!runOnce) ? wsListen() : null;
 
@@ -450,6 +410,9 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                 }
             };
         };
+
+        console.log('********* Swaping ETH <--> PRIVI cron job - ENDED - *********');
+
     }
 });
 
@@ -499,14 +462,8 @@ const swap = async (
             console.log('should confirm swap doc id', swapDocId)
             updateStatusOneToOneSwap(swapDocId, 'confirmed');
 
-            // Update TX
-            // Sarkawt: i don't know why
-            // await sendTxBack(txHash, publicId, action, random, 'OK');
         } else {
             console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful', response);
-            // next line will not be needed
-            // await sendTxBack(txHash, publicId, action, random, 'KO');
-
             // if we leave the status pending the back end will try later to make the swap
         };
     } catch (err) {
@@ -561,7 +518,7 @@ const withdraw = async (
 
         let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
 
-        console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
+        // console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
 
         // Get SwapManager contract code
         const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(chainId.split('x')[1])]["address"]);
@@ -641,7 +598,7 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
 }
 
 module.exports = {
-    getERC20Balance,
+    // getERC20Balance,
     send,
     checkTx,
     getRecentSwaps
