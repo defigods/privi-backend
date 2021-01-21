@@ -489,14 +489,18 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
             for (const voting of data.Votings) {
                 const votingSnap = await db.collection(collections.voting).doc(voting).get();
                 const votingData: any = votingSnap.data();
-                votingData.id = votingSnap.id;
-                data.VotingsArray.push(votingData);
+                if (votingSnap.exists) {
+                    votingData.id = votingSnap.id;
+                    data.VotingsArray.push(votingData);
+                }
             }
         }
 
         res.send({ success: true, data: { ...data, ...extraData, id: id, ads: ads } });
     } catch (e) {
-        return ('Error in controllers/communitiesControllers -> getCommunity()' + e)
+        console.log('Error in controllers/communitiesControllers -> getCommunity()' + e);
+        res.send({ success: false, error: 'Error in controllers/communitiesControllers -> getCommunity()' + e });
+
     }
 }
 
@@ -647,7 +651,7 @@ exports.getBadgePhotoById = async (req: express.Request, res: express.Response) 
         res.send({ success: false });
     }
 }
-
+/*
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
@@ -739,3 +743,4 @@ exports.endVotations = cron.schedule('0 0 * * *', async () => {
         console.log('Error in controllers/communityController -> endVotation()', err);
     }
 });
+*/
