@@ -100,8 +100,8 @@ let upload5 = multer({
 });*/
 
 
-router.post('/votation/create', authenticateJWT, communityController.createVotation);
-router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
+/*router.post('/votation/create', authenticateJWT, communityController.createVotation);
+router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);*/
 
 //badges
 router.post('/badges/getBadges/:communityAddress', authenticateJWT, communityController.getBadges);
@@ -139,7 +139,7 @@ router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
 router.post('/wall/createPost', authenticateJWT, communityWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, communityWallController.postDelete);
-router.get('/wall/getPodPosts/:podId', authenticateJWT, communityWallController.getCommunityPost);
+router.get('/wall/getCommunityPosts/:communityId', authenticateJWT, communityWallController.getCommunityPost);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), communityWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:communityWallPostId', authenticateJWT, upload4.array('image'), communityWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:communityWallPostId', communityWallController.getCommunityWallPostPhotoById);

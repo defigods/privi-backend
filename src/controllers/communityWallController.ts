@@ -10,7 +10,8 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
+    let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
+
     if(body && body.communityId && isCreator) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
@@ -369,6 +370,8 @@ const checkIfUserIsCreator = (userId, communityId) => {
       .doc(communityId);
     const communityGet = await communityRef.get();
     const community: any = communityGet.data();
+
+    console.log(userId, community, community.Creator);
 
     if (community && community.Creator && community.Creator === userId) {
       resolve(true);

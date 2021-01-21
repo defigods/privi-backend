@@ -7,7 +7,7 @@ import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 const notificationsController = require('./notificationsController');
 
-const apiKey = process.env.API_KEY;
+const apiKey = 'PRIVI'; //process.env.API_KEY;
 
 // ----------------------------------- POST -------------------------------------------
 
@@ -15,15 +15,17 @@ const apiKey = process.env.API_KEY;
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userAddress = body.userAddress;
-        const token = body.token;
-        const amount = body.amount;
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const txnId = generateUniqueId();
-        const date = Date.now();
-        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, txnId, date, apiKey)
+        // const txnId = generateUniqueId();
+        // const date = Date.now();
+        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, hash, signature, apiKey)
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+            // updateFirebase(blockchainRes);
 
             // update stakedAmount and members of the token
             const tokenSnap = await db.collection(collections.stakingToken).doc(token).get();
@@ -74,15 +76,17 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
 exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const userAddress = body.userAddress;
-        const token = body.token;
-        const amount = body.amount;
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
-        const txnId = generateUniqueId();
-        const date = Date.now();;
-        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, txnId, date, apiKey);
+        // const txnId = generateUniqueId();
+        // const date = Date.now();;
+        const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+            // updateFirebase(blockchainRes);
 
             // update stakedAmount and members of the token
             const tokenSnap = await db.collection(collections.stakingToken).doc(token).get();
@@ -135,16 +139,29 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
 exports.getStakingAmount = async (req: express.Request, res: express.Response) => {
     try {
         const userId = req.params.userId;
-        console.log(userId);
-        const stakingSnap = await db.collection(collections.stakingDeposit).doc(userId).get();
-        const data = stakingSnap.data();
-        if (data) {
-            const stakedAmount = data.StakedAmount + data.NewStakedAmount;
-            res.send({ success: true, data: stakedAmount });
-        }
-        else {
+        // console.log('getStakingAmount', userId);
+        const blockchainRes = await priviGovernance.getUserStakings(userId, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            let preparedRes: any = {}
+            const data = blockchainRes.output;
+            data.forEach(element => {
+                preparedRes[element.Token] = element;
+            });
+            // console.log('getStakingAmount res',preparedRes)
+            res.send({ success: true, data: preparedRes });
+        } else {
             res.send({ success: false });
         }
+
+        // const stakingSnap = await db.collection(collections.stakingDeposit).doc(userId).get();
+        // const data = stakingSnap.data();
+        // if (data) {
+        //     const stakedAmount = data.StakedAmount + data.NewStakedAmount;
+        //     res.send({ success: true, data: stakedAmount });
+        // }
+        // else {
+        //     res.send({ success: false });
+        // }
     } catch (err) {
         console.log('Error in controllers/stakingController -> getStakings(): ', err);
         res.send({ success: false });
@@ -231,18 +248,22 @@ exports.manageReturns = cron.schedule('0 0 * * *', async () => {
         const tokenDocs = tokensSnap.docs;
         for (let i = 0; i < tokenDocs.length; i++) {
             const token = tokenDocs[i].id;
-            const txnId = generateUniqueId();
-            const date = Date.now();
-            const blockchainRes = await priviGovernance.payStakingReward(token, txnId, date, apiKey);
+            // const txnId = generateUniqueId();
+            const date = Date.now() - (4 * 90061);
+            const blockchainRes = await priviGovernance.payStakingReward(token, apiKey);
             if (blockchainRes && blockchainRes.success) {
                 updateFirebase(blockchainRes);
                 // calculate total return amount
-                let returnAmount = 0;
+                let returnAmount: any = 0;
                 const txns = blockchainRes.output ? blockchainRes.output.Transactions : {};
                 let tid: string = '';
                 let tobj: any = null;
-                for ([tid, tobj] of Object.entries(txns)) {
-                    if (tobj.Type == notificationTypes.stakingReward) returnAmount += tobj.Amount;
+                for ([tid, tobj] of Object.entries(txns)) { // for each TX
+                    for (let j = 0; j < tobj.length; j++) {
+                        if (tobj[j].Type === 'Minting_Staking') { // for each object inside TX
+                            returnAmount += tobj[j].Amount;
+                        }
+                    }
                 }
                 tokenDocs[i].ref.collection(collections.retunHistory).add({
                     return: returnAmount,
