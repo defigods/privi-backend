@@ -6,9 +6,6 @@ const { mnemonicToSeed } = require('bip39')
 const { fromMasterSeed } = require('hdkey')
 const { ecsign, toRpcSig, keccak } = require("ethereumjs-util")
 
-const BigFloat32 = require('bigfloat').BigFloat32;
-
-const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
 
 const apiKey = "PRIVI"; // just for now
@@ -39,6 +36,10 @@ export async function getRecentSwaps(userAddress) {
         recentSwaps[doc.id] = swap;
     }
     return recentSwaps;
+};
+
+export async function addStakeHistory(blockchainRes, token) {
+    // await db.collection(collections.stakingToken).doc(token).
 };
 
 // updates multiple firebase collection according to blockchain response
@@ -93,7 +94,7 @@ export async function updateFirebase(blockchainRes) {
             let key: string = "";
             let val: any = null;
             for ([key, val] of Object.entries(updateBadges)) {
-                transaction.set(db.collection(collections.badges).doc(key), val);
+                transaction.set(db.collection(collections.badges).doc(key), val, { merge: true });
             }
         }
         // update user
@@ -370,7 +371,7 @@ export async function updateFirebase(blockchainRes) {
             let votationId: string = '';
             let votationObj: any = {};
             for ([votationId, votationObj] of Object.entries(updateVotations)) {
-                transaction.set(db.collection(collections.voting).doc(votationId), votationObj, {merge: true});
+                transaction.set(db.collection(collections.voting).doc(votationId), votationObj, { merge: true });
             }
         }
         // update votations state

@@ -10,7 +10,9 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.insuranceId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.insuranceId);
+
+    if(body && body.insuranceId && isCreator) {
       let ret = await blogController.createPost(body, 'insuranceWallPost', body.priviUser.id)
 
       const insuranceRef = db.collection(collections.insurance)
@@ -33,6 +35,9 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
       })
 
       res.send({success: true, data: ret});
+    } else if (!isCreator){
+      console.log('Error in controllers/insuranceWallController -> postCreate()', "You can't delete a post");
+      res.send({ success: false, error: "You can't delete a post"});
     } else {
       console.log('Error in controllers/insuranceWallController -> postCreate()', 'Missing Insurance Id');
       res.send({ success: false, error: 'Missing insurance Id'});
@@ -43,6 +48,43 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err});
   }
 }
+
+
+exports.postDelete = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    let isCreator = await checkIfUserIsCreator(body.userId, body.insuranceId);
+
+    if(body && body.insuranceId && isCreator) {
+      const insuranceRef = db.collection(collections.insurance)
+        .doc(body.insuranceId);
+      const insuranceGet = await insuranceRef.get();
+      const insurance: any = insuranceGet.data();
+
+      let ret = await blogController.deletePost(insuranceRef, insuranceGet, insurance, body.postId, collections.insuranceWallPost);
+
+      if(ret) {
+        res.send({success: true});
+      } else {
+        console.log('Error in controllers/insuranceWallController -> postDelete()', 'Post Delete Error');
+        res.send({
+          success: false,
+          error: 'Post Delete Error'
+        });
+      }
+    } else if (!isCreator){
+      console.log('Error in controllers/insuranceWallController -> postDelete()', "You can't delete a post");
+      res.send({ success: false, error: "You can't delete a post"});
+    } else {
+      console.log('Error in controllers/insuranceWallController -> postDelete()', 'Missing Pod Id');
+      res.send({ success: false, error: 'Missing Community Id'});
+    }
+  } catch (err) {
+    console.log('Error in controllers/insuranceWallController -> postDelete()', err);
+    res.send({ success: false, error: err});
+  }
+};
 
 exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -296,7 +338,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.wallPostId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.insuranceId);
+
+    if (body && body.wallPostId && isCreator) {
       const insuranceWallPostRef = db.collection(collections.insuranceWallPost)
         .doc(body.wallPostId);
       const insuranceWallPostGet = await insuranceWallPostRef.get();
@@ -306,6 +350,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: insurancePost });
 
+    } else if (!isCreator){
+      console.log('Error in controllers/insuranceWallController -> pinPost()', "You can't pin a post");
+      res.send({ success: false, error: "You can't pin a post"});
     } else {
       console.log('Error in controllers/insuranceWallController -> pinPost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
@@ -315,3 +362,19 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
+
+const checkIfUserIsCreator = (userId, insuranceId) => {
+  return new Promise(async (resolve, reject) => {
+    const insuranceRef = db.collection(collections.insurance)
+      .doc(insuranceId);
+    const insuranceGet = await insuranceRef.get();
+    const insurance: any = insuranceGet.data();
+
+    if (insurance && insurance.Creator && insurance.Creator === userId) {
+      resolve(true);
+    } else {
+      resolve(false);
+    }
+  })
+}

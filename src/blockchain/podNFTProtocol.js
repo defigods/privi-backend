@@ -1,24 +1,22 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.initiatePodNFT = async (creatorId, podAddress, claimingAddress, tokenSymbol, tokenName, supply, royalty, date, dateExpiration, txnId, caller) => {
+module.exports.initiatePodNFT = async (creatorId, tokenSymbol, tokenName, supply, royalty, dateExpiration, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/initiatePOD", {
         Creator: creatorId,
-        PodAddress: podAddress,
-        ClaimingAddress: claimingAddress,
         TokenSymbol: tokenSymbol,
         TokenName: tokenName,
         Supply: supply,
         Royalty: royalty,
-        Date: date,
         DateExpiration: dateExpiration,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.newBuyOrder = async (orderId, amount, price, token, podAddress, bAddress, date, txnId, caller) => {
+module.exports.newBuyOrder = async (orderId, amount, price, token, podAddress, bAddress, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/newBuyOrder", {
         Offer: {
             OrderId: orderId,
@@ -28,14 +26,14 @@ module.exports.newBuyOrder = async (orderId, amount, price, token, podAddress, b
             PodAddress: podAddress,
             BAddress: bAddress
         },
-        Date: date,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.newSellOrder = async (orderId, amount, price, token, podAddress, sAddress, date, txnId, caller) => {
+module.exports.newSellOrder = async (orderId, amount, price, token, podAddress, sAddress, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/newSellOrder", {
         Offer: {
             OrderId: orderId,
@@ -45,63 +43,63 @@ module.exports.newSellOrder = async (orderId, amount, price, token, podAddress, 
             PodAddress: podAddress,
             SAddress: sAddress
         },
-        Date: date,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.deleteBuyOrder = async (orderId, requesterAddress, podAddress, date, txnId, caller) => {
+module.exports.deleteBuyOrder = async (orderId, requesterAddress, podAddress, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/deleteBuyOrder", {
         OrderId: orderId,
         RequesterAddress: requesterAddress,
         PodAddress: podAddress,
-        Date: date,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
 
     });
     return blockchainRes.data;
 };
 
-module.exports.deleteSellOrder = async (orderId, requesterAddress, podAddress, date, txnId, caller) => {
+module.exports.deleteSellOrder = async (orderId, requesterAddress, podAddress, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/deleteSellOrder", {
         OrderId: orderId,
         RequesterAddress: requesterAddress,
         PodAddress: podAddress,
-        Date: date,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
 
     });
     return blockchainRes.data;
 };
 
-module.exports.buyPodTokens = async (podAddress, sAddress, orderId, amount, buyerAddress, txnId, date, caller) => {
+module.exports.buyPodTokens = async (podAddress, sAddress, orderId, amount, buyerAddress, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/buyPodTokens", {
         PodAddress: podAddress,
         SAddress: sAddress,
         OrderId: orderId,
         Amount: amount,
         BuyerAddress: buyerAddress,
-        TxnId: txnId,
-        Date: date,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
 
     });
     return blockchainRes.data;
 };
 
-module.exports.sellPodTokens = async (podAddress, bAddress, orderId, amount, sellerAddress, txnId, date, caller) => {
+module.exports.sellPodTokens = async (podAddress, bAddress, orderId, amount, sellerAddress, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainPodNFTPodAPI + "/sellPodTokens", {
         PodAddress: podAddress,
         BAddress: bAddress,
         OrderId: orderId,
         Amount: amount,
         SellerAddress: sellerAddress,
-        TxnId: txnId,
-        Date: date,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
 
     });

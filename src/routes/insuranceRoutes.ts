@@ -48,6 +48,7 @@ router.get('/FT/getAllInsurancePools', authenticateJWT, insuranceController.getA
 
 
 router.post('/wall/createPost', authenticateJWT, insuranceWallController.postCreate);
+router.post('/wall/deletePost', authenticateJWT, insuranceWallController.postDelete);
 router.get('/wall/getPodPosts/:podId', authenticateJWT, insuranceWallController.getInsurancePost);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), insuranceWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:insuranceWallPostId', authenticateJWT, upload2.array('image'), insuranceWallController.changePostDescriptionPhotos);

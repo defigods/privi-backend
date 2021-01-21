@@ -445,6 +445,16 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
                 }
             }
 
+            creditData.VotingsArray = [];
+            if (creditData.Votings && creditData.Votings.length > 0) {
+                for (const voting of creditData.Votings) {
+                    const votingSnap = await db.collection(collections.voting).doc(voting).get();
+                    const votingData: any = votingSnap.data();
+                    votingData.id = votingSnap.id;
+                    creditData.VotingsArray.push(votingData);
+                }
+            }
+
             const discordChatSnap = await db.collection(collections.discordChat).doc(creditData.DiscordId).get();
             const discordChatData: any = discordChatSnap.data();
 

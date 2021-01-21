@@ -105,7 +105,7 @@ router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'
 
 //badges
 router.post('/badges/getBadges/:communityAddress', authenticateJWT, communityController.getBadges);
-router.post('/badges/create', authenticateJWT, communityController.createBadge);
+// router.post('/badges/create', authenticateJWT, communityController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
 router.get('/badges/getPhoto/:badgeId', communityController.getBadgePhotoById);
 
