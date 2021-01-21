@@ -51,7 +51,7 @@ let upload3 = multer({
 
 let storage4 = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/userWallPost/' + 'photos-' + req.params.communityWallPostId)
+        cb(null, 'uploads/userWallPost/' + 'photos-' + req.params.userWallPostId)
     },
     filename: function (req: any, file: any, cb: any) {
         console.log(file);
@@ -93,11 +93,11 @@ router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.ge
 router.get('/wall/getFollowUserInfo/:userId', authenticateJWT, userController.getFollowingUserInfo);
 router.get('/wall/getFollowMyInfo/:userId', authenticateJWT, userController.getOwnInfo);
 router.get('/wall/getNotifications/:userId', authenticateJWT, userController.getNotifications);
-router.post('/wall/', authenticateJWT, userController.postToWall);
+/*router.post('/wall/', authenticateJWT, userController.postToWall);
 router.post('/wall/likePost', authenticateJWT, userController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userController.dislikePost);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), userController.changePostPhoto);
-router.get('/wall/getPostPhoto/:postId', userController.getPostPhotoById);
+router.get('/wall/getPostPhoto/:postId', userController.getPostPhotoById);*/
 
 // CONNECTIONS - GETS
 router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
@@ -156,7 +156,7 @@ router.post('/changeAnonAvatar', userController.changeAnonAvatar);
 
 router.post('/wall/createPost', authenticateJWT, userWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, userWallController.postDelete);
-router.get('/wall/getUserPosts/:userId', authenticateJWT, userWallController.getUserPost);
+router.get('/wall/getUserPosts/:userId', authenticateJWT, userWallController.getUserPosts);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), userWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:userWallPostId', authenticateJWT, upload4.array('image'), userWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:userWallPostId', userWallController.getUserWallPostPhotoById);
@@ -165,5 +165,7 @@ router.post('/wall/makeResponse', authenticateJWT, userWallController.makeRespon
 router.post('/wall/likePost', authenticateJWT, userWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
+
+router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
 
 module.exports = router;

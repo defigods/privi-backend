@@ -96,6 +96,7 @@ module.exports = {
     creditWallPost: "CreditWallPost",
     insuranceWallPost: "InsuranceWallPost",
     communityWallPost: "CommunityWallPost",
+    userWallPost: "UserWallPost",
 
     insurance: "Insurance",
 

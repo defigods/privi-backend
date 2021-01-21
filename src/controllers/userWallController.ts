@@ -137,7 +137,7 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
       for(let i = 0; i < files.length; i++) {
         filesName.push('/' + userWallPostId + '/' + files[i].originalname)
       }
-      console.log(req.params.podWallPostId, filesName)
+      console.log(req.params.userWallPostId, filesName)
       await userWallPostRef.update({
         descriptionImages: filesName
       });
@@ -152,7 +152,7 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
   }
 }
 
-exports.getUserPost =  async (req: express.Request, res: express.Response) => {
+exports.getUserPosts =  async (req: express.Request, res: express.Response) => {
   try {
     let params : any = req.params;
     let posts : any[] = [];
@@ -177,7 +177,7 @@ exports.getUserPost =  async (req: express.Request, res: express.Response) => {
     }
   } catch (err) {
     console.log('Error in controllers/userWallController -> getUserPost()', err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 }
 
@@ -364,16 +364,33 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const checkIfUserIsCreator = (userId, communityId) => {
+exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
+  try {
+
+    if (req.params && req.params.userId) {
+      const userRef = db.collection(collections.user)
+        .doc(req.params.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      let posts : any[] = [];
+
+
+      res.send({ success: true, data: posts });
+
+    } else {
+      console.log('Error in controllers/userWallController -> getFeedPosts()', "Info not provided");
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userWallController -> getFeedPosts()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
+const checkIfUserIsCreator = (author, userId) => {
   return new Promise(async (resolve, reject) => {
-    const userRef = db.collection(collections.user)
-      .doc(userId);
-    const userGet = await userRef.get();
-    const user: any = userGet.data();
-
-    console.log(userId, user, user.id);
-
-    if (user && user.id && user.id === userId) {
+    if (author === userId) {
       resolve(true);
     } else {
       resolve(false);
