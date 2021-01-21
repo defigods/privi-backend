@@ -5,8 +5,8 @@ import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
 import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
-import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, ETH_SWAP_MANAGER_ADDRESS, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
-import SwapManagerContract from '../contracts/SwapManager.json';
+import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
+// import SwapManagerContract from '../contracts/SwapManager.json';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 import { CONTRACT } from '../constants/ethContracts';
 const fs = require('fs');
@@ -114,6 +114,17 @@ const startWS = () => {
     };
 };
 
+const getWeb3forChain = (chainId: string) => {
+    if(chainId === '0x3'){
+        console.log('getWeb3forChain', chainId)
+        return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
+    } else if (chainId === '0x4') {
+        console.log('getWeb3forChain', chainId)
+        return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
+    } else {
+        return new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${ETH_INFURA_KEY}`))
+    }        
+}
 /**
  * @notice Generic function to execute Ethereum transactions with signature
  * @return @result: true if transaction was executed successfuly, or false otherwise
@@ -126,10 +137,13 @@ const startWS = () => {
  */
 const executeTX = (params: any) => {
     return new Promise<PromiseResponse>(async (resolve) => {
-
+        // get proper chain web3
+        const chainId = params.chainId;
+        const web3_l = getWeb3forChain(chainId);
+        
         // Prepare transaction
         // remark: added 'pending' to avoid 'Known Transaction' error
-        const nonce = await web3.eth.getTransactionCount(params.fromAddress, 'pending');
+        const nonce = await web3_l.eth.getTransactionCount(params.fromAddress, 'pending');
         const tx = {
             gas: 1500000,
             gasPrice: '30000000000',
@@ -141,10 +155,10 @@ const executeTX = (params: any) => {
         };
 
         // Sign transaction
-        web3.eth.accounts.signTransaction(tx, params.fromAddressKey)
+        web3_l.eth.accounts.signTransaction(tx, params.fromAddressKey)
             .then((signed: any) => {
                 // Send transaction
-                web3.eth.sendSignedTransaction(signed.rawTransaction)
+                web3_l.eth.sendSignedTransaction(signed.rawTransaction)
                     .then(async (res: any) => {
                         console.log('Response: ', res)
                         resolve({ success: true, error: '', data: res });
@@ -324,13 +338,14 @@ const saveTx = async (params: any) => {
  * @param txHash  Transaction hash
  * @return Number of confirmations (for testing, we set to 1 to get results faster)
  */
-const checkTxConfirmations = async (txHash: string) => {
+const checkTxConfirmations = async (txHash: string, chainId: string) => {
+    const web3_l = getWeb3forChain(chainId);
     try {
         // Get transaction details
-        const trx = await web3.eth.getTransaction(txHash);
+        const trx = await web3_l.eth.getTransaction(txHash);
 
         // Get current block number
-        const currentBlock = await web3.eth.getBlockNumber();
+        const currentBlock = await web3_l.eth.getBlockNumber();
 
         // When transaction is unconfirmed, its block number is null.
         // In this case we return 0 as number of confirmations
@@ -387,8 +402,8 @@ const wsListen = () => {
  * approve or withdraw
  */
 const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
+    console.log('********* Swaping ETH <--> PRIVI cron job started *********')
     if (SHOULD_HANDLE_SWAP) {
-        // console.log('cronJob called');
         // Start WS server if not initialized yet
         (!runOnce) ? wsListen() : null;
 
@@ -396,7 +411,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
         const snapshot = await db
             .collection(collections.ethTransactions)
             .where('status', '==', 'pending')
-            .where('chainId', '==', CHAIN_ID)
+            // .where('chainId', '==', CHAIN_ID)
             .get();
 
         // Process outstanding TX
@@ -409,9 +424,9 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                     doc.action === Action.WITHDRAW_ETH ||
                     doc.action === Action.WITHDRAW_ERC20) {
                     console.log('performing withdraw');
-                    withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, CHAIN_ID)
+                    withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId)
                 } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
-                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
                     console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                     /* 
                         confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
@@ -422,14 +437,14 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                     return;
                 };
                 } else {
-                    const confirmations = await checkTxConfirmations(doc.txHash) || 0;
+                    const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
                     console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                     /* 
                         confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                     */
                     if (confirmations > MIN_ETH_CONFIRMATION) {
                         console.log('performing swap');
-                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate);
+                        swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate, doc.chainId);
                         return;
                     };
                 }
@@ -459,7 +474,8 @@ const swap = async (
     txHash: string,
     random: string,
     action: string,
-    lastUpdate: number) => {
+    lastUpdate: number,
+    chainId: string) => {
 
     try {
         console.log('--> Swap: TX confirmed in Ethereum');
@@ -522,6 +538,7 @@ const withdraw = async (
 ) => {
     console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
 
+    const web3_l = getWeb3forChain(chainId);
     // set swap doc to in progress
     updateStatusOneToOneSwap(swapDocId, 'inProgress');
     // first burn fabric token
@@ -540,14 +557,14 @@ const withdraw = async (
         // second send coin to user on eth
 
         // Convert value into wei
-        const amountWei = web3.utils.toWei(String(amount));
+        const amountWei = web3_l.utils.toWei(String(amount));
 
         let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
 
         console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
 
         // Get SwapManager contract code
-        const contract = new web3.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(CHAIN_ID.split('x')[1])]["address"]);
+        const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(chainId.split('x')[1])]["address"]);
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
@@ -564,7 +581,7 @@ const withdraw = async (
             fromAddress: ETH_PRIVI_ADDRESS,
             fromAddressKey: ETH_PRIVI_KEY,
             encodedABI: method,
-            toAddress: ETH_SWAP_MANAGER_ADDRESS,
+            toAddress: contract.options.address,
         };
 
         // Execute transaction to withdraw in Ethereum
@@ -610,91 +627,6 @@ const withdraw = async (
     }
 
 }
-
-// const _withdraw = async (params: any) => {
-
-//     // const input = {
-//     //     From: params.publicId,
-//     //     userAddress: params.userAddress,
-//     //     To: params.to,
-//     //     Type: params.action,
-//     //     Token: params.token,
-//     //     Amount: params.amount,
-//     //     Date: params.lastUpdate,
-//     //     Id: params.random,
-//     //     Caller: 'PRIVI'
-//     // }
-
-//     // console.log(`Input for burn: \n`, input);
-
-//     // Withdraw in Fabric
-//     const response = await withdrawFab(
-//         params.action,
-//         params.userAddress,
-//         params.to,
-//         params.amount,
-//         params.token,
-//         params.lastUpdate,
-//         params.random,
-//         'PRIVI'
-//     );
-
-//     if (response && response.success) {
-
-//         // Update balances in Firestore
-//         // updateFirebase(response);
-
-//         // Convert value into wei
-//         const amountWei = web3.utils.toWei(String(params.amount));
-
-//         // Get SwapManager contract code
-//         const contract = new web3.eth.Contract(SwapManagerContract.abi, ETH_SWAP_MANAGER_ADDRESS);
-
-//         // Choose method from SwapManager to be called
-//         const method = (params.action === Action.WITHDRAW_ETH)
-//             ? contract.methods.withdrawEther(params.to, amountWei).encodeABI()
-//             : contract.methods.withdrawERC20Token(params.token, params.to, amountWei).encodeABI();
-
-//         // Transaction parameters
-//         const paramsTX = {
-//             chainId: params.chainId,
-//             fromAddress: ETH_PRIVI_ADDRESS,
-//             fromAddressKey: ETH_PRIVI_KEY,
-//             encodedABI: method,
-//             toAddress: ETH_SWAP_MANAGER_ADDRESS,
-//         };
-
-//         // Execute transaction to withdraw in Ethereum
-//         const { success, data } = await executeTX(paramsTX);
-//         const paramsTx = {
-//             publicId: params.publicId,
-//             from: params.from,
-//             to: params.to,
-//             txHash: 0,
-//             random: params.random,
-//             chainId: params.chainId,
-//             action: params.action,
-//             token: params.token,
-//             amount: params.amount,
-//             description: params.description,
-//             status: 'pending',
-//             lastUpdate: params.lastUpdate,
-//         };
-//         console.log('params to be saved in firestore: ', paramsTx)
-//         // Send back transaction result to front-end
-//         if (success) {
-//             console.log('--> Withdraw: TX confirmed in Ethereum');
-//             paramsTx.txHash = data.transactionHash,
-//                 await saveTx(paramsTx);
-//         } else {
-//             console.log('--> Withdraw: TX failed in Ethereum');
-//             await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
-//         };
-//     } else {
-//         console.log('--> Withdraw: TX failed in Fabric');
-//         await sendTxBack('0', params.publicId, params.action, params.random, 'KO');
-//     }
-// };
 
 const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     const { userId, userAddress } = req.query;

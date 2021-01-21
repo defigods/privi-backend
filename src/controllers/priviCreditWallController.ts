@@ -10,7 +10,9 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.creditPoolId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.creditPoolId);
+
+    if(body && body.creditPoolId && isCreator) {
       let ret = await blogController.createPost(body, 'creditWallPost', body.priviUser.id)
 
       const priviCreditsRef = db.collection(collections.priviCredits)
@@ -33,16 +35,54 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
       })
 
       res.send({success: true, data: ret});
+    } else if (!isCreator){
+      console.log('Error in controllers/priviCreditWallController -> postCreate()', "You can't delete a post");
+      res.send({ success: false, error: "You can't delete a post"});
     } else {
       console.log('Error in controllers/priviCreditWallController -> postCreate()', 'Missing Privi Credit Id');
       res.send({ success: false, error: 'Missing Privi Id'});
     }
-
   } catch (err) {
     console.log('Error in controllers/priviCreditWallController -> postCreate()', err);
     res.send({ success: false, error: err});
   }
 }
+
+exports.postDelete = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    let isCreator = await checkIfUserIsCreator(body.userId, body.creditPoolId);
+
+    if(body && body.creditPoolId && isCreator) {
+      const priviCreditsRef = db.collection(collections.priviCredits)
+        .doc(body.creditPoolId);
+      const priviCreditsGet = await priviCreditsRef.get();
+      const priviCredit: any = priviCreditsGet.data();
+
+      let ret = await blogController.deletePost(priviCreditsRef, priviCreditsGet, priviCredit, body.postId, collections.creditWallPost);
+
+      if(ret) {
+        res.send({success: true});
+      } else {
+        console.log('Error in controllers/priviCreditWallController -> postDelete()', 'Post Delete Error');
+        res.send({
+          success: false,
+          error: 'Post Delete Error'
+        });
+      }
+    } else if (!isCreator){
+      console.log('Error in controllers/priviCreditWallController -> postDelete()', "You can't delete a post");
+      res.send({ success: false, error: "You can't delete a post"});
+    } else {
+      console.log('Error in controllers/priviCreditWallController -> postDelete()', 'Missing Pod Id');
+      res.send({ success: false, error: 'Missing Community Id'});
+    }
+  } catch (err) {
+    console.log('Error in controllers/priviCreditWallController -> postDelete()', err);
+    res.send({ success: false, error: err});
+  }
+};
 
 exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -297,7 +337,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.wallPostId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.creditPoolId);
+
+    if (body && body.wallPostId && isCreator) {
       const creditWallPostRef = db.collection(collections.creditWallPost)
         .doc(body.wallPostId);
       const creditWallPostGet = await creditWallPostRef.get();
@@ -307,6 +349,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: creditPost });
 
+    } else if (!isCreator){
+      console.log('Error in controllers/priviCreditWallController -> pinPost()', "You can't pin a post");
+      res.send({ success: false, error: "You can't pin a post"});
     } else {
       console.log('Error in controllers/priviCreditWallController -> pinPost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
@@ -316,3 +361,18 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
+const checkIfUserIsCreator = (userId, creditPoolId) => {
+  return new Promise(async (resolve, reject) => {
+    const priviCreditRef = db.collection(collections.priviCredits)
+      .doc(creditPoolId);
+    const priviCreditGet = await priviCreditRef.get();
+    const priviCredit: any = priviCreditGet.data();
+
+    if (priviCredit && priviCredit.Creator && priviCredit.Creator === userId) {
+      resolve(true);
+    } else {
+      resolve(false);
+    }
+  })
+}

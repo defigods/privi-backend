@@ -10,7 +10,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isCreator = checkIfUserIsCreator(body.userId, body.communityId);
+    let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
     if(body && body.communityId && isCreator) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
@@ -52,7 +52,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isCreator = checkIfUserIsCreator(body.userId, body.communityId);
+    let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
 
     if(body && body.communityId && isCreator) {
       const communityRef = db.collection(collections.community)
@@ -65,17 +65,17 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
       if(ret) {
         res.send({success: true});
       } else {
-        console.log('Error in controllers/communityWallController -> postCreate()', 'Post Delete Error');
+        console.log('Error in controllers/communityWallController -> postDelete()', 'Post Delete Error');
         res.send({
           success: false,
           error: 'Post Delete Error'
         });
       }
     } else if (!isCreator){
-      console.log('Error in controllers/communityWallController -> postCreate()', "You can't create a post");
-      res.send({ success: false, error: "You can't create a post"});
+      console.log('Error in controllers/communityWallController -> postDelete()', "You can't create a post");
+      res.send({ success: false, error: "You can't delete a post"});
     } else {
-      console.log('Error in controllers/communityWallController -> postCreate()', 'Missing Community Id');
+      console.log('Error in controllers/communityWallController -> postDelete()', 'Missing Community Id');
       res.send({ success: false, error: 'Missing Community Id'});
     }
 
@@ -217,7 +217,7 @@ exports.getCommunityWallPostPhotoById = async (req: express.Request, res: expres
 };
 exports.getCommunityWallPostDescriptionPhotoById = async (req: express.Request, res: express.Response) => {
   try {
-    let postId = req.params.communityWallPostid;
+    let postId = req.params.communityWallPostId;
     let photoId = req.params.photoId;
     console.log('postId', postId, photoId);
     if (postId && photoId) {
@@ -338,7 +338,9 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.wallPostId) {
+    let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
+
+    if (body && body.wallPostId && isCreator) {
       const communityWallPostRef = db.collection(collections.communityWallPost)
         .doc(body.wallPostId);
       const communityWallPostGet = await communityWallPostRef.get();
@@ -348,7 +350,10 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: podPost });
 
-    } else {
+    } else if (!isCreator){
+      console.log('Error in controllers/communityWallController -> pinPost()', "You can't pin a post");
+      res.send({ success: false, error: "You can't pin a post"});
+    }else {
       console.log('Error in controllers/communityWallController -> pinPost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
     }
