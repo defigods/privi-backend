@@ -23,9 +23,11 @@ let upload = multer({
 router.get('/getInfo/:userId', authenticateJWT, priviDataController.getInfo);
 router.get('/getCampaigns/:userId', authenticateJWT, priviDataController.getCampaigns);
 router.get('/getMyPodsPoolsCreditsCommunities/:userId', authenticateJWT, priviDataController.getMyPodsPoolsCreditsCommunities);
+router.get('/getCampaign', authenticateJWT, priviDataController.getCampaign);
 
 router.post('/changeCampaignPhoto', authenticateJWT, upload.single('image'), priviDataController.changeCampaignPhoto);
 
 router.post('/createCampaign', authenticateJWT, priviDataController.createCampaign);
+router.post('/campaignClick', authenticateJWT, priviDataController.campaignClick);
 
 module.exports = router;
