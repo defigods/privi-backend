@@ -21,7 +21,7 @@ module.exports = {
 
     staking: "PRIVI_Staking",
     unstaking: "PRIVI_Unstaking",
-    stakingReward: "Staking_Reward",
+    stakingReward: "Staking_Reward", // might be depricated
     mintingStaking: "Minting_Staking",
 
 
