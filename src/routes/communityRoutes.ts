@@ -100,8 +100,8 @@ let upload5 = multer({
 });*/
 
 
-router.post('/votation/create', authenticateJWT, communityController.createVotation);
-router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
+/*router.post('/votation/create', authenticateJWT, communityController.createVotation);
+router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);*/
 
 //badges
 router.post('/badges/getBadges/:communityAddress', authenticateJWT, communityController.getBadges);

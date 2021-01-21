@@ -25,6 +25,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             const community: any = communityGet.data();
 
             isAdmin = await checkIfUserIsAdmin(community.Creator, body.userId);
+            console.log(isAdmin, community.Creator, body.userId)
 
         } else if(body.itemType === 'CreditPool') {
             const priviCreditsRef = db.collection(collections.priviCredits).doc(body.itemId);
@@ -38,6 +39,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             res.send({success: false, error: 'Voting ItemType is unknown'})
         }
 
+
         if(isAdmin) {
             let voting: any = {
                 VotationId: uid,
@@ -45,9 +47,8 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                 ItemType: body.itemType,
                 ItemId: body.itemId,
                 Question: body.question,
-                PossibleAnswers: body.possibleAnswers,
                 CreatorAddress: body.creatorAddress,
-                CreatorId: body.creatorId,
+                CreatorId: body.userId,
                 Answers: [],
                 OpenVotation: false,
                 Description: body.description,
@@ -61,26 +62,33 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
             if(voting.Type && voting.ItemType) {
                 if (voting.Type === 'staking') {
-                    voting.VotationAddress = body.VotationAddress;
-                    voting.VotationToken = body.VotationToken;
-                    voting.QuorumRequiered = body.QuorumRequiered;
-                    voting.Hash = body.Hash;
-                    voting.Signature = body.Signature;
+                    voting.VotationAddress = body.votationAddress;
+                    voting.VotationToken = body.votationToken;
+                    voting.TotalVotes = body.totalVotes;
+                    voting.QuorumRequired = body.quorumRequired/100;
+                    voting.Hash = body.hash;
+                    voting.Signature = body.signature;
+                    voting.PossibleAnswers = ['Yes', 'No'];
+                    voting.Caller = 'PRIVI';
 
+                    console.log(voting);
                     const blockchainRes = await votation.createVotation(voting);
                     if (blockchainRes && blockchainRes.success) {
                         updateFirebase(blockchainRes);
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
-                        res.send({success: false, error: blockchainRes.message})
+                        res.send({success: false, error: blockchainRes.message});
+                        return;
                     }
                 } else if (voting.Type === 'regular') {
+                    voting.PossibleAnswers = body.possibleAnswers;
                     await db.runTransaction(async (transaction) => {
                         transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
                     })
                 } else {
                     console.log('Error in controllers/votingController -> createVotation()', 'Voting type is unknown');
-                    res.send({success: false, error: 'Voting type is unknown'})
+                    res.send({success: false, error: 'Voting type is unknown'});
+                    return;
                 }
 
                 if (voting.ItemType === 'Pod') {
@@ -126,27 +134,29 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
     }
 }
 
-const updateItemTypeVoting = (itemRef, itemGet, item, uid, voting) => {
-    return new Promise(async (resolve, reject) => {
-        try {
-            let votingsIdArray: any[] = [];
-            if (item && item.Votings) {
-                let communityVotings = [...item.Votings];
-                communityVotings.push(uid);
-                votingsIdArray = communityVotings;
-            } else {
-                votingsIdArray.push(voting.VotationId)
+exports.changeVotingPhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file) {
+            const votingRef = db.collection(collections.voting)
+              .doc(req.file.originalname);
+            const votingGet = await votingRef.get();
+            const voting: any = await votingGet.data();
+
+            if (voting.hasPhoto) {
+                await votingRef.update({
+                    hasPhoto: true
+                });
             }
 
-            await itemRef.update({
-                Votings: votingsIdArray
-            });
-
-            resolve(true)
-        } catch(e) {
-            reject('Error in updateItemTypeVoting: ' + e);
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/communityController -> changeBadgePhoto()', "There's no file...");
+            res.send({ success: false });
         }
-    });
+    } catch (err) {
+        console.log('Error in controllers/communityController -> changeBadgePhoto()', err);
+        res.send({ success: false });
+    }
 }
 
 exports.makeVote = async (req: express.Request, res: express.Response) => {
@@ -288,6 +298,30 @@ exports.getVotationInfo = async (req: express.Request, res: express.Response) =>
             message: e
         });
     }
+}
+
+
+const updateItemTypeVoting = (itemRef, itemGet, item, uid, voting) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let votingsIdArray: any[] = [];
+            if (item && item.Votings) {
+                let communityVotings = [...item.Votings];
+                communityVotings.push(uid);
+                votingsIdArray = communityVotings;
+            } else {
+                votingsIdArray.push(voting.VotationId)
+            }
+
+            await itemRef.update({
+                Votings: votingsIdArray
+            });
+
+            resolve(true)
+        } catch(e) {
+            reject('Error in updateItemTypeVoting: ' + e);
+        }
+    });
 }
 
 
