@@ -150,7 +150,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
             }
 
-            res.send({ success: true });
+            res.send({
+                success: true,
+                data: {
+                    communityAddress: communityAddress
+                }
+            });
         }
         else {
             console.log('Error in controllers/communityController -> createCommunity(): success = false', blockchainRes.message);
