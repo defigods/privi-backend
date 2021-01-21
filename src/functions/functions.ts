@@ -6,9 +6,6 @@ const { mnemonicToSeed } = require('bip39')
 const { fromMasterSeed } = require('hdkey')
 const { ecsign, toRpcSig, keccak } = require("ethereumjs-util")
 
-const BigFloat32 = require('bigfloat').BigFloat32;
-
-const xid = require('xid-js');  // for generating unique ids (in Txns for example)
 const uuid = require('uuid');
 
 const apiKey = "PRIVI"; // just for now

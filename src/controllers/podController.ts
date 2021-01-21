@@ -1,7 +1,7 @@
 import express, { response } from 'express';
 import podFTProtocol from "../blockchain/podFTProtocol";
 import podNFTProtocol from "../blockchain/podNFTProtocol";
-import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, getMarketPrice, getSellTokenAmountPod, getBuyTokenAmountPod } from "../functions/functions";
+import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, getMarketPrice, getSellTokenAmountPod, getBuyTokenAmountPod, addZerosToHistory } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
@@ -1131,6 +1131,16 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
                 }
             }
 
+            pod.VotingsArray = [];
+            if (pod.Votings && pod.Votings.length > 0) {
+                for (const voting of pod.Votings) {
+                    const votingSnap = await db.collection(collections.voting).doc(voting).get();
+                    const votingData: any = votingSnap.data();
+                    votingData.id = votingSnap.id;
+                    pod.VotingsArray.push(votingData);
+                }
+            }
+
             const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
             const discordChatData: any = discordChatSnap.data();
             if (discordChatData && discordChatData.admin) {
@@ -1412,8 +1422,6 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
         const hash = body.Hash;
         const signature = body.Signature;
 
-        console.log(body);
-
         const blockchainRes = await podNFTProtocol.initiatePodNFT(creator, tokenSymbol, tokenName, supply, royalty, expirationDate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);   // update blockchain res
@@ -1422,6 +1430,9 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
 
             updateCommonFields(body, podAddress, false); // update common fields
             const podDocRef = db.collection(collections.podsNFT).doc(podAddress);
+            // add zeros to graph
+            addZerosToHistory(podDocRef.collection(collections.supplyHistory), "supply");
+            addZerosToHistory(podDocRef.collection(collections.priceHistory), "price");
 
             // Update fields that only NFT Pods have
             const isDigital: boolean = body.IsDigital;
@@ -1482,24 +1493,18 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
 exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const buyerAddress = body.buyerAddress;
-        const podAddress = body.podAddress;
-        const amount = body.amount;
-        const price = body.price;
-        const token = body.token;
+        const orderId = body.Offer.OrderId;
+        const buyerAddress = body.Offer.BAddress;
+        const podAddress = body.Offer.PodAddress;
+        const amount = body.Offer.Amount;
+        const price = body.Offer.Price;
+        const token = body.Offer.Token;
 
-        const orderId = generateUniqueId();
-        const date = Date.now();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.newBuyOrder(orderId, amount, price, token, podAddress, buyerAddress, date, tid, apiKey);
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await podNFTProtocol.newBuyOrder(orderId, amount, price, token, podAddress, buyerAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // TODO: set correct notification type
-            createNotification(buyerAddress, "NFT Pod - Pod Buy Offer Crated",
-                ` `,
-                notificationTypes.nftPodBuyOffer
-            );
-            console.log(blockchainRes.output)
             const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             await notificationsController.addNotification({
@@ -1551,23 +1556,18 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
 exports.newSellOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const sellerAddress = body.sellerAddress;
-        const podAddress = body.podAddress;
-        const amount = body.amount;
-        const price = body.price;
-        const token = body.token;
+        const orderId = body.Offer.OrderId;
+        const sellerAddress = body.Offer.SAddress;
+        const podAddress = body.Offer.PodAddress;
+        const amount = body.Offer.Amount;
+        const price = body.Offer.Price;
+        const token = body.Offer.Token;
 
-        const orderId = generateUniqueId();
-        const date = Date.now();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.newSellOrder(orderId, amount, price, token, podAddress, sellerAddress, date, tid, apiKey);
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await podNFTProtocol.newSellOrder(orderId, amount, price, token, podAddress, sellerAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            // TODO: set correct notification type
-            createNotification(sellerAddress, "NFT Pod - Pod Sell Offer Crated",
-                ` `,
-                notificationTypes.nftPodSellOffer
-            );
             const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
             const podData: any = podSnap.data();
             await notificationsController.addNotification({
@@ -1618,19 +1618,16 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
 exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const requesterAddress = body.requesterAddress;
-        const podAddress = body.podAddress;
-        const orderId = body.orderId;
+        const requesterAddress = body.RequesterAddress;
+        const podAddress = body.PodAddress;
+        const orderId = body.OrderId;
 
-        const date = Date.now();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.deleteBuyOrder(orderId, requesterAddress, podAddress, date, tid, apiKey);
+        const hash = body.Hash;
+        const signature = body.Signature;
+
+        const blockchainRes = await podNFTProtocol.deleteBuyOrder(orderId, requesterAddress, podAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(requesterAddress, "NFT Pod - Pod Buy Offer Deleted",
-                ` `,
-                notificationTypes.nftPodBuyOfferDelete
-            );
             // manually delete order
             db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId).delete();
 
@@ -1684,19 +1681,16 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
 exports.deleteSellOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const requesterAddress = body.requesterAddress;
-        const podAddress = body.podAddress;
-        const orderId = body.orderId;
+        const requesterAddress = body.RequesterAddress;
+        const podAddress = body.PodAddress;
+        const orderId = body.OrderId;
 
-        const date = Date.now();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.deleteSellOrder(orderId, requesterAddress, podAddress, date, tid, apiKey);
+        const hash = body.Hash;
+        const signature = body.Signature;
+
+        const blockchainRes = await podNFTProtocol.deleteSellOrder(orderId, requesterAddress, podAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(requesterAddress, "NFT Pod - Pod Sell Offer Deleted",
-                ` `,
-                notificationTypes.nftPodSellOfferDelete
-            );
             // manually delete order
             db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId).delete();
 
@@ -1750,15 +1744,16 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
 exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const buyerAddress = body.buyerAddress;
-        const sellerAddress = body.sellerAddress;
-        const amount = body.amount;
-        const podAddress = body.podAddress;
-        const orderId = body.orderId;
+        const buyerAddress = body.BAddress;
+        const sellerAddress = body.SellerAddress;
+        const amount = body.Amount;
+        const podAddress = body.PodAddress;
+        const orderId = body.OrderId;
 
-        const date = Date.now();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.sellPodTokens(podAddress, buyerAddress, orderId, amount, sellerAddress, tid, date, apiKey);
+        const hash = body.Hash;
+        const signature = body.Signature;
+
+        const blockchainRes = await podNFTProtocol.sellPodTokens(podAddress, buyerAddress, orderId, amount, sellerAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
@@ -1773,12 +1768,10 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
             // add txn to pod
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == podAddress || obj.To == podAddress) {
-                    podSnap.ref.collection(collections.podTransactions).add(obj)
-                }
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transcations: txnArray });
             }
             // add to PriceOf the day 
             if (price) {
@@ -1788,10 +1781,6 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
                 })
             }
 
-            createNotification(sellerAddress, "NFT Pod - Pod Token Sold",
-                ` `,
-                notificationTypes.nftPodSelling
-            );
             await notificationsController.addNotification({
                 userId: sellerAddress,
                 notification: {
@@ -1826,15 +1815,15 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
 exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const buyerAddress = body.buyerAddress;
-        const sellerAddress = body.sellerAddress;
-        const amount = body.amount;
-        const podAddress = body.podAddress;
-        const orderId = body.orderId;
-        console.log(body);
-        const date = Date.now();
-        const tid = generateUniqueId();
-        const blockchainRes = await podNFTProtocol.buyPodTokens(podAddress, sellerAddress, orderId, amount, buyerAddress, tid, date, apiKey);
+        const buyerAddress = body.BuyerAddress;
+        const sellerAddress = body.SAddress;
+        const amount = body.Amount;
+        const podAddress = body.PodAddress;
+        const orderId = body.OrderId;
+
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await podNFTProtocol.buyPodTokens(podAddress, sellerAddress, orderId, amount, buyerAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
@@ -1849,12 +1838,10 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
             // add txn to pod
             const output = blockchainRes.output;
             const transactions = output.Transactions;
-            let key = "";
-            let obj: any = null;
-            for ([key, obj] of Object.entries(transactions)) {
-                if (obj.From == podAddress || obj.To == podAddress) {
-                    podSnap.ref.collection(collections.podTransactions).add(obj)
-                }
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transcations: txnArray });
             }
             // add to PriceOf the day 
             if (price) {
@@ -1864,11 +1851,6 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
                 })
             }
 
-            // TODO: set correct notification type
-            createNotification(buyerAddress, "NFT Pod - Pod Token Bought",
-                ` `,
-                notificationTypes.nftPodBuying
-            );
             await notificationsController.addNotification({
                 userId: buyerAddress,
                 notification: {
