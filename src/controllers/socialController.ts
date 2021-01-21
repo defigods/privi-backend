@@ -68,8 +68,8 @@ exports.getSocialTokens = async (req: express.Request, res: express.Response) =>
             const balances = blockchainRes.output;
             const socialSnap = await db.collection(collections.socialPools).get();
             socialSnap.forEach((doc) => {
-                if (balances[doc.id]) {
-                    const data: any = doc.data();
+                const data: any = doc.data();
+                if (balances[data.TokenSymbol]) {
                     let marketPrice = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TragetPrice, data.TargetSupply);
                     retData.push({
                         ...data,
