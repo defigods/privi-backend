@@ -38,8 +38,8 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
                     spent: 0,
                     dailySpent: 0,
                     weeklySpent: 0,
-                    itemType: '',
-                    itemId: '',
+                    itemType: body.itemType,
+                    itemId: body.itemId,
                     numImpressions: 0,
                     last30DaysImpressions: [{
                         impressions: 0,
