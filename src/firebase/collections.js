@@ -113,6 +113,8 @@ module.exports = {
     discordMessage: "DiscordMessage",
     discordMessageReplies: "DiscordMessageReplies",
 
+    socialPools: "SocialPools",
+
     levels: "Levels",
 
     socialPools: "SocialPools",

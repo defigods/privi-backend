@@ -39,7 +39,6 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             res.send({success: false, error: 'Voting ItemType is unknown'})
         }
 
-
         if(isAdmin) {
             let voting: any = {
                 VotationId: uid,
@@ -192,7 +191,6 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     vote.VoterAddress = body.voterAddress;
                     vote.VotationId = body.votationId;
                     vote.StakedAmount = body.stakedAmount;
-                    vote.VotationAddress = body.votationAddress;
                     vote.Hash = body.hash;
                     vote.Signature = body.signature;
 
@@ -266,7 +264,6 @@ exports.endVoting = cron.schedule('* */1 * * *', async () => {
             if (endingDate > Date.now()) {
                 let votationEnd = {
                     VotationId: votationData.VotationId,
-                    VotationAddress: votationData.VotationAddress,
                 }
                 const blockchainRes = await votation.endVotation(votationEnd);
 
@@ -283,7 +280,7 @@ exports.endVoting = cron.schedule('* */1 * * *', async () => {
 exports.getVotationInfo = async (req: express.Request, res: express.Response) => {
     try {
         const votationId = req.params.VotationId;
-        const votingRef = db.collection(collections.Voting).doc(votationId);
+        const votingRef = db.collection(collections.voting).doc(votationId);
         const votingGet = await votingRef.get();
         const voting: any = votingGet.data();
 
@@ -380,4 +377,45 @@ const checkIfUserIsAdmin = (creator, userId): Promise<boolean> => {
             resolve(false);
         }
     })
+}
+
+exports.getUserVotation = async (req: express.Request, res: express.Response) => {
+    try {
+        const votationId = req.params.VotationId;
+        const voterAddress = req.params.VoterId;
+        const voterRef = db.collection(collections.voter).doc(votationId + voterAddress);
+        const voterGet = await voterRef.get();
+        const voter: any = voterGet.data();
+
+        res.send({
+            success: true,
+            data: voter
+        });
+    } catch (e) {
+        console.log('Error in controllers/votingController -> getUserVotation()', e);
+        res.send({
+            success: false,
+            message: e
+        });
+    }
+}
+
+exports.getVotationState = async (req: express.Request, res: express.Response) => {
+    try {
+        const votationId = req.params.VotationId;
+        const votationStateRef = db.collection(collections.votationState).doc(votationId);
+        const votationStateGet = await votationStateRef.get();
+        const votationState: any = votationStateGet.data();
+
+        res.send({
+            success: true,
+            data: votationState
+        });
+    } catch (e) {
+        console.log('Error in controllers/votingController -> getVotationInfo()', e);
+        res.send({
+            success: false,
+            message: e
+        });
+    }
 }
