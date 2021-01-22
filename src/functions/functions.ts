@@ -80,9 +80,6 @@ export async function updateFirebase(blockchainRes) {
         const updatedProtocolPool = output.UpdatedProtocolPool;
         // staking
         const updateStakings = output.UpdateStakings;
-        // social
-        const updateSocialPools = output.UpdateSocialPools;
-        const updateSocialPoolStates = output.UpdateSocialPoolStates;
 
         // social token
         const updateSocialPools = output.UpdateSocialPools;

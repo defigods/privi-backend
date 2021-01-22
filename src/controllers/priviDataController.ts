@@ -2,6 +2,7 @@ import express from 'express';
 import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
 import coinBalance from '../blockchain/coinBalance';
+import cron from 'node-cron';
 
 const podController = require('./podController');
 
@@ -18,9 +19,9 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
             await db.runTransaction(async (transaction) => {
                 let date = new Date();
                 let dateMonth = new Date();
-                let last30DaysImpressions = [];
-                let last30DaysUsers = [];
-                let last30DaysClicks = [];
+                let last30DaysImpressions : any[] = [];
+                let last30DaysUsers : any[] = [];
+                let last30DaysClicks : any[] = [];
                 last30DaysImpressions.length = 30;
                 last30DaysUsers.length = 30;
                 last30DaysClicks.length = 30;
@@ -39,9 +40,9 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
                     };
                     date.setDate(date.getDate() - 1);
                 }
-                let last12MonthImpressions = [];
-                let last12MonthUsers = [];
-                let last12MonthClicks = [];
+                let last12MonthImpressions : any[] = [];
+                let last12MonthUsers : any[] = [];
+                let last12MonthClicks : any[] = [];
                 last12MonthImpressions.length = 12;
                 last12MonthUsers.length = 12;
                 last12MonthClicks.length = 12;
@@ -330,7 +331,7 @@ const campaignClick = async (req: express.Request, res: express.Response) => {
         });
         res.send({success: true});
     } catch (e) {
-        console.log('Error in controllers/priviDataRoutes -> campaignClick()', err);
+        console.log('Error in controllers/priviDataRoutes -> campaignClick()', e);
         res.send({success: false, message: e});
     }
 }
@@ -376,8 +377,8 @@ const campaignsDataNextDay = cron.schedule("0 0 * * *", async () => {
             const campaignRef = db.collection(collections.campaigns).doc(campaignData.id);
             campaignRef.update({
                 last30DaysImpressions: campaignData.last30DaysImpressions,
-                last30DaysUsers: last30DaysUsers.last12MonthUsers,
-                last30DaysClicks: last30DaysClicks.last12MonthClicks,
+                last30DaysUsers: campaignData.last12MonthUsers,
+                last30DaysClicks: campaignData.last12MonthClicks,
                 weeklySpent: campaignData.weeklySpent - campaignData.dailySpent,
                 dailySpent: 0
             });
@@ -395,9 +396,9 @@ const getCampaign = async (req: express.Request, res: express.Response) => {
             // use only one where condition, bcs firebase doesn't support multiple not equals operators
             // https://firebase.google.com/docs/firestore/query-data/queries#query_limitations
             let campaignsGet = await db.collection(collections.campaigns)
-                .where("dateExpiration", "<=", Date.now());
+                .where("dateExpiration", "<=", Date.now()).get();
             let campaigns: any[] = campaignsGet.data();
-            if (campaigns !== 'undefined' && campaigns.length > 0) {
+            if (campaigns && campaigns.length > 0) {
                 campaigns = campaigns.filter(c => c.dateStart <= Date.now())
                 if (campaigns.length >= 0) {
                     campaigns = campaigns.filter(c => checkDailyWeeklyBudget(c));
@@ -442,7 +443,7 @@ const getCampaign = async (req: express.Request, res: express.Response) => {
             res.send({success: false, message: 'req.body.user is missing'});
         }
     } catch (e) {
-        console.log('Error in controllers/priviDataRoutes -> getCampaign()', err);
+        console.log('Error in controllers/priviDataRoutes -> getCampaign()', e);
     }
 }
 
