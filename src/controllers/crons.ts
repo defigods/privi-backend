@@ -7,7 +7,7 @@ const walletController = require('./walletController');
 const stakeController = require('./stakeController');
 const votingController = require('./votingController');
 const blogController = require('./blogController');
-const priviDataController = require('/priviDataController');
+const priviDataController = require('./priviDataController');
 
 // Credit
 const priviCreditPayInterest = priviCreditController.payInterest;

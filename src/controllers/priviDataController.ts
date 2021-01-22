@@ -397,7 +397,7 @@ const getCampaign = async (req: express.Request, res: express.Response) => {
             // https://firebase.google.com/docs/firestore/query-data/queries#query_limitations
             let campaignsGet = await db.collection(collections.campaigns)
                 .where("dateExpiration", "<=", Date.now()).get();
-            let campaigns: any[] = campaignsGet.data();
+            /*let campaigns: any[] = campaignsGet.data();
             if (campaigns && campaigns.length > 0) {
                 campaigns = campaigns.filter(c => c.dateStart <= Date.now())
                 if (campaigns.length >= 0) {
@@ -437,7 +437,7 @@ const getCampaign = async (req: express.Request, res: express.Response) => {
                     success: true,
                     data: campaigns[0]
                 });
-            }
+            }*/
             res.send({success: false, message: 'Did not found suitable campaign'});
         } else {
             res.send({success: false, message: 'req.body.user is missing'});
