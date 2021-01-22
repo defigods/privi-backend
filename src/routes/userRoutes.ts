@@ -168,4 +168,6 @@ router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
 
 router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
 
+router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
+
 module.exports = router;
