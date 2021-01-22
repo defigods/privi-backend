@@ -68,8 +68,8 @@ exports.investInsurancePool = async (req: express.Request, res: express.Response
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/lendingController -> investInsurancePool(): ', err);
-        res.send({ success: false });
+        console.log('Error in controllers/insuranceController -> investInsurancePool(): ', err);
+        res.send({success: false});
     }
 };
 
@@ -93,8 +93,8 @@ exports.subscribeInsurancePool = async (req: express.Request, res: express.Respo
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/lendingController -> subscribeInsurancePool(): ', err);
-        res.send({ success: false });
+        console.log('Error in controllers/insuranceController -> subscribeInsurancePool(): ', err);
+        res.send({success: false});
     }
 };
 
@@ -118,8 +118,8 @@ exports.unsubscribeInsurancePool = async (req: express.Request, res: express.Res
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/lendingController -> unsubscribeInsurancePool(): ', err);
-        res.send({ success: false });
+        console.log('Error in controllers/insuranceController -> unsubscribeInsurancePool(): ', err);
+        res.send({success: false});
     }
 };
 
@@ -137,11 +137,120 @@ exports.getAllInsurancePools = async (req: express.Request, res: express.Respons
 
         const trendingInsurances = filterTrending(allInsurancePools);
 
-        res.send({ success: true, data: { allInsurances: allInsurancePools, trendingInsurances: trendingInsurances } })
+        res.send({success: true, data: {allInsurances: allInsurancePools, trendingInsurances: trendingInsurances}})
     } catch (err) {
         console.log('Error in controllers/lendingController -> unsubscribeInsurancePool(): ', err);
-        res.send({ success: false });
+        res.send({success: false});
     }
 };
 
 /////////////////////////// NFT //////////////////////////////
+exports.initiateInsurancePoolNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const data = {
+            GuarantorAddress: body.guarantorAddress,
+            InsuranceAddress: body.insuranceAddress,
+            PodAddress: body.podAddress,
+            PoolToken: body.poolToken,
+            Frequency: body.frequency,
+            FeeInscription: body.feeInscription,
+            FeeMembership: body.feeMembership,
+            MinCoverage: body.minCoverage,
+            PrincipalValuation: body.principalValuation,
+            DateExpiration: body.dateExpiration,
+            InitialDeposit: body.initialDeposit,
+            Hash: body.hash,
+            Signature: body.signature,
+            Caller: apiKey,
+        }
+
+        const blockchainRes = await insurance.initiateInsurancePoolNFT(data);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/insuranceController -> initiateInsurancePoolNFT(): success = false');
+            res.send({success: false});
+        }
+    } catch (e) {
+        console.log('Error in controllers/insuranceController -> initiateInsurancePoolNFT(): ', e);
+        res.send({success: false});
+    }
+}
+
+exports.subscribeInsurancePoolNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const data = {
+            ClientAddress: body.clientAddress,
+            InsuranceAddress: body.insuranceAddress,
+            AmountPodTokens: body.amount,
+            Hash: body.hash,
+            Signature: body.signature,
+            Caller: apiKey
+        }
+        const blockchainRes = await insurance.subscribeInsurancePoolNFT(data);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/insuranceController -> subscribeInsurancePoolNFT(): success = false');
+            res.send({success: false});
+        }
+    } catch (err) {
+        console.log('Error in controllers/insuranceController -> subscribeInsurancePoolNFT(): ', err);
+        res.send({success: false});
+    }
+};
+
+exports.unsubscribeInsurancePoolNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const data = {
+            ClientAddress: body.clientAddress,
+            InsuranceAddress: body.insuranceAddress,
+            Amount: body.amount,
+            Hash: body.hash,
+            Signature: body.signature,
+            Caller: apiKey
+        }
+        const blockchainRes = await insurance.unsubscribeInsurancePool(data);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/insuranceController -> unsubscribeInsurancePoolNFT(): success = false');
+            res.send({success: false});
+        }
+    } catch (err) {
+        console.log('Error in controllers/insuranceController -> unsubscribeInsurancePoolNFT(): ', err);
+        res.send({success: false});
+    }
+}
+
+exports.investInsurancePoolNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const data = {
+            InvestorAddress: body.inverstorAddress,
+            InsuranceAddress: body.insuranceAddress,
+            AmountPodTokens: body.amount,
+            Hash: body.hash,
+            Signature: body.signature,
+            Caller: apiKey
+        }
+
+        const blockchainRes = await insurance.investInsurancePoolNFT(data);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/insuranceController -> investInsurancePoolNFT(): success = false');
+            res.send({success: false});
+        }
+    } catch (err) {
+        console.log('Error in controllers/insuranceController -> investInsurancePoolNFT(): ', err);
+        res.send({success: false});
+    }
+}

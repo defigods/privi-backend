@@ -42,9 +42,11 @@ router.post('/FT/unsubscribeInsurancePool', authenticateJWT, insuranceController
 
 router.get('/FT/getAllInsurancePools', authenticateJWT, insuranceController.getAllInsurancePools);
 
-
 // NFT
-
+router.post('/NFT/initiateInsurancePool', authenticateJWT, insuranceController.initiateInsurancePoolNFT);
+router.post('/NFT/investInsurancePool', authenticateJWT, insuranceController.investInsurancePoolNFT);
+router.post('/NFT/subscribeInsurancePool', authenticateJWT, insuranceController.subscribeInsurancePoolNFT);
+router.post('/NFT/unsubscribeInsurancePool', authenticateJWT, insuranceController.unsubscribeInsurancePoolNFT);
 
 
 router.post('/wall/createPost', authenticateJWT, insuranceWallController.postCreate);
