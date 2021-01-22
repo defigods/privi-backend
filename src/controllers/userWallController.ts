@@ -366,7 +366,6 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
 
 exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
   try {
-
     if (req.params && req.params.userId) {
       const userRef = db.collection(collections.user)
         .doc(req.params.userId);
@@ -375,6 +374,91 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
 
       let posts : any[] = [];
 
+      let communities : any[] = [...user.FollowingCommunities || []];
+      if(user && user.JoinedCommunities && user.JoinedCommunities.length > 0) {
+        for(const joinedComm of user.JoinedCommunities) {
+          let foundIndex = communities.findIndex((comm) => comm === joinedComm);
+          if(foundIndex === -1) {
+            communities.push(joinedComm);
+          }
+        }
+      }
+
+      let ourDate = new Date();
+      let pastDate = ourDate.getDate() - 7;
+      ourDate.setDate(pastDate);
+      const lastWeekTimestamp = ourDate.getTime();
+
+      if(communities && communities.length !== 0) {
+        const communityWallPostQuery = await db.collection(collections.communityWallPost)
+          .where("createdAt", ">", lastWeekTimestamp).get();
+
+        if(!communityWallPostQuery.empty) {
+          for (const doc of communityWallPostQuery.docs) {
+            let data = doc.data();
+            data.id = doc.id;
+            data.urlItem = 'community';
+
+            let isAFollowCommunityIndex = communities.findIndex(comm => comm === data.communityId);
+
+            if(isAFollowCommunityIndex !== -1) {
+              posts.push(data);
+            }
+          }
+        }
+      }
+
+      if(user && user.followingFTPods && user.followingFTPods.length !== 0) {
+        const podWallPostQuery = await db.collection(collections.podWallPost)
+          .where("createdAt", ">", lastWeekTimestamp).get();
+        if(!podWallPostQuery.empty) {
+          for (const doc of podWallPostQuery.docs) {
+            let data = doc.data();
+            data.id = doc.id;
+            data.urlItem = 'pod';
+
+            let isAFollowPodIndex = user.followingFTPods.findIndex(pod => pod === data.podId);
+
+            if(isAFollowPodIndex !== -1) {
+              posts.push(data);
+            }
+          }
+        }
+      }
+
+      if(user && user.FollowingCredits && user.FollowingCredits.length !== 0) {
+        const creditWallPostQuery = await db.collection(collections.creditWallPost)
+          .where("createdAt", ">", lastWeekTimestamp).get();
+        if(!creditWallPostQuery.empty) {
+          for (const doc of creditWallPostQuery.docs) {
+            let data = doc.data();
+            data.id = doc.id;
+            data.urlItem = 'priviCredit';
+
+            let isAFollowCreditIndex = user.FollowingCredits.findIndex(credit => credit === data.creditPoolId);
+
+            if(isAFollowCreditIndex !== -1) {
+              posts.push(data);
+            }
+          }
+        }
+      }
+      if(user && user.followings && user.followings.length !== 0) {
+        const userWallPostQuery = await db.collection(collections.userWallPost)
+          .where("createdAt", ">", lastWeekTimestamp).get();
+        if(!userWallPostQuery.empty) {
+          for (const doc of userWallPostQuery.docs) {
+            let data = doc.data();
+            data.id = doc.id;
+            data.urlItem = 'user';
+            let isAFollowCreditIndex = user.followings.findIndex(user => user === data.userId);
+
+            if(isAFollowCreditIndex !== -1) {
+              posts.push(data);
+            }
+          }
+        }
+      }
 
       res.send({ success: true, data: posts });
 
