@@ -397,27 +397,27 @@ const getCampaign = async (req: express.Request, res: express.Response) => {
             // https://firebase.google.com/docs/firestore/query-data/queries#query_limitations
             let campaignsGet = await db.collection(collections.campaigns)
                 .where("dateExpiration", "<=", Date.now()).get();
-            let campaigns: any[] = campaignsGet.data();
+            let campaigns: any[] = campaignsGet.docs;
             if (campaigns && campaigns.length > 0) {
-                campaigns = campaigns.filter(c => c.dateStart <= Date.now())
+                campaigns = campaigns.filter(c => c.data().dateStart <= Date.now())
                 if (campaigns.length >= 0) {
-                    campaigns = campaigns.filter(c => checkDailyWeeklyBudget(c));
+                    campaigns = campaigns.filter(c => checkDailyWeeklyBudget(c.data()));
                     if (campaigns.length >= 0) {
-                        campaigns = campaigns.filter(c => c.trustScore <= user.trustScore);
+                        campaigns = campaigns.filter(c => c.data().trustScore <= user.trustScore);
                         if (campaigns.length > 0) {
-                            campaigns = campaigns.filter(c => c.endorsementScore <= user.endorsementScore);
+                            campaigns = campaigns.filter(c => c.data().endorsementScore <= user.endorsementScore);
                             if (campaigns.length > 0) {
-                                campaigns = campaigns.filter(c => c.hasTokens == user.hasTokens);
+                                campaigns = campaigns.filter(c => c.data().hasTokens == user.hasTokens);
                                 if (campaigns.length > 0) {
-                                    campaigns = campaigns.filter(c => c.ageRangeStart <= user.ageRangeStart);
+                                    campaigns = campaigns.filter(c => c.data().ageRangeStart <= user.ageRangeStart);
                                     if (campaigns.length > 0) {
-                                        campaigns = campaigns.filter(c => c.ageRangeEnd >= user.ageRangeEnd);
+                                        campaigns = campaigns.filter(c => c.data().ageRangeEnd >= user.ageRangeEnd);
                                         if (campaigns.length > 0) {
-                                            campaigns = campaigns.filter(c => c.sex == user.sex);
+                                            campaigns = campaigns.filter(c => c.data().sex == user.sex);
                                             if (campaigns.length > 0) {
-                                                campaigns = campaigns.filter(c => c.memberOfPods == user.memberOfPods);
+                                                campaigns = campaigns.filter(c => c.data().memberOfPods == user.memberOfPods);
                                                 if (campaigns.length > 0) {
-                                                    campaigns = campaigns.filter(c => c.memberOfCommunities == user.memberOfCommunities);
+                                                    campaigns = campaigns.filter(c => c.data().memberOfCommunities == user.memberOfCommunities);
                                                 }
                                             }
                                         }
@@ -435,7 +435,7 @@ const getCampaign = async (req: express.Request, res: express.Response) => {
             if (campaigns.length > 0) {
                 res.send({
                     success: true,
-                    data: campaigns[0]
+                    data: campaigns[0].data()
                 });
             }
             res.send({success: false, message: 'Did not found suitable campaign'});
