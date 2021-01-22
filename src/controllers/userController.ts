@@ -201,7 +201,7 @@ const signIn = async (req: express.Request, res: express.Response) => {
             } else {
                 console.log('found from email')
                 const data = user.docs[0].data();
-                const allWallPost: any[] = [];
+                /*const allWallPost: any[] = [];
                 const wallPostSnap = await db.collection(collections.wallPost)
                     .where("fromUserId", "==", user.docs[0].id).get();
                 wallPostSnap.forEach((doc) => {
@@ -209,11 +209,11 @@ const signIn = async (req: express.Request, res: express.Response) => {
                     data.id = doc.id;
                     data.type = 'post';
                     allWallPost.push(data)
-                });
+                });*/
                 if (!data.notifications) {
                     data.notifications = [];
                 }
-                data.notifications.concat(allWallPost);
+                // data.notifications.concat(allWallPost);
 
                 if (!data.isEmailValidated) {
                     res.send({ isSignedIn: false, userData: {}, message: "please validate your email", message_key: "EMAIL_VALIDATION_REQUIRED" });
@@ -631,7 +631,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData = userSnap.data();
         if (userData !== undefined) {
-            const allWallPost: any[] = [];
+            /*const allWallPost: any[] = [];
             const wallPostSnap = await db.collection(collections.wallPost)
                 .where("fromUserId", "==", userId).get();
             wallPostSnap.forEach((doc) => {
@@ -639,7 +639,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
                 data.id = doc.id;
                 data.type = 'post';
                 allWallPost.push(data)
-            });
+            });*/
             // update return data
             basicInfo.name = userData.firstName + (userData.lastName ? " " + userData.lastName : '');
             basicInfo.trustScore = userData.trustScore;
@@ -655,7 +655,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
             basicInfo.instagram = userData.instagram || '';
             basicInfo.facebook = userData.facebook || '';
             basicInfo.notifications = userData.notifications || [];
-            basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
+            // basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
             basicInfo.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
             basicInfo.anon = userData.anon || false;
             basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
@@ -680,7 +680,7 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
         if (userData !== undefined) {
             // update return data
             userData.id = userSnap.id;
-            const allWallPost: any[] = [];
+            /*const allWallPost: any[] = [];
             const wallPostSnap = await db.collection(collections.wallPost)
                 .where("fromUserId", "==", userId).get();
             wallPostSnap.forEach((doc) => {
@@ -688,12 +688,12 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
                 data.id = doc.id;
                 data.type = 'post';
                 allWallPost.push(data)
-            });
+            });*/
             if (!userData.notifications) {
                 userData.notifications = [];
             }
 
-            userData.notifications = userData.notifications.concat(allWallPost);
+            // userData.notifications = userData.notifications.concat(allWallPost);
             userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0))
             res.send({ success: true, data: userData });
         }
@@ -798,7 +798,7 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
         console.log(userId);
         const userSnap = await db.collection(collections.user).doc(userId).get();
         const userData: any = userSnap.data();
-        const allWallPost: any[] = [];
+        /*const allWallPost: any[] = [];
         const wallPostSnap = await db.collection(collections.wallPost)
             .where("fromUserId", "==", userId).get();
         wallPostSnap.forEach((doc) => {
@@ -806,13 +806,13 @@ const getNotifications = async (req: express.Request, res: express.Response) => 
             data.id = doc.id;
             data.type = 'post';
             allWallPost.push(data)
-        });
+        });*/
 
         if (!userSnap.exists && userData) {
             if (!userData || !userData.notifications) {
                 userData.notifications = [];
             }
-            userData.notifications = userData.notifications.concat(allWallPost);
+            // userData.notifications = userData.notifications.concat(allWallPost);
             userData.notifications.sort((a, b) => (b.date > a.date) ? 1 : ((a.date > b.date) ? -1 : 0));
 
             res.send({ success: true, data: userData.notifications });
