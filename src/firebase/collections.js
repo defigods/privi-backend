@@ -5,6 +5,9 @@ module.exports = {
     walletNFT: "WalletNFT",
     walletFT: "WalletFT",
 
+    // token types
+    tokens: "Tokens",
+    unknown: "UNKNOWN",
     cryptoToken: "CRYPTO",
     nftToken: "NFTPOD",
     ftToken: "FTPOD",
@@ -12,14 +15,15 @@ module.exports = {
     communityToken: "COMMUNITY",
     badgeToken: "BADGE",
 
+    rates: "ratesOfChange",
+
+    // histories
     cryptoHistory: "CryptoHistory",
     nftHistory: "NftHistory",
     ftHistory: "FtHistory",
     socialHistory: "SocialHistory",
     communityHistory: "CommunityHistory",
 
-    unknown: "UNKNOWN",
-    tokens: "Tokens",
     priviScan: "PriviScan",
     history: "History",
     allTransactions: "AllTransaction",
@@ -27,6 +31,7 @@ module.exports = {
     waitlist: "Waitlist",
     cloudDatabase: "CloudDatabase",
 
+    // privi credit
     priviCredits: "PriviCredits",
     priviCreditsLending: "PriviCreditsLending",
     priviCreditsBorrowing: "PriviCreditsBorrowing",
@@ -36,6 +41,7 @@ module.exports = {
     priviCreditBorrowedHistory: "PriviCreditsBorrowedHistory",
     priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
 
+    // community
     community: 'Community',
     communityLP: 'CommunityLP',
     communityTransactions: 'CommunityTransactions',
@@ -53,14 +59,12 @@ module.exports = {
     priceHistory: "PriceHistory",
     supplyHistory: "SupplyHistory",
     podRoleInvitation: "PodRoleInvitation",
+
     podViewInvitation: "PodViewInvitation",
     insurancePools: "InsurancePools",
     insuranceClients: "InsuranceCleints",
     insuranceInvestors: "InsurnaceInvestors",
     notificaction: "Notification",
-    privacy: "EnabledPrivacy",
-    rates: "ratesOfChange",
-    rateHistory: "rateHistory",
 
     constants: "manualConstants",
     traditionalLendingConstants: "TraditionalLendingConstants",
@@ -69,10 +73,12 @@ module.exports = {
     reserveConstants: "StakingReserveContants",
     reserveConstants: "StakingReserveContants",
 
+    // liquidity pools
     liquidityPools: "LiquidityPools",
     liquidityHistory: "LiquidityHistory",
     rewardHistory: "RewardHistory",
 
+    // staking
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
     stakingToken: "StakingToken",
@@ -96,6 +102,7 @@ module.exports = {
     creditWallPost: "CreditWallPost",
     insuranceWallPost: "InsuranceWallPost",
     communityWallPost: "CommunityWallPost",
+    userWallPost: "UserWallPost",
 
     insurance: "Insurance",
 
@@ -109,4 +116,7 @@ module.exports = {
     socialPools: "SocialPools",
 
     levels: "Levels",
+
+    socialPools: "SocialPools",
+
 }

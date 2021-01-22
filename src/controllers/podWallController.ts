@@ -10,7 +10,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isCreator = await checkIfUserIsCreator(body.userId, body.podId);
+    let isCreator = await checkIfUserIsCreator(body.author, body.podId);
 
     if(body && body.podId && isCreator) {
       let ret = await blogController.createPost(body, 'podWallPost', body.priviUser.id)

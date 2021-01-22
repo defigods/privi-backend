@@ -24,7 +24,7 @@ const checkTx = connectController.checkTx;
 // Wallet
 const saveUserBalanceSum = walletController.saveUserBalanceSum;
 // Community
-const endVotations = communityController.endVotations;
+//const endVotations = communityController.endVotations;
 // Staking
 const manageStakedAmount = stakeController.manageStakedAmount;
 const manageReturns = stakeController.manageReturns;
@@ -47,7 +47,7 @@ module.exports = {
     nftManagePriceHistory,
     checkTx,
     saveUserBalanceSum,
-    endVotations,
+    //endVotations,
     manageStakedAmount,
     manageReturns,
     endVoting,

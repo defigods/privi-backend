@@ -1,11 +1,10 @@
 import express from 'express';
 import priviGovernance from "../blockchain/priviGovernance";
-import { updateFirebase, createNotification, generateUniqueId, addZerosToHistory } from "../functions/functions";
+import { updateFirebase, generateUniqueId, addZerosToHistory } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
-import collections, { stakingDeposit } from "../firebase/collections";
+import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
-import { user } from "firebase-functions/lib/providers/auth";
 const notificationsController = require('./notificationsController');
 
 const apiKey = 'PRIVI'; //process.env.API_KEY;
@@ -250,17 +249,21 @@ exports.manageReturns = cron.schedule('0 0 * * *', async () => {
         for (let i = 0; i < tokenDocs.length; i++) {
             const token = tokenDocs[i].id;
             // const txnId = generateUniqueId();
-            const date = Date.now();
+            const date = Date.now() - (4 * 90061);
             const blockchainRes = await priviGovernance.payStakingReward(token, apiKey);
             if (blockchainRes && blockchainRes.success) {
                 updateFirebase(blockchainRes);
                 // calculate total return amount
-                let returnAmount = 0;
+                let returnAmount: any = 0;
                 const txns = blockchainRes.output ? blockchainRes.output.Transactions : {};
                 let tid: string = '';
                 let tobj: any = null;
-                for ([tid, tobj] of Object.entries(txns)) {
-                    if (tobj.Type == notificationTypes.stakingReward) returnAmount += tobj.Amount;
+                for ([tid, tobj] of Object.entries(txns)) { // for each TX
+                    for (let j = 0; j < tobj.length; j++) {
+                        if (tobj[j].Type === 'Minting_Staking') { // for each object inside TX
+                            returnAmount += tobj[j].Amount;
+                        }
+                    }
                 }
                 tokenDocs[i].ref.collection(collections.retunHistory).add({
                     return: returnAmount,

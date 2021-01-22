@@ -1,4 +1,4 @@
-import { db, firebase } from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
 import collections from "../firebase/collections";
 import axios from "axios";
@@ -36,10 +36,6 @@ export async function getRecentSwaps(userAddress) {
         recentSwaps[doc.id] = swap;
     }
     return recentSwaps;
-};
-
-export async function addStakeHistory(blockchainRes, token) {
-    // await db.collection(collections.stakingToken).doc(token).
 };
 
 // updates multiple firebase collection according to blockchain response
@@ -84,6 +80,9 @@ export async function updateFirebase(blockchainRes) {
         const updatedProtocolPool = output.UpdatedProtocolPool;
         // staking
         const updateStakings = output.UpdateStakings;
+        // social
+        const updateSocialPools = output.UpdateSocialPools;
+        const updateSocialPoolStates = output.UpdateSocialPoolStates;
 
         // social token
         const updateSocialPools = output.UpdateSocialPools;
@@ -439,6 +438,22 @@ export async function updateFirebase(blockchainRes) {
             let socialPoolObj: any = {};
             for ([socialPoolToken, socialPoolObj] of Object.entries(updateSocialPoolStates)) {
                 transaction.set(db.collection(collections.socialPools).doc(socialPoolToken), socialPoolObj, {merge: true});
+            }
+        }
+        // update social pool
+        if (updateSocialPools) {
+            let address: string = '';
+            let obj: any = {};
+            for ([address, obj] of Object.entries(updateSocialPools)) {
+                transaction.set((db.collection(collections.socialPools).doc(address)), obj, { merge: true });
+            }
+        }
+        // update social pool state
+        if (updateSocialPoolStates) {
+            let address: string = '';
+            let obj: any = {};
+            for ([address, obj] of Object.entries(updateSocialPoolStates)) {
+                transaction.set((db.collection(collections.socialPools).doc(address)), obj, { merge: true });
             }
         }
     });

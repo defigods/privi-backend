@@ -502,7 +502,7 @@ export const startSocket = (env: Env) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      let updateMessage : any = {...discordMessage};
+      let updateMessage: any = { ...discordMessage };
       updateMessage.numReplies = updateMessage.numReplies + 1;
       console.log('sending room post', updateMessage);
       socket.to(message.discordRoom).emit('update-message-discord', updateMessage);

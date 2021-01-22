@@ -58,11 +58,11 @@ module.exports.updateProtocolParameters = async (token, mintingPct, releaseFrequ
 };
 
 module.exports.payStakingReward = async (token, caller) => {
-    console.log('payStakingReward call', token, caller)
+    // console.log('payStakingReward call', token, caller)
     let blockchainRes = await axios.post(api.blockchainPriviGovernanceAPI + "/payStakingReward", {
         Token: token,
         Caller: caller
     });
-    console.log('payStakingReward blockchainRes', blockchainRes.data)
+    // console.log('payStakingReward blockchainRes', blockchainRes.data)
     return blockchainRes.data;
 };
