@@ -2045,6 +2045,51 @@ const changeAnonAvatar = async (req: express.Request, res: express.Response) => 
     }
 }
 
+const searchUsers = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        if (body && body.userId && body.userSearch && body.userSearch !== '') {
+            const userRef = db.collection(collections.user)
+              .doc(body.userId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            let users : any[] = [];
+            const userQuery = await db.collection(collections.user)
+              .where('firstName', '>=', body.userSearch).get();
+            if (!userQuery.empty) {
+                for (const doc of userQuery.docs) {
+                    let data = doc.data();
+                    let isFollowing : boolean = false;
+                    if(user.followings && user.followings.length > 0) {
+                        let followingUser = user.followings.findIndex(usr => usr === doc.id);
+                        if (followingUser === -1) {
+                            isFollowing = true;
+                        }
+                    }
+                    users.push({
+                        id: doc.id,
+                        firstName: data.firstName,
+                        isFollowing: isFollowing
+                    });
+                }
+                res.status(200).send({
+                    success: true,
+                    data: users
+                });
+            } else {
+                res.send({ success: true, data: [] });
+            }
+        } else {
+            console.log('Error in controllers/userController -> searchUsers()', 'No Information');
+            res.send({ success: false, error: 'No Information' });
+        }
+    } catch (err) {
+        console.log('Error in controllers/userController -> searchUsers()', err);
+        res.send({ success: false, error: err });
+    }
+}
 
 const updateUserCred = (userId, sum) => {
     return new Promise(async (resolve, reject) => {
@@ -2121,5 +2166,6 @@ module.exports = {
     changeAnonAvatar,
     likePost,
     dislikePost,
-    updateUserCred
+    updateUserCred,
+    searchUsers
 };

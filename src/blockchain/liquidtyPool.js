@@ -1,9 +1,8 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.createLiquidityPool = async (poolAddress, poolToken, minFee, maxFee, riskParameter, regimePoint, caller) => {
+module.exports.createLiquidityPool = async (poolToken, minFee, maxFee, riskParameter, regimePoint, caller) => {
     let blockchainRes = await axios.post(api.blockchainLiquidityPoolAPI + "/createLiquidityPool", {
-        PoolAddress: poolAddress,
         PoolToken: poolToken,
         MinFee: minFee,
         MaxFee: maxFee,
@@ -14,24 +13,28 @@ module.exports.createLiquidityPool = async (poolAddress, poolToken, minFee, maxF
     return blockchainRes.data;
 };
 
-module.exports.depositLiquidity = async (liquidityProviderAddress, poolToken, amount, depositId, caller) => {
+module.exports.depositLiquidity = async (liquidityProviderAddress, poolToken, amount, depositId, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainLiquidityPoolAPI + "/depositLiquidity", {
         LiquidityProviderAddress: liquidityProviderAddress,
         PoolToken: poolToken,
         Amount: amount,
         DepositId: depositId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller,
     });
     return blockchainRes.data;
 };
 
-module.exports.swapCryptoTokens = async (traderAddress, tokenFrom, tokenTo, amountFrom, rate, caller) => {
+module.exports.swapCryptoTokens = async (traderAddress, tokenFrom, tokenTo, amountFrom, rate, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainLiquidityPoolAPI + "/swapCryptoTokens", {
         TraderAddress: traderAddress,
         TokenFrom: tokenFrom,
         TokenTo: tokenTo,
         AmountFrom: amountFrom,
         Rate: rate,
+        Hash: hash,
+        Signature: signature,
         Caller: caller,
     });
     return blockchainRes.data;
