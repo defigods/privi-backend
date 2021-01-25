@@ -45,7 +45,6 @@ const notificationsController = require("./notificationsController");
 const apiKey = "PRIVI"; // just for now
 
 import { sockets } from "./serverController";
-import { user } from "firebase-functions/lib/providers/auth";
 
 const emailValidation = async (req: express.Request, res: express.Response) => {
   let success = false;
@@ -2446,7 +2445,6 @@ const updateTutorialsSeen = async (
     res.send({ success: false });
   }
 };
-
 module.exports = {
   emailValidation,
   forgotPassword,
