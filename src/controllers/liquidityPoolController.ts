@@ -16,14 +16,13 @@ const notificationsController = require('./notificationsController');
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const poolAddress = body.PoolAddress;
         const poolToken = body.PoolToken;   // this works like the identifier
         const minFee = body.MinFee;
         const maxFee = body.MaxFee;
         const riskParameter = body.RiskParameter;
         const regimePoint = body.RegimePoint;
 
-        const blockchainRes = await liquidityPool.createLiquidityPool(poolAddress, poolToken, minFee, maxFee, riskParameter, regimePoint, apiKey);
+        const blockchainRes = await liquidityPool.createLiquidityPool(poolToken, minFee, maxFee, riskParameter, regimePoint, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
@@ -89,11 +88,13 @@ exports.protectLiquidityPool = async (req: express.Request, res: express.Respons
 exports.depositLiquidity = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const liquidityProviderAddress = body.LiquidityProviderAddress; // depositing user address
+        const liquidityProviderAddress = body.LiquidityProviderAddress;
         const poolToken = body.PoolToken;
         const amount = body.Amount;
+        const depositId = body.DepositId;
 
-        const depositId = generateUniqueId();
+        const hash = body.Hash;
+        const signature = body.Signature;
 
         // jwt user check
         const priviUser = body.priviUser;
@@ -103,7 +104,7 @@ exports.depositLiquidity = async (req: express.Request, res: express.Response) =
             return;
         }
 
-        const blockchainRes = await liquidityPool.depositLiquidity(liquidityProviderAddress, poolToken, amount, depositId, apiKey);
+        const blockchainRes = await liquidityPool.depositLiquidity(liquidityProviderAddress, poolToken, amount, depositId, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
@@ -149,8 +150,8 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
         const tokenTo = body.TokenTo;
         const amountFrom = body.AmountFrom;
 
-        const rate = 1;
-        console.log(body)
+        const hash = body.Hash;
+        const signature = body.Signature;
 
         // jwt user check
         const priviUser = body.priviUser;
@@ -160,10 +161,15 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
             return;
         }
 
-        const blockchainRes = await liquidityPool.swapCryptoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, apiKey);
+        // get correct rate of FromToken(USD)/ToToken(USD)
+        const rateOfChange = await getRateOfChangeAsMap();
+        const fromTokenRate = rateOfChange[tokenFrom] ?? 1;
+        const toTokenRate = rateOfChange[tokenTo] ?? 1;
+        const rate = fromTokenRate / toTokenRate;
+
+        const blockchainRes = await liquidityPool.swapCryptoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            console.log(JSON.stringify(blockchainRes, null, 4))
 
             const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(tokenFrom).get();
             const liquidityPoolData: any = liquidityPoolSnap.data();

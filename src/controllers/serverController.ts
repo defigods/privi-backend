@@ -77,7 +77,7 @@ export const startServer = (env: Env) => {
   app.use('/chat', chatRoutes);
   app.use('/voting', votingRoutes);
   app.use('/user-levels', userLevelsRoutes);
-  app.use('/social-tokens', socialRoutes);
+  app.use('/social', socialRoutes);
 
   // start all cron jobs
   let name: string;
@@ -481,7 +481,7 @@ export const startSocket = (env: Env) => {
       const discordMessageGet = await discordMessageRef.get();
       const discordMessage: any = discordMessageGet.data();
 
-      if(discordMessage && discordMessage.numReplies && discordMessage.numReplies !== 0) {
+      if (discordMessage && discordMessage.numReplies && discordMessage.numReplies !== 0) {
         await discordMessageRef.update({
           numReplies: discordMessage.numReplies + 1
         });
