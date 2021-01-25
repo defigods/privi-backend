@@ -4,13 +4,17 @@ import {db} from "../firebase/firebase";
 import collections from "../firebase/collections";
 import cron from 'node-cron';
 import votation from "../blockchain/votation";
+import coinBalance from '../blockchain/coinBalance';
+
+const apiKey = "PRIVI"; // just for now
+const treasurer = "TREASURER";
 
 exports.createVoting = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
         const uid = generateUniqueId();
 
-        let isAdmin : boolean = false;
+        let isAdmin: boolean = false;
 
         if (body.itemType === 'Pod') {
             const podRef = db.collection(collections.podsFT).doc(body.itemId);
@@ -84,6 +88,38 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     await db.runTransaction(async (transaction) => {
                         transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
                     })
+                } else if (voting.Type === 'multisignature') {
+                    if (voting.NumberOfSignatures <= 1) {
+                        let mes = 'wrong number of signatures: ' + voting.NumberOfSignatures;
+                        console.log('Error in controllers/votingController -> createVotation()', mes);
+                        res.send({success: false, error: mes});
+                    }
+
+                    const blockchainRes = await coinBalance.balanceOf(voting.TranferFrom, voting.TokenToTransfer);
+                    if (blockchainRes && blockchainRes.success) {
+                        const balance = blockchainRes.output.Amount;
+                        if (balance < voting.AmountToTransfer) {
+                            let mes = 'amount to transfer ' + voting.AmountToTransfer + ' is more than current balance: ' + voting.AmountToTransfer;
+                            console.log('Error in controllers/votingController -> createVotation()', mes);
+                            res.send({success: false, error: mes});
+                        }
+                    }
+
+                    let isRightRole = checkIfUserHasRightRole(voting.CreatorId, treasurer)
+                    if (isRightRole) {
+                        voting.NumberOfSignatures = body.numberOfSignatures;
+                        voting.AmountToTransfer = body.amountToTransfer;
+                        voting.TokenToTransfer = body.tokenToTransfer;
+                        voting.TransferFrom = body.transferFrom;
+                        voting.TransferTo = body.transferTo;
+                        voting.OrderType = body.orderType; // buy or sell
+                        voting.PossibleAnswers = ['Yes', 'No'];
+                    } else {
+                        let mes = 'User ' + voting.CreatorId + ' does not have the right role for creating multisignature votation';
+                        console.log('Error in controllers/votingController -> createVotation()', mes);
+                        res.send({success: false, error: mes});
+                    }
+
                 } else {
                     console.log('Error in controllers/votingController -> createVotation()', 'Voting type is unknown');
                     res.send({success: false, error: 'Voting type is unknown'});
@@ -201,7 +237,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
                         res.send({success: false, error: blockchainRes.message})
                     }
-                } else if (body.type === 'regular') {
+                } else if (body.type === 'regular' || body.type === 'multisignature') {
                     const votingRef = db.collection(collections.voting).doc(body.votationId);
                     const votingGet = await votingRef.get();
                     const voting: any = votingGet.data();
@@ -219,6 +255,29 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                             let votingAnswers = [...voting.Answers];
                             votingAnswers.push(vote);
                             answers = votingAnswers;
+                            if (body.type === 'multisignature') {
+                                let isRightRole = await checkIfUserHasRightRole(vote.VoterAddress, treasurer);
+                                if (!isRightRole) {
+                                    let mes = 'User ' + vote.VoterAddress + ' does not have the right role for voting in multisignature votation';
+                                    console.log('Error in controllers/votingController -> createVotation()', mes);
+                                    res.send({success: false, error: mes});
+
+                                }
+                                if (answers.length >= voting.NumberOfSignatures) {
+                                    coinBalance.transfer("transfer", voting.TransferFrom, voting.TransferTo,
+                                        voting.AmountToTransfer, voting.TokenToTransfer, apiKey).then((blockchainRes) => {
+                                        if (!blockchainRes.success) {
+                                            console.log(`user ${voting.TransferTo} did not get ${voting.TokenToTransfer}, ${blockchainRes.message}`);
+                                            res.send({success: false});
+                                        }
+                                    });
+                                    await votingRef.update({
+                                        Answers: answers,
+                                        OpenVotation: false
+                                    });
+                                    res.send({success: true, data: vote});
+                                }
+                            }
                         } else {
                             res.send({success: false, error: "You've already voted"});
                             return;
@@ -376,6 +435,15 @@ const checkIfUserIsAdmin = (creator, userId): Promise<boolean> => {
         } else {
             resolve(false);
         }
+    })
+}
+
+const checkIfUserHasRightRole = (userId, role): Promise<boolean> => {
+    return new Promise(async (resolve, reject) => {
+        const userRef = db.collection(collections.user).doc(userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+        resolve(user.role == role);
     })
 }
 
