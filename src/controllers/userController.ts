@@ -1171,7 +1171,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
         const userToFollowGet = await userToFollowRef.get();
         const userToFollowData: any = userToFollowGet.data();
 
-        let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
+        let alreadyFollower = userToFollowData.followers.find((item) => item.user === body.user.id);
         if (!alreadyFollower) {
             userToFollowData.followers.push({
                 user: body.user.id,
@@ -1181,6 +1181,18 @@ const followUser = async (req: express.Request, res: express.Response) => {
 
         await userToFollowRef.update({
             followers: userToFollowData.followers
+        });
+
+        let alreadyFollowing = user.followings.find((item) => item.user === body.user.id);
+        if (!alreadyFollowing) {
+            user.followings.push({
+                user: body.userToFollow.id,
+                accepted: false
+            });
+        }
+
+        await userRef.update({
+            followings: user.followings
         });
 
         await notificationsController.addNotification({
@@ -1200,7 +1212,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
         res.send({ success: true, data: userToFollowData });
     } catch (err) {
         console.log('Error in controllers/followUser -> followUser()', err);
-        res.send({ success: false });
+        res.send({ success: false, error: err });
     }
 };
 
@@ -1220,36 +1232,57 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
         const userToAcceptData: any = userToAcceptGet.data();
 
         let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToAcceptFollow.id);
-        if (!alreadyFollowerIndex && alreadyFollowerIndex !== -1) {
+        if (alreadyFollowerIndex !== -1) {
             user.followers[alreadyFollowerIndex] = {
                 user: userToAcceptFollow.id,
                 accepted: true
             }
+        } else {
+            console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+            res.send({ success: false, error: 'Following request not found' });
+            return;
         }
 
         let followersAccepted = user.followers.filter((item) => item.accepted === true);
         user.numFollowers = followersAccepted.length;
+
+
+        let alreadyFollowingIndex = userToAcceptData.followings.findIndex((item) => item.user === body.user.id);
+        if (alreadyFollowingIndex !== -1) {
+            userToAcceptData.followings[alreadyFollowingIndex] = {
+                user: body.user.id,
+                accepted: true
+            }
+        } else {
+            console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+            res.send({ success: false, error: 'Following request not found'});
+            return;
+        }
+
+        let followingAccepted = userToAcceptData.followings.filter((item) => item.accepted === true);
+        userToAcceptData.numFollowings = followingAccepted.length;
 
         await userRef.update({
             followers: user.followers,
             numFollowers: user.numFollowers
         });
 
-
-        let alreadyFollowing = userToAcceptData.followings.find((item) => item === body.user.id);
-        if (!alreadyFollowing) {
-            userToAcceptData.followings.push(body.user.id);
-        }
-
         await userToAcceptRef.update({
-            followings: userToAcceptData.followers,
-            numFollowings: userToAcceptData.followers.length
+            followings: userToAcceptData.followings,
+            numFollowings: userToAcceptData.numFollowings
         });
+
+        if(body.idNotification) {
+            await notificationsController.removeNotification({
+                userId: body.user.id,
+                notificationId: body.idNotification
+            })
+        }
 
         await notificationsController.addNotification({
             userId: userToAcceptFollow.id,
             notification: {
-                type: 5,
+                type: 2,
                 typeItemId: 'user',
                 itemId: body.user.id,
                 follower: user.firstName,
@@ -1263,8 +1296,8 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
 
         res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
-        res.send({ success: false });
+        console.log('Error in controllers/userController -> acceptFollowUser()', err);
+        res.send({ success: false, error: err });
     }
 };
 
@@ -1278,36 +1311,55 @@ const declineFollowUser = async (req: express.Request, res: express.Response) =>
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
+        const userToDeclineRef = db.collection(collections.user)
+          .doc(userToDeclineFollow.id);
+        const userToDeclineGet = await userToDeclineRef.get();
+        const userToDeclineData: any = userToDeclineGet.data();
+
         let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToDeclineFollow.id);
-        if (!alreadyFollowerIndex && alreadyFollowerIndex !== -1) {
+        if (alreadyFollowerIndex !== -1) {
             user.followers.splice(alreadyFollowerIndex, 1);
+        } else {
+            console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+            res.send({ success: false, error: 'Following request not found'});
+            return;
         }
 
         let followersAccepted = user.followers.filter((item) => item.accepted === true);
         user.numFollowers = followersAccepted.length;
+
+        let alreadyFollowingIndex = userToDeclineData.followings.findIndex((item) => item.user === body.user.id);
+        if (alreadyFollowingIndex !== -1) {
+            userToDeclineData.followings.splice(alreadyFollowingIndex, 1);
+        } else {
+            console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+            res.send({ success: false, error: 'Following request not found'});
+            return;
+        }
+
+        let followingAccepted = userToDeclineData.followings.filter((item) => item.accepted === true);
+        userToDeclineData.numFollowings = followingAccepted.length;
 
         await userRef.update({
             followers: user.followers,
             numFollowers: user.numFollowers
         });
 
-        await notificationsController.addNotification({
-            userId: userToDeclineFollow.id,
-            notification: {
-                type: 6,
-                typeItemId: 'user',
-                itemId: body.user.id,
-                follower: user.firstName,
-                pod: '',
-                comment: '',
-                token: '',
-                amount: 0,
-                onlyInformation: false,
-            }
+        await userToDeclineRef.update({
+            followings: userToDeclineData.followings,
+            numFollowings: userToDeclineData.numFollowings
         });
+
+        if(body.idNotification) {
+            await notificationsController.removeNotification({
+                userId: body.user.id,
+                notificationId: body.idNotification
+            })
+        }
+
         res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
+        console.log('Error in controllers/userController -> declineFollowUser()', err);
         res.send({ success: false });
     }
 };
@@ -1327,24 +1379,24 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
         const userToUnFollowGet = await userToUnFollowRef.get();
         const userToUnFollowData: any = userToUnFollowGet.data();
 
-        let newFollowings = user.followings.filter(item => item.user != userToUnFollow.id)
+        let newFollowings = user.followings.filter(item => item.user != userToUnFollow.id);
+        let newFollowingNum = user.followings.filter((item) => item.user != userToUnFollow.id && item.accepted === true);
 
         let newFollowers = userToUnFollowData.followers.filter((item) => item.user !== body.user.id);
-
-        userToUnFollowData.numFollowers = newFollowers.length;
+        let newFollowersNum = userToUnFollowData.followers.filter((item) => item.user !== body.user.id && item.accepted === true);
 
         await userToUnFollowRef.update({
             followers: newFollowers,
-            numFollowers: newFollowers.length
+            numFollowers: newFollowersNum.length
         });
         await userRef.update({
             followings: newFollowings,
-            numFollowings: newFollowings.length
+            numFollowings: newFollowingNum.length
         });
 
         res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/unFollowUser -> unFollowUser()', err);
+        console.log('Error in controllers/userController -> unFollowUser()', err);
         res.send({ success: false });
     }
 };
@@ -2065,11 +2117,18 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
                 for (const doc of userQuery.docs) {
                     let data = doc.data();
                     if(doc.id !== body.userId) {
-                        let isFollowing : boolean = false;
+                        let isFollowing : number = 0;
+                        // 0 -> Not following
+                        // 1 -> Requested
+                        // 2 -> Following
                         if(user.followings && user.followings.length > 0) {
-                            let followingUser = user.followings.findIndex(usr => usr === doc.id);
-                            if (followingUser === -1) {
-                                isFollowing = true;
+                            let followingUser = user.followings.find(usr => usr.user === doc.id);
+                            if (followingUser && followingUser !== {}) {
+                                if(followingUser.accepted) {
+                                    isFollowing = 2;
+                                } else {
+                                    isFollowing = 1;
+                                }
                             }
                         }
                         users.push({

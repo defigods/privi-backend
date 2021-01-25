@@ -60,11 +60,11 @@ const addNotification = async (object: any) => {
 const removeNotification = async (object: any) => {
     try {
         const userRef = db.collection(collections.user)
-            .doc(object.id);
+            .doc(object.userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
-        let notificationIndex = user.notifications.findIndex(item => item.id === object.notification.id)
+        let notificationIndex = user.notifications.findIndex(item => item.id === object.notificationId)
         user.notifications.splice(notificationIndex, 1)
 
         await userRef.update({
