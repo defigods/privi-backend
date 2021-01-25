@@ -2056,8 +2056,11 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
             const user: any = userGet.data();
 
             let users : any[] = [];
+
             const userQuery = await db.collection(collections.user)
-              .where('firstName', '>=', body.userSearch).get();
+              .orderBy('firstName')
+              .startAt(body.userSearch)
+              .endAt(body.userSearch+"\uf8ff").get();
             if (!userQuery.empty) {
                 for (const doc of userQuery.docs) {
                     let data = doc.data();
