@@ -2064,18 +2064,20 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
             if (!userQuery.empty) {
                 for (const doc of userQuery.docs) {
                     let data = doc.data();
-                    let isFollowing : boolean = false;
-                    if(user.followings && user.followings.length > 0) {
-                        let followingUser = user.followings.findIndex(usr => usr === doc.id);
-                        if (followingUser === -1) {
-                            isFollowing = true;
+                    if(doc.id !== body.userId) {
+                        let isFollowing : boolean = false;
+                        if(user.followings && user.followings.length > 0) {
+                            let followingUser = user.followings.findIndex(usr => usr === doc.id);
+                            if (followingUser === -1) {
+                                isFollowing = true;
+                            }
                         }
+                        users.push({
+                            id: doc.id,
+                            firstName: data.firstName,
+                            isFollowing: isFollowing
+                        });
                     }
-                    users.push({
-                        id: doc.id,
-                        firstName: data.firstName,
-                        isFollowing: isFollowing
-                    });
                 }
                 res.status(200).send({
                     success: true,
