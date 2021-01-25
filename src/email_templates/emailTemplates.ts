@@ -130,3 +130,79 @@ PRIVI Protocol
 	return success;
 
 } // sendEmailValidation
+
+export async function sendNewCommunityUsersEmail(userData, communityData) {
+	const admins = userData.admins;
+	const roles = userData.roles;
+	const users = userData.users;
+	const communityName = communityData.communityName;
+	const communityAddress = communityData.communityAddress;
+	const communityLink = URL() + "/#/communities/" + communityAddress;
+	
+	var mailList = [];
+	mailList.concat(admins).concat(roles).concat(users);
+	
+	// create reusable transporter object using the default SMTP transport
+	let transporter = nodemailer.createTransport({
+	service: configuration.MAIL_SERVICE,
+	auth: {
+	user: configuration.MAIL_USER,
+	pass: configuration.MAIL_PASS,
+	},
+	});
+	
+	let htmlEmail = `
+	<p>
+	Hi,<br />
+	<br />
+	You have been invited to the Community ${communityName}! <br />
+	<br />
+	Please click the following link to join the community. <br />
+	<br />
+	<a href="${communityLink}">${communityLink}</a> <br />
+	<br />
+	Thanks! <br />
+	PRIVI Protocol <br />
+	<br />
+	** PLEASE DO NOT REPLY TO THIS EMAIL as this is automatically generated and you will not receive a response. **
+	</p>
+	`;
+	let textEmail = `
+	Hi,
+	
+	You have been invited to the Community ${communityName}!
+	
+	Please click the following link to join the community.
+	
+	${communityLink}
+	
+	Thanks!
+	PRIVI Protocol
+	
+	** PLEASE DO NOT REPLY TO THIS EMAIL as this is automatically generated and you will not receive a response. **
+	`;
+	
+	let success = false;
+	try {
+	// send mail with defined transport object
+	let info = await transporter.sendMail({
+	from: '"PRIVI Protocol" <noreply@priviprotocol.io>', // sender address
+	to: mailList, // list of receivers
+	subject: "Community Invitation - PRIVI Protocol", // Subject line
+	text: textEmail, // plain text body
+	html: htmlEmail, // html body
+	});
+	
+	console.log("Message sent: %s", info.messageId);
+	// Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
+	success = (info.messageId != "");
+	
+	} catch (err) {
+	console.log('Error in controllers/communityController.ts -> sendNewCommunityUserEmail(): ', err);
+	}
+	
+	return success;
+	
+} // sendNewCommunityUserEmail
+	
+	

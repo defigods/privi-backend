@@ -10,6 +10,7 @@ import cron from 'node-cron';
 import { clearLine } from "readline";
 import path from "path";
 import fs from "fs";
+import { sendNewCommunityUsersEmail } from "../email_templates/emailTemplates";
 
 const chatController = require('./chatController');
 
@@ -150,6 +151,23 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             let txnArray: any = null;
             for ([tid, txnArray] of Object.entries(transactions)) {
                 db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
+            }
+
+            // send invitation email to admins, roles and users here
+            let usersData = {
+                admins: admins,
+                roles: userRoles,
+                users: invitedUsers
+            };
+    
+            let communityData = {
+                communityName: name,
+                communityAddress: communityAddress
+            };
+    
+            let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
+            if (!invitationEmails) {
+                console.log("failed to send invitation e-mails.");
             }
 
             res.send({
