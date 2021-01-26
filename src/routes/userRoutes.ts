@@ -170,4 +170,7 @@ router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeed
 
 router.post('/searchUsers', authenticateJWT, userController.searchUsers);
 
+//UPDATE TUTORIALS SEEN
+router.post('/updateTutorialsSeen', userController.updateTutorialsSeen);
+
 module.exports = router;
