@@ -174,10 +174,30 @@ exports.getCreditPost =  async (req: express.Request, res: express.Response) => 
       });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> getPodPost()', err);
+    console.log('Error in controllers/priviCreditWallController -> getPodPost()', err);
     res.send({ success: false });
   }
 }
+
+exports.getCreditPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const userWallPostSnap = await db.collection(collections.userWallPost)
+      .doc(params.postId).get();
+    const userWallPost : any = userWallPostSnap.data();
+    userWallPost.id = userWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: userWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/priviCreditWallController -> getCreditPostById()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 
 exports.getCreditWallPostPhotoById = async (req: express.Request, res: express.Response) => {
   try {
@@ -206,11 +226,11 @@ exports.getCreditWallPostPhotoById = async (req: express.Request, res: express.R
       });
       raw.pipe(res);
     } else {
-      console.log('Error in controllers/podWallController -> getPodWallPostPhotoById()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> getPodWallPostPhotoById()', "There's no post id...");
       res.send({ success: false, error: "There's no post id..." });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> getPodWallPostPhotoById()', err);
+    console.log('Error in controllers/priviCreditWallController -> getPodWallPostPhotoById()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -243,11 +263,11 @@ exports.getCreditWallPostDescriptionPhotoById = async (req: express.Request, res
       });
       raw.pipe(res);
     } else {
-      console.log('Error in controllers/podWallController -> getPodWallPostDescriptionPhotoById()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> getPodWallPostDescriptionPhotoById()', "There's no post id...");
       res.send({ success: false, error: "There's no post id..." });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> getPodWallPostDescriptionPhotoById()', err);
+    console.log('Error in controllers/priviCreditWallController -> getPodWallPostDescriptionPhotoById()', err);
     res.send({ success: false, error: err });
   }
 };

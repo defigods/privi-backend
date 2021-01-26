@@ -178,7 +178,26 @@ exports.getUserPosts =  async (req: express.Request, res: express.Response) => {
       });
     }
   } catch (err) {
-    console.log('Error in controllers/userWallController -> getUserPost()', err);
+    console.log('Error in controllers/userWallController -> getUserPosts()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
+exports.getUserPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const userWallPostSnap = await db.collection(collections.userWallPost)
+      .doc(params.postId).get();
+    const userWallPost : any = userWallPostSnap.data();
+    userWallPost.id = userWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: userWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/userWallController -> getUserPostById()', err);
     res.send({ success: false, error: err });
   }
 }

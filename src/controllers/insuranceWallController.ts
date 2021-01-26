@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -180,6 +181,25 @@ exports.getInsurancePost =  async (req: express.Request, res: express.Response) 
   }
 }
 
+exports.getInsurancePostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const userWallPostSnap = await db.collection(collections.userWallPost)
+      .doc(params.postId).get();
+    const userWallPost : any = userWallPostSnap.data();
+    userWallPost.id = userWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: userWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/insuranceWallController -> getInsurancePostById()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 exports.getInsuranceWallPostPhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let postId = req.params.insuranceWallPostId;
@@ -298,6 +318,21 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
 
       let insurancePost = await blogController.likeItemPost(insuranceWallPostRef, insuranceWallPostGet, insuranceWallPost, body.userId, insuranceWallPost.createdBy)
 
+      await notificationsController.addNotification({
+        userId: insuranceWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: insuranceWallPostGet.id, //pod === post
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+        }
+      });
+
       res.send({ success: true, data: insurancePost });
 
     } else {
@@ -321,6 +356,21 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const insuranceWallPost: any = insuranceWallPostGet.data();
 
       let insurancePost = await blogController.dislikeItemPost(insuranceWallPostRef, insuranceWallPostGet, insuranceWallPost, body.userId, insuranceWallPost.createdBy);
+
+      await notificationsController.addNotification({
+        userId: insuranceWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: insuranceWallPostGet.id, //pod === post
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+        }
+      });
 
       res.send({ success: true, data: insurancePost });
 

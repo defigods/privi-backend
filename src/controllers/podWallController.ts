@@ -151,7 +151,7 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
   }
 }
 
-exports.getPodPost =  async (req: express.Request, res: express.Response) => {
+exports.getPodPosts =  async (req: express.Request, res: express.Response) => {
   try {
     let params : any = req.params;
     let posts : any[] = [];
@@ -177,6 +177,25 @@ exports.getPodPost =  async (req: express.Request, res: express.Response) => {
   } catch (err) {
     console.log('Error in controllers/podWallController -> getPodPost()', err);
     res.send({ success: false });
+  }
+}
+
+exports.getPodPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const userWallPostSnap = await db.collection(collections.userWallPost)
+      .doc(params.postId).get();
+    const userWallPost : any = userWallPostSnap.data();
+    userWallPost.id = userWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: userWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/podWallController -> getPodPostById()', err);
+    res.send({ success: false, error: err });
   }
 }
 
