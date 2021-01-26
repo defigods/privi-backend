@@ -426,35 +426,38 @@ exports.discordCreateRoom = async (req: express.Request, res: express.Response) 
 
                     const investors = Object.keys(podData.Investors);
 
-                    for (const user of investors) {
-                        let i = investors.indexOf(user);
-                        const userSnap = await db.collection(collections.user).doc(user).get();
-                        let data: any = userSnap.data();
+                    if(investors && investors.length > 0) {
+                        for (const user of investors) {
+                            let i = investors.indexOf(user);
+                            const userSnap = await db.collection(collections.user).doc(user).get();
+                            let data: any = userSnap.data();
 
-                        users.push({
-                            type: 'Members',
-                            userId: user,
-                            userName: data.firstName,
-                            userConnected: false,
-                            lastView: Date.now()
-                        })
+                            users.push({
+                                type: 'Members',
+                                userId: user,
+                                userName: data.firstName,
+                                userConnected: false,
+                                lastView: Date.now()
+                            })
+                        }
                     }
                 } else if (body.type === 'Community-Discussion' || body.type === 'Community-Jar') {
                     const communitySnap = await db.collection(collections.community).doc(body.id).get();
                     const communityData: any = communitySnap.data();
 
+                    if(communityData && communityData.Members && communityData.Members.length > 0) {
+                        for (const user of communityData.Members) {
+                            const userSnap = await db.collection(collections.user).doc(user.id).get();
+                            let data: any = userSnap.data();
 
-                    for (const user of communityData.Members) {
-                        const userSnap = await db.collection(collections.user).doc(user.id).get();
-                        let data: any = userSnap.data();
-
-                        users.push({
-                            type: 'Members',
-                            userId: user.id,
-                            userName: data.firstName,
-                            userConnected: false,
-                            lastView: Date.now()
-                        })
+                            users.push({
+                                type: 'Members',
+                                userId: user.id,
+                                userName: data.firstName,
+                                userConnected: false,
+                                lastView: Date.now()
+                            })
+                        }
                     }
                 } else if (body.type === 'Credit-Pool') {
                     const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
