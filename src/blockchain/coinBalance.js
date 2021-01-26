@@ -11,10 +11,6 @@ module.exports.balanceOf = async (userAddress, token) => {
 			Token: token,
 		}
 	}
-	console.log({
-		PublicId: userAddress,
-		Token: token,
-	});
 	let blockchainRes = await axios(config);
 	return blockchainRes.data;
 };
