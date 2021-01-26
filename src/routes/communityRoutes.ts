@@ -112,6 +112,7 @@ router.get('/badges/getPhoto/:badgeId', communityController.getBadgePhotoById);
 // communities
 router.get('/getCommunities', authenticateJWT, communityController.getCommunities);
 router.get('/getCommunity/:communityAddress', authenticateJWT, communityController.getCommunity);
+router.get('/getTrendingCommunities', authenticateJWT, communityController.getTrendingCommunities);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);
