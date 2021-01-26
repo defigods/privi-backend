@@ -64,7 +64,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             db.collection(collections.priviCredits).doc(creditAddress).set({
                 Description: description,
                 DiscordId: discordId,
-                EthereumAddress: ethereumAddress,
+                // EthereumAddress: ethereumAddress,
                 Admins: admins,
                 Insurers: insurers,
                 UserRoles: userRoles,

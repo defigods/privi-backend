@@ -507,13 +507,13 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                         type: 56,
                         typeItemId: 'pod',
                         itemId: creator,
-                        follower: creator,
+                        follower: userData.firstName,
                         pod: podId,
                         comment: '',
                         token: '',
                         amount: '',
                         onlyInformation: false,
-                        otherItemId: ''
+                        otherItemId: podId
                     }
                 });
             });
@@ -697,7 +697,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: '',
+                    token: podData.TokenSymbol,
                     amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
@@ -713,7 +713,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     follower: investorData.firstName,
                     pod: podData.Name,
                     comment: '',
-                    token: '',
+                    token: podData.TokenSymbol,
                     amount: amount,
                     onlyInformation: false,
                     otherItemId: podId
