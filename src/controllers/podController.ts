@@ -504,7 +504,8 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 39,
+                        type: 56,
+                        typeItemId: 'pod',
                         itemId: creator,
                         follower: creator,
                         pod: podId,
