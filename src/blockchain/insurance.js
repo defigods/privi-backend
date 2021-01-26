@@ -100,3 +100,8 @@ module.exports.investInsurancePoolNFT = async (data) => {
     let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/investInsurancePool", data);
     return blockchainRes.data;
 }
+
+module.exports.withdrawInsurancePoolNFT = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/withdrawInsurancePool", data);
+    return blockchainRes.data;
+}

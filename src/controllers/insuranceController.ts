@@ -248,3 +248,29 @@ exports.investInsurancePoolNFT = async (req: express.Request, res: express.Respo
         res.send({success: false});
     }
 }
+
+exports.withdrawInsurancePoolNFT = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const data = {
+            InvestorAddress: body.inverstorAddress,
+            InsuranceAddress: body.insuranceAddress,
+            Amount: body.amount,
+            Hash: body.hash,
+            Signature: body.signature,
+            Caller: apiKey
+        }
+
+        const blockchainRes = await insurance.withdrawInsurancePoolNFT(data);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/insuranceController -> withdrawInsurancePoolNFT(): success = false');
+            res.send({success: false});
+        }
+    } catch (err) {
+        console.log('Error in controllers/insuranceController -> withdrawInsurancePoolNFT(): ', err);
+        res.send({success: false});
+    }
+}
