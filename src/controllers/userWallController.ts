@@ -279,10 +279,10 @@ exports.makeResponseUserWallPost = async (req: express.Request, res: express.Res
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.userWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const userWallPostRef = db.collection(collections.userWallPost)
-        .doc(body.userWallPostId);
+        .doc(body.blogPostId);
       const userWallPostGet = await userWallPostRef.get();
       const userWallPost: any = userWallPostGet.data();
 
@@ -304,18 +304,19 @@ exports.makeResponseUserWallPost = async (req: express.Request, res: express.Res
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: userWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: userWallPostGet.id
         }
       });
 
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/userWallController -> makeResponseUserWallPost()', "There's no post id...");
+      console.log('Error in controllers/userWallController -> makeResponseUserWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -343,11 +344,12 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: userWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: userWallPostGet.id
         }
       });
 
@@ -382,11 +384,12 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: userWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: userWallPostGet.id
         }
       });
 
@@ -446,6 +449,7 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
         for(const joinedComm of user.JoinedCommunities) {
           let foundIndex = communities.findIndex((comm) => comm === joinedComm);
           if(foundIndex === -1) {
+            joinedComm.type = 'CommunityPost';
             communities.push(joinedComm);
           }
         }

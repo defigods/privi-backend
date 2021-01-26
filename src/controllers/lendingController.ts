@@ -88,6 +88,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -127,6 +128,7 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                     token: token,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -167,6 +169,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                     token: token,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -206,6 +209,7 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -295,6 +299,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -344,6 +349,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -457,6 +463,7 @@ async function getTokenUserList() {
 //                             token: token,
 //                             amount: 0,
 //                             onlyInformation: false,
+//                             otherItemId: ''
 //                         }
 //                     });
 //                 } else {
@@ -502,6 +509,7 @@ async function getTokenUserList() {
 //                             token: '',
 //                             amount: 0,
 //                             onlyInformation: false,
+//                             otherItemId: ''
 //                         }
 //                     });
 //                 }

@@ -57,6 +57,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
 
@@ -116,6 +117,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });

@@ -515,11 +515,12 @@ export const startSocket = (env: Env) => {
           typeItemId: 'user',
           itemId: message.from,
           follower: user.firstName,
-          pod: uid, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: uid
         }
       });
     });

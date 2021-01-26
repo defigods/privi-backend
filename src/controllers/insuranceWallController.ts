@@ -297,7 +297,7 @@ exports.makeResponseInsuranceWallPost = async (req: express.Request, res: expres
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/insuranceWallController -> makeResponseInsuranceWallPost()', "There's no post id...");
+      console.log('Error in controllers/insuranceWallController -> makeResponseInsuranceWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -325,11 +325,12 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: insuranceWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: insuranceWallPostGet.id
         }
       });
 
@@ -364,11 +365,12 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: insuranceWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: insuranceWallPostGet.id
         }
       });
 

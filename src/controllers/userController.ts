@@ -1207,6 +1207,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
                 token: '',
                 amount: 0,
                 onlyInformation: false,
+                otherItemId: ''
             }
         });
         res.send({ success: true, data: userToFollowData });
@@ -1291,6 +1292,7 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
                 token: '',
                 amount: 0,
                 onlyInformation: false,
+                otherItemId: ''
             }
         });
 

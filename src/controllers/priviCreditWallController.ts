@@ -293,10 +293,27 @@ exports.makeResponseCreditWallPost = async (req: express.Request, res: express.R
       await creditWallPostRef.update({
         responses: responses
       });
+
+      await notificationsController.addNotification({
+        userId: creditWallPost.createdBy,
+        notification: {
+          type: 42,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: creditWallPost.creditPoolId, // pod === credit
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: creditWallPostGet.id
+        }
+      });
+
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/priviCreditWallController -> makeResponseCreditWallPost()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> makeResponseCreditWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -324,11 +341,12 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: creditWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: creditWallPostGet.id
         }
       });
 
@@ -363,11 +381,12 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: creditWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: creditWallPostGet.id
         }
       });
 

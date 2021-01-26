@@ -147,6 +147,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
             //             token: token,
             //             amount: amount,
             //             onlyInformation: false,
+            //                     otherItemId: ''
             //         }
             //     });
 
@@ -162,6 +163,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
             //             token: token,
             //             amount: amount,
             //             onlyInformation: false,
+            //                     otherItemId: ''
             //         }
             //     });
             // }
@@ -212,6 +214,7 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -262,6 +265,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });

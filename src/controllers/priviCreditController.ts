@@ -109,6 +109,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                     token: creditName,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             userData.followers.forEach(async (item, i) => {
@@ -124,6 +125,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                         token: creditName,
                         amount: '',
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             })
@@ -192,6 +194,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                         token: '',
                         amount: 0,
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             });
@@ -220,6 +223,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: 0,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -294,6 +298,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     token: creditAddress,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
 
@@ -589,6 +594,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                                         token: '',
                                         amount: 0,
                                         onlyInformation: false,
+                                        otherItemId: ''
                                     }
                                 });
                                 totalInterest += txnObj.Amount;

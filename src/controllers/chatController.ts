@@ -1049,11 +1049,12 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
                 typeItemId: 'user',
                 itemId: body.userId,
                 follower: user.firstName,
-                pod: discordMessageGet.id, //pod === post
+                pod: '',
                 comment: '',
                 token: '',
                 amount: 0,
                 onlyInformation: false,
+                otherItemId: discordMessageGet.id
             }
         });
 
@@ -1123,11 +1124,12 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
                 typeItemId: 'user',
                 itemId: body.userId,
                 follower: user.firstName,
-                pod: discordMessageGet.id, //pod === post
+                pod: '',
                 comment: '',
                 token: '',
                 amount: 0,
                 onlyInformation: false,
+                otherItemId: discordMessageGet.id
             }
         });
 
@@ -1194,11 +1196,12 @@ exports.discordReplyLikeMessage = async (req: express.Request, res: express.Resp
                 typeItemId: 'user',
                 itemId: body.userId,
                 follower: user.firstName,
-                pod: discordMessageReplyGet.id, //pod === post
+                pod: '',
                 comment: '',
                 token: '',
                 amount: 0,
                 onlyInformation: false,
+                otherItemId: discordMessageReplyGet.id
             }
         });
 
@@ -1266,11 +1269,12 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
                 typeItemId: 'user',
                 itemId: body.userId,
                 follower: user.firstName,
-                pod: discordMessageReplyGet.id, //pod === post
+                pod: '',
                 comment: '',
                 token: '',
                 amount: 0,
                 onlyInformation: false,
+                otherItemId: discordMessageReplyGet.id
             }
         });
 

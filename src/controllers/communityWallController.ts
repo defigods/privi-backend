@@ -278,10 +278,10 @@ exports.makeResponseCommunityWallPost = async (req: express.Request, res: expres
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.communityWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const communityWallPostRef = db.collection(collections.communityWallPost)
-        .doc(body.communityWallPostId);
+        .doc(body.blogPostId);
       const communityWallPostGet = await communityWallPostRef.get();
       const communityWallPost: any = communityWallPostGet.data();
 
@@ -295,10 +295,27 @@ exports.makeResponseCommunityWallPost = async (req: express.Request, res: expres
       await communityWallPostRef.update({
         responses: responses
       });
+
+      await notificationsController.addNotification({
+        userId: communityWallPost.createdBy,
+        notification: {
+          type: 82,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: communityWallPost.communityId, // pod === community
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: communityWallPostGet.id
+        }
+      });
+
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/communityWallController -> makeResponseCommunityWallPost()', "There's no post id...");
+      console.log('Error in controllers/communityWallController -> makeResponseCommunityWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -326,11 +343,12 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: communityWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: communityWallPostGet.id
         }
       });
 
@@ -365,11 +383,12 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
           typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
-          pod: communityWallPostGet.id, //pod === post
+          pod: '',
           comment: '',
           token: '',
           amount: 0,
           onlyInformation: false,
+          otherItemId: communityWallPostGet.id
         }
       });
 

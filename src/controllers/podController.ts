@@ -318,6 +318,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
                 token: '',
                 amount: '',
                 onlyInformation: false,
+                otherItemId: ''
             }
         });
 
@@ -397,6 +398,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
                 token: '',
                 amount: '',
                 onlyInformation: false,
+                otherItemId: ''
             }
         });
 
@@ -476,6 +478,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                     token: fundingToken,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             userData.followers.forEach(async (item, i) => {
@@ -490,6 +493,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                         token: '',
                         amount: '',
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             });
@@ -549,6 +553,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
 
@@ -565,6 +570,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
                         token: '',
                         amount: '',
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             });
@@ -581,6 +587,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
                         token: '',
                         amount: '',
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             });
@@ -672,6 +679,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             await notificationsController.addNotification({
@@ -686,6 +694,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             if (podData.Followers) {
@@ -702,6 +711,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                             token: '',
                             amount: amount,
                             onlyInformation: false,
+                            otherItemId: ''
                         }
                     });
                 });
@@ -809,6 +819,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                     token: 0,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             await notificationsController.addNotification({
@@ -823,6 +834,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             if (podData.Investors && podData.size !== 0) {
@@ -840,6 +852,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                             token: '',
                             amount: amount,
                             onlyInformation: false,
+                            otherItemId: ''
                         }
                     });
                 })
@@ -857,6 +870,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                         token: '',
                         amount: amount,
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             });
@@ -1453,6 +1467,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                     token: tokenSymbol,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             userData.followers.forEach(async (item, i) => {
@@ -1468,6 +1483,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                         token: '',
                         amount: '',
                         onlyInformation: false,
+                        otherItemId: ''
                     }
                 });
             });
@@ -1519,6 +1535,7 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             await notificationsController.addNotification({
@@ -1533,6 +1550,7 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -1582,6 +1600,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             await notificationsController.addNotification({
@@ -1596,6 +1615,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -1645,6 +1665,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             await notificationsController.addNotification({
@@ -1659,6 +1680,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -1708,6 +1730,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             await notificationsController.addNotification({
@@ -1722,6 +1745,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -1793,6 +1817,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -1863,6 +1888,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
                     token: '',
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -2024,6 +2050,7 @@ exports.getNFTPodHistories = async (req: express.Request, res: express.Response)
 //                         token: '',
 //                         amount: '',
 //                         onlyInformation: false,
+//                          otherItemId: ''
 //                     }
 //                 });
 //             } else {
@@ -2084,6 +2111,7 @@ exports.getNFTPodHistories = async (req: express.Request, res: express.Response)
 //                                             token: '',
 //                                             amount: '',
 //                                             onlyInformation: false,
+//                                              otherItemId: ''
 //                                         }
 //                                     });
 //                                 }
