@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -299,6 +300,21 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
 
       let podPost = await blogController.likeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
 
+      await notificationsController.addNotification({
+        userId: communityWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: communityWallPostGet.id, //pod === post
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+        }
+      });
+
       res.send({ success: true, data: podPost });
 
     } else {
@@ -322,6 +338,21 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const communityWallPost: any = communityWallPostGet.data();
 
       let podPost = await blogController.dislikeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: communityWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: communityWallPostGet.id, //pod === post
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+        }
+      });
 
       res.send({ success: true, data: podPost });
 

@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -288,13 +289,28 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.creditWallPostId && body.userId) {
+    if (body && body.creditWallPostId && body.userId && body.userName) {
       const creditWallPostRef = db.collection(collections.creditWallPost)
         .doc(body.creditWallPostId);
       const creditWallPostGet = await creditWallPostRef.get();
       const creditWallPost: any = creditWallPostGet.data();
 
       let creditPost = await blogController.likeItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.userId, creditWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: creditWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: creditWallPostGet.id, //pod === post
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+        }
+      });
 
       res.send({ success: true, data: creditPost });
 
@@ -312,13 +328,28 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.podWallPostId && body.userId) {
+    if (body && body.podWallPostId && body.userId && body.userName) {
       const creditWallPostRef = db.collection(collections.creditWallPost)
         .doc(body.creditWallPostId);
       const creditWallPostGet = await creditWallPostRef.get();
       const creditWallPost: any = creditWallPostGet.data();
 
       let creditPost = await blogController.dislikeItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.userId, creditWallPost.createdBy);
+
+      await notificationsController.addNotification({
+        userId: creditWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: creditWallPostGet.id, //pod === post
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+        }
+      });
 
       res.send({ success: true, data: creditPost });
 
