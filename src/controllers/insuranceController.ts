@@ -30,17 +30,15 @@ exports.initiateInsurancePool = async (req: express.Request, res: express.Respon
         const minCoverage = body.minCoverage;
         const initialDeposit = body.initialDeposit;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
-
-        const blockchainRes = await insurance.initiateInsurancePool(guarantorAddress, podAddress, insuranceAddress, frequency, feeInscription, feeMembership, minCoverage, initialDeposit, date, txnId, apiKey);
+        const hash = body.hash;
+        const signature = body.signature;
+        const blockchainRes = await insurance.initiateInsurancePool(guarantorAddress, podAddress, insuranceAddress, frequency, feeInscription, feeMembership, minCoverage, initialDeposit, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            res.send({ success: true });
-        }
-        else {
+            res.send({success: true});
+        } else {
             console.log('Error in controllers/insuranceController -> initiateInsurancePool(): success = false');
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/lendingController -> initiateInsurancePool(): ', err);
@@ -55,17 +53,16 @@ exports.investInsurancePool = async (req: express.Request, res: express.Response
         const insuranceAddress = body.insuranceAddress;
         const amount = body.amount;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
+        const hash = body.hash;
+        const signature = body.signature;
 
-        const blockchainRes = await insurance.investInsurancePool(investorAddress, insuranceAddress, amount, date, txnId, apiKey);
+        const blockchainRes = await insurance.investInsurancePool(investorAddress, insuranceAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            res.send({ success: true });
-        }
-        else {
+            res.send({success: true});
+        } else {
             console.log('Error in controllers/insuranceController -> investInsurancePool(): success = false');
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/insuranceController -> investInsurancePool(): ', err);
@@ -80,17 +77,16 @@ exports.subscribeInsurancePool = async (req: express.Request, res: express.Respo
         const insuranceAddress = body.insuranceAddress;
         const amount = body.amount;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
+        const hash = body.hash;
+        const signature = body.signature;
 
-        const blockchainRes = await insurance.subscribeInsurancePool(clientAddress, insuranceAddress, amount, date, txnId, apiKey);
+        const blockchainRes = await insurance.subscribeInsurancePool(clientAddress, insuranceAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            res.send({ success: true });
-        }
-        else {
+            res.send({success: true});
+        } else {
             console.log('Error in controllers/insuranceController -> subscribeInsurancePool(): success = false');
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/insuranceController -> subscribeInsurancePool(): ', err);
@@ -105,17 +101,15 @@ exports.unsubscribeInsurancePool = async (req: express.Request, res: express.Res
         const insuranceAddress = body.insuranceAddress;
         const amount = body.amount;
 
-        const date = Date.now();
-        const txnId = generateUniqueId();
-
-        const blockchainRes = await insurance.unsubscribeInsurancePool(clientAddress, insuranceAddress, amount, date, txnId, apiKey);
+        const hash = body.hash;
+        const signature = body.signature;
+        const blockchainRes = await insurance.unsubscribeInsurancePool(clientAddress, insuranceAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            res.send({ success: true });
-        }
-        else {
+            res.send({success: true});
+        } else {
             console.log('Error in controllers/insuranceController -> unsubscribeInsurancePool(): success = false');
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/insuranceController -> unsubscribeInsurancePool(): ', err);
