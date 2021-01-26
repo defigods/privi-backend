@@ -187,10 +187,12 @@ exports.getUserPostById =  async (req: express.Request, res: express.Response) =
   try {
     let params : any = req.params;
 
-    const userWallPostSnap = await db.collection(collections.userWallPost)
-      .doc(params.postId).get();
-    const userWallPost : any = userWallPostSnap.data();
-    userWallPost.id = userWallPostSnap.id;
+    const userWallPostRef = db.collection(collections.userWallPost)
+      .doc(params.postId);
+    const userWallPostGet = await userWallPostRef.get();
+    const userWallPost: any = userWallPostGet.data();
+
+    userWallPost.id = userWallPostGet.id;
 
     res.status(200).send({
       success: true,
@@ -449,7 +451,6 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
         for(const joinedComm of user.JoinedCommunities) {
           let foundIndex = communities.findIndex((comm) => comm === joinedComm);
           if(foundIndex === -1) {
-            joinedComm.type = 'CommunityPost';
             communities.push(joinedComm);
           }
         }
@@ -473,6 +474,7 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
             let isAFollowCommunityIndex = communities.findIndex(comm => comm === data.communityId);
 
             if(isAFollowCommunityIndex !== -1) {
+              data.type = 'CommunityPost';
               posts.push(data);
             }
           }

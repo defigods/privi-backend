@@ -298,7 +298,7 @@ exports.makeResponseCreditWallPost = async (req: express.Request, res: express.R
         userId: creditWallPost.createdBy,
         notification: {
           type: 42,
-          typeItemId: 'user',
+          typeItemId: 'priviCredit',
           itemId: body.userId,
           follower: body.userName,
           pod: creditWallPost.creditPoolId, // pod === credit

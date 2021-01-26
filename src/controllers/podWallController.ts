@@ -298,7 +298,7 @@ exports.makeResponsePodWallPost = async (req: express.Request, res: express.Resp
         userId: podWallPost.createdBy,
         notification: {
           type: 31,
-          typeItemId: 'user',
+          typeItemId: 'pod',
           itemId: body.userId,
           follower: body.userName,
           pod: podWallPost.podId,
