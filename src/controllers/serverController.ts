@@ -508,6 +508,11 @@ export const startSocket = (env: Env) => {
       console.log('sending room post', updateMessage);
       socket.to(message.discordRoom).emit('update-message-discord', updateMessage);
 
+      const discordChatRef = db.collection(collections.discordChat)
+        .doc(message.discordRoom);
+      const discordChatGet = await discordChatRef.get();
+      const discordChat: any = discordChatGet.data();
+
       await notificationsController.addNotification({
         userId: discordMessage.from,
         notification: {
@@ -516,7 +521,7 @@ export const startSocket = (env: Env) => {
           itemId: message.from,
           follower: user.firstName,
           pod: '',
-          comment: '',
+          comment: discordMessage.message,
           token: '',
           amount: 0,
           onlyInformation: false,

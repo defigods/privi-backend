@@ -58,7 +58,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
     let isCreator = await checkIfUserIsCreator(body.userId, body.creatorId);
 
     if(body && body.creatorId && isCreator) {
-      const userRef = db.collection(collections.community)
+      const userRef = db.collection(collections.user)
         .doc(body.userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
@@ -307,7 +307,7 @@ exports.makeResponseUserWallPost = async (req: express.Request, res: express.Res
           itemId: body.userId,
           follower: body.userName,
           pod: '',
-          comment: '',
+          comment: body.userName + ': ' + body.response,
           token: '',
           amount: 0,
           onlyInformation: false,

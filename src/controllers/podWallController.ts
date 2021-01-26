@@ -184,14 +184,14 @@ exports.getPodPostById =  async (req: express.Request, res: express.Response) =>
   try {
     let params : any = req.params;
 
-    const userWallPostSnap = await db.collection(collections.userWallPost)
+    const podWallPostSnap = await db.collection(collections.podWallPost)
       .doc(params.postId).get();
-    const userWallPost : any = userWallPostSnap.data();
-    userWallPost.id = userWallPostSnap.id;
+    const podWallPost : any = podWallPostSnap.data();
+    podWallPost.id = podWallPostSnap.id;
 
     res.status(200).send({
       success: true,
-      data: userWallPost
+      data: podWallPost
     });
   } catch (err) {
     console.log('Error in controllers/podWallController -> getPodPostById()', err);
@@ -338,7 +338,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         userId: podWallPost.createdBy,
         notification: {
           type: 77,
-          typeItemId: 'user',
+          typeItemId: 'pod',
           itemId: body.userId,
           follower: body.userName,
           pod: '',

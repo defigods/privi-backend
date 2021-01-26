@@ -185,14 +185,14 @@ exports.getInsurancePostById =  async (req: express.Request, res: express.Respon
   try {
     let params : any = req.params;
 
-    const userWallPostSnap = await db.collection(collections.userWallPost)
+    const insuranceWallPostSnap = await db.collection(collections.insuranceWallPost)
       .doc(params.postId).get();
-    const userWallPost : any = userWallPostSnap.data();
-    userWallPost.id = userWallPostSnap.id;
+    const insuranceWallPost : any = insuranceWallPostSnap.data();
+    insuranceWallPost.id = insuranceWallPostSnap.id;
 
     res.status(200).send({
       success: true,
-      data: userWallPost
+      data: insuranceWallPost
     });
   } catch (err) {
     console.log('Error in controllers/insuranceWallController -> getInsurancePostById()', err);
@@ -322,7 +322,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         userId: insuranceWallPost.createdBy,
         notification: {
           type: 77,
-          typeItemId: 'user',
+          typeItemId: 'insurance',
           itemId: body.userId,
           follower: body.userName,
           pod: '',

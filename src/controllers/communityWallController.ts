@@ -186,14 +186,14 @@ exports.getCommunityPostById =  async (req: express.Request, res: express.Respon
   try {
     let params : any = req.params;
 
-    const userWallPostSnap = await db.collection(collections.userWallPost)
+    const communityWallPostSnap = await db.collection(collections.communityWallPost)
       .doc(params.postId).get();
-    const userWallPost : any = userWallPostSnap.data();
-    userWallPost.id = userWallPostSnap.id;
+    const communityWallPost : any = communityWallPostSnap.data();
+    communityWallPost.id = communityWallPostSnap.id;
 
     res.status(200).send({
       success: true,
-      data: userWallPost
+      data: communityWallPost
     });
   } catch (err) {
     console.log('Error in controllers/communityWallController -> getCommunityPostById()', err);
@@ -340,7 +340,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         userId: communityWallPost.createdBy,
         notification: {
           type: 77,
-          typeItemId: 'user',
+          typeItemId: 'community',
           itemId: body.userId,
           follower: body.userName,
           pod: '',

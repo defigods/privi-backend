@@ -183,14 +183,14 @@ exports.getCreditPostById =  async (req: express.Request, res: express.Response)
   try {
     let params : any = req.params;
 
-    const userWallPostSnap = await db.collection(collections.userWallPost)
+    const creditWallPostSnap = await db.collection(collections.creditWallPost)
       .doc(params.postId).get();
-    const userWallPost : any = userWallPostSnap.data();
-    userWallPost.id = userWallPostSnap.id;
+    const creditWallPost : any = creditWallPostSnap.data();
+    creditWallPost.id = creditWallPostSnap.id;
 
     res.status(200).send({
       success: true,
-      data: userWallPost
+      data: creditWallPost
     });
   } catch (err) {
     console.log('Error in controllers/priviCreditWallController -> getCreditPostById()', err);
@@ -338,7 +338,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         userId: creditWallPost.createdBy,
         notification: {
           type: 77,
-          typeItemId: 'user',
+          typeItemId: 'priviCredit',
           itemId: body.userId,
           follower: body.userName,
           pod: '',

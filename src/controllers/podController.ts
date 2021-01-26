@@ -278,7 +278,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
 
         let followingPods: string[] = [];
         let numFollowingPods = 0;
-        const userData = userSnap.data();
+        const userData : any = userSnap.data();
 
         if (userData && userData[followingPodsFieldName]) followingPods = userData[followingPodsFieldName];
         if (userData && userData[numFollowingPodsFieldName]) numFollowingPods = userData[numFollowingPodsFieldName];
@@ -312,13 +312,29 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
                 type: 13,
                 typeItemId: 'Pod',
                 itemId: podId,
-                follower: '',
-                pod: podData.PodName,
+                follower: userData.firstName,
+                pod: podData.Name,
                 comment: '',
                 token: '',
                 amount: '',
                 onlyInformation: false,
                 otherItemId: ''
+            }
+        });
+
+        await notificationsController.addNotification({
+            userId: podData.Creator,
+            notification: {
+                type: 32,
+                typeItemId: 'user',
+                itemId: userId,
+                follower: userData.firstName,
+                pod: podData.Name,
+                comment: '',
+                token: '',
+                amount: '',
+                onlyInformation: false,
+                otherItemId: podId
             }
         });
 
@@ -393,7 +409,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
                 typeItemId: 'Pod',
                 itemId: podId,
                 follower: '',
-                pod: podData.PodName,
+                pod: podData.Name,
                 comment: '',
                 token: '',
                 amount: '',
@@ -461,18 +477,20 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
             //         rateUSD: newPodRate,
             //         timestamp: Date.now()
             //     });
-            createNotification(creator, "FT Pod - Pod Created",
+            /*createNotification(creator, "FT Pod - Pod Created",
                 ` `,
                 notificationTypes.podCreation
-            );
+            );*/
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
+
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
-                    type: 9,
+                    type: 10,
+                    typeItemId: 'pod',
                     itemId: podId,
-                    follower: '',
+                    follower: creator,
                     pod: podId,
                     comment: '',
                     token: fundingToken,
@@ -481,6 +499,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                     otherItemId: ''
                 }
             });
+
             userData.followers.forEach(async (item, i) => {
                 await notificationsController.addNotification({
                     userId: item.user,
@@ -517,7 +536,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/podController -> initiateFTPOD(): ', err);
-        res.send({ success: false });
+        res.send({ success: false, error: err });
     }
 };
 
@@ -537,10 +556,10 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
 
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "FT Pod - Pod Deleted",
+            /*createNotification(publicId, "FT Pod - Pod Deleted",
                 ` `,
                 notificationTypes.podDeletion
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
@@ -653,24 +672,25 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 .collection(collections.discordRoom).get();
             if (!discordRoomSnap.empty) {
                 for (const doc of discordRoomSnap.docs) {
-                    let data = doc.data()
-                    if (!data.private) {
+                    let dataRoom = doc.data();
+                    if (!dataRoom.private) {
                         chatController.addUserToRoom(data.DiscordId, doc.id, investorId);
                     }
                 }
             }
 
-            createNotification(investorId, "FT Pod - Pod Invested",
+            /*createNotification(investorId, "FT Pod - Pod Invested",
                 ` `,
                 notificationTypes.podInvestment
-            );
+            );*/
             const podData: any = podSnap.data();
             const investorSnap = await db.collection(collections.user).doc(investorId).get();
             const investorData: any = investorSnap.data();
+
             await notificationsController.addNotification({
                 userId: investorId,
                 notification: {
-                    type: 11,
+                    type: 12,
                     typeItemId: 'user',
                     itemId: podId,
                     follower: '',
@@ -682,49 +702,52 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                     otherItemId: ''
                 }
             });
+
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 12,
+                    type: 15,
                     typeItemId: 'user',
                     itemId: investorId,
-                    follower: investorData.name,
+                    follower: investorData.firstName,
                     pod: podData.Name,
                     comment: '',
                     token: '',
                     amount: amount,
                     onlyInformation: false,
-                    otherItemId: ''
+                    otherItemId: podId
                 }
             });
-            if (podData.Followers) {
+            if (podData.Followers && podData.Followers.length > 0) {
                 podData.Followers.forEach(async (item, i) => {
-                    await notificationsController.addNotification({
-                        userId: item.id,
-                        notification: {
-                            type: 42,
-                            typeItemId: 'user',
-                            itemId: investorId,
-                            follower: investorData.name,
-                            pod: podData.Name,
-                            comment: '',
-                            token: '',
-                            amount: amount,
-                            onlyInformation: false,
-                            otherItemId: ''
-                        }
-                    });
+                    if(item.id !== investorId) {
+                        await notificationsController.addNotification({
+                            userId: item.id,
+                            notification: {
+                                type: 60,
+                                typeItemId: 'user',
+                                itemId: investorId,
+                                follower: investorData.firstName,
+                                pod: podData.Name,
+                                comment: '',
+                                token: '',
+                                amount: amount,
+                                onlyInformation: false,
+                                otherItemId: ''
+                            }
+                        });
+                    }
                 });
             }
             res.send({ success: true });
         }
         else {
             console.log('Error in controllers/podController -> investPOD(): success = false.', blockchainRes.message);
-            res.send({ success: false });
+            res.send({ success: false, error: blockchainRes.message });
         }
     } catch (err) {
         console.log('Error in controllers/podController -> investPOD(): ', err);
-        res.send({ success: false });
+        res.send({ success: false, error: err });
     }
 };
 
@@ -771,10 +794,10 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             }
             podSnap.ref.update({ Investors: newInvestors });
 
-            createNotification(investorId, "FT Pod - Pod Token Sold",
+            /*createNotification(investorId, "FT Pod - Pod Token Sold",
                 ` `,
                 notificationTypes.podInvestment
-            );
+            );*/
             res.send({ success: true });
         }
         else {
@@ -799,10 +822,10 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             console.log(blockchainRes);
-            createNotification(investorId, "FT Pod - Pod Swapped",
+            /*createNotification(investorId, "FT Pod - Pod Swapped",
                 ` `,
                 notificationTypes.podSwapGive
-            );
+            );*/
             const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
             const podData: any = podSnap.data();
             const investorSnap = await db.collection(collections.user).doc(investorId).get();
@@ -810,13 +833,13 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: investorId,
                 notification: {
-                    type: 14,
+                    type: 15,
                     typeItemId: 'user',
                     itemId: podId,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: 0,
+                    token: podData.TokenSymbol,
                     amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
@@ -825,13 +848,13 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 13,
+                    type: 16,
                     typeItemId: 'user',
                     itemId: investorId,
-                    follower: investorData.name,
+                    follower: investorData.firstName,
                     pod: podData.Name,
                     comment: '',
-                    token: '',
+                    token: podData.TokenSymbol,
                     amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
@@ -843,10 +866,10 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                     await notificationsController.addNotification({
                         userId: item,
                         notification: {
-                            type: 16,
+                            type: 19,
                             typeItemId: 'user',
                             itemId: podId,
-                            follower: investorData.name,
+                            follower: investorData.firstName,
                             pod: podData.Name,
                             comment: '',
                             token: '',
@@ -861,10 +884,10 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 15,
+                        type: 18,
                         typeItemId: 'user',
                         itemId: podId,
-                        follower: investorData.name,
+                        follower: investorData.firstName,
                         pod: podData.Name,
                         comment: '',
                         token: '',
@@ -1458,7 +1481,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
-                    type: 9,
+                    type: 0,
                     typeItemId: 'user',
                     itemId: podAddress,
                     follower: '',

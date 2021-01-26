@@ -100,7 +100,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
-                    type: 16,
+                    type: 33,
                     typeItemId: 'token',
                     itemId: creditAddress,
                     follower: '',
@@ -138,12 +138,12 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
         }
         else {
             console.log('Error in controllers/priviCredit -> initiateCredit(): success = false', blockchainRes.message);
-            res.send({ success: false });
+            res.send({ success: false, error: blockchainRes.message });
             return;
         }
     } catch (err) {
         console.log('Error in controllers/priviCredit -> initiateCredit(): ', err);
-        res.send({ success: false });
+        res.send({ success: false, error: err });
         return;
     }
 };
@@ -282,10 +282,10 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 }
             }
 
-            createNotification(address, "Privi Credit - Loan Borrowed",
+            /*createNotification(address, "Privi Credit - Loan Borrowed",
                 `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
                 notificationTypes.priviCreditBorrowed
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: priviCreditData.Creator,
                 notification: {
@@ -578,10 +578,10 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                             const from = txnObj.From;
                             const to = txnObj.To;
                             if (txnObj.Type && txnObj.Type == notificationTypes.priviCreditInterest && from && to == creditAddress) {
-                                createNotification(from, "Privi Credit - Interest Payment",
+                                /*createNotification(from, "Privi Credit - Interest Payment",
                                     ` `,
                                     notificationTypes.priviCreditInterest
-                                );
+                                );*/
                                 await notificationsController.addNotification({
                                     userId: from,
                                     notification: {

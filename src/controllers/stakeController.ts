@@ -48,7 +48,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: userAddress,
                 notification: {
-                    type: 33,
+                    type: 0,
                     typeItemId: 'user',
                     itemId: userAddress,
                     follower: '',

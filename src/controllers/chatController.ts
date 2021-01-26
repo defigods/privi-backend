@@ -633,7 +633,7 @@ const removeUserToRoom = exports.removeUserToRoom = (discordChatId, discordRoomI
             }
             resolve(discordRoom)
         } catch (e) {
-            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+            reject('Error in controllers/chatRoutes -> removeUserToRoom()' + e)
         }
     })
 }
@@ -1050,7 +1050,7 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
                 itemId: body.userId,
                 follower: user.firstName,
                 pod: '',
-                comment: '',
+                comment: discordMessage.message,
                 token: '',
                 amount: 0,
                 onlyInformation: false,
@@ -1125,7 +1125,7 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
                 itemId: body.userId,
                 follower: user.firstName,
                 pod: '',
-                comment: '',
+                comment: discordMessage.message,
                 token: '',
                 amount: 0,
                 onlyInformation: false,
@@ -1197,7 +1197,7 @@ exports.discordReplyLikeMessage = async (req: express.Request, res: express.Resp
                 itemId: body.userId,
                 follower: user.firstName,
                 pod: '',
-                comment: '',
+                comment: discordMessageReply.message,
                 token: '',
                 amount: 0,
                 onlyInformation: false,
@@ -1270,7 +1270,7 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
                 itemId: body.userId,
                 follower: user.firstName,
                 pod: '',
-                comment: '',
+                comment: discordMessageReply.message,
                 token: '',
                 amount: 0,
                 onlyInformation: false,

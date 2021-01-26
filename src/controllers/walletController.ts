@@ -198,10 +198,10 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await coinBalance.burn(type, from, to, amount, token, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(from, "Withdraw - Complete",
+            /*createNotification(from, "Withdraw - Complete",
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: from,
                 notification: {
@@ -249,14 +249,14 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await coinBalance.mint(type, from, to, amount, token, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(to, "Swap - Complete",
+            /*createNotification(to, "Swap - Complete",
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: from,
                 notification: {
-                    type: 9,
+                    type: 0,
                     typeItemId: 'token',
                     itemId: token,
                     follower: '',
