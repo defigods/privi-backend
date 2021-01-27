@@ -66,11 +66,12 @@ const removeNotification = async (object: any) => {
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
+        let notifications : any[] = [...user.notifications];
         let notificationIndex = user.notifications.findIndex(item => item.id === object.notificationId)
-        user.notifications.splice(notificationIndex, 1)
+        notifications.splice(notificationIndex, 1)
 
         await userRef.update({
-            notifications: user.notifications
+            notifications: notifications
         });
     } catch (e) {
         return('Error adding notification: ' + e)

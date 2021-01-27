@@ -279,7 +279,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                             pod: priviCreditData.CreditName,
                             comment: '',
                             token: '',
-                            amount: 0,
+                            amount: amount,
                             onlyInformation: false,
                             otherItemId: creditAddress
                         }
@@ -417,7 +417,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                             pod: priviCreditData.CreditName,
                             comment: '',
                             token: '',
-                            amount: 0,
+                            amount: amount,
                             onlyInformation: false,
                             otherItemId: creditAddress
                         }

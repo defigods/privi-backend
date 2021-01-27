@@ -927,30 +927,16 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 };
-const getNotifications = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getNotifications = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
-    console.log(userId);
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData: any = userSnap.data();
-    /*const allWallPost: any[] = [];
-        const wallPostSnap = await db.collection(collections.wallPost)
-            .where("fromUserId", "==", userId).get();
-        wallPostSnap.forEach((doc) => {
-            let data = doc.data();
-            data.id = doc.id;
-            data.type = 'post';
-            allWallPost.push(data)
-        });*/
 
-    if (!userSnap.exists && userData) {
+    if (userSnap.exists && userData) {
       if (!userData || !userData.notifications) {
         userData.notifications = [];
       }
-      // userData.notifications = userData.notifications.concat(allWallPost);
       userData.notifications.sort((a, b) =>
         b.date > a.date ? 1 : a.date > b.date ? -1 : 0
       );
@@ -2457,10 +2443,7 @@ const updateUserCred = (userId, sum) => {
   });
 };
 
-const updateTutorialsSeen = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const updateTutorialsSeen = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
@@ -2487,6 +2470,28 @@ const updateTutorialsSeen = async (
     res.send({ success: false });
   }
 };
+
+const removeNotification = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.userId && body.notificationId) {
+      await notificationsController.removeNotification({
+        userId: body.userId,
+        notificationId: body.notificationId
+      });
+
+      res.send({ success: true });
+    } else {
+      console.log("Error in controllers/userController -> removeNotification()", "No Information");
+      res.send({ success: false, error: "No Information" });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userController -> removeNotification()", err);
+    res.send({ success: false, error: err });
+  }
+}
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -2536,4 +2541,5 @@ module.exports = {
   updateUserCred,
   searchUsers,
   updateTutorialsSeen,
+  removeNotification
 };

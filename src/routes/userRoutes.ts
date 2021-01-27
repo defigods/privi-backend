@@ -171,6 +171,8 @@ router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeed
 
 router.post('/searchUsers', authenticateJWT, userController.searchUsers);
 
+router.post('/removeNotification', authenticateJWT, userController.removeNotification);
+
 //UPDATE TUTORIALS SEEN
 router.post('/updateTutorialsSeen', userController.updateTutorialsSeen);
 
