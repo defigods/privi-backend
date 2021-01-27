@@ -202,7 +202,7 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your PRIVI Wallet. ${amount} ${token} has been added to your Ethereum wallet!`,
                 notificationTypes.withdraw
             );*/
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: from,
                 notification: {
                     type: 10,
@@ -216,7 +216,7 @@ module.exports.burn = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                     otherItemId: ''
                 }
-            });
+            });*/
             res.send({ success: true });
         } else {
             console.log('Error in controllers/walletController -> withdraw()');

@@ -772,22 +772,25 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
                                     ` `,
                                     notificationTypes.priviCreditInterest
                                 );*/
+                                totalInterest += txnObj.Amount;
+
+                                const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
+                                const priviCreditData: any = priviCreditSnap.data();
                                 await notificationsController.addNotification({
                                     userId: from,
                                     notification: {
-                                        type: 25,
+                                        type: 44,
                                         typeItemId: 'user',
                                         itemId: from,
                                         follower: '',
-                                        pod: '',
+                                        pod: priviCreditData.CreditName,
                                         comment: '',
                                         token: '',
-                                        amount: 0,
+                                        amount: totalInterest,
                                         onlyInformation: false,
-                                        otherItemId: ''
+                                        otherItemId: creditAddress
                                     }
                                 });
-                                totalInterest += txnObj.Amount;
                             }
                         }
                         // update total interest

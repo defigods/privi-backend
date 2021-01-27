@@ -200,7 +200,7 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
-                    type: 70,
+                    type: 73,
                     typeItemId: 'token',
                     itemId: '',
                     follower: '',

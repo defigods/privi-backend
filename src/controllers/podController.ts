@@ -564,10 +564,10 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 10,
-                    typeItemId: 'user',
-                    itemId: podData.Creator,
-                    follower: '',
+                    type: 11,
+                    typeItemId: 'pod',
+                    itemId: podId,
+                    follower: podData.Creator,
                     pod: podData.Name,
                     comment: '',
                     token: '',
@@ -581,7 +581,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
                 await notificationsController.addNotification({
                     userId: item.id,
                     notification: {
-                        type: 39,
+                        type: 57,
                         typeItemId: 'user',
                         itemId: podData.Creator,
                         follower: podData.Creator,
@@ -598,7 +598,7 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 39,
+                        type: 57,
                         typeItemId: 'user',
                         itemId: podData.Creator,
                         follower: podData.Creator,
@@ -834,7 +834,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: investorId,
                 notification: {
-                    type: 15,
+                    type: 17,
                     typeItemId: 'user',
                     itemId: podId,
                     follower: '',
@@ -1498,7 +1498,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 39,
+                        type: 56,
                         typeItemId: 'user',
                         itemId: creator,
                         follower: creator,
@@ -1550,14 +1550,14 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: buyerAddress,
                 notification: {
-                    type: 17,
+                    type: 20,
                     typeItemId: 'user',
                     itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: '',
-                    amount: '',
+                    token: token,
+                    amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
                 }
@@ -1565,14 +1565,14 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 18,
+                    type: 21,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: '',
-                    amount: '',
+                    token: token,
+                    amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
                 }
@@ -1615,14 +1615,14 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: sellerAddress,
                 notification: {
-                    type: 19,
+                    type: 22,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: '',
-                    amount: '',
+                    token: token,
+                    amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
                 }
@@ -1630,14 +1630,14 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 20,
+                    type: 23,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
                     pod: podData.Name,
                     comment: '',
-                    token: '',
-                    amount: '',
+                    token: token,
+                    amount: amount,
                     onlyInformation: false,
                     otherItemId: ''
                 }
@@ -1680,7 +1680,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
             await notificationsController.addNotification({
                 userId: requesterAddress,
                 notification: {
-                    type: 21,
+                    type: 24,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
@@ -1695,7 +1695,7 @@ exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => 
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 22,
+                    type: 25,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
@@ -1745,7 +1745,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
             await notificationsController.addNotification({
                 userId: requesterAddress,
                 notification: {
-                    type: 23,
+                    type: 26,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
@@ -1760,7 +1760,7 @@ exports.deleteSellOrder = async (req: express.Request, res: express.Response) =>
             await notificationsController.addNotification({
                 userId: podData.Creator,
                 notification: {
-                    type: 24,
+                    type: 27,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
@@ -1832,7 +1832,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: sellerAddress,
                 notification: {
-                    type: 25,
+                    type: 28,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
@@ -1903,7 +1903,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: buyerAddress,
                 notification: {
-                    type: 26,
+                    type: 29,
                     typeItemId: 'NFTPod',
                     itemId: podAddress,
                     follower: '',
