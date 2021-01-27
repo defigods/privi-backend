@@ -253,7 +253,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                 `You have succesfully swapped ${amount} ${token} from your Ethereum Wallet. ${amount} ${token} has been added to your PRIVI wallet!`,
                 notificationTypes.swap
             );*/
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: from,
                 notification: {
                     type: 0,
@@ -267,7 +267,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                     otherItemId: ''
                 }
-            });
+            });*/
             res.send({ success: true });
         } else {
             console.log('Error in controllers/walletController -> mint()', blockchainRes);

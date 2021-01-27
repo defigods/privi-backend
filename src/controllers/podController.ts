@@ -1479,7 +1479,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
             const name = body.Name;
             const userSnap = await db.collection(collections.user).doc(creator).get();
             const userData: any = userSnap.data();
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: creator,
                 notification: {
                     type: 0,
@@ -1493,7 +1493,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
                     onlyInformation: false,
                     otherItemId: ''
                 }
-            });
+            });*/
             userData.followers.forEach(async (item, i) => {
                 await notificationsController.addNotification({
                     userId: item.user,

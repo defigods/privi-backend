@@ -937,9 +937,9 @@ exports.discordGetPossibleUsers = async (req: express.Request, res: express.Resp
                     })
                 }
             } else if (body.type === 'Credit-Pool') {
-                const creditPoolBorrowersSnap = await db.collection(collections.community).doc(body.id)
+                const creditPoolBorrowersSnap = await db.collection(collections.priviCredits).doc(body.id)
                     .collection(collections.priviCreditsBorrowing).get();
-                const creditPoolLendersSnap = await db.collection(collections.community).doc(body.id)
+                const creditPoolLendersSnap = await db.collection(collections.priviCredits).doc(body.id)
                     .collection(collections.priviCreditsLending).get();
 
                 if (!creditPoolBorrowersSnap.empty) {

@@ -243,6 +243,49 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 }
             });
 
+            let investors : any[] = [];
+            const creditPoolBorrowersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
+              .collection(collections.priviCreditsBorrowing).get();
+            const creditPoolLendersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
+              .collection(collections.priviCreditsLending).get();
+            if (!creditPoolBorrowersSnap.empty) {
+                for (const doc of creditPoolBorrowersSnap.docs) {
+                    let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
+                    if(foundIndexInvestor === -1) {
+                        investors.push(doc.id);
+                    }
+                }
+            }
+
+            if (!creditPoolLendersSnap.empty) {
+                for (const doc of creditPoolLendersSnap.docs) {
+                    let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
+                    if(foundIndexInvestor === -1) {
+                        investors.push(doc.id);
+                    }
+                }
+            }
+
+            console.log(investors);
+            for (const investor of investors) {
+                if(investor !== address) {
+                    await notificationsController.addNotification({
+                        userId: investor,
+                        notification: {
+                            type: 64,
+                            typeItemId: 'user',
+                            itemId: address,
+                            follower: userData.firstName,
+                            pod: priviCreditData.CreditName,
+                            comment: '',
+                            token: '',
+                            amount: 0,
+                            onlyInformation: false,
+                            otherItemId: creditAddress
+                        }
+                    });
+                }
+            }
             res.send({ success: true });
         }
         else {
@@ -338,6 +381,49 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 }
             });
 
+            let investors : any[] = [];
+            const creditPoolBorrowersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
+              .collection(collections.priviCreditsBorrowing).get();
+            const creditPoolLendersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
+              .collection(collections.priviCreditsLending).get();
+            if (!creditPoolBorrowersSnap.empty) {
+                for (const doc of creditPoolBorrowersSnap.docs) {
+                    let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
+                    if(foundIndexInvestor === -1) {
+                        investors.push(doc.id);
+                    }
+                }
+            }
+
+            if (!creditPoolLendersSnap.empty) {
+                for (const doc of creditPoolLendersSnap.docs) {
+                    let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
+                    if(foundIndexInvestor === -1) {
+                        investors.push(doc.id);
+                    }
+                }
+            }
+
+            console.log(investors);
+            for (const investor of investors) {
+                if(investor !== address) {
+                    await notificationsController.addNotification({
+                        userId: investor,
+                        notification: {
+                            type: 63,
+                            typeItemId: 'user',
+                            itemId: address,
+                            follower: userData.firstName,
+                            pod: priviCreditData.CreditName,
+                            comment: '',
+                            token: '',
+                            amount: 0,
+                            onlyInformation: false,
+                            otherItemId: creditAddress
+                        }
+                    });
+                }
+            }
             res.send({ success: true });
         }
         else {
