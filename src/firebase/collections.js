@@ -77,6 +77,8 @@ module.exports = {
     liquidityPools: "LiquidityPools",
     liquidityHistory: "LiquidityHistory",
     rewardHistory: "RewardHistory",
+    liquidityPairs: "LiquidityPairs",
+    feeHistory: "FeeHistory",
 
     // staking
     stakingRates: "StakingRates",

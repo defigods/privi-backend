@@ -42,9 +42,13 @@ module.exports = {
     podLiquidationCollateral: "POD_liquidation_collateral",
     podLiquidationFunds: "POD_liquidation_funds",
     podBurningToken: "POD_burning_token",
+
+
     liquidityPoolCreation: "liquidity_pool_creation",
     liquidityPoolProvide: "liquidity_pool_provide",
     liquidityPoolSwap: "liquidity_pool_swap",
     liquidityPoolProtect: "liquidity_pool_protect",
-    liquidityPoolList: "liquidity_pool_list"
+    liquidityPoolList: "liquidity_pool_list",
+    swapTrade: "Swap_trade",
+    swapTradeFee: "Swap_trade_fee",
 }
