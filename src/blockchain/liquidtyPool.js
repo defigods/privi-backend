@@ -71,13 +71,6 @@ module.exports.getSwapPrice = async (tokenFrom, tokenTo, amountFrom, rate, calle
             Caller: caller
         })
     }
-    console.log({
-        TokenFrom: tokenFrom,
-        TokenTo: tokenTo,
-        AmountFrom: amountFrom,
-        Rate: rate,
-        Caller: caller
-    });
     const blockchainRes = await axios(config);
     return blockchainRes.data;
 };
