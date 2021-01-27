@@ -57,3 +57,20 @@ module.exports.protectLiquidityPool = async (poolToken, poolSpread, caller) => {
     });
     return blockchainRes.data;
 };
+
+module.exports.getSwapPrice = async (tokenFrom, tokenTo, amountFrom, rate, caller) => {
+    const config = {
+        method: 'get',
+        headers: { 'Content-Type': 'application/json' },
+        url: api.blockchainLiquidityPoolAPI + "/getSwapPrice",
+        data: JSON.stringify({
+            TokenFrom: tokenFrom,
+            TokenTo: tokenTo,
+            AmountFrom: amountFrom,
+            Rate: rate,
+            Caller: caller
+        })
+    }
+    const blockchainRes = await axios(config);
+    return blockchainRes.data;
+};

@@ -1,16 +1,15 @@
 import express from 'express';
 import liquidityPool from "../blockchain/liquidtyPool";
-import { updateFirebase, createNotification, addZerosToHistory, getRateOfChangeAsMap, generateUniqueId } from "../functions/functions";
+import coinBalance from "../blockchain/coinBalance";
+import { updateFirebase, addZerosToHistory, getRateOfChangeAsMap } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
-import { send } from 'process';
+import cron from 'node-cron';
 
 require('dotenv').config();
 const apiKey = "PRIVI"; // just for now
 const notificationsController = require('./notificationsController');
-
-// --------------------------------- POST ----------------------------------
 
 // function used to create a liquidity pool of certain token (always called from Postman)
 exports.createLiquidityPool = async (req: express.Request, res: express.Response) => {
@@ -149,6 +148,7 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
         const tokenFrom = body.TokenFrom;
         const tokenTo = body.TokenTo;
         const amountFrom = body.AmountFrom;
+        const rate = body.Rate;
 
         const hash = body.Hash;
         const signature = body.Signature;
@@ -161,25 +161,76 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
             return;
         }
 
-        // get correct rate of FromToken(USD)/ToToken(USD)
-        const rateOfChange = await getRateOfChangeAsMap();
-        const fromTokenRate = rateOfChange[tokenFrom] ?? 1;
-        const toTokenRate = rateOfChange[tokenTo] ?? 1;
-        const rate = fromTokenRate / toTokenRate;
-
         const blockchainRes = await liquidityPool.swapCryptoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let fee = 0;
 
-            const liquidityPoolSnap = await db.collection(collections.liquidityPools).doc(tokenFrom).get();
-            const liquidityPoolData: any = liquidityPoolSnap.data();
-            // add swapper
-            const swaps = liquidityPoolData.Providers ?? {};
+            let tid: string = '';
+            let txnArray: any = [];
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                txnArray.forEach((txn) => {
+                    if (txn.Type == notificationTypes.swapTradeFee && txn.Amount) fee = txn.Amount;
+                });
+            }
+
+            // -------- update 'to' pool --------
+            // add fee to "To Liquidity Pool"
+            const liquidityToPoolSnap = await db.collection(collections.liquidityPools).doc(tokenTo).get();
+            const liquidityToPoolData: any = liquidityToPoolSnap.data();
+            let newAccumulatedFee = liquidityToPoolData.AcculatedFee ?? 0;
+            let newDailyAccumulatedFee = liquidityToPoolData.DailyAcculatedFee ?? 0;
+            newAccumulatedFee += fee;
+            newDailyAccumulatedFee += fee;
+            liquidityToPoolSnap.ref.update({
+                AccumulatedFee: newAccumulatedFee,
+                DailyAccumulatedFee: newDailyAccumulatedFee
+            });
+            // -------- update 'from' pool --------
+            const liquidityFromPoolSnap = await db.collection(collections.liquidityPools).doc(tokenFrom).get();
+            const liquidityFromPoolData: any = liquidityFromPoolSnap.data();
+            const swaps = liquidityFromPoolData.Providers ?? {};
             if (!swaps[traderAddress]) swaps[traderAddress] = amountFrom;
             else swaps[traderAddress] += amountFrom;
-            liquidityPoolSnap.ref.update({ Swaps: swaps });
-
+            liquidityFromPoolSnap.ref.update({
+                Swaps: swaps,
+            });
             res.send({ success: true });
+
+            // -------- update pairs --------
+            const rateOfChange = await getRateOfChangeAsMap();
+            // To -> From pair
+            let newDailyAccumulatedFeeInUSD = 0;
+            let newDailyAccumulatedVolumeInUSD = 0;
+            const pairFromToSnap = await liquidityFromPoolSnap.ref.collection(collections.liquidityPairs).doc(tokenTo).get();
+            const pairFromToData: any = pairFromToSnap.data();
+            if (pairFromToData) {
+                newDailyAccumulatedFeeInUSD = pairFromToData.DailyAccumulatedFeeInUSD ?? 0;
+                newDailyAccumulatedVolumeInUSD = pairFromToData.DailyAccumulatedVolumeInUSD ?? 0;
+            }
+            newDailyAccumulatedFeeInUSD += (rateOfChange[tokenFrom] ?? 1) * fee;
+            newDailyAccumulatedVolumeInUSD += (rateOfChange[tokenFrom] ?? 1) * amountFrom;
+            pairFromToSnap.ref.set({
+                DailyAccumulatedFeeInUSD: newDailyAccumulatedFeeInUSD,
+                DailyAccumulatedVolumeInUSD: newDailyAccumulatedVolumeInUSD,
+            }, { merge: true });
+            // From -> To pair
+            const pairToFromSnap = await liquidityToPoolSnap.ref.collection(collections.liquidityPairs).doc(tokenFrom).get();
+            const pairToFromData: any = pairToFromSnap.data();
+            newDailyAccumulatedFeeInUSD = 0;
+            newDailyAccumulatedVolumeInUSD = 0;
+            if (pairToFromData) {
+                newDailyAccumulatedFeeInUSD = pairToFromData.DailyAccumulatedFeeInUSD ?? 0;
+                newDailyAccumulatedVolumeInUSD = pairToFromData.DailyAccumulatedVolumeInUSD ?? 0;
+            }
+            newDailyAccumulatedFeeInUSD += (rateOfChange[tokenFrom] ?? 1) * fee;
+            newDailyAccumulatedVolumeInUSD += (rateOfChange[tokenFrom] ?? 1) * amountFrom;
+            pairToFromSnap.ref.set({
+                DailyAccumulatedFeeInUSD: newDailyAccumulatedFeeInUSD,
+                DailyAccumulatedVolumeInUSD: newDailyAccumulatedVolumeInUSD,
+            }, { merge: true });
         }
         else {
             console.log('Error in controllers/liquiityPoolController -> swapCryptoTokens(): success = false.', blockchainRes.message);
@@ -196,26 +247,41 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
 exports.getLiquidityPools = async (req: express.Request, res: express.Response) => {
     try {
         const retData: any[] = [];
+        const pools: any = {};
         const rateOfChange = await getRateOfChangeAsMap();
         const liquidityPoolSnap = await db.collection(collections.liquidityPools).get();
         liquidityPoolSnap.forEach((doc) => {
             const data: any = doc.data();
-            const token = data.PoolToken ?? '';
-            // get staked amount in Privi
-            const amount = data.StakedAmount ?? 0;
-            const amountInUSD = rateOfChange[token] ? rateOfChange[token] * amount : amount; // to usd
-            const amountInPrivi = rateOfChange["PRIVI"] ? rateOfChange['PRIVI'] * amountInUSD : amountInUSD; // to PRIVI
-            // get rewarded amount in Privi
             const rewardedAmount = data.RewardedAmount ?? 0;
-            const rewardedAmountInUSD = rateOfChange[token] ? rateOfChange[token] * rewardedAmount : rewardedAmount; // to usd
-            const rewardedAmountInPrivi = rateOfChange["PRIVI"] ? rateOfChange['PRIVI'] * rewardedAmountInUSD : rewardedAmountInUSD; // to PRIVI
-
-            retData.push({
+            const rewardedAmountInUSD = rateOfChange[doc.id] ? rateOfChange[doc.id] * rewardedAmount : rewardedAmount; // to usd
+            pools[doc.id] = {
                 ...data,
-                StakedAmountInPrivi: amountInPrivi,
-                RewardedAmountInPrivi: rewardedAmountInPrivi,
-            });
+                RewardedAmountInUSD: rewardedAmountInUSD,
+            };
         });
+
+        // get pools balances from blockchain
+        const promises: any[] = [];
+        let token: string = "";
+        let data: any = {};
+        for ([token, data] of Object.entries(pools)) {
+            promises.push(coinBalance.balanceOf(data.PoolAddress, token));
+        };
+        const balanceResponces = await Promise.all(promises);
+        balanceResponces.forEach((balanceResponce) => {
+            if (balanceResponce.success) {
+                const output = balanceResponce.output;
+                const token = output.Token;
+                const liquidity = output.Amount;
+                const liquidityInUSD = rateOfChange[token] ? rateOfChange[token] * liquidity : liquidity;
+                retData.push({
+                    ...pools[output.Token],
+                    Liquidity: liquidity,
+                    LiquidityInUSD: liquidityInUSD,
+                })
+            }
+        });
+
         res.send({ success: true, data: retData });
     } catch (err) {
         console.log('Error in controllers/liquiityPoolController -> getLiquidityPools(): ', err);
@@ -226,26 +292,53 @@ exports.getLiquidityPools = async (req: express.Request, res: express.Response) 
 // get liquidity pools basic info
 exports.getOtherLiquidityPools = async (req: express.Request, res: express.Response) => {
     try {
-        let poolToken = req.params.poolToken;
+        let { poolToken } = req.query;
+        poolToken = String(poolToken);
         const retData: any[] = [];
+        const pools: any = {};
+        const pairs: any = {};
         const rateOfChange = await getRateOfChangeAsMap();
+        // get given poolToken's pair data
+        const pairsSnap = await db.collection(collections.liquidityPools).doc(poolToken).collection(collections.liquidityPairs).get();
+        pairsSnap.forEach((doc) => {
+            pairs[doc.id] = doc.data();
+        });
+        // get other liquidity pools and add the corresponding pair 
         const liquidityPoolSnap = await db.collection(collections.liquidityPools).get();
         liquidityPoolSnap.forEach((doc) => {
-            if (doc.id != poolToken) {
+            if (doc.id !== poolToken) {
                 const data: any = doc.data();
-                const token = data.PoolToken ?? '';
-                // get staked amount in Privi
-                const amount = data.StakedAmount ?? 0;
-                const amountInUSD = rateOfChange[token] ? rateOfChange[token] * amount : amount; // to usd
-                const amountInPrivi = rateOfChange["PRIVI"] ? rateOfChange['PRIVI'] * amountInUSD : amountInUSD; // to PRIVI
-
-                retData.push({
-                    PoolToken: doc.id,
+                pools[doc.id] = {
+                    PairData: {
+                        ...pairs[doc.id]
+                    },
+                    PoolAddress: data.PoolAddress,
+                    PoolToken: data.PoolToken,
                     NumProviders: Object.keys(data.Providers ?? {}).length,
-                    DailyAccumulatedFee: data.DailyAccumulatedFee ?? 0,
-                    StakedAmount: amount,
-                    StakedAmountInPrivi: amountInPrivi,
-                });
+                    DailyAccumulatedFee: data.DailyAccumulatedFee ?? 0, // in TokenTo
+                };
+            }
+        });
+
+        // get pools balances from blockchain
+        const promises: any[] = [];
+        let token: string = "";
+        let data: any = {};
+        for ([token, data] of Object.entries(pools)) {
+            promises.push(coinBalance.balanceOf(data.PoolAddress, token));
+        };
+        const balanceResponces = await Promise.all(promises);
+        balanceResponces.forEach((balanceResponce) => {
+            if (balanceResponce.success) {
+                const output = balanceResponce.output;
+                const token = output.Token;
+                const liquidity = output.Amount;
+                const liquidityInUSD = rateOfChange[token] ? rateOfChange[token] * liquidity : liquidity;
+                retData.push({
+                    ...pools[output.Token],
+                    Liquidity: liquidity,
+                    LiquidityInUSD: liquidityInUSD,
+                })
             }
         });
         res.send({ success: true, data: retData });
@@ -263,21 +356,19 @@ exports.getLiquidityPool = async (req: express.Request, res: express.Response) =
         const data: any = liquidityPoolSnap.data();
         if (data) {
             const token = data.PoolToken ?? '';
-            // get staked amount in Privi
-            const amount = data.StakedAmount ?? 0;
-            const amountInUSD = rateOfChange[token] ? rateOfChange[token] * amount : amount; // to usd
-            const amountInPrivi = rateOfChange["PRIVI"] ? rateOfChange['PRIVI'] * amountInUSD : amountInUSD; // to PRIVI
+            const blockchainRes = await coinBalance.balanceOf(data.PoolAddress, token);
+            const output = blockchainRes.output;
+            const liquidity = output.Amount;
+            const liquidityInUSD = rateOfChange[liquidityPoolSnap.id] ? rateOfChange[liquidityPoolSnap.id] * liquidity : liquidity;
             // get rewarded amount in Privi
             const rewardedAmount = data.RewardedAmount ?? 0;
             const rewardedAmountInUSD = rateOfChange[token] ? rateOfChange[token] * rewardedAmount : rewardedAmount; // to usd
-            const rewardedAmountInPrivi = rateOfChange["PRIVI"] ? rateOfChange['PRIVI'] * rewardedAmountInUSD : rewardedAmountInUSD; // to PRIVI
-
-
             res.send({
                 success: true, data: {
                     ...data,
-                    StakedAmountInPrivi: amountInPrivi,
-                    RewardedAmountInPrivi: rewardedAmountInPrivi,
+                    Liquidity: liquidity,
+                    LiquidityInUSD: liquidityInUSD,
+                    RewardedAmountInUSD: rewardedAmountInUSD,
                 }
             });
         }
@@ -317,3 +408,57 @@ exports.getRewardHistory = async (req: express.Request, res: express.Response) =
         res.send({ success: false });
     }
 };
+
+exports.getSwapPrice = async (req: express.Request, res: express.Response) => {
+    try {
+        const query = req.query;
+        const tokenFrom = query.TokenFrom;
+        const tokenTo = query.TokenTo;
+        const amountFrom = Number(query.AmountFrom);
+        const rate = Number(query.Rate);
+        console.log(query)
+        const blockchainRes = await liquidityPool.getSwapPrice(tokenFrom, tokenTo, amountFrom, rate, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const price = blockchainRes.output;
+            console.log(price);
+            res.send({ success: true, data: price });
+        } else {
+            console.log('Error in controllers/liquidityPoolController -> getSwapPrice(): blockchain = false', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/liquidityPoolController -> getSwapPrice(): ', err);
+        res.send({ success: false });
+    }
+};
+
+
+// --------------------------------- CRONS ----------------------------------
+
+// reset the DailyAccumulatedFee field by the end of every day and generate a history of it
+exports.resetDailyAccumulators = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("******** Liquidity Pool resetDailyAccumulators ********");
+        const liquidityPoolSnaps = await db.collection(collections.liquidityPools).get();
+        const docs = liquidityPoolSnaps.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+            const data: any = doc.data();
+            const dailyFee = data.DailyAcculatedFee ?? 0;
+            doc.ref.update({
+                DailyAcculatedFee: 0
+            });
+            doc.ref.collection(collections.feeHistory).add({
+                date: Date.now(),
+                fee: dailyFee
+            });
+            // reset pair accumulators (delete)
+            const pairsSnap = await doc.ref.collection(collections.liquidityPairs).get();
+            pairsSnap.forEach((pairDoc) => {
+                pairDoc.ref.delete()
+            });
+        }
+    } catch (err) {
+        console.log('Error in controllers/liquidityPool -> resetDailyAccumulators()', err);
+    }
+});
