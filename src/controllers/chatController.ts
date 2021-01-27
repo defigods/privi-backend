@@ -4,6 +4,7 @@ import collections from '../firebase/collections';
 import { generateUniqueId } from "../functions/functions";
 
 const userController = require('./userController');
+const notificationsController = require('./notificationsController');
 
 exports.getChats = async (req: express.Request, res: express.Response) => {
     try {
@@ -632,7 +633,7 @@ const removeUserToRoom = exports.removeUserToRoom = (discordChatId, discordRoomI
             }
             resolve(discordRoom)
         } catch (e) {
-            reject('Error in controllers/chatRoutes -> addUserToRoom()' + e)
+            reject('Error in controllers/chatRoutes -> removeUserToRoom()' + e)
         }
     })
 }
@@ -1036,6 +1037,27 @@ exports.discordLikeMessage = async (req: express.Request, res: express.Response)
             await userController.updateUserCred(discordMessage.from, true);
         }
 
+        const userRef = db.collection(collections.user)
+          .doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        await notificationsController.addNotification({
+            userId: discordMessage.from,
+            notification: {
+                type: 79,
+                typeItemId: 'user',
+                itemId: body.userId,
+                follower: user.firstName,
+                pod: '',
+                comment: discordMessage.message,
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: discordMessageGet.id
+            }
+        });
+
         res.send({
             success: true,
             data: message
@@ -1089,6 +1111,28 @@ exports.discordDislikeMessage = async (req: express.Request, res: express.Respon
             await userController.updateUserCred(discordMessage.from, false);
         }
 
+
+        const userRef = db.collection(collections.user)
+          .doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        await notificationsController.addNotification({
+            userId: discordMessage.from,
+            notification: {
+                type: 80,
+                typeItemId: 'user',
+                itemId: body.userId,
+                follower: user.firstName,
+                pod: '',
+                comment: discordMessage.message,
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: discordMessageGet.id
+            }
+        });
+
         res.send({
             success: true,
             data: message
@@ -1139,6 +1183,27 @@ exports.discordReplyLikeMessage = async (req: express.Request, res: express.Resp
         message.numDislikes = numDislikes;
 
         await userController.updateUserCred(discordMessageReply.from, true);
+
+        const userRef = db.collection(collections.user)
+          .doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        await notificationsController.addNotification({
+            userId: discordMessageReply.from,
+            notification: {
+                type: 79,
+                typeItemId: 'user',
+                itemId: body.userId,
+                follower: user.firstName,
+                pod: '',
+                comment: discordMessageReply.message,
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: discordMessageReplyGet.id
+            }
+        });
 
         res.send({
             success: true,
@@ -1191,6 +1256,27 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
         message.numDislikes = numDislikes;
 
         await userController.updateUserCred(discordMessageReply.from, false);
+
+        const userRef = db.collection(collections.user)
+          .doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        await notificationsController.addNotification({
+            userId: discordMessageReply.from,
+            notification: {
+                type: 80,
+                typeItemId: 'user',
+                itemId: body.userId,
+                follower: user.firstName,
+                pod: '',
+                comment: discordMessageReply.message,
+                token: '',
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: discordMessageReplyGet.id
+            }
+        });
 
         res.send({
             success: true,

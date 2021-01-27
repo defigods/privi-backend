@@ -7,6 +7,7 @@ import express from 'express';
 import path from 'path';
 import fs from "fs";
 
+const notificationsController = require('./notificationsController');
 
 const categoryListHelper = async () => {
 	const data: {}[] = [];
@@ -49,16 +50,25 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
     const postType = body.postType;
     let categoryId = body.categoryId? body.categoryId : null;
 
+    let notificationType : number = 0;
+		let creator: string = '';
     // hard coded post category id
     if (postType == "cp") { // Credit Pools
         categoryId = 5;
-
+				notificationType = 41;
+				const priviCreditsRef = db.collection(collections.priviCredits).doc(linkId);
+				const priviCreditsGet = await priviCreditsRef.get();
+				const priviCredits: any = priviCreditsGet.data();
+				creator = priviCredits.Creator;
     } else if (postType == "lp") { // Loan Pools
         categoryId = 6;
 
     } else if (postType == "ft") { // FT
         categoryId = 7;
-
+				notificationType = 30;
+				const podSnap = await db.collection(collections.podsFT).doc(linkId).get();
+				const podData : any = podSnap.data();
+				creator = podData.Creator;
     } else if (postType == "pnft") { // Physical NFT
         categoryId = 8;
 
@@ -135,6 +145,29 @@ module.exports.postCreate = async (req: express.Request, res: express.Response) 
           updatedAt: null,
         });
       });
+
+			if(notificationType !== 0) {
+				const userRef = db.collection(collections.user)
+					.doc(req.body.priviUser.id);
+				const userGet = await userRef.get();
+				const user: any = userGet.data();
+
+				await notificationsController.addNotification({
+					userId: creator,
+					notification: {
+						type: notificationType,
+						typeItemId: 'user',
+						itemId: req.body.priviUser.id,
+						follower: user.firstName,
+						pod: linkId,
+						comment: '',
+						token: '',
+						amount: 0,
+						onlyInformation: false,
+						otherItemId: linkId
+					}
+				});
+			}
 
       res.send({
         success: true, data: {

@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -173,10 +174,30 @@ exports.getCreditPost =  async (req: express.Request, res: express.Response) => 
       });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> getPodPost()', err);
+    console.log('Error in controllers/priviCreditWallController -> getPodPost()', err);
     res.send({ success: false });
   }
 }
+
+exports.getCreditPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const creditWallPostSnap = await db.collection(collections.creditWallPost)
+      .doc(params.postId).get();
+    const creditWallPost : any = creditWallPostSnap.data();
+    creditWallPost.id = creditWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: creditWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/priviCreditWallController -> getCreditPostById()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 
 exports.getCreditWallPostPhotoById = async (req: express.Request, res: express.Response) => {
   try {
@@ -205,11 +226,11 @@ exports.getCreditWallPostPhotoById = async (req: express.Request, res: express.R
       });
       raw.pipe(res);
     } else {
-      console.log('Error in controllers/podWallController -> getPodWallPostPhotoById()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> getPodWallPostPhotoById()', "There's no post id...");
       res.send({ success: false, error: "There's no post id..." });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> getPodWallPostPhotoById()', err);
+    console.log('Error in controllers/priviCreditWallController -> getPodWallPostPhotoById()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -242,11 +263,11 @@ exports.getCreditWallPostDescriptionPhotoById = async (req: express.Request, res
       });
       raw.pipe(res);
     } else {
-      console.log('Error in controllers/podWallController -> getPodWallPostDescriptionPhotoById()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> getPodWallPostDescriptionPhotoById()', "There's no post id...");
       res.send({ success: false, error: "There's no post id..." });
     }
   } catch (err) {
-    console.log('Error in controllers/podWallController -> getPodWallPostDescriptionPhotoById()', err);
+    console.log('Error in controllers/priviCreditWallController -> getPodWallPostDescriptionPhotoById()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -272,10 +293,27 @@ exports.makeResponseCreditWallPost = async (req: express.Request, res: express.R
       await creditWallPostRef.update({
         responses: responses
       });
+
+      await notificationsController.addNotification({
+        userId: creditWallPost.createdBy,
+        notification: {
+          type: 42,
+          typeItemId: 'priviCredit',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: creditWallPost.creditPoolId, // pod === credit
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: creditWallPostGet.id
+        }
+      });
+
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/priviCreditWallController -> makeResponseCreditWallPost()', "There's no post id...");
+      console.log('Error in controllers/priviCreditWallController -> makeResponseCreditWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -288,13 +326,29 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.creditWallPostId && body.userId) {
+    if (body && body.creditWallPostId && body.userId && body.userName) {
       const creditWallPostRef = db.collection(collections.creditWallPost)
         .doc(body.creditWallPostId);
       const creditWallPostGet = await creditWallPostRef.get();
       const creditWallPost: any = creditWallPostGet.data();
 
       let creditPost = await blogController.likeItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.userId, creditWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: creditWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'priviCredit',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: creditWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: creditPost });
 
@@ -312,13 +366,29 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.podWallPostId && body.userId) {
+    if (body && body.podWallPostId && body.userId && body.userName) {
       const creditWallPostRef = db.collection(collections.creditWallPost)
         .doc(body.creditWallPostId);
       const creditWallPostGet = await creditWallPostRef.get();
       const creditWallPost: any = creditWallPostGet.data();
 
       let creditPost = await blogController.dislikeItemPost(creditWallPostRef, creditWallPostGet, creditWallPost, body.userId, creditWallPost.createdBy);
+
+      await notificationsController.addNotification({
+        userId: creditWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: creditWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: creditPost });
 

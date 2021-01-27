@@ -63,6 +63,7 @@ exports.getSocialTokens = async (req: express.Request, res: express.Response) =>
     try {
         const { address } = req.query;
         const retData: any[] = [];
+        // get those social tokens which the user is the creator or has some balance
         const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const balances = blockchainRes.output;

@@ -72,10 +72,10 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await tradinionalLending.borrowFunds(publicId, token, amount, collaterals, rateOfChange);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Loans 1.0 - Funds Borrowed",
+            /*createNotification(publicId, "Loans 1.0 - Funds Borrowed",
                 ` `,
                 notificationTypes.priviCreditCreated
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
@@ -88,6 +88,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -111,10 +112,10 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
         const blockchainRes = await tradinionalLending.depositCollateral(publicId, token, collaterals)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Loans 1.0 - Deposit Collateral",
+            /*createNotification(publicId, "Loans 1.0 - Deposit Collateral",
                 ` `,
                 notificationTypes.traditionalDepositCollateral
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
@@ -127,6 +128,7 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                     token: token,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -151,10 +153,10 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
         const blockchainRes = await tradinionalLending.withdrawCollateral(publicId, token, collaterals, rateOfChange)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Loans 1.0 - Withdraw Collateral",
+            /*createNotification(publicId, "Loans 1.0 - Withdraw Collateral",
                 ` `,
                 notificationTypes.traditionalWithdrawCollateral
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
@@ -167,6 +169,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                     token: token,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -190,10 +193,10 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await tradinionalLending.repayFunds(publicId, token, amount)
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
-            createNotification(publicId, "Loans 1.0 - Funds Repaid",
+            /*createNotification(publicId, "Loans 1.0 - Funds Repaid",
                 ` `,
                 notificationTypes.traditionalRepay
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
@@ -206,6 +209,7 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: '',
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -279,10 +283,10 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
             }
             const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
             db.collection(collections.stakingDeposit).doc(publicId).update({ dotNotation: newTokenDepositVal });
-            createNotification(publicId, "Staking - Token Staked",
+            /*createNotification(publicId, "Staking - Token Staked",
                 ` `,
                 notificationTypes.staking
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
@@ -295,6 +299,7 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -328,10 +333,10 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
             }
             const dotNotation = "deposited." + token; // firebase "dot notation" to not override whole map
             db.collection(collections.stakingDeposit).doc(publicId).update({ dotNotation: newTokenDepositVal });
-            createNotification(publicId, "Staking - Token Unstaked",
+            /*createNotification(publicId, "Staking - Token Unstaked",
                 ` `,
                 notificationTypes.unstaking
-            );
+            );*/
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
@@ -344,6 +349,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                     token: token,
                     amount: amount,
                     onlyInformation: false,
+                    otherItemId: ''
                 }
             });
             res.send({ success: true });
@@ -457,6 +463,7 @@ async function getTokenUserList() {
 //                             token: token,
 //                             amount: 0,
 //                             onlyInformation: false,
+//                             otherItemId: ''
 //                         }
 //                     });
 //                 } else {
@@ -502,6 +509,7 @@ async function getTokenUserList() {
 //                             token: '',
 //                             amount: 0,
 //                             onlyInformation: false,
+//                             otherItemId: ''
 //                         }
 //                     });
 //                 }

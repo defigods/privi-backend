@@ -18,7 +18,7 @@ const blockchainCommunityAPI = "http://" + FabricAppServerIP + ":" + port + "/ap
 const blockchainBadgesAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Badges";
 const blockchainVotationAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Votation";
 const blockchainLiquidityPoolAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PriviLiquidityPools";
-const blockchainSocialTokenAPI = "http://" + FabricAppServerIP + ":" + port + "/api/SocialToken";
+const blockchainSocialAPI = "http://" + FabricAppServerIP + ":" + port + "/api/SocialToken";
 
 module.exports = {
 	blockchainApi: blockchainApi,
@@ -35,5 +35,5 @@ module.exports = {
 	blockchainBadgesAPI: blockchainBadgesAPI,
 	blockchainVotationAPI: blockchainVotationAPI,
 	blockchainLiquidityPoolAPI: blockchainLiquidityPoolAPI,
-	blockchainSocialTokenAPI: blockchainSocialTokenAPI,
+	blockchainSocialAPI: blockchainSocialAPI,
 };

@@ -20,6 +20,7 @@ router.get('/getOtherLiquidityPools/:poolToken', authenticateJWT, poolController
 router.get('/getLiquidityPool/:poolToken', authenticateJWT, poolController.getLiquidityPool);
 router.get('/getLiquidityHistory/:poolToken', authenticateJWT, poolController.getLiquidityHistory);
 router.get('/getRewardHistory/:poolToken', authenticateJWT, poolController.getRewardHistory);
+router.get('/getSwapPrice', authenticateJWT, poolController.getSwapPrice);
 
 
 module.exports = router;

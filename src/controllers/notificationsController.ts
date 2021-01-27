@@ -13,6 +13,7 @@ interface Notification {
     token: string,
     amount: number,
     onlyInformation: boolean,
+    otherItemId: string,
     date: number
 }
 
@@ -35,6 +36,7 @@ const addNotification = async (object: any) => {
             token: object.notification.token,
             amount: object.notification.amount,
             onlyInformation: object.notification.onlyInformation,
+            otherItemId: object.notification.otherItemId,
             date: Date.now()
         }
 
