@@ -625,6 +625,10 @@ const createPost = exports.createPost = (body, collection, userId) => {
           createdBy: userId,
           createdAt: Date.now(),
           updatedAt: null,
+          likes: [],
+          dislikes: [],
+          numLikes: 0,
+          numDislikes: 0
         };
 
         if(collection === 'blogPost') {
@@ -695,10 +699,16 @@ const deletePost = exports.deletePost = (itemRef, itemGet, item, id, postCollect
 const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
   return new Promise(async(resolve, reject) => {
     try {
-      let likes = [...dbItem.likes];
-      let dislikes = [...dbItem.dislikes];
-      let numLikes = dbItem.numLikes;
-      let numDislikes = dbItem.numDislikes;
+      let likes : any[] = [];
+      if(dbItem.likes && dbItem.likes.length > 0) {
+        likes = [...dbItem.likes];
+      }
+      let dislikes : any[] = [];
+      if(dbItem.dislikes && dbItem.dislikes.length > 0) {
+        dislikes = [...dbItem.dislikes];
+      }
+      let numLikes : number = dbItem.numLikes || 0;
+      let numDislikes : number = dbItem.numDislikes || 0;
 
       let likeIndex = likes.findIndex(user => user === userId);
       if(likeIndex === -1) {
@@ -739,8 +749,14 @@ const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creat
 const dislikeItemPost = exports.dislikeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
   return new Promise(async(resolve, reject) => {
     try {
-      let likes = [...dbItem.likes];
-      let dislikes = [...dbItem.dislikes];
+      let likes : any[] = [];
+      if(dbItem.likes && dbItem.likes.length > 0) {
+        likes = [...dbItem.likes];
+      }
+      let dislikes : any[] = [];
+      if(dbItem.dislikes && dbItem.dislikes.length > 0) {
+        dislikes = [...dbItem.dislikes];
+      }
       let numLikes = dbItem.numLikes;
       let numDislikes = dbItem.numDislikes;
 
