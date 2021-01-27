@@ -116,16 +116,16 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 39,
+                        type: 59,
                         typeItemId: 'user',
                         itemId: creator,
-                        follower: '',
+                        follower: userData.firstName,
                         pod: '',
                         comment: '',
                         token: creditName,
                         amount: '',
                         onlyInformation: false,
-                        otherItemId: ''
+                        otherItemId: creditAddress
                     }
                 });
             })
@@ -180,12 +180,13 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
             const priviCreditData: any = priviCreditSnap.data();
             const userSnap = await db.collection(collections.user).doc(address).get();
             const userData: any = userSnap.data();
-
-            userData.followers.forEach(async (item, i) => {
+            const userCreatorSnap = await db.collection(collections.user).doc(priviCreditData.Creator).get();
+            const userCreatorData: any = userCreatorSnap.data();
+            /*userData.followers.forEach(async (item, i) => {
                 await notificationsController.addNotification({
                     userId: item.user,
                     notification: {
-                        type: 43,
+                        type: 0,
                         typeItemId: 'user',
                         itemId: address,
                         follower: '',
@@ -197,7 +198,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                         otherItemId: ''
                     }
                 });
-            });
+            });*/
 
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
@@ -214,18 +215,34 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
             await notificationsController.addNotification({
                 userId: address,
                 notification: {
-                    type: 17,
+                    type: 39,
                     typeItemId: 'token',
                     itemId: '',
                     follower: '',
-                    pod: '',
+                    pod: priviCreditData.CreditName,
                     comment: '',
                     token: '',
-                    amount: 0,
+                    amount: amount,
                     onlyInformation: false,
-                    otherItemId: ''
+                    otherItemId: creditAddress
                 }
             });
+            await notificationsController.addNotification({
+                userId: priviCreditData.Creator,
+                notification: {
+                    type: 35,
+                    typeItemId: 'user',
+                    itemId: address,
+                    follower: userData.firstName,
+                    pod: priviCreditData.CreditName,
+                    comment: '',
+                    token: '',
+                    amount: amount,
+                    onlyInformation: false,
+                    otherItemId: creditAddress
+                }
+            });
+
             res.send({ success: true });
         }
         else {
@@ -270,6 +287,10 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
             const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
             const priviCreditData: any = priviCreditSnap.data();
+            const userSnap = await db.collection(collections.user).doc(address).get();
+            const userData: any = userSnap.data();
+            const userCreatorSnap = await db.collection(collections.user).doc(priviCreditData.Creator).get();
+            const userCreatorData: any = userCreatorSnap.data();
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
                 .collection(collections.discordRoom).get();
@@ -287,18 +308,33 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 notificationTypes.priviCreditBorrowed
             );*/
             await notificationsController.addNotification({
-                userId: priviCreditData.Creator,
+                userId: address,
                 notification: {
-                    type: 18,
+                    type: 37,
                     typeItemId: 'token',
-                    itemId: creditAddress,
+                    itemId: '',
                     follower: '',
-                    pod: '',
+                    pod: priviCreditData.CreditName,
                     comment: '',
-                    token: creditAddress,
+                    token: '',
                     amount: amount,
                     onlyInformation: false,
-                    otherItemId: ''
+                    otherItemId: creditAddress
+                }
+            });
+            await notificationsController.addNotification({
+                userId: priviCreditData.Creator,
+                notification: {
+                    type: 36,
+                    typeItemId: 'user',
+                    itemId: address,
+                    follower: userData.firstName,
+                    pod: priviCreditData.CreditName,
+                    comment: '',
+                    token: '',
+                    amount: amount,
+                    onlyInformation: false,
+                    otherItemId: creditAddress
                 }
             });
 
@@ -325,12 +361,55 @@ exports.followCredit = async (req: express.Request, res: express.Response) => {
         const body = req.body;
         const userAddress = body.userId;
         const creditAddress = body.creditId;
-        if (await follow(userAddress, creditAddress, collections.priviCredits, fields.followingCredits)) res.send({ success: true });
+        if (await follow(userAddress, creditAddress, collections.priviCredits, fields.followingCredits)) {
+            const userSnap = await db.collection(collections.user).doc(userAddress).get();
+            const userData: any = userSnap.data();
+
+            const priviCreditsRef = db.collection(collections.priviCredits).doc(creditAddress);
+            const priviCreditsGet = await priviCreditsRef.get();
+            const priviCredits: any = priviCreditsGet.data();
+
+            const userCreatorSnap = await db.collection(collections.user).doc(priviCredits.Creator).get();
+            const userCreatorData: any = userCreatorSnap.data();
+
+            await notificationsController.addNotification({
+                userId: userAddress,
+                notification: {
+                    type: 83,
+                    typeItemId: 'user',
+                    itemId: userAddress,
+                    follower: userData.firstName,
+                    pod: priviCredits.CreditName,
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                    otherItemId: creditAddress
+                }
+            });
+            await notificationsController.addNotification({
+                userId: priviCredits.Creator,
+                notification: {
+                    type: 43,
+                    typeItemId: 'user',
+                    itemId: userAddress,
+                    follower: userData.firstName,
+                    pod: priviCredits.CreditName,
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                    otherItemId: creditAddress
+                }
+            });
+
+            res.send({ success: true });
+        }
         else res.send({ success: false });
 
     } catch (err) {
         console.log('Error in controllers/priviCreditController -> followCredit(): ', err);
-        res.send({ success: false });
+        res.send({ success: false, error: err });
     }
 };
 
@@ -344,7 +423,32 @@ exports.unfollowCredit = async (req: express.Request, res: express.Response) => 
         const body = req.body;
         const userAddress = body.userId;
         const creditAddress = body.creditId;
-        if (await unfollow(userAddress, creditAddress, collections.priviCredits, fields.followingCredits)) res.send({ success: true });
+        if (await unfollow(userAddress, creditAddress, collections.priviCredits, fields.followingCredits)) {
+            const userSnap = await db.collection(collections.user).doc(userAddress).get();
+            const userData: any = userSnap.data();
+
+            const priviCreditsRef = db.collection(collections.priviCredits).doc(creditAddress);
+            const priviCreditsGet = await priviCreditsRef.get();
+            const priviCredits: any = priviCreditsGet.data();
+
+            await notificationsController.addNotification({
+                userId: userAddress,
+                notification: {
+                    type: 84,
+                    typeItemId: 'user',
+                    itemId: userAddress,
+                    follower: userData.firstName,
+                    pod: priviCredits.CreditName,
+                    comment: '',
+                    token: '',
+                    amount: 0,
+                    onlyInformation: false,
+                    otherItemId: creditAddress
+                }
+            });
+
+            res.send({ success: true });
+        }
         else res.send({ success: false });
     } catch (err) {
         console.log('Error in controllers/priviCreditController -> unFollowCredit(): ', err);
