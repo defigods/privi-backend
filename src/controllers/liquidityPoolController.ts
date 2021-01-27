@@ -286,10 +286,11 @@ exports.getOtherLiquidityPools = async (req: express.Request, res: express.Respo
         const rateOfChange = await getRateOfChangeAsMap();
         const liquidityPoolSnap = await db.collection(collections.liquidityPools).get();
         liquidityPoolSnap.forEach((doc) => {
-            if (doc.id != poolToken) {
+            if (doc.id !== poolToken) {
                 const data: any = doc.data();
                 pools[doc.id] = {
-                    PoolToken: doc.id,
+                    PoolAddress: data.PoolAddress,
+                    PoolToken: data.PoolToken,
                     NumProviders: Object.keys(data.Providers ?? {}).length,
                     DailyAccumulatedFee: data.DailyAccumulatedFee ?? 0,
                 };
