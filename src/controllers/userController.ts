@@ -2492,6 +2492,53 @@ const removeNotification = async (req: express.Request, res: express.Response) =
   }
 }
 
+const inviteUserToPod = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.userId && body.podName && body.podId && body.creatorId) {
+
+      const userRef = db.collection(collections.user)
+        .doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      const userCreatorRef = db.collection(collections.user)
+        .doc(body.creatorId);
+      const userCreatorGet = await userCreatorRef.get();
+      const userCreator: any = userCreatorGet.data();
+
+      let podIndexFound = user.followingFTPods.findIndex(pod => pod === body.podId);
+      if(podIndexFound === -1) {
+        await notificationsController.addNotification({
+          userId: body.userId,
+          notification: {
+            type: 85,
+            typeItemId: 'user',
+            itemId: body.creatorId,
+            follower: userCreator.firstName,
+            pod: body.podName,
+            comment: '',
+            token: '',
+            amount: 0,
+            onlyInformation: false,
+            otherItemId: body.podId
+          }
+        });
+        res.send({ success: true, data: 'Notification sent to ' + user.firstName });
+      } else {
+        res.send({ success: true, data: user.firstName + ' is already following Pod' });
+      }
+    } else {
+      console.log("Error in controllers/userController -> inviteUserToPod()", "No Information");
+      res.send({ success: false, error: "No Information" });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userController -> inviteUserToPod()", err);
+    res.send({ success: false, error: err });
+  }
+}
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -2541,5 +2588,6 @@ module.exports = {
   updateUserCred,
   searchUsers,
   updateTutorialsSeen,
-  removeNotification
+  removeNotification,
+  inviteUserToPod
 };
