@@ -703,6 +703,8 @@ interface BasicInfo {
   badges: any[];
   numFollowers: number;
   numFollowings: number;
+  followers: any[];
+  followings: any[];
   bio: string;
   level: number;
   twitter: string;
@@ -723,10 +725,12 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       trustScore: 0.5,
       endorsementScore: 0.5,
       numFollowers: 0,
+      followers: [],
       awards: [],
       creds: 0,
       badges: [],
       numFollowings: 0,
+      followings: [],
       bio: "",
       level: 1,
       twitter: "",
@@ -759,6 +763,8 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.badges = userData.badges || [];
       basicInfo.numFollowers = userData.numFollowers || 0;
       basicInfo.numFollowings = userData.numFollowings || 0;
+      basicInfo.followers = userData.followers || [];
+      basicInfo.followings = userData.followings || [];
       basicInfo.bio = userData.bio || "";
       basicInfo.level = userData.level || 1;
       basicInfo.twitter = userData.twitter || "";
