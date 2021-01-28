@@ -285,6 +285,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 
 module.exports.getBalanceData = async (req: express.Request, res: express.Response) => {
     try {
+        const t1 = Date.now();
         let { userAddress } = req.query;
         const tokensBalance: any[] = [];
         const tokens: any = {};
@@ -320,6 +321,7 @@ module.exports.getBalanceData = async (req: express.Request, res: express.Respon
                 }
             }
         });
+        console.log(Date.now() - t1, "ms");
         res.send({
             success: true,
             data: tokensBalance,

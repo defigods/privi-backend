@@ -1,33 +1,58 @@
-import express from 'express';
+import express from "express";
 import multer from "multer";
 const router = express.Router();
 
-import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
-const priviDataController = require('../controllers/priviDataController');
+import { authenticateJWT } from "../middlewares/jwtAuthMiddleware";
+const priviDataController = require("../controllers/priviDataController");
 
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
 let storage = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/campaigns')
-    },
-    filename: function (req: any, file: any, cb: any) {
-        console.log(file);
-        cb(null, file.originalname + '.png')
-    }
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, "uploads/campaigns");
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + ".png");
+  },
 });
 let upload = multer({
-    storage: storage
+  storage: storage,
 });
 
-router.get('/getInfo/:userId', authenticateJWT, priviDataController.getInfo);
-router.get('/getCampaigns/:userId', authenticateJWT, priviDataController.getCampaigns);
-router.get('/getMyPodsPoolsCreditsCommunities/:userId', authenticateJWT, priviDataController.getMyPodsPoolsCreditsCommunities);
-router.get('/getCampaign', authenticateJWT, priviDataController.getCampaign);
+router.get("/getInfo/:userId", authenticateJWT, priviDataController.getInfo);
+router.get(
+  "/getCampaigns/:userId",
+  authenticateJWT,
+  priviDataController.getCampaigns
+);
+router.get(
+  "/getMyPodsPoolsCreditsCommunities/:userId",
+  authenticateJWT,
+  priviDataController.getMyPodsPoolsCreditsCommunities
+);
+router.get("/getCampaign", authenticateJWT, priviDataController.getCampaign);
+router.get(
+  "/getCampaignPhoto/:campaignId",
+  priviDataController.getCampaignPhotoById
+);
 
-router.post('/changeCampaignPhoto', authenticateJWT, upload.single('image'), priviDataController.changeCampaignPhoto);
+router.post(
+  "/changeCampaignPhoto",
+  authenticateJWT,
+  upload.single("image"),
+  priviDataController.changeCampaignPhoto
+);
 
-router.post('/createCampaign', authenticateJWT, priviDataController.createCampaign);
-router.post('/campaignClick', authenticateJWT, priviDataController.campaignClick);
+router.post(
+  "/createCampaign",
+  authenticateJWT,
+  priviDataController.createCampaign
+);
+router.post(
+  "/campaignClick",
+  authenticateJWT,
+  priviDataController.campaignClick
+);
 
 module.exports = router;
