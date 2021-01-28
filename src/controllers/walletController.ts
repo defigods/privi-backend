@@ -4,7 +4,7 @@ import {
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
-import coinBalance from "../blockchain/coinBalance.js";
+import coinBalance, { balanceOf } from "../blockchain/coinBalance.js";
 import express from 'express';
 const currencySymbol = require("currency-symbol");
 import { countDecimals } from "../functions/utilities";
@@ -279,9 +279,56 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
 
 ///////////////////////////// gets //////////////////////////////
 
+module.exports.getBalanceData = async (req: express.Request, res: express.Response) => {
+    try {
+        let { userAddress } = req.query;
+        const tokensBalance: any[] = [];
+        const tokens: any = {};
+
+        // get tokens
+        const tokenTypes = ["CRYPTO", "FTPOD", "NFTPOD", "COMMUNITY", "SOCIAL"];
+        const tokenPromises: any = [];
+        tokenTypes.forEach((tokenType) => {
+            tokenPromises.push(coinBalance.getTokenListByType(tokenType, apiKey));
+        });
+        const tokenResponces = await Promise.all(tokenPromises);
+        tokenResponces.forEach((responce: any) => {
+            if (responce && responce.success) {
+                const output = responce.output;
+                const tokenType = responce.tokenType;
+                output.forEach((token) => tokens[token] = tokenType);
+            }
+        })
+        // get balances
+        const balancePromises: any = [];
+        Object.keys(tokens).forEach((token) => {
+            balancePromises.push(coinBalance.balanceOf(userAddress, token))
+        });
+        const balanceResponces = await Promise.all(balancePromises);
+        balanceResponces.forEach((responce: any) => {
+            if (responce && responce.success) {
+                const output = responce.output;
+                if (output && output.Amount) {
+                    tokensBalance.push({
+                        ...output,
+                        Type: tokens[output.Token]
+                    })
+                }
+            }
+        });
+        res.send({
+            success: true,
+            data: tokensBalance,
+        });
+    } catch (err) {
+        console.log('Error in controllers/walletController -> getBalanceData()', err);
+        res.send({ success: false });
+    }
+}
+
 module.exports.getBalancesOfAddress = async (req: express.Request, res: express.Response) => {
     try {
-        let { userId, userAddress } = req.query;
+        let { userAddress } = req.query;
         userAddress = userAddress!.toString();
 
         const retData: any[] = [];
@@ -310,7 +357,7 @@ module.exports.getBalancesOfAddress = async (req: express.Request, res: express.
 
 module.exports.getBalancesByType = async (req: express.Request, res: express.Response) => {
     try {
-        let { userId, userAddress, type } = req.query;
+        let { userAddress, type } = req.query;
 
         const blockchainRes = await coinBalance.getBalancesByType(userAddress, type, apiKey);
         if (blockchainRes && blockchainRes.success) {

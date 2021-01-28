@@ -20,6 +20,7 @@ router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosR
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
 router.get('/getEmailToAddressMap', authenticateJWT, walletController.getEmailToAddressMap);
 
+router.get('/getBalanceData', authenticateJWT, walletController.getBalanceData);
 router.get('/getTokensRateChange', authenticateJWT, walletController.getTokensRateChange);  // tokens rate change respect last day
 router.get('/getTotalBalance_v2', authenticateJWT, walletController.getTotalBalance_v2);
 router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.getTokenBalances_v2);
