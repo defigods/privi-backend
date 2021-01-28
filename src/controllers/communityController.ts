@@ -418,12 +418,25 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 
 
 /////////////////////////// GETS /////////////////////////////
+
+// get the members data needed for frontend
+exports.getMemberData = async (req: express.Request, res: express.Response) => {
+    try {
+        const { communityAddress } = req.query;
+
+    }
+    catch (e) {
+        return ('Error in controllers/communitiesControllers -> getMemberData()' + e)
+    }
+}
+
+
 // get some extra data needed for FE, they are not stored at firebase
 const getExtraData = async (data, rateOfChange) => {
     // const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
     let price = 0;
     let priceInPrivi = 0;
-    const blockchainRes = await community.getBalancesOfAddress(data.CommunityAddress, apiKey);
+    const blockchainRes = await community.getCommunityTokenPrice(data.CommunityAddress, apiKey);
     if (blockchainRes && blockchainRes.success) {
         price = blockchainRes.output;
         priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PRIVI ? price * (rateOfChange[data.FundingToken] / rateOfChange.PRIVI) : 0;
@@ -453,7 +466,7 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            allCommunities.push({...data, ...extraData, id: id});
+            allCommunities.push({ ...data, ...extraData, id: id });
         }
         res.send({
             success: true, data: {
@@ -653,11 +666,11 @@ exports.getBadgePhotoById = async (req: express.Request, res: express.Response) 
         } else {
             console.log('Error in controllers/communityController -> getBadgePhotoById()', "There's no id...");
             res.sendStatus(400); // bad request
-            res.send({success: false});
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/communityController -> getBadgePhotoById()', err);
-        res.send({success: false});
+        res.send({ success: false });
     }
 }
 
@@ -672,12 +685,12 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            trendingCommunities.push({...data, ...extraData, id: id});
+            trendingCommunities.push({ ...data, ...extraData, id: id });
         }
-        res.send({success: true, data: {trending: trendingCommunities}});
+        res.send({ success: true, data: { trending: trendingCommunities } });
     } catch (e) {
         console.log('Error in controllers/communityController -> getTrendingCommunities()', e);
-        res.send({success: false, message: e});
+        res.send({ success: false, message: e });
     }
 }
 
@@ -692,7 +705,7 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            allCommunities.push({...data, ...extraData, id: id});
+            allCommunities.push({ ...data, ...extraData, id: id });
         }
         const trendingCommunities = filterTrending(allCommunities);
         let batch = db.batch()

@@ -1,7 +1,7 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-module.exports.getBalancesOfAddress = async (communityAddress, caller) => {
+module.exports.getCommunityTokenPrice = async (communityAddress, caller) => {
     const config = {
         method: 'get',
         headers: { 'Content-Type': 'application/json' },
