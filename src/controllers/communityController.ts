@@ -527,6 +527,105 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     }
 }
 
+// get a single community counters
+exports.getCommunityCounters = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        let commentsCounter = 0;
+        let commentsMonthCounter = 0;
+        let conversationsMonthCounter = 0;
+        const discordId = body.discordId;
+        const communityId = body.communityId;
+        const monthPrior = new Date(new Date().setDate(new Date().getDate() - 30));
+    
+        // Blog posts
+        const blogPosts = await db.collection(collections.blogPost)
+          .where("communityId", "==", communityId).get();
+        if(!blogPosts.empty) {
+          for (const doc of blogPosts.docs) {
+            let post = { ...doc.data()};
+            commentsCounter++;
+
+            if(new Date(post.createdAt) > monthPrior){
+                commentsMonthCounter++;
+                conversationsMonthCounter++;
+                
+                if(post.responses && post.responses.length > 0){
+                    commentsMonthCounter = commentsMonthCounter + post.responses.length
+                    commentsCounter = commentsCounter + post.responses.length
+                }
+            }
+            else{
+                if(post.responses && post.responses.length > 0){
+                    commentsCounter = commentsCounter + post.responses.length
+                }
+            }
+          }
+        }
+
+        // Wall Posts
+        const communityWallPostQuery = await db.collection(collections.communityWallPost)
+              .where("communityId", "==", communityId).get();
+        if(!communityWallPostQuery.empty) {
+            for (const doc of communityWallPostQuery.docs) {
+                let post = { ...doc.data()};
+                commentsCounter++;
+
+                if(new Date(post.createdAt) > monthPrior){
+                    commentsMonthCounter++;
+                    conversationsMonthCounter++;
+                    
+                    if(post.responses && post.responses.length > 0){
+                        commentsMonthCounter = commentsMonthCounter + post.responses.length
+                        commentsCounter = commentsCounter + post.responses.length
+                    }
+                }
+                else{
+                    if(post.responses && post.responses.length > 0){
+                        commentsCounter = commentsCounter + post.responses.length
+                    }
+                }
+            }
+        }
+
+        // Discord chats
+        const discordChatRef = db.collection(collections.discordChat).doc(discordId);
+        const discordRoomGet = await discordChatRef.collection(collections.discordRoom).get();
+        let counter = 0;
+        discordRoomGet.forEach(async (doc) => {
+            counter++;
+            let discordRoom = { ...doc.data() }
+
+            if(new Date(discordRoom.created) > monthPrior){
+                conversationsMonthCounter++;
+            }
+
+            if (discordRoom.messages && discordRoom.messages.length > 0) {
+                for (let i = 0; i < discordRoom.messages.length; i++) {
+                    const messageGet = await db.collection(collections.discordMessage)
+                        .doc(discordRoom.messages[i]).get();
+
+                    // console.log("messageGet: " + JSON.stringify(messageGet))
+                    const message = { ...messageGet.data() }
+                    commentsCounter++;
+                    
+                    if(new Date(message.created) > monthPrior){
+                        commentsMonthCounter++;   
+                    }
+                }
+            };
+
+
+
+        })
+         
+    } catch (e) {
+        console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);
+        res.send({ success: false, error: 'Error in controllers/communitiesControllers -> getCommunityCounters()' + e });
+
+    }
+}
+
 // get all badges
 exports.getBadges = async (req: express.Request, res: express.Response) => {
     try {
@@ -551,65 +650,6 @@ exports.getBadges = async (req: express.Request, res: express.Response) => {
         return ('Error in controllers/communityController -> getBadges()' + e)
     }
 }
-
-// exports.createBadge = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const body = req.body;
-//         const creator = body.Creator;
-//         const name = body.Name;
-//         const symbol = body.Symbol; // same as name
-//         const type = body.Type;
-//         const totalSupply = body.TotalSupply;   // to num
-//         const royalty = body.Royalty;  // to num  
-//         const lockUpDate = body.LockUpDate; // 0
-//         const hash = body.Hash;
-//         const signature = body.Signature;
-
-//         const blockchainRes = await badge.createBadge(creator, name, symbol, type, totalSupply, royalty, lockUpDate, hash, signature, apiKey);
-//         console.log(JSON.stringify(blockchainRes, null, 4));
-//         if (blockchainRes && blockchainRes.success) {
-
-//             const txid = '';
-//             const description = body.Description;
-//             await db.runTransaction(async (transaction) => {
-//                 transaction.set(db.collection(collections.badges).doc('' + txid), {
-//                     creator: creator,
-//                     name: name,
-//                     description: description,
-//                     classification: type,
-//                     symbol: name,
-//                     users: [],
-//                     totalSupply: totalSupply,
-//                     date: Date.now(),
-//                     royalty: royalty,
-//                     txnId: txid,
-//                     hasPhoto: false
-//                 });
-//             });
-
-//             res.send({
-//                 success: true, data: {
-//                     creator: creator,
-//                     name: name,
-//                     symbol: name,
-//                     classification: type,
-//                     users: [],
-//                     totalSupply: totalSupply,
-//                     date: Date.now(),
-//                     royalty: royalty,
-//                     txnId: txid,
-//                     hasPhoto: false
-//                 }
-//             });
-//         }
-//         else {
-//             console.log('Error in controllers/communityController -> createBadge(): success = false.', blockchainRes.message);
-//             res.send({ success: false });
-//         }
-//     } catch (e) {
-//         return ('Error in controllers/communityController -> createBadge()' + e)
-//     }
-// }
 
 exports.changeBadgePhoto = async (req: express.Request, res: express.Response) => {
     try {
