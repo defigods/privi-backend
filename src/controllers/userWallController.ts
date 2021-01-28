@@ -524,7 +524,7 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
             let data = doc.data();
             data.id = doc.id;
             data.urlItem = 'user';
-            let isAFollowCreditIndex = user.followings.findIndex(user => user === data.userId);
+            let isAFollowCreditIndex = user.followings.findIndex(user => user.user === data.userId);
 
             if(isAFollowCreditIndex !== -1) {
               posts.push(data);
