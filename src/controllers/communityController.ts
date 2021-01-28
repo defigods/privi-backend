@@ -722,7 +722,7 @@ exports.getBadgePhotoById = async (req: express.Request, res: express.Response) 
 exports.getTrendingCommunities = async (req: express.Request, res: express.Response) => {
     try {
         const trendingCommunities: any[] = [];
-        const communitiesSnap = await db.collection(collections.trendingCommunity).get();
+        const communitiesSnap = await db.collection(collections.trendingCommunity).limit(5).get();
         const rateOfChange = await getRateOfChangeAsMap();
         const docs = communitiesSnap.docs;
         for (let i = 0; i < docs.length; i++) {
