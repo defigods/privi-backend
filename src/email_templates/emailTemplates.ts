@@ -139,7 +139,7 @@ export async function sendNewCommunityUsersEmail(userData, communityData) {
 	const communityAddress = communityData.communityAddress;
 	const communityLink = URL() + "/#/communities/" + communityAddress;
 	
-	var mailList = [];
+	let mailList = [];
 	mailList.concat(admins).concat(roles).concat(users);
 	
 	// create reusable transporter object using the default SMTP transport

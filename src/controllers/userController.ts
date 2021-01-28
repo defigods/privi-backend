@@ -1311,9 +1311,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToFollowRef = db
-      .collection(collections.user)
-      .doc(userToFollow.id);
+    const userToFollowRef = db.collection(collections.user).doc(userToFollow.id);
     const userToFollowGet = await userToFollowRef.get();
     const userToFollowData: any = userToFollowGet.data();
 
