@@ -101,7 +101,8 @@ router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherP
 
 router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, podWallController.postDelete);
-router.get('/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPost);
+router.get('/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPosts);
+router.get('/wall/getPodPost/:postId', authenticateJWT, podWallController.getPodPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), podWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:podWallPostId', authenticateJWT, upload2.array('image'), podWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:podWallPostId', podWallController.getPodWallPostPhotoById);

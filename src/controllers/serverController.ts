@@ -30,6 +30,8 @@ const votingRoutes = require('../routes/votingRoutes');
 const userLevelsRoutes = require('../routes/userLevelsRoutes');
 const socialRoutes = require('../routes/socialRoutes');
 
+const notificationsController = require('../controllers/notificationsController');
+
 const crons = require('../controllers/crons');
 
 type Env = 'dev' | 'prod' | 'devssl';
@@ -491,7 +493,6 @@ export const startSocket = (env: Env) => {
         });
       }
 
-
       /*const messageQuery = await db.collection(collections.message)
           .where("to", "==", message.to)
           .where("seen", "==", false).get();
@@ -506,6 +507,27 @@ export const startSocket = (env: Env) => {
       updateMessage.numReplies = updateMessage.numReplies + 1;
       console.log('sending room post', updateMessage);
       socket.to(message.discordRoom).emit('update-message-discord', updateMessage);
+
+      const discordChatRef = db.collection(collections.discordChat)
+        .doc(message.discordRoom);
+      const discordChatGet = await discordChatRef.get();
+      const discordChat: any = discordChatGet.data();
+
+      await notificationsController.addNotification({
+        userId: discordMessage.from,
+        notification: {
+          type: 81,
+          typeItemId: 'user',
+          itemId: message.from,
+          follower: user.firstName,
+          pod: '',
+          comment: discordMessage.message,
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: uid
+        }
+      });
     });
   });
 };
