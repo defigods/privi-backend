@@ -163,7 +163,6 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
         }
 
         const blockchainRes = await liquidityPool.swapCryptoTokens(traderAddress, tokenFrom, tokenTo, amountFrom, rate, hash, signature, apiKey);
-        console.log(JSON.stringify(blockchainRes, null, 4));
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             const output = blockchainRes.output;
@@ -178,7 +177,7 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
                 });
             }
 
-            // -------- update to pool --------
+            // -------- update 'to' pool --------
             // add fee to "To Liquidity Pool"
             const liquidityToPoolSnap = await db.collection(collections.liquidityPools).doc(tokenTo).get();
             const liquidityToPoolData: any = liquidityToPoolSnap.data();
@@ -190,25 +189,7 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
                 AccumulatedFee: newAccumulatedFee,
                 DailyAccumulatedFee: newDailyAccumulatedFee
             });
-            // add fee to "From Liquidity Pool" as pairs
-            const rateOfChange = await getRateOfChangeAsMap();
-            let newAccumulatedFeeInUSD = 0;
-            let newAccumulatedTradingVolume = 0;
-            const pairSnap = await liquidityToPoolSnap.ref.collection(collections.liquidityPairs).doc(tokenFrom).get();
-            const pairData: any = pairSnap.data();
-            if (pairData) {
-                newAccumulatedFeeInUSD = pairData.AccumulatedFeeInUSD ?? 0;
-                newAccumulatedTradingVolume = pairData.AccumulatedTradingVolume ?? 0;
-            }
-            newAccumulatedFeeInUSD += (rateOfChange[tokenFrom] ?? 1) * fee;
-            newAccumulatedTradingVolume += amountFrom;
-            pairSnap.ref.set({
-                AccumulatedFeeInUSD: newAccumulatedFeeInUSD,
-                AccumulatedTradingVolume: newAccumulatedTradingVolume,
-                LastUpdate: Date.now(),
-            }, { merge: true });
-
-            // -------- update from pool --------
+            // -------- update 'from' pool --------
             const liquidityFromPoolSnap = await db.collection(collections.liquidityPools).doc(tokenFrom).get();
             const liquidityFromPoolData: any = liquidityFromPoolSnap.data();
             const swaps = liquidityFromPoolData.Providers ?? {};
@@ -216,10 +197,41 @@ exports.swapCryptoTokens = async (req: express.Request, res: express.Response) =
             else swaps[traderAddress] += amountFrom;
             liquidityFromPoolSnap.ref.update({
                 Swaps: swaps,
-
             });
-
             res.send({ success: true });
+
+            // -------- update pairs --------
+            const rateOfChange = await getRateOfChangeAsMap();
+            // To -> From pair
+            let newDailyAccumulatedFeeInUSD = 0;
+            let newDailyAccumulatedVolumeInUSD = 0;
+            const pairFromToSnap = await liquidityFromPoolSnap.ref.collection(collections.liquidityPairs).doc(tokenTo).get();
+            const pairFromToData: any = pairFromToSnap.data();
+            if (pairFromToData) {
+                newDailyAccumulatedFeeInUSD = pairFromToData.DailyAccumulatedFeeInUSD ?? 0;
+                newDailyAccumulatedVolumeInUSD = pairFromToData.DailyAccumulatedVolumeInUSD ?? 0;
+            }
+            newDailyAccumulatedFeeInUSD += (rateOfChange[tokenFrom] ?? 1) * fee;
+            newDailyAccumulatedVolumeInUSD += (rateOfChange[tokenFrom] ?? 1) * amountFrom;
+            pairFromToSnap.ref.set({
+                DailyAccumulatedFeeInUSD: newDailyAccumulatedFeeInUSD,
+                DailyAccumulatedVolumeInUSD: newDailyAccumulatedVolumeInUSD,
+            }, { merge: true });
+            // From -> To pair
+            const pairToFromSnap = await liquidityToPoolSnap.ref.collection(collections.liquidityPairs).doc(tokenFrom).get();
+            const pairToFromData: any = pairToFromSnap.data();
+            newDailyAccumulatedFeeInUSD = 0;
+            newDailyAccumulatedVolumeInUSD = 0;
+            if (pairToFromData) {
+                newDailyAccumulatedFeeInUSD = pairToFromData.DailyAccumulatedFeeInUSD ?? 0;
+                newDailyAccumulatedVolumeInUSD = pairToFromData.DailyAccumulatedVolumeInUSD ?? 0;
+            }
+            newDailyAccumulatedFeeInUSD += (rateOfChange[tokenFrom] ?? 1) * fee;
+            newDailyAccumulatedVolumeInUSD += (rateOfChange[tokenFrom] ?? 1) * amountFrom;
+            pairToFromSnap.ref.set({
+                DailyAccumulatedFeeInUSD: newDailyAccumulatedFeeInUSD,
+                DailyAccumulatedVolumeInUSD: newDailyAccumulatedVolumeInUSD,
+            }, { merge: true });
         }
         else {
             console.log('Error in controllers/liquiityPoolController -> swapCryptoTokens(): success = false.', blockchainRes.message);
@@ -281,19 +293,30 @@ exports.getLiquidityPools = async (req: express.Request, res: express.Response) 
 // get liquidity pools basic info
 exports.getOtherLiquidityPools = async (req: express.Request, res: express.Response) => {
     try {
-        const { poolToken } = req.query;
+        let { poolToken } = req.query;
+        poolToken = String(poolToken);
         const retData: any[] = [];
         const pools: any = {};
+        const pairs: any = {};
         const rateOfChange = await getRateOfChangeAsMap();
+        // get given poolToken's pair data
+        const pairsSnap = await db.collection(collections.liquidityPools).doc(poolToken).collection(collections.liquidityPairs).get();
+        pairsSnap.forEach((doc) => {
+            pairs[doc.id] = doc.data();
+        });
+        // get other liquidity pools and add the corresponding pair 
         const liquidityPoolSnap = await db.collection(collections.liquidityPools).get();
         liquidityPoolSnap.forEach((doc) => {
             if (doc.id !== poolToken) {
                 const data: any = doc.data();
                 pools[doc.id] = {
+                    PairData: {
+                        ...pairs[doc.id]
+                    },
                     PoolAddress: data.PoolAddress,
                     PoolToken: data.PoolToken,
                     NumProviders: Object.keys(data.Providers ?? {}).length,
-                    DailyAccumulatedFee: data.DailyAccumulatedFee ?? 0,
+                    DailyAccumulatedFee: data.DailyAccumulatedFee ?? 0, // in TokenTo
                 };
             }
         });
@@ -394,9 +417,11 @@ exports.getSwapPrice = async (req: express.Request, res: express.Response) => {
         const tokenTo = query.TokenTo;
         const amountFrom = Number(query.AmountFrom);
         const rate = Number(query.Rate);
+        console.log(query)
         const blockchainRes = await liquidityPool.getSwapPrice(tokenFrom, tokenTo, amountFrom, rate, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const price = blockchainRes.output;
+            console.log(price);
             res.send({ success: true, data: price });
         } else {
             console.log('Error in controllers/liquidityPoolController -> getSwapPrice(): blockchain = false', blockchainRes.message);
@@ -412,22 +437,29 @@ exports.getSwapPrice = async (req: express.Request, res: express.Response) => {
 // --------------------------------- CRONS ----------------------------------
 
 // reset the DailyAccumulatedFee field by the end of every day and generate a history of it
-exports.resetDailyFee = cron.schedule('0 0 * * *', async () => {
+exports.resetDailyAccumulators = cron.schedule('0 0 * * *', async () => {
     try {
-        console.log("******** Liquidity Pool resetDailyFee ********");
+        console.log("******** Liquidity Pool resetDailyAccumulators ********");
         const liquidityPoolSnaps = await db.collection(collections.liquidityPools).get();
-        liquidityPoolSnaps.forEach((doc) => {
+        const docs = liquidityPoolSnaps.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
             const data: any = doc.data();
-            const dailyFee = data.DailyAcculatedFee;
+            const dailyFee = data.DailyAcculatedFee ?? 0;
             doc.ref.update({
                 DailyAcculatedFee: 0
             });
             doc.ref.collection(collections.feeHistory).add({
                 date: Date.now(),
                 fee: dailyFee
-            })
-        });
+            });
+            // reset pair accumulators (delete)
+            const pairsSnap = await doc.ref.collection(collections.liquidityPairs).get();
+            pairsSnap.forEach((pairDoc) => {
+                pairDoc.ref.delete()
+            });
+        }
     } catch (err) {
-        console.log('Error in controllers/liquidityPool -> resetDailyFee()', err);
+        console.log('Error in controllers/liquidityPool -> resetDailyAccumulators()', err);
     }
 });
