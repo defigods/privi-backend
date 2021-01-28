@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -150,7 +151,7 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
   }
 }
 
-exports.getPodPost =  async (req: express.Request, res: express.Response) => {
+exports.getPodPosts =  async (req: express.Request, res: express.Response) => {
   try {
     let params : any = req.params;
     let posts : any[] = [];
@@ -176,6 +177,25 @@ exports.getPodPost =  async (req: express.Request, res: express.Response) => {
   } catch (err) {
     console.log('Error in controllers/podWallController -> getPodPost()', err);
     res.send({ success: false });
+  }
+}
+
+exports.getPodPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const podWallPostSnap = await db.collection(collections.podWallPost)
+      .doc(params.postId).get();
+    const podWallPost : any = podWallPostSnap.data();
+    podWallPost.id = podWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: podWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/podWallController -> getPodPostById()', err);
+    res.send({ success: false, error: err });
   }
 }
 
@@ -273,10 +293,27 @@ exports.makeResponsePodWallPost = async (req: express.Request, res: express.Resp
       await podWallPostRef.update({
         responses: responses
       });
+
+      await notificationsController.addNotification({
+        userId: podWallPost.createdBy,
+        notification: {
+          type: 31,
+          typeItemId: 'pod',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: podWallPost.podId,
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: podWallPostGet.id
+        }
+      });
+
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/podWallController -> makeResponsePodWallPost()', "There's no post id...");
+      console.log('Error in controllers/podWallController -> makeResponsePodWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -296,6 +333,22 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
       const podWallPost: any = podWallPostGet.data();
 
       let podPost = await blogController.likeItemPost(podWallPostRef, podWallPostGet, podWallPost, body.userId, podWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: podWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'pod',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: podWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: podPost });
 
@@ -320,6 +373,22 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const podWallPost: any = podWallPostGet.data();
 
       let podPost = await blogController.dislikeItemPost(podWallPostRef, podWallPostGet, podWallPost, body.userId, podWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: podWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: podWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: podPost });
 

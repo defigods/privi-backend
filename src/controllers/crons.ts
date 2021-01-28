@@ -24,6 +24,7 @@ const checkTx = connectController.checkTx;
 // Wallet
 const saveUserBalanceSum = walletController.saveUserBalanceSum;
 // Community
+const trendingCommunities = communityController.setTrendingCommunities;
 //const endVotations = communityController.endVotations;
 // Staking
 const manageStakedAmount = stakeController.manageStakedAmount;
@@ -53,5 +54,6 @@ module.exports = {
     endVoting,
     removeStories,
     campaignsDataNextMonth,
-    campaignsDataNextDay
+    campaignsDataNextDay,
+    trendingCommunities
 }

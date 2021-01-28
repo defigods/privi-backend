@@ -456,8 +456,14 @@ const getExtraData = async (data, rateOfChange) => {
 // get all communities, highlighting the trending ones
 exports.getCommunities = async (req: express.Request, res: express.Response) => {
     try {
+        const lastCommunityAddress = req.query.lastCommunityAddress;
         const allCommunities: any[] = [];
-        const communitiesSnap = await db.collection(collections.community).get();
+        let communitiesSnap
+        if (lastCommunityAddress) {
+            communitiesSnap = await db.collection(collections.community).startAfter(lastCommunityAddress).limit(5).get();
+        } else {
+            communitiesSnap = await db.collection(collections.community).limit(5).get();
+        }
         const rateOfChange = await getRateOfChangeAsMap();
         const docs = communitiesSnap.docs;
         for (let i = 0; i < docs.length; i++) {
@@ -465,13 +471,11 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            allCommunities.push({ ...data, ...extraData, id: id });
+            allCommunities.push({...data, ...extraData, id: id});
         }
-        const trendingCommunities = filterTrending(allCommunities);
         res.send({
             success: true, data: {
-                all: allCommunities,
-                trending: trendingCommunities
+                all: allCommunities
             }
         });
     } catch (e) {
@@ -707,13 +711,64 @@ exports.getBadgePhotoById = async (req: express.Request, res: express.Response) 
         } else {
             console.log('Error in controllers/communityController -> getBadgePhotoById()', "There's no id...");
             res.sendStatus(400); // bad request
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/communityController -> getBadgePhotoById()', err);
-        res.send({ success: false });
+        res.send({success: false});
     }
 }
+
+exports.getTrendingCommunities = async (req: express.Request, res: express.Response) => {
+    try {
+        const trendingCommunities: any[] = [];
+        const communitiesSnap = await db.collection(collections.trendingCommunity).get();
+        const rateOfChange = await getRateOfChangeAsMap();
+        const docs = communitiesSnap.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+            const data: any = doc.data();
+            const id: any = doc.id;
+            const extraData = await getExtraData(data, rateOfChange);
+            trendingCommunities.push({...data, ...extraData, id: id});
+        }
+        res.send({success: true, data: {trending: trendingCommunities}});
+    } catch (e) {
+        console.log('Error in controllers/communityController -> getTrendingCommunities()', e);
+        res.send({success: false, message: e});
+    }
+}
+
+exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
+    try {
+        const allCommunities: any[] = [];
+        const communitiesSnap = await db.collection(collections.community).get();
+        const rateOfChange = await getRateOfChangeAsMap();
+        const docs = communitiesSnap.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+            const data: any = doc.data();
+            const id: any = doc.id;
+            const extraData = await getExtraData(data, rateOfChange);
+            allCommunities.push({...data, ...extraData, id: id});
+        }
+        const trendingCommunities = filterTrending(allCommunities);
+        let batch = db.batch()
+
+        db.collection(collections.trendingCommunity).listDocuments().then(val => {
+            val.map((val) => {
+                batch.delete(val)
+            })
+        })
+        trendingCommunities.forEach((doc) => {
+            let docRef = db.collection(collections.trendingCommunity).doc(); //automatically generate unique id
+            batch.set(docRef, doc);
+        })
+        await batch.commit()
+    } catch (err) {
+        console.log('Error in controllers/communityController -> setTrendingCommunities()', err);
+    }
+})
 /*
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {

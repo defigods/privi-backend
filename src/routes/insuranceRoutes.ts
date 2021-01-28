@@ -42,14 +42,17 @@ router.post('/FT/unsubscribeInsurancePool', authenticateJWT, insuranceController
 
 router.get('/FT/getAllInsurancePools', authenticateJWT, insuranceController.getAllInsurancePools);
 
-
 // NFT
-
+router.post('/NFT/initiateInsurancePool', authenticateJWT, insuranceController.initiateInsurancePoolNFT);
+router.post('/NFT/investInsurancePool', authenticateJWT, insuranceController.investInsurancePoolNFT);
+router.post('/NFT/subscribeInsurancePool', authenticateJWT, insuranceController.subscribeInsurancePoolNFT);
+router.post('/NFT/unsubscribeInsurancePool', authenticateJWT, insuranceController.unsubscribeInsurancePoolNFT);
 
 
 router.post('/wall/createPost', authenticateJWT, insuranceWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, insuranceWallController.postDelete);
-router.get('/wall/getPodPosts/:podId', authenticateJWT, insuranceWallController.getInsurancePost);
+router.get('/wall/getInsurancePosts/:podId', authenticateJWT, insuranceWallController.getInsurancePost);
+router.get('/wall/getInsurancePost/:postId', authenticateJWT, insuranceWallController.getInsurancePostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), insuranceWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:insuranceWallPostId', authenticateJWT, upload2.array('image'), insuranceWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:insuranceWallPostId', insuranceWallController.getInsuranceWallPostPhotoById);

@@ -43,13 +43,27 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
                 Description: description
             });
 
+            await notificationsController.addNotification({
+                userId: creator,
+                notification: {
+                    type: 47,
+                    typeItemId: 'user',
+                    itemId: body.userId,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: tokenSymbol,
+                    amount: 0,
+                    onlyInformation: false,
+                    otherItemId: ''
+                }
+            });
+
             res.send({ success: true });
         } else {
             console.log('Error in controllers/socialController -> createSocialToken(): success = false.', blockchainRes.message);
             res.send({ success: false, error: blockchainRes.message });
         }
-
-
     } catch (err) {
         console.log('Error in controllers/socialController -> createSocialToken(): ', err);
         res.send({ success: false });

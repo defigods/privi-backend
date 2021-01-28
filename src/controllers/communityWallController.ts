@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -181,6 +182,25 @@ exports.getCommunityPost =  async (req: express.Request, res: express.Response) 
   }
 }
 
+exports.getCommunityPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const communityWallPostSnap = await db.collection(collections.communityWallPost)
+      .doc(params.postId).get();
+    const communityWallPost : any = communityWallPostSnap.data();
+    communityWallPost.id = communityWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: communityWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityWallController -> getCommunityPostById()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 exports.getCommunityWallPostPhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let postId = req.params.communityWallPostId;
@@ -258,10 +278,10 @@ exports.makeResponseCommunityWallPost = async (req: express.Request, res: expres
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.communityWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const communityWallPostRef = db.collection(collections.communityWallPost)
-        .doc(body.communityWallPostId);
+        .doc(body.blogPostId);
       const communityWallPostGet = await communityWallPostRef.get();
       const communityWallPost: any = communityWallPostGet.data();
 
@@ -275,10 +295,27 @@ exports.makeResponseCommunityWallPost = async (req: express.Request, res: expres
       await communityWallPostRef.update({
         responses: responses
       });
+
+      await notificationsController.addNotification({
+        userId: communityWallPost.createdBy,
+        notification: {
+          type: 82,
+          typeItemId: 'community',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: communityWallPost.communityId, // pod === community
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: communityWallPostGet.id
+        }
+      });
+
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/communityWallController -> makeResponseCommunityWallPost()', "There's no post id...");
+      console.log('Error in controllers/communityWallController -> makeResponseCommunityWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -298,6 +335,22 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
       const communityWallPost: any = communityWallPostGet.data();
 
       let podPost = await blogController.likeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: communityWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'community',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: communityWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: podPost });
 
@@ -322,6 +375,22 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const communityWallPost: any = communityWallPostGet.data();
 
       let podPost = await blogController.dislikeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: communityWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: communityWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: podPost });
 

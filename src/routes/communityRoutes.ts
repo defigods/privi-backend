@@ -113,6 +113,7 @@ router.get('/badges/getPhoto/:badgeId', communityController.getBadgePhotoById);
 router.get('/getCommunities', authenticateJWT, communityController.getCommunities);
 router.get('/getCommunity/:communityAddress', authenticateJWT, communityController.getCommunity);
 router.post('/getCommunityCounters', authenticateJWT, communityController.getCommunityCounters);
+router.get('/getTrendingCommunities', authenticateJWT, communityController.getTrendingCommunities);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);
@@ -141,6 +142,7 @@ router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 router.post('/wall/createPost', authenticateJWT, communityWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, communityWallController.postDelete);
 router.get('/wall/getCommunityPosts/:communityId', authenticateJWT, communityWallController.getCommunityPost);
+router.get('/wall/getCommunityPost/:postId', authenticateJWT, communityWallController.getCommunityPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), communityWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:communityWallPostId', authenticateJWT, upload4.array('image'), communityWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:communityWallPostId', communityWallController.getCommunityWallPostPhotoById);

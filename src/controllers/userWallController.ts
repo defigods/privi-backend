@@ -4,6 +4,8 @@ import express from 'express';
 import path from 'path';
 import fs from "fs";
 
+const notificationsController = require('./notificationsController');
+
 const blogController = require('./blogController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
@@ -56,7 +58,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
     let isCreator = await checkIfUserIsCreator(body.userId, body.creatorId);
 
     if(body && body.creatorId && isCreator) {
-      const userRef = db.collection(collections.community)
+      const userRef = db.collection(collections.user)
         .doc(body.userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
@@ -176,7 +178,28 @@ exports.getUserPosts =  async (req: express.Request, res: express.Response) => {
       });
     }
   } catch (err) {
-    console.log('Error in controllers/userWallController -> getUserPost()', err);
+    console.log('Error in controllers/userWallController -> getUserPosts()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
+exports.getUserPostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const userWallPostRef = db.collection(collections.userWallPost)
+      .doc(params.postId);
+    const userWallPostGet = await userWallPostRef.get();
+    const userWallPost: any = userWallPostGet.data();
+
+    userWallPost.id = userWallPostGet.id;
+
+    res.status(200).send({
+      success: true,
+      data: userWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/userWallController -> getUserPostById()', err);
     res.send({ success: false, error: err });
   }
 }
@@ -258,10 +281,10 @@ exports.makeResponseUserWallPost = async (req: express.Request, res: express.Res
   try {
     let body = req.body;
     console.log('body', body);
-    if (body && body.userWallPostId && body.response && body.userId && body.userName) {
+    if (body && body.blogPostId && body.response && body.userId && body.userName) {
 
       const userWallPostRef = db.collection(collections.userWallPost)
-        .doc(body.userWallPostId);
+        .doc(body.blogPostId);
       const userWallPostGet = await userWallPostRef.get();
       const userWallPost: any = userWallPostGet.data();
 
@@ -275,10 +298,27 @@ exports.makeResponseUserWallPost = async (req: express.Request, res: express.Res
       await userWallPostRef.update({
         responses: responses
       });
+
+      await notificationsController.addNotification({
+        userId: userWallPost.createdBy,
+        notification: {
+          type: 76,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: body.userName + ': ' + body.response,
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: userWallPostGet.id
+        }
+      });
+
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/userWallController -> makeResponseUserWallPost()', "There's no post id...");
+      console.log('Error in controllers/userWallController -> makeResponseUserWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -291,13 +331,29 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.userWallPostId && body.userId) {
+    if (body && body.userWallPostId && body.userId && body.userName) {
       const userWallPostRef = db.collection(collections.userWallPost)
         .doc(body.userWallPostId);
       const userWallPostGet = await userWallPostRef.get();
       const userWallPost: any = userWallPostGet.data();
 
       let podPost = await blogController.likeItemPost(userWallPostRef, userWallPostGet, userWallPost, body.userId, userWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: userWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: userWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: podPost });
 
@@ -315,13 +371,29 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.userWallPostId && body.userId) {
+    if (body && body.userWallPostId && body.userId && body.userName) {
       const userWallPostRef = db.collection(collections.userWallPost)
         .doc(body.userWallPostId);
       const userWallPostGet = await userWallPostRef.get();
       const userWallPost: any = userWallPostGet.data();
 
       let podPost = await blogController.dislikeItemPost(userWallPostRef, userWallPostGet, userWallPost, body.userId, userWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: userWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: userWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: podPost });
 
@@ -402,6 +474,7 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
             let isAFollowCommunityIndex = communities.findIndex(comm => comm === data.communityId);
 
             if(isAFollowCommunityIndex !== -1) {
+              data.type = 'CommunityPost';
               posts.push(data);
             }
           }

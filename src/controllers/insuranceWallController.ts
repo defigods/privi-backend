@@ -5,6 +5,7 @@ import path from 'path';
 import fs from "fs";
 
 const blogController = require('./blogController');
+const notificationsController = require('./notificationsController');
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -180,6 +181,25 @@ exports.getInsurancePost =  async (req: express.Request, res: express.Response) 
   }
 }
 
+exports.getInsurancePostById =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params : any = req.params;
+
+    const insuranceWallPostSnap = await db.collection(collections.insuranceWallPost)
+      .doc(params.postId).get();
+    const insuranceWallPost : any = insuranceWallPostSnap.data();
+    insuranceWallPost.id = insuranceWallPostSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: insuranceWallPost
+    });
+  } catch (err) {
+    console.log('Error in controllers/insuranceWallController -> getInsurancePostById()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 exports.getInsuranceWallPostPhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let postId = req.params.insuranceWallPostId;
@@ -277,7 +297,7 @@ exports.makeResponseInsuranceWallPost = async (req: express.Request, res: expres
       res.send({ success: true, data: responses });
 
     } else {
-      console.log('Error in controllers/insuranceWallController -> makeResponseInsuranceWallPost()', "There's no post id...");
+      console.log('Error in controllers/insuranceWallController -> makeResponseInsuranceWallPost()', "Missing data provided");
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -297,6 +317,22 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
       const insuranceWallPost: any = insuranceWallPostGet.data();
 
       let insurancePost = await blogController.likeItemPost(insuranceWallPostRef, insuranceWallPostGet, insuranceWallPost, body.userId, insuranceWallPost.createdBy)
+
+      await notificationsController.addNotification({
+        userId: insuranceWallPost.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: 'insurance',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: insuranceWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: insurancePost });
 
@@ -321,6 +357,22 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const insuranceWallPost: any = insuranceWallPostGet.data();
 
       let insurancePost = await blogController.dislikeItemPost(insuranceWallPostRef, insuranceWallPostGet, insuranceWallPost, body.userId, insuranceWallPost.createdBy);
+
+      await notificationsController.addNotification({
+        userId: insuranceWallPost.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: body.userName,
+          pod: '',
+          comment: '',
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: insuranceWallPostGet.id
+        }
+      });
 
       res.send({ success: true, data: insurancePost });
 

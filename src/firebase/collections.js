@@ -43,6 +43,7 @@ module.exports = {
 
     // community
     community: 'Community',
+    trendingCommunity: 'TrendingCommunity',
     communityLP: 'CommunityLP',
     communityTransactions: 'CommunityTransactions',
     votation: 'Votation',

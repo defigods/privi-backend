@@ -1,8 +1,7 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
-
-module.exports.initiateInsurancePool = async (guarantorAddress, podAddress, insuranceAddress, frequency, feeInscription, feeMembership, minCoverage, initialDeposit, date, txnId, caller) => {
+module.exports.initiateInsurancePool = async (guarantorAddress, podAddress, insuranceAddress, frequency, feeInscription, feeMembership, minCoverage, initialDeposit, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainInsuranceFTAPI + "/initiateInsurancePool", {
         GuarantorAddress: guarantorAddress,
         PodAddress: podAddress,
@@ -11,59 +10,47 @@ module.exports.initiateInsurancePool = async (guarantorAddress, podAddress, insu
         FeeInscription: feeInscription,
         FeeMembership: feeMembership,
         MinCoverage: minCoverage,
-        Date: date,
 
         InitialDeposit: initialDeposit,
-        TxnId: txnId,
 
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.investInsurancePool = async (investorAddress, insuranceAddress, amount, date, txnId, caller) => {
+module.exports.investInsurancePool = async (investorAddress, insuranceAddress, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainInsuranceFTAPI + "/investInsurancePool", {
         InvestorAddress: investorAddress,
         InsuranceAddres: insuranceAddress,
-        Date: date,
         Amount: amount,
-        TxnId: txnId,
-        Caller: caller
+        Caller: caller,
+        Hash: hash,
+        Signature: signature
     });
     return blockchainRes.data;
 };
 
-module.exports.subscribeInsurancePool = async (clientAddress, insuranceAddress, amount, date, txnId, caller) => {
+module.exports.subscribeInsurancePool = async (clientAddress, insuranceAddress, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainInsuranceFTAPI + "/subscribeInsurancePool", {
         ClientAddress: clientAddress,
         InsuranceAddres: insuranceAddress,
-        Date: date,
         Amount: amount,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
 };
 
-module.exports.subscribeInsurancePool = async (clientAddress, insuranceAddress, amount, date, txnId, caller) => {
-    let blockchainRes = await axios.post(api.blockchainInsuranceFTAPI + "/subscribeInsurancePool", {
-        ClientAddress: clientAddress,
-        InsuranceAddres: insuranceAddress,
-        Date: date,
-        Amount: amount,
-        TxnId: txnId,
-        Caller: caller
-    });
-    return blockchainRes.data;
-};
-
-module.exports.unsubscribeInsurancePool = async (clientAddress, insuranceAddress, amount, date, txnId, caller) => {
+module.exports.unsubscribeInsurancePool = async (clientAddress, insuranceAddress, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainInsuranceFTAPI + "/unsubscribeInsurancePool", {
         ClientAddress: clientAddress,
         InsuranceAddres: insuranceAddress,
-        Date: date,
         Amount: amount,
-        TxnId: txnId,
+        Hash: hash,
+        Signature: signature,
         Caller: caller
     });
     return blockchainRes.data;
@@ -93,3 +80,28 @@ module.exports.getInsuranceInvestorByPool = async (insuranceAddress, investorAdd
     });
     return blockchainRes.data;
 };
+
+module.exports.initiateInsurancePoolNFT = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/initiateInsurancePool", data);
+    return blockchainRes.data;
+}
+
+module.exports.subscribeInsurancePoolNFT = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/subscribeInsurancePool", data);
+    return blockchainRes.data;
+}
+
+module.exports.unsubscribeInsurancePoolNFT = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/unsubscribeInsurancePool", data);
+    return blockchainRes.data;
+}
+
+module.exports.investInsurancePoolNFT = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/investInsurancePool", data);
+    return blockchainRes.data;
+}
+
+module.exports.withdrawInsurancePoolNFT = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainInsuranceNFTAPI + "/withdrawInsurancePool", data);
+    return blockchainRes.data;
+}

@@ -157,6 +157,7 @@ router.post('/changeAnonAvatar', userController.changeAnonAvatar);
 router.post('/wall/createPost', authenticateJWT, userWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, userWallController.postDelete);
 router.get('/wall/getUserPosts/:userId', authenticateJWT, userWallController.getUserPosts);
+router.get('/wall/getUserPost/:postId', authenticateJWT, userWallController.getUserPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), userWallController.changePostPhoto);
 router.post('/wall/changePostDescriptionPhotos/:userWallPostId', authenticateJWT, upload4.array('image'), userWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:userWallPostId', userWallController.getUserWallPostPhotoById);
@@ -169,6 +170,8 @@ router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
 router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
 
 router.post('/searchUsers', authenticateJWT, userController.searchUsers);
+
+router.post('/removeNotification', authenticateJWT, userController.removeNotification);
 
 //UPDATE TUTORIALS SEEN
 router.post('/updateTutorialsSeen', userController.updateTutorialsSeen);
