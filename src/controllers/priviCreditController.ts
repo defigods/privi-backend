@@ -56,19 +56,24 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
 
             // add some more data to firebase
             const description = body.Description;
-            const discordId = body.DiscordId;
-            const ethereumAddress = body.EthereumAddress;
             const admins = body.Admins; // string[]
             const insurers = body.Insurers; // string[]
             const userRoles = body.UserRoles;   // {name, role, status}[]
+
+            const userSnap = await db.collection(collections.user).doc(creator).get();
+            const userData: any = userSnap.data();
+
+            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, userData.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
+
             db.collection(collections.priviCredits).doc(creditAddress).set({
                 Description: description,
-                DiscordId: discordId,
-                // EthereumAddress: ethereumAddress,
                 Admins: admins,
                 Insurers: insurers,
                 UserRoles: userRoles,
-                Posts: []
+                Posts: [],
+                JarrId: discordChatJarrCreation.id,
             }, { merge: true })
 
             // add transaction to credit doc
@@ -94,9 +99,6 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             addZerosToHistory(creditRef.collection(collections.priviCreditDepositedHistory), "deposited");
             addZerosToHistory(creditRef.collection(collections.priviCreditInterestHistory), "interest");
 
-
-            const userSnap = await db.collection(collections.user).doc(creator).get();
-            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
@@ -129,10 +131,6 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                     }
                 });
             })
-
-            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, userData.firstName);
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
 
             res.send({ success: true, data: { id: creditAddress } });
         }
@@ -200,17 +198,6 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 });
             });*/
 
-            //update discord chat
-            const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
-                .collection(collections.discordRoom).get();
-            if (!discordRoomSnap.empty) {
-                for (const doc of discordRoomSnap.docs) {
-                    let data = doc.data()
-                    if (!data.private) {
-                        chatController.addUserToRoom(priviCreditData.DiscordId, doc.id, address);
-                    }
-                }
-            }
 
             await notificationsController.addNotification({
                 userId: address,
@@ -243,15 +230,15 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
                 }
             });
 
-            let investors : any[] = [];
+            let investors: any[] = [];
             const creditPoolBorrowersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
-              .collection(collections.priviCreditsBorrowing).get();
+                .collection(collections.priviCreditsBorrowing).get();
             const creditPoolLendersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
-              .collection(collections.priviCreditsLending).get();
+                .collection(collections.priviCreditsLending).get();
             if (!creditPoolBorrowersSnap.empty) {
                 for (const doc of creditPoolBorrowersSnap.docs) {
                     let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
-                    if(foundIndexInvestor === -1) {
+                    if (foundIndexInvestor === -1) {
                         investors.push(doc.id);
                     }
                 }
@@ -260,7 +247,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
             if (!creditPoolLendersSnap.empty) {
                 for (const doc of creditPoolLendersSnap.docs) {
                     let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
-                    if(foundIndexInvestor === -1) {
+                    if (foundIndexInvestor === -1) {
                         investors.push(doc.id);
                     }
                 }
@@ -268,7 +255,7 @@ exports.depositFunds = async (req: express.Request, res: express.Response) => {
 
             console.log(investors);
             for (const investor of investors) {
-                if(investor !== address) {
+                if (investor !== address) {
                     await notificationsController.addNotification({
                         userId: investor,
                         notification: {
@@ -316,7 +303,6 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
             return;
         }
         const blockchainRes = await priviCredit.borrowFunds(creditAddress, address, amount, collaterals, rateOfChange, hash, signature, apiKey);
-        console.log(JSON.stringify(blockchainRes, null, 4));
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // add transaction to credit doc
@@ -334,22 +320,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
             const userData: any = userSnap.data();
             const userCreatorSnap = await db.collection(collections.user).doc(priviCreditData.Creator).get();
             const userCreatorData: any = userCreatorSnap.data();
-            //update discord chat
-            const discordRoomSnap = await db.collection(collections.discordChat).doc(priviCreditData.DiscordId)
-                .collection(collections.discordRoom).get();
-            if (!discordRoomSnap.empty) {
-                for (const doc of discordRoomSnap.docs) {
-                    let data = doc.data()
-                    if (!data.private) {
-                        chatController.addUserToRoom(priviCreditData.DiscordId, doc.id, address);
-                    }
-                }
-            }
 
-            /*createNotification(address, "Privi Credit - Loan Borrowed",
-                `You have succesfully borrowed a Privi Credit loan offer, enjoy your ${amount} Coins`,
-                notificationTypes.priviCreditBorrowed
-            );*/
             await notificationsController.addNotification({
                 userId: address,
                 notification: {
@@ -381,15 +352,15 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 }
             });
 
-            let investors : any[] = [];
+            let investors: any[] = [];
             const creditPoolBorrowersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
-              .collection(collections.priviCreditsBorrowing).get();
+                .collection(collections.priviCreditsBorrowing).get();
             const creditPoolLendersSnap = await db.collection(collections.priviCredits).doc(creditAddress)
-              .collection(collections.priviCreditsLending).get();
+                .collection(collections.priviCreditsLending).get();
             if (!creditPoolBorrowersSnap.empty) {
                 for (const doc of creditPoolBorrowersSnap.docs) {
                     let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
-                    if(foundIndexInvestor === -1) {
+                    if (foundIndexInvestor === -1) {
                         investors.push(doc.id);
                     }
                 }
@@ -398,7 +369,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
             if (!creditPoolLendersSnap.empty) {
                 for (const doc of creditPoolLendersSnap.docs) {
                     let foundIndexInvestor = investors.findIndex((inv) => inv === doc.id);
-                    if(foundIndexInvestor === -1) {
+                    if (foundIndexInvestor === -1) {
                         investors.push(doc.id);
                     }
                 }
@@ -406,7 +377,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
             console.log(investors);
             for (const investor of investors) {
-                if(investor !== address) {
+                if (investor !== address) {
                     await notificationsController.addNotification({
                         userId: investor,
                         notification: {
@@ -438,7 +409,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
 
 /**
- * Function called when a user request to follow a pod (FT/NFT), updating both user and firebase docs 
+ * Function called when a user request to follow a pod (FT/NFT), updating both user and firebase docs
  * @param req {userId, creditId}
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
@@ -500,7 +471,7 @@ exports.followCredit = async (req: express.Request, res: express.Response) => {
 };
 
 /**
- * Function called when a user request to unfollow a Privi Credit, updating both user and firebase docs 
+ * Function called when a user request to unfollow a Privi Credit, updating both user and firebase docs
  * @param req {userId, podId, podType} podType in [FT, NFT]
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
@@ -547,6 +518,7 @@ exports.unfollowCredit = async (req: express.Request, res: express.Response) => 
 // getter for the whole collection, Optimization TODO: only return the necessary data to FE in order to reduce transmission load
 exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
     try {
+        const t1 = Date.now();
         const allCredits: any[] = [];
         const creditsSnap = await db.collection(collections.priviCredits).get();
         for (var i = 0; i < creditsSnap.docs.length; i++) {
@@ -563,7 +535,6 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
             borrowersSnap.forEach((doc) => {
                 borrowers.push(doc.data());
             });
-
             allCredits.push({
                 ...data,
                 popularity: popularity,
@@ -574,7 +545,7 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
 
         // get the trending ones
         const trendingCredits = filterTrending(allCredits);
-
+        console.log(Date.now() - t1, "ms");
         res.send({
             success: true, data: {
                 allCredits: allCredits,
@@ -587,10 +558,11 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
     }
 };
 
-// given an id, return the complete data of a certain privi credit 
+// given an id, return the complete data of a certain privi credit
 exports.getPriviCredit = async (req: express.Request, res: express.Response) => {
     try {
         let creditId = req.params.creditId;
+        console.log("asdas", creditId);
         const creditSnap = await db.collection(collections.priviCredits).doc(creditId).get();
         if (creditSnap.exists) {
             // lenders and borrowers
@@ -650,14 +622,6 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
                 }
             }
 
-            const discordChatSnap = await db.collection(collections.discordChat).doc(creditData.DiscordId).get();
-            const discordChatData: any = discordChatSnap.data();
-
-            let discordAdminId: string = '';
-            if (discordChatSnap.exists) {
-                discordAdminId = discordChatData.admin.id;
-            }
-
             const data = {
                 ...creditData,
                 id: creditSnap.id,
@@ -665,7 +629,6 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
                 Borrowers: borrowers,
                 BorrowerTrustScore: trustMean,
                 BorrowerEndorsementScore: endorsementMean,
-                DiscordAdminId: discordAdminId
             }
             res.send({ success: true, data: data });
         } else {
@@ -684,7 +647,7 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
     }
 };
 
-// given the credit id, return the complete data of a certain privi credit 
+// given the credit id, return the complete data of a certain privi credit
 exports.getPriviTransactions = async (req: express.Request, res: express.Response) => {
     try {
         let creditId = req.params.creditId;

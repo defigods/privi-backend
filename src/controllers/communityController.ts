@@ -13,6 +13,7 @@ import fs from "fs";
 import { sendNewCommunityUsersEmail } from "../email_templates/emailTemplates";
 
 const chatController = require('./chatController');
+const notificationsController = require('./notificationsController');
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -91,6 +92,27 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const userGet = await userRef.get();
             const user: any = userGet.data();
 
+            for (const [index, admin] of admins.entries()) {
+                const user = await db.collection(collections.user).where("email", "==", admin.name).get();
+                if (user.empty) {
+                    admins[index].userId = null;
+                } else {
+                    for (const doc of user.docs) {
+                        admins[index].userId = doc.id;
+                    }
+                }
+            }
+            for (const [index, userRole] of userRoles.entries()) {
+                const user = await db.collection(collections.user).where("email", "==", userRole.name).get();
+                if (user.empty) {
+                    userRoles[index].userId = null;
+                } else {
+                    for (const doc of user.docs) {
+                        userRoles[index].userId = doc.id;
+                    }
+                }
+            }
+
             const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
             await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
             await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
@@ -168,6 +190,94 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
             if (!invitationEmails) {
                 console.log("failed to send invitation e-mails.");
+            }
+
+            for (const admin of admins) {
+                if(admin.userId) {
+                    const userRef = db.collection(collections.user).doc(admin);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    await notificationsController.addNotification({
+                        userId: userGet.id,
+                        notification: {
+                            type: 86,
+                            typeItemId: 'user',
+                            itemId: userGet.id,
+                            follower: user.firstName,
+                            pod: name, // community name
+                            comment: 'Admin',
+                            token: '',
+                            amount: 0,
+                            onlyInformation: false,
+                            otherItemId: communityAddress
+                        }
+                    });
+                } else {
+                    let id = generateUniqueId();
+
+                    await db.runTransaction(async (transaction) => {
+                        transaction.set(db.collection(collections.pendingNotifications).doc(id), {
+                            email: admin.name,
+                            notification: {
+                                type: 86,
+                                typeItemId: 'user',
+                                itemId: '',
+                                follower: '',
+                                pod: name, // community name
+                                comment: 'Admin',
+                                token: '',
+                                amount: 0,
+                                onlyInformation: false,
+                                otherItemId: communityAddress
+                            }
+                        });
+                    });
+                }
+            }
+
+            for(const userRole of userRoles) {
+                if(userRole.userId) {
+                    const userRef = db.collection(collections.user).doc(userRole.name);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    await notificationsController.addNotification({
+                        userId: userGet.id,
+                        notification: {
+                            type: 86,
+                            typeItemId: 'user',
+                            itemId: userGet.id,
+                            follower: user.firstName,
+                            pod: name, // community name
+                            comment: userRole.role,
+                            token: '',
+                            amount: 0,
+                            onlyInformation: false,
+                            otherItemId: communityAddress
+                        }
+                    });
+                } else {
+                    let id = generateUniqueId();
+
+                    await db.runTransaction(async (transaction) => {
+                        transaction.set(db.collection(collections.pendingNotifications).doc(id), {
+                            email: userRole.name,
+                            notification: {
+                                type: 86,
+                                typeItemId: 'user',
+                                itemId: '',
+                                follower: '',
+                                pod: name, // community name
+                                comment: userRole.role,
+                                token: '',
+                                amount: 0,
+                                onlyInformation: false,
+                                otherItemId: communityAddress
+                            }
+                        });
+                    });
+                }
             }
 
             res.send({
@@ -436,12 +546,25 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 
 
 /////////////////////////// GETS /////////////////////////////
+
+// get the members data needed for frontend
+exports.getMemberData = async (req: express.Request, res: express.Response) => {
+    try {
+        const { communityAddress } = req.query;
+
+    }
+    catch (e) {
+        return ('Error in controllers/communitiesControllers -> getMemberData()' + e)
+    }
+}
+
+
 // get some extra data needed for FE, they are not stored at firebase
 const getExtraData = async (data, rateOfChange) => {
     // const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
     let price = 0;
     let priceInPrivi = 0;
-    const blockchainRes = await community.getBalancesOfAddress(data.CommunityAddress, apiKey);
+    const blockchainRes = await community.getCommunityTokenPrice(data.CommunityAddress, apiKey);
     if (blockchainRes && blockchainRes.success) {
         price = blockchainRes.output;
         priceInPrivi = rateOfChange[data.FundingToken] && rateOfChange.PRIVI ? price * (rateOfChange[data.FundingToken] / rateOfChange.PRIVI) : 0;
@@ -471,7 +594,7 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            allCommunities.push({...data, ...extraData, id: id});
+            allCommunities.push({ ...data, ...extraData, id: id });
         }
         res.send({
             success: true, data: {
@@ -711,11 +834,11 @@ exports.getBadgePhotoById = async (req: express.Request, res: express.Response) 
         } else {
             console.log('Error in controllers/communityController -> getBadgePhotoById()', "There's no id...");
             res.sendStatus(400); // bad request
-            res.send({success: false});
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/communityController -> getBadgePhotoById()', err);
-        res.send({success: false});
+        res.send({ success: false });
     }
 }
 
@@ -730,12 +853,12 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            trendingCommunities.push({...data, ...extraData, id: id});
+            trendingCommunities.push({ ...data, ...extraData, id: id });
         }
-        res.send({success: true, data: {trending: trendingCommunities}});
+        res.send({ success: true, data: { trending: trendingCommunities } });
     } catch (e) {
         console.log('Error in controllers/communityController -> getTrendingCommunities()', e);
-        res.send({success: false, message: e});
+        res.send({ success: false, message: e });
     }
 }
 
@@ -750,7 +873,7 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
             const data: any = doc.data();
             const id: any = doc.id;
             const extraData = await getExtraData(data, rateOfChange);
-            allCommunities.push({...data, ...extraData, id: id});
+            allCommunities.push({ ...data, ...extraData, id: id });
         }
         const trendingCommunities = filterTrending(allCommunities);
         let batch = db.batch()
@@ -769,6 +892,173 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
         console.log('Error in controllers/communityController -> setTrendingCommunities()', err);
     }
 })
+
+exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        if(body.userId && body.communityId && body.role) {
+            const communityRef = db.collection(collections.community)
+              .doc(body.communityId);
+            const communityGet = await communityRef.get();
+            const community: any = communityGet.data();
+
+            if(communityGet.exists && community) {
+                if(body.role === 'Admin') {
+                    if(community.Admins && community.Admins.length > 0) {
+                        let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
+
+                        let copyAdmins = [...community.Admins];
+                        copyAdmins[adminIndex].status = 'Accepted';
+
+                        await communityRef.update({
+                            Admins: copyAdmins
+                        });
+                    }
+                } else {
+                    if(community.UserRoles && community.UserRoles.length > 0) {
+                        let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
+
+                        let copyUserRoles = [...community.UserRoles];
+                        copyUserRoles[userRolesIndex].status = 'Accepted';
+
+                        await communityRef.update({
+                            UserRoles: copyUserRoles
+                        });
+                    }
+                }
+
+                const userRef = db.collection(collections.user).doc(body.userId);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
+                await notificationsController.addNotification({
+                    userId: body.userId,
+                    notification: {
+                        type: 89,
+                        typeItemId: 'user',
+                        itemId: body.userId,
+                        follower: user.firstName,
+                        pod: name, // community name
+                        comment: body.role,
+                        token: '',
+                        amount: 0,
+                        onlyInformation: false,
+                        otherItemId: body.communityId
+                    }
+                });
+
+                await notificationsController.addNotification({
+                    userId: community.Creator,
+                    notification: {
+                        type: 87,
+                        typeItemId: 'user',
+                        itemId: body.userId,
+                        follower: user.firstName,
+                        pod: name, // community name
+                        comment: body.role,
+                        token: '',
+                        amount: 0,
+                        onlyInformation: false,
+                        otherItemId: body.communityId
+                    }
+                });
+                res.send({ success: true });
+            } else {
+                console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Community not found');
+                res.send({ success: false, message: 'Community not found' });
+            }
+        } else {
+            console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Info missing');
+            res.send({ success: false, message: 'Info missing' });
+        }
+    } catch (e) {
+        console.log('Error in controllers/communityController -> acceptRoleInvitation()', e);
+        res.send({ success: false, message: e });
+    }
+}
+
+exports.declineRoleInvitation = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        if(body.userId && body.communityId && body.role) {
+            const communityRef = db.collection(collections.community)
+              .doc(body.communityId);
+            const communityGet = await communityRef.get();
+            const community: any = communityGet.data();
+
+            if(communityGet.exists && community) {
+                if(body.role === 'Admin') {
+                    if(community.Admins && community.Admins.length > 0) {
+                        let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
+
+                        let copyAdmins = [...community.Admins];
+                        copyAdmins.splice(adminIndex, 1);
+
+                        await communityRef.update({
+                            Admins: copyAdmins
+                        });
+                    }
+                } else {
+                    if(community.UserRoles && community.UserRoles.length > 0) {
+                        let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
+
+                        let copyUserRoles = [...community.UserRoles];
+                        copyUserRoles.splice(userRolesIndex, 1);
+
+                        await communityRef.update({
+                            UserRoles: copyUserRoles
+                        });
+                    }
+                }
+                const userRef = db.collection(collections.user).doc(body.userId);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
+                await notificationsController.addNotification({
+                    userId: body.userId,
+                    notification: {
+                        type: 90,
+                        typeItemId: 'user',
+                        itemId: body.userId,
+                        follower: user.firstName,
+                        pod: name, // community name
+                        comment: body.role,
+                        token: '',
+                        amount: 0,
+                        onlyInformation: false,
+                        otherItemId: body.communityId
+                    }
+                });
+
+                await notificationsController.addNotification({
+                    userId: community.Creator,
+                    notification: {
+                        type: 88,
+                        typeItemId: 'user',
+                        itemId: body.userId,
+                        follower: user.firstName,
+                        pod: name, // community name
+                        comment: body.role,
+                        token: '',
+                        amount: 0,
+                        onlyInformation: false,
+                        otherItemId: body.communityId
+                    }
+                });
+                res.send({ success: true });
+            } else {
+                console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Community not found');
+                res.send({ success: false, message: 'Community not found' });
+            }
+        } else {
+            console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Info missing');
+            res.send({ success: false, message: 'Info missing' });
+        }
+    } catch (e) {
+        console.log('Error in controllers/communityController -> declineRoleInvitation()', e);
+        res.send({ success: false, message: e });
+    }
+}
+
+
 /*
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {

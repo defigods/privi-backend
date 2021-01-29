@@ -76,11 +76,11 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.priviCreditCreated
             );*/
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
                     type: 68,
-                    typeItemId: 'token',
+                    typeItemId: 'user',
                     itemId: '',
                     follower: '',
                     pod: '',
@@ -90,7 +90,7 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     onlyInformation: false,
                     otherItemId: ''
                 }
-            });
+            });*/
             res.send({ success: true });
         }
         else {
@@ -116,7 +116,7 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                 ` `,
                 notificationTypes.traditionalDepositCollateral
             );*/
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
                     type: 69,
@@ -130,7 +130,7 @@ exports.depositCollateral = async (req: express.Request, res: express.Response) 
                     onlyInformation: false,
                     otherItemId: ''
                 }
-            });
+            });*/
             res.send({ success: true });
         }
         else {
@@ -157,7 +157,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                 ` `,
                 notificationTypes.traditionalWithdrawCollateral
             );*/
-            await notificationsController.addNotification({
+            /*await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
                     type: 70,
@@ -171,7 +171,7 @@ exports.withdrawCollateral = async (req: express.Request, res: express.Response)
                     onlyInformation: false,
                     otherItemId: ''
                 }
-            });
+            });*/
             res.send({ success: true });
         }
         else {
@@ -197,13 +197,17 @@ exports.repayFunds = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.traditionalRepay
             );*/
+            const userRef = db.collection(collections.user)
+              .doc(publicId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
                     type: 73,
                     typeItemId: 'token',
-                    itemId: '',
-                    follower: '',
+                    itemId: publicId,
+                    follower: user.firstName,
                     pod: '',
                     comment: '',
                     token: token,
@@ -287,13 +291,18 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.staking
             );*/
+            const userRef = db.collection(collections.user)
+              .doc(publicId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
                     type: 46,
                     typeItemId: 'user',
                     itemId: publicId,
-                    follower: '',
+                    follower: user.firstName,
                     pod: '',
                     comment: '',
                     token: token,
@@ -337,13 +346,18 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
                 ` `,
                 notificationTypes.unstaking
             );*/
+            const userRef = db.collection(collections.user)
+              .doc(publicId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
             await notificationsController.addNotification({
                 userId: publicId,
                 notification: {
                     type: 48,
                     typeItemId: 'user',
                     itemId: publicId,
-                    follower: '',
+                    follower: user.firstName,
                     pod: '',
                     comment: '',
                     token: token,

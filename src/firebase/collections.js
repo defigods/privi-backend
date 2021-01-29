@@ -122,4 +122,5 @@ module.exports = {
 
     socialPools: "SocialPools",
 
+    pendingNotifications: 'PendingNotifications'
 }

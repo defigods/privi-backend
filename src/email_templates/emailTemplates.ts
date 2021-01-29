@@ -139,16 +139,16 @@ export async function sendNewCommunityUsersEmail(userData, communityData) {
 	const communityAddress = communityData.communityAddress;
 	const communityLink = URL() + "/#/communities/" + communityAddress;
 	
-	var mailList = [];
+	let mailList = [];
 	mailList.concat(admins).concat(roles).concat(users);
 	
 	// create reusable transporter object using the default SMTP transport
 	let transporter = nodemailer.createTransport({
-	service: configuration.MAIL_SERVICE,
-	auth: {
-	user: configuration.MAIL_USER,
-	pass: configuration.MAIL_PASS,
-	},
+		service: configuration.MAIL_SERVICE,
+		auth: {
+		user: configuration.MAIL_USER,
+		pass: configuration.MAIL_PASS,
+		}
 	});
 	
 	let htmlEmail = `
@@ -186,11 +186,11 @@ export async function sendNewCommunityUsersEmail(userData, communityData) {
 	try {
 	// send mail with defined transport object
 	let info = await transporter.sendMail({
-	from: '"PRIVI Protocol" <noreply@priviprotocol.io>', // sender address
-	to: mailList, // list of receivers
-	subject: "Community Invitation - PRIVI Protocol", // Subject line
-	text: textEmail, // plain text body
-	html: htmlEmail, // html body
+		from: '"PRIVI Protocol" <noreply@priviprotocol.io>', // sender address
+		to: mailList, // list of receivers
+		subject: "Community Invitation - PRIVI Protocol", // Subject line
+		text: textEmail, // plain text body
+		html: htmlEmail, // html body
 	});
 	
 	console.log("Message sent: %s", info.messageId);
@@ -198,7 +198,7 @@ export async function sendNewCommunityUsersEmail(userData, communityData) {
 	success = (info.messageId != "");
 	
 	} catch (err) {
-	console.log('Error in controllers/communityController.ts -> sendNewCommunityUserEmail(): ', err);
+		console.log('Error in controllers/communityController.ts -> sendNewCommunityUserEmail(): ', err);
 	}
 	
 	return success;

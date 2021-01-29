@@ -703,6 +703,8 @@ interface BasicInfo {
   badges: any[];
   numFollowers: number;
   numFollowings: number;
+  followers: any[];
+  followings: any[];
   bio: string;
   level: number;
   twitter: string;
@@ -723,10 +725,12 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       trustScore: 0.5,
       endorsementScore: 0.5,
       numFollowers: 0,
+      followers: [],
       awards: [],
       creds: 0,
       badges: [],
       numFollowings: 0,
+      followings: [],
       bio: "",
       level: 1,
       twitter: "",
@@ -759,6 +763,8 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.badges = userData.badges || [];
       basicInfo.numFollowers = userData.numFollowers || 0;
       basicInfo.numFollowings = userData.numFollowings || 0;
+      basicInfo.followers = userData.followers || [];
+      basicInfo.followings = userData.followings || [];
       basicInfo.bio = userData.bio || "";
       basicInfo.level = userData.level || 1;
       basicInfo.twitter = userData.twitter || "";
@@ -1311,9 +1317,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToFollowRef = db
-      .collection(collections.user)
-      .doc(userToFollow.id);
+    const userToFollowRef = db.collection(collections.user).doc(userToFollow.id);
     const userToFollowGet = await userToFollowRef.get();
     const userToFollowData: any = userToFollowGet.data();
 
@@ -2492,6 +2496,53 @@ const removeNotification = async (req: express.Request, res: express.Response) =
   }
 }
 
+const inviteUserToPod = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.userId && body.podName && body.podId && body.creatorId) {
+
+      const userRef = db.collection(collections.user)
+        .doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      const userCreatorRef = db.collection(collections.user)
+        .doc(body.creatorId);
+      const userCreatorGet = await userCreatorRef.get();
+      const userCreator: any = userCreatorGet.data();
+
+      let podIndexFound = user.followingFTPods.findIndex(pod => pod === body.podId);
+      if(podIndexFound === -1) {
+        await notificationsController.addNotification({
+          userId: body.userId,
+          notification: {
+            type: 85,
+            typeItemId: 'user',
+            itemId: body.creatorId,
+            follower: userCreator.firstName,
+            pod: body.podName,
+            comment: '',
+            token: '',
+            amount: 0,
+            onlyInformation: false,
+            otherItemId: body.podId
+          }
+        });
+        res.send({ success: true, data: 'Notification sent to ' + user.firstName });
+      } else {
+        res.send({ success: true, data: user.firstName + ' is already following Pod' });
+      }
+    } else {
+      console.log("Error in controllers/userController -> inviteUserToPod()", "No Information");
+      res.send({ success: false, error: "No Information" });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userController -> inviteUserToPod()", err);
+    res.send({ success: false, error: err });
+  }
+}
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -2541,5 +2592,6 @@ module.exports = {
   updateUserCred,
   searchUsers,
   updateTutorialsSeen,
-  removeNotification
+  removeNotification,
+  inviteUserToPod
 };

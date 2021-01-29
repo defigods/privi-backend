@@ -347,7 +347,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
           itemId: body.userId,
           follower: body.userName,
           pod: '',
-          comment: '',
+          comment: userWallPost.name,
           token: '',
           amount: 0,
           onlyInformation: false,
@@ -387,7 +387,7 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
           itemId: body.userId,
           follower: body.userName,
           pod: '',
-          comment: '',
+          comment: userWallPost.name,
           token: '',
           amount: 0,
           onlyInformation: false,
@@ -524,7 +524,7 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
             let data = doc.data();
             data.id = doc.id;
             data.urlItem = 'user';
-            let isAFollowCreditIndex = user.followings.findIndex(user => user === data.userId);
+            let isAFollowCreditIndex = user.followings.findIndex(user => user.user === data.userId);
 
             if(isAFollowCreditIndex !== -1) {
               posts.push(data);

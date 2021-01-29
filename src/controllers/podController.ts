@@ -491,7 +491,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                     typeItemId: 'pod',
                     itemId: podId,
                     follower: creator,
-                    pod: podId,
+                    pod: body.PodInfo.TokenSymbol,
                     comment: '',
                     token: fundingToken,
                     amount: '',
@@ -505,7 +505,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
                     userId: item.user,
                     notification: {
                         type: 56,
-                        typeItemId: 'pod',
+                        typeItemId: 'user',
                         itemId: creator,
                         follower: userData.firstName,
                         pod: podId,
