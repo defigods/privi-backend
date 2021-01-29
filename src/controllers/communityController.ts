@@ -1000,7 +1000,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1016,7 +1016,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1024,7 +1024,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+                res.send({ success: true, data: 'Invitation accepted' });
             } else {
                 console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
@@ -1082,7 +1082,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1098,7 +1098,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1106,7 +1106,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+                res.send({ success: true, data: 'Invitation declined' });
             } else {
                 console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
