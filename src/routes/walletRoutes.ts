@@ -12,7 +12,7 @@ router.post('/transfer', authenticateJWT, walletController.transfer);
 router.post('/burn', walletController.burn);
 router.post('/mint', walletController.mint);
 router.post('/registerTokens', walletController.registerTokens);
-router.post('/updateTokens', walletController.updateTokens);
+router.post('/updateTokensCollection', walletController.updateTokensCollection);
 
 router.get('/getCryptosRateAsList', authenticateJWT, walletController.getCryptosRateAsList);
 router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosRateAsMap);
