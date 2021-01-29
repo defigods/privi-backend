@@ -732,7 +732,6 @@ module.exports.getUserTokenBalance = async (req: express.Request, res: express.R
     const userAddress = body.userAddress;
     const token = body.token;
     const blockchainRes = await coinBalance.balanceOf(userAddress, token);
-    console.log(blockchainRes);
     if (blockchainRes && blockchainRes.success) {
         const balance = blockchainRes.output.Amount;
         res.send({ success: true, data: balance });

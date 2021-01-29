@@ -114,6 +114,7 @@ router.get('/getCommunities', authenticateJWT, communityController.getCommunitie
 router.get('/getCommunity/:communityAddress', authenticateJWT, communityController.getCommunity);
 router.post('/getCommunityCounters', authenticateJWT, communityController.getCommunityCounters);
 router.get('/getTrendingCommunities', authenticateJWT, communityController.getTrendingCommunities);
+router.get('/getMembersData', communityController.getMembersData);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);

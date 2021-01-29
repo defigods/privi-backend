@@ -132,15 +132,20 @@ PRIVI Protocol
 } // sendEmailValidation
 
 export async function sendNewCommunityUsersEmail(userData, communityData) {
-	const admins = userData.admins;
-	const roles = userData.roles;
-	const users = userData.users;
+	let mailList:any = [];
 	const communityName = communityData.communityName;
 	const communityAddress = communityData.communityAddress;
 	const communityLink = URL() + "/#/communities/" + communityAddress;
-	
-	let mailList = [];
-	mailList.concat(admins).concat(roles).concat(users);
+
+	userData.admins.forEach(function(admin){
+		mailList.push(admin.name);
+	});	
+	userData.roles.forEach(function(role){
+		mailList.push(role.name);
+	});
+	userData.users.forEach(function(user){
+		mailList.push(user.name);
+	});
 	
 	// create reusable transporter object using the default SMTP transport
 	let transporter = nodemailer.createTransport({
