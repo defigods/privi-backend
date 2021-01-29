@@ -59,12 +59,21 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             const admins = body.Admins; // string[]
             const insurers = body.Insurers; // string[]
             const userRoles = body.UserRoles;   // {name, role, status}[]
+
+            const userSnap = await db.collection(collections.user).doc(creator).get();
+            const userData: any = userSnap.data();
+
+            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, userData.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
+
             db.collection(collections.priviCredits).doc(creditAddress).set({
                 Description: description,
                 Admins: admins,
                 Insurers: insurers,
                 UserRoles: userRoles,
-                Posts: []
+                Posts: [],
+                JarrId: discordChatJarrCreation.id,
             }, { merge: true })
 
             // add transaction to credit doc
@@ -90,9 +99,6 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
             addZerosToHistory(creditRef.collection(collections.priviCreditDepositedHistory), "deposited");
             addZerosToHistory(creditRef.collection(collections.priviCreditInterestHistory), "interest");
 
-
-            const userSnap = await db.collection(collections.user).doc(creator).get();
-            const userData: any = userSnap.data();
             await notificationsController.addNotification({
                 userId: creator,
                 notification: {
@@ -125,10 +131,6 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
                     }
                 });
             })
-
-            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, userData.firstName);
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, userData.firstName, 'general', false, []);
-            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, userData.firstName, 'announcements', false, []);
 
             res.send({ success: true, data: { id: creditAddress } });
         }

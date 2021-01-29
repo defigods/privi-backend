@@ -13,6 +13,7 @@ import fs from "fs";
 import { sendNewCommunityUsersEmail } from "../email_templates/emailTemplates";
 
 const chatController = require('./chatController');
+const notificationsController = require('./notificationsController');
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -168,6 +169,28 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
             if (!invitationEmails) {
                 console.log("failed to send invitation e-mails.");
+            }
+
+            for (const admin of admins) {
+                const userRef = db.collection(collections.user).doc(admin);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
+
+                await notificationsController.addNotification({
+                    userId: userGet.id,
+                    notification: {
+                        type: 86,
+                        typeItemId: 'user',
+                        itemId: userGet.id,
+                        follower: user.firstName,
+                        pod: name, // community name
+                        comment: 'Admin',
+                        token: '',
+                        amount: 0,
+                        onlyInformation: false,
+                        otherItemId: communityAddress
+                    }
+                });
             }
 
             res.send({
@@ -782,6 +805,28 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
         console.log('Error in controllers/communityController -> setTrendingCommunities()', err);
     }
 })
+
+exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
+    try {
+
+        res.send({ success: true, data: {} });
+    } catch (e) {
+        console.log('Error in controllers/communityController -> acceptRoleInvitation()', e);
+        res.send({ success: false, message: e });
+    }
+}
+
+exports.declineRoleInvitation = async (req: express.Request, res: express.Response) => {
+    try {
+
+        res.send({ success: true, data: {} });
+    } catch (e) {
+        console.log('Error in controllers/communityController -> declineRoleInvitation()', e);
+        res.send({ success: false, message: e });
+    }
+}
+
+
 /*
 exports.createVotation = async (req: express.Request, res: express.Response) => {
     try {
