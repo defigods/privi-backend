@@ -199,16 +199,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for (const admin of admins) {
                 if(admin.userId) {
-                    const userRef = db.collection(collections.user).doc(admin.userId);
-                    const userGet = await userRef.get();
-                    const user: any = userGet.data();
-
                     await notificationsController.addNotification({
                         userId: userGet.id,
                         notification: {
                             type: 86,
                             typeItemId: 'user',
-                            itemId: userGet.id,
+                            itemId: creator,
                             follower: user.firstName,
                             pod: name, // community name
                             comment: 'Admin',
@@ -227,8 +223,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                             notification: {
                                 type: 86,
                                 typeItemId: 'user',
-                                itemId: '',
-                                follower: '',
+                                itemId: creator,
+                                follower: user.firstName,
                                 pod: name, // community name
                                 comment: 'Admin',
                                 token: '',
@@ -243,16 +239,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for(const userRole of userRolesArray) {
                 if(userRole.userId) {
-                    const userRef = db.collection(collections.user).doc(userRole.userId);
-                    const userGet = await userRef.get();
-                    const user: any = userGet.data();
-
                     await notificationsController.addNotification({
                         userId: userGet.id,
                         notification: {
                             type: 86,
                             typeItemId: 'user',
-                            itemId: userGet.id,
+                            itemId: creator,
                             follower: user.firstName,
                             pod: name, // community name
                             comment: userRole.role,
@@ -270,8 +262,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                             notification: {
                                 type: 86,
                                 typeItemId: 'user',
-                                itemId: '',
-                                follower: '',
+                                itemId: creator,
+                                follower: user.firstName,
                                 pod: name, // community name
                                 comment: userRole.role,
                                 token: '',
