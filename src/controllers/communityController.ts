@@ -241,7 +241,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 }
             }
 
-            for(const userRole of userRoles) {
+            for(const userRole of userRolesArray) {
                 if(userRole.userId) {
                     const userRef = db.collection(collections.user).doc(userRole.userId);
                     const userGet = await userRef.get();
