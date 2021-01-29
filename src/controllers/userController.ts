@@ -1399,7 +1399,6 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
     let followersAccepted = user.followers.filter((item) => item.accepted === true);
     user.numFollowers = followersAccepted.length;
 
-
     let alreadyFollowingIndex = userToAcceptData.followings.findIndex((item) => item.user === body.user.id);
     if (alreadyFollowingIndex !== -1) {
       userToAcceptData.followings[alreadyFollowingIndex] = {
