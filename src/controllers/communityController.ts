@@ -1,5 +1,5 @@
 import express, { response } from "express";
-import { getEmailUidMap, updateFirebase, filterTrending, follow, unfollow, getRateOfChangeAsMap, getBuyTokenAmount, getSellTokenAmount, getUidAddressMap } from "../functions/functions";
+import { generateUniqueId, getEmailUidMap, updateFirebase, filterTrending, follow, unfollow, getRateOfChangeAsMap, getBuyTokenAmount, getSellTokenAmount, getUidAddressMap } from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import coinBalance from "../blockchain/coinBalance";
@@ -107,13 +107,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                     }
                 }
             }
-            for (const [index, userRole] of userRoles.entries()) {
+            for (const [index, userRole] of userRolesArray.entries()) {
                 const user = await db.collection(collections.user).where("email", "==", userRole.name).get();
                 if (user.empty) {
-                    userRoles[index].userId = null;
+                    userRolesArray[index].userId = null;
                 } else {
                     for (const doc of user.docs) {
-                        userRoles[index].userId = doc.id;
+                        userRolesArray[index].userId = doc.id;
                     }
                 }
             }
@@ -198,7 +198,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             }
 
             for (const admin of admins) {
-                if(admin.userId) {
+                if (admin.userId) {
                     const userRef = db.collection(collections.user).doc(admin);
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
@@ -241,8 +241,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 }
             }
 
-            for(const userRole of userRoles) {
-                if(userRole.userId) {
+            for (const userRole of userRolesArray) {
+                if (userRole.userId) {
                     const userRef = db.collection(collections.user).doc(userRole.name);
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
@@ -264,7 +264,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                     });
                 } else {
                     let id = generateUniqueId();
-
                     await db.runTransaction(async (transaction) => {
                         transaction.set(db.collection(collections.pendingNotifications).doc(id), {
                             email: userRole.name,
@@ -968,15 +967,15 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
 exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
-        if(body.userId && body.communityId && body.role) {
+        if (body.userId && body.communityId && body.role) {
             const communityRef = db.collection(collections.community)
-              .doc(body.communityId);
+                .doc(body.communityId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
-            if(communityGet.exists && community) {
-                if(body.role === 'Admin') {
-                    if(community.Admins && community.Admins.length > 0) {
+            if (communityGet.exists && community) {
+                if (body.role === 'Admin') {
+                    if (community.Admins && community.Admins.length > 0) {
                         let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
 
                         let copyAdmins = [...community.Admins];
@@ -987,7 +986,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         });
                     }
                 } else {
-                    if(community.UserRoles && community.UserRoles.length > 0) {
+                    if (community.UserRoles && community.UserRoles.length > 0) {
                         let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
 
                         let copyUserRoles = [...community.UserRoles];
@@ -1051,15 +1050,15 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
 exports.declineRoleInvitation = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
-        if(body.userId && body.communityId && body.role) {
+        if (body.userId && body.communityId && body.role) {
             const communityRef = db.collection(collections.community)
-              .doc(body.communityId);
+                .doc(body.communityId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
-            if(communityGet.exists && community) {
-                if(body.role === 'Admin') {
-                    if(community.Admins && community.Admins.length > 0) {
+            if (communityGet.exists && community) {
+                if (body.role === 'Admin') {
+                    if (community.Admins && community.Admins.length > 0) {
                         let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
 
                         let copyAdmins = [...community.Admins];
@@ -1070,7 +1069,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         });
                     }
                 } else {
-                    if(community.UserRoles && community.UserRoles.length > 0) {
+                    if (community.UserRoles && community.UserRoles.length > 0) {
                         let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
 
                         let copyUserRoles = [...community.UserRoles];
