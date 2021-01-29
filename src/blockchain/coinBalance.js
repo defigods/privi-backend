@@ -43,6 +43,35 @@ module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 	return blockchainRes.data;
 };
 
+module.exports.getTokensOfAddress = async (userAddress, caller) => {
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/getTokensOfAddress",
+		data: JSON.stringify({
+			Address: userAddress,
+			Caller: caller,
+		})
+	}
+	let blockchainRes = await axios(config);
+	return blockchainRes.data;
+};
+
+module.exports.getTokensOfAddressByType = async (userAddress, tokenType, caller) => {
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/getTokensOfAddressByType",
+		data: JSON.stringify({
+			Address: userAddress,
+			TokenType: tokenType,
+			Caller: caller,
+		})
+	}
+	let blockchainRes = await axios(config);
+	return blockchainRes.data;
+};
+
 module.exports.getBalancesByType = async (userAddress, type, caller) => {
 	const config = {
 		method: 'get',
