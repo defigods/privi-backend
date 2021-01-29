@@ -303,6 +303,38 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
     }
 };
 
+exports.getFollowings = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+
+        let users: any[] = [];
+
+        const userRef = db.collection(collections.user)
+          .doc(userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        for (const usr of user.followings) {
+            const userFollowingRef = db.collection(collections.user).doc(usr.user);
+            const userFollowingGet = await userFollowingRef.get();
+            const userFollowing: any = userFollowingGet.data();
+
+            let newUser = {
+                id: usr.user,
+                firstName: userFollowing.firstName
+            }
+
+            users.push(newUser);
+        }
+        res.status(200).send({
+            success: true,
+            data: users
+        });
+    } catch (e) {
+        return ('Error in controllers/chatRoutes -> getFollowings()' + e)
+    }
+};
+
 exports.discordGetChat = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;

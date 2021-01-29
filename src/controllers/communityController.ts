@@ -198,17 +198,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             }
 
             for (const admin of admins) {
-                if (admin.userId) {
-                    const userRef = db.collection(collections.user).doc(admin);
-                    const userGet = await userRef.get();
-                    const user: any = userGet.data();
-
+                if(admin.userId) {
                     await notificationsController.addNotification({
                         userId: userGet.id,
                         notification: {
                             type: 86,
                             typeItemId: 'user',
-                            itemId: userGet.id,
+                            itemId: creator,
                             follower: user.firstName,
                             pod: name, // community name
                             comment: 'Admin',
@@ -227,8 +223,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                             notification: {
                                 type: 86,
                                 typeItemId: 'user',
-                                itemId: '',
-                                follower: '',
+                                itemId: creator,
+                                follower: user.firstName,
                                 pod: name, // community name
                                 comment: 'Admin',
                                 token: '',
@@ -241,18 +237,14 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 }
             }
 
-            for (const userRole of userRolesArray) {
-                if (userRole.userId) {
-                    const userRef = db.collection(collections.user).doc(userRole.name);
-                    const userGet = await userRef.get();
-                    const user: any = userGet.data();
-
+            for(const userRole of userRolesArray) {
+                if(userRole.userId) {
                     await notificationsController.addNotification({
                         userId: userGet.id,
                         notification: {
                             type: 86,
                             typeItemId: 'user',
-                            itemId: userGet.id,
+                            itemId: creator,
                             follower: user.firstName,
                             pod: name, // community name
                             comment: userRole.role,
@@ -270,8 +262,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                             notification: {
                                 type: 86,
                                 typeItemId: 'user',
-                                itemId: '',
-                                follower: '',
+                                itemId: creator,
+                                follower: user.firstName,
                                 pod: name, // community name
                                 comment: userRole.role,
                                 token: '',
@@ -1036,7 +1028,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1052,7 +1044,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1060,7 +1052,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+                res.send({ success: true, data: 'Invitation accepted' });
             } else {
                 console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
@@ -1118,7 +1110,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1134,7 +1126,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1142,7 +1134,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+                res.send({ success: true, data: 'Invitation declined' });
             } else {
                 console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
