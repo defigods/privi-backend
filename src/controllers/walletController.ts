@@ -1,5 +1,5 @@
 import {
-    updateFirebase, createNotification, getRateOfChangeAsMap, getRateOfChangeAsList, getEmailUidMap, getTokenToTypeMap, getEmailAddressMap,
+    updateFirebase, getRateOfChangeAsMap, getRateOfChangeAsList, getEmailUidMap, getTokenToTypeMap, getEmailAddressMap,
 } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
@@ -28,9 +28,6 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
         const addressId = "0x7b559b648bc133d5f471436b4d3ff69f0d5a6640"; // any registered user address works
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -60,14 +57,11 @@ module.exports.registerTokens = async (req: express.Request, res: express.Respon
     }
 }
 
-module.exports.updateTokens = async (req: express.Request, res: express.Response) => {
+module.exports.updateTokensCollection = async (req: express.Request, res: express.Response) => {
     try {
         const type = "CRYPTO";
         const tokens = [
             { "Name": "PRIVI Coin", "Symbol": "PRIVI", "Supply": 0 },
-            // { "Name": "Base Coin", "Symbol": "BC", "Supply": 0 },
-            // { "Name": "Data Coin", "Symbol": "DC", "Supply": 0 },
-            // { "Name": "PRIVI Insurance Token", "Symbol": "PI", "Supply": 0 },
             { "Name": "Balancer", "Symbol": "BAL", "Supply": 0 },
             { "Name": "Basic Attention Token", "Symbol": "BAT", "Supply": 0 },
             { "Name": "Compound", "Symbol": "COMP", "Supply": 0 },
@@ -81,18 +75,16 @@ module.exports.updateTokens = async (req: express.Request, res: express.Response
             { "Name": "Yearn Finance", "Symbol": "YFI", "Supply": 0 },
             { "Name": "Wrap Ethereum", "Symbol": "WETH", "Supply": 0 },
         ];
-        tokens.forEach(async (token) => {
-            const blockchainRes = await coinBalance.updateTokenInfo(token.Name, type, token.Symbol, apiKey);
-            if (blockchainRes.success) {
-                updateFirebase(blockchainRes);
-            }
-            else {
-                console.log("blockchain success = false", blockchainRes);
-            }
+        tokens.forEach((token) => {
+            db.collection(collections.tokens).doc(token.Symbol).set({
+                LockUpDate: 0,
+                ...token,
+                TokenType: type
+            });
         });
         res.send({ success: true });
     } catch (err) {
-        console.log('Error in controllers/walletController -> updateTokens()', err);
+        console.log('Error in controllers/walletController -> updateTokensCollection()', err);
         res.send({ success: false });
     }
 }
@@ -291,19 +283,31 @@ module.exports.getBalanceData = async (req: express.Request, res: express.Respon
         const tokens: any = {};
 
         // get tokens
-        const tokenTypes = ["CRYPTO", "FTPOD", "NFTPOD", "COMMUNITY", "SOCIAL"];
-        const tokenPromises: any = [];
-        tokenTypes.forEach((tokenType) => {
-            tokenPromises.push(coinBalance.getTokenListByType(tokenType, apiKey));
-        });
-        const tokenResponces = await Promise.all(tokenPromises);
-        tokenResponces.forEach((responce: any) => {
-            if (responce && responce.success) {
-                const output = responce.output;
-                const tokenType = responce.tokenType;
-                output.forEach((token) => tokens[token] = tokenType);
+        // // --- methode 1 ---
+        // const tokenTypes = ["CRYPTO", "FTPOD", "NFTPOD", "COMMUNITY", "SOCIAL"];
+        // const tokenPromises: any = [];
+        // tokenTypes.forEach((tokenType) => {
+        //     tokenPromises.push(coinBalance.getTokenListByType(tokenType, apiKey));
+        // });
+        // const tokenResponces = await Promise.all(tokenPromises);
+        // tokenResponces.forEach((responce: any) => {
+        //     if (responce && responce.success) {
+        //         const output = responce.output;
+        //         const tokenType = responce.tokenType;
+        //         output.forEach((token) => tokens[token] = tokenType);
+        //     }
+        // });
+        // --- methode 2 ---
+        const tokenTypeMap = await getTokenToTypeMap();
+        const tokenResponse = await coinBalance.getTokensOfAddress(userAddress, apiKey);
+        if (tokenResponse && tokenResponse.success) {
+            const output = tokenResponse.output;
+            for (const token of output) {
+                const type = tokenTypeMap[token]
+                if (type) tokens[token] = type;
             }
-        })
+        }
+
         // get balances
         const balancePromises: any = [];
         Object.keys(tokens).forEach((token) => {

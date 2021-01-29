@@ -82,13 +82,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const apps = body.Apps;
 
             const admins = body.Admins;
-            const emailUidMap = await getEmailUidMap();
-            const userRolesArray: any[] = body.UserRoles;
-            const userRolesObj = {};
-            userRolesArray.forEach((elem) => {
-                const uid = emailUidMap[elem.email];
-                if (uid) userRolesObj[uid] = elem;
-            });
+            // const emailUidMap = await getEmailUidMap();
+            const userRolesObj: any[] = body.UserRoles ?? {};
+            const userRolesArray = Object.values(userRolesObj);
+            // userRolesArray.forEach((elem) => {
+            //     const uid = emailUidMap[elem.email];
+            //     if (uid) userRolesObj[uid] = elem;
+            // });
 
             const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
 
@@ -543,7 +543,35 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 
 /////////////////////////// GETS /////////////////////////////
 
-// get the members data needed for frontend
+// get community token balance needed for Treasury tab
+exports.getTreasuryData = async (req: express.Request, res: express.Response) => {
+    try {
+        const retData: any[] = [];
+        const communityAddress: any = req.query.communityAddress;
+        const blockchainRes = await coinBalance.getTokensOfAddress(communityAddress, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const tokenList = blockchainRes.output;
+            const promises: any[] = [];
+            tokenList.forEach((token) => promises.push(coinBalance.balanceOf(communityAddress, token)));
+            const responses = await Promise.all(promises);
+            responses.forEach((response) => {
+                if (response && response.success) {
+                    retData.push({
+                        ...response.output
+                    });
+                }
+            });
+            res.send({ success: true, data: retData });
+        } else {
+            res.send({ success: false });
+        }
+    }
+    catch (e) {
+        return ('Error in controllers/communitiesControllers -> getTreasuryData()' + e)
+    }
+}
+
+// get members data needed for Member tab
 exports.getMembersData = async (req: express.Request, res: express.Response) => {
     try {
         const retData: any[] = [];
@@ -1000,7 +1028,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1016,7 +1044,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1024,7 +1052,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+                res.send({ success: true, data: 'Invitation accepted' });
             } else {
                 console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
@@ -1082,7 +1110,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1098,7 +1126,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1106,7 +1134,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+                res.send({ success: true, data: 'Invitation declined' });
             } else {
                 console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
