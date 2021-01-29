@@ -1052,6 +1052,16 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         otherItemId: body.communityId
                     }
                 });
+
+                let notifications = [...user.notifications];
+                let foundIndex = notifications.findIndex(noti => noti.comment === body.role && noti.itemId === body.userId
+                  && noti.otherItemId === body.communityId && noti.type === 86);
+                notifications.splice(foundIndex, 1);
+
+                await userRef.update({
+                    notifications: notifications
+                });
+
                 res.send({ success: true, data: 'Invitation accepted' });
             } else {
                 console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Community not found');
@@ -1134,6 +1144,16 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         otherItemId: body.communityId
                     }
                 });
+
+                let notifications = [...user.notifications];
+                let foundIndex = notifications.findIndex(noti => noti.comment === body.role && noti.itemId === body.userId
+                  && noti.otherItemId === body.communityId && noti.type === 86);
+                notifications.splice(foundIndex, 1);
+
+                await userRef.update({
+                    notifications: notifications
+                });
+
                 res.send({ success: true, data: 'Invitation declined' });
             } else {
                 console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Community not found');
