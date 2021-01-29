@@ -194,7 +194,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for (const admin of admins) {
                 if(admin.userId) {
-                    const userRef = db.collection(collections.user).doc(admin);
+                    const userRef = db.collection(collections.user).doc(admin.userId);
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
 
@@ -238,7 +238,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for(const userRole of userRoles) {
                 if(userRole.userId) {
-                    const userRef = db.collection(collections.user).doc(userRole.name);
+                    const userRef = db.collection(collections.user).doc(userRole.userId);
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
 
