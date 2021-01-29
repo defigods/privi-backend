@@ -7,6 +7,7 @@ let chatController = require('../controllers/chatController');
 
 router.post('/getChats', authenticateJWT, chatController.getChats);
 router.post('/getUsers', authenticateJWT, chatController.getUsers);
+router.post('/getFollowings/:userId', authenticateJWT, chatController.getFollowings);
 router.post('/getRoom', authenticateJWT, chatController.getChatRoom);
 router.post('/getRoomById', authenticateJWT, chatController.getChatRoomById);
 router.post('/getMessages', authenticateJWT, chatController.getMessages);
