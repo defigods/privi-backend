@@ -1,7 +1,8 @@
-import express from "express";
-import { createNotification, generateUniqueId, updateFirebase, filterTrending, getMarketPrice, follow, unfollow, getRateOfChangeAsMap, getBuyTokenAmount, getSellTokenAmount } from "../functions/functions";
+import express, { response } from "express";
+import { generateUniqueId, getEmailUidMap, updateFirebase, filterTrending, follow, unfollow, getRateOfChangeAsMap, getBuyTokenAmount, getSellTokenAmount, getUidAddressMap } from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
+import coinBalance from "../blockchain/coinBalance";
 import notificationTypes from "../constants/notificationType";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
@@ -34,7 +35,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         const tokenSymbol = body.TokenSymbol;
         const tokenName = body.TokenName;
         const frequency = body.Frequency;
-        const lockupDate = body.LockUpDate;   // just for now
+        const lockupDate = body.LockUpDate;
 
         const hash = body.Hash;
         const signature = body.Signature;
@@ -45,8 +46,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             await updateFirebase(blockchainRes);
             const updateCommunities = blockchainRes.output.UpdateCommunities;
             const [communityAddress, communityObj]: [any, any] = Object.entries(updateCommunities)[0];
-            const ammAddress = communityObj.AMMAddress;
-
             // add other common infos
             const name = body.Name;
             const description = body.Description;
@@ -54,7 +53,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const hashtags = body.Hashtags;
             const privacy = body.Privacy;
             const hasPhoto = body.HasPhoto;
-            const dicordId = body.DiscordId;
             const twitterId = body.TwitterId;
             const openAdvertising = body.OpenAdvertising;
             const ethereumAddr = body.EthereumContractAddress;
@@ -84,7 +82,14 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const apps = body.Apps;
 
             const admins = body.Admins;
-            const userRoles = body.UserRoles;
+            const emailUidMap = await getEmailUidMap();
+            const userRolesArray: any[] = body.UserRoles;
+            const userRolesObj = {};
+            userRolesArray.forEach((elem) => {
+                const uid = emailUidMap[elem.email];
+                if (uid) userRolesObj[uid] = elem;
+            });
+
             const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
 
             const userRef = db.collection(collections.user)
@@ -102,13 +107,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                     }
                 }
             }
-            for (const [index, userRole] of userRoles.entries()) {
+            for (const [index, userRole] of userRolesArray.entries()) {
                 const user = await db.collection(collections.user).where("email", "==", userRole.name).get();
                 if (user.empty) {
-                    userRoles[index].userId = null;
+                    userRolesArray[index].userId = null;
                 } else {
                     for (const doc of user.docs) {
-                        userRoles[index].userId = doc.id;
+                        userRolesArray[index].userId = doc.id;
                     }
                 }
             }
@@ -158,7 +163,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 AppsEnabled: appsEnabled,
                 Apps: apps,
 
-                UserRoles: userRoles,
+                UserRoles: userRolesObj,
                 Admins: admins || [],
                 InvitationUsers: invitedUsers,
                 Posts: [],
@@ -178,15 +183,15 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             // send invitation email to admins, roles and users here
             let usersData = {
                 admins: admins,
-                roles: userRoles,
+                roles: userRolesArray,
                 users: invitedUsers
             };
-    
+
             let communityData = {
                 communityName: name,
                 communityAddress: communityAddress
             };
-    
+
             let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
             if (!invitationEmails) {
                 console.log("failed to send invitation e-mails.");
@@ -194,7 +199,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for (const admin of admins) {
                 if(admin.userId) {
-                    const userRef = db.collection(collections.user).doc(admin);
+                    const userRef = db.collection(collections.user).doc(admin.userId);
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
 
@@ -236,9 +241,9 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 }
             }
 
-            for(const userRole of userRoles) {
+            for(const userRole of userRolesArray) {
                 if(userRole.userId) {
-                    const userRef = db.collection(collections.user).doc(userRole.name);
+                    const userRef = db.collection(collections.user).doc(userRole.userId);
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
 
@@ -259,7 +264,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                     });
                 } else {
                     let id = generateUniqueId();
-
                     await db.runTransaction(async (transaction) => {
                         transaction.set(db.collection(collections.pendingNotifications).doc(id), {
                             email: userRole.name,
@@ -548,10 +552,77 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 /////////////////////////// GETS /////////////////////////////
 
 // get the members data needed for frontend
-exports.getMemberData = async (req: express.Request, res: express.Response) => {
+exports.getMembersData = async (req: express.Request, res: express.Response) => {
     try {
-        const { communityAddress } = req.query;
-
+        const retData: any[] = [];
+        const communityAddress: any = req.query.communityAddress;
+        const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+        const communityData = communitySnap.data();
+        if (communityData) {
+            // get member basic data from User colection
+            const members = communityData.Members;
+            const userDataMap = {};
+            const addressUidMap = {};   // construct it as we iterate through members
+            const userPromises: any[] = [];
+            members.forEach((memberObj) => {
+                userPromises.push(db.collection(collections.user).doc(memberObj.id).get());
+            });
+            const userResponses = await Promise.all(userPromises);
+            userResponses.forEach((response) => {
+                const uid = response.id;
+                const data = response.data();
+                userDataMap[uid] = data;
+                addressUidMap[data.address] = uid;
+            });
+            // get proportion of supply of each member
+            const communityToken = communityData.TokenSymbol;
+            const getTokenRes = await coinBalance.getToken(communityToken, apiKey);
+            if (getTokenRes && getTokenRes.success) {
+                const totalSupply = getTokenRes.output.Supply;
+                const promises: any[] = [];
+                members.forEach((memberObj) => {
+                    const address = userDataMap[memberObj.id].address;
+                    if (address) promises.push(coinBalance.balanceOf(address, communityToken));
+                });
+                const responses = await Promise.all(promises);
+                responses.forEach((response) => {
+                    if (response && response.success) {
+                        const output = response.output;
+                        const address = output.Address;
+                        const uid = addressUidMap[address];
+                        const amount = output.Amount;
+                        const proportion = (amount / totalSupply) ?? 0;
+                        userDataMap[uid] = {
+                            ...userDataMap[uid],
+                            SupplyProportion: proportion
+                        };
+                    }
+                });
+                // create retData array from userDataMap extracting the necessary info
+                const userRoles = communityData.UserRoles;
+                members.forEach((memberObj) => {
+                    const uid = memberObj.id;
+                    const roleObj = userRoles[uid];
+                    let role;
+                    if (roleObj) role = roleObj.role;
+                    if (roleObj && roleObj.status == "PENDING") role += " (Pending)"
+                    retData.push({
+                        AnonAvatar: userDataMap[uid].anonAvatar,
+                        Anon: userDataMap[uid].anon,
+                        UserId: uid,
+                        Name: userDataMap[uid].firstName,
+                        SupplyProportion: userDataMap[uid].SupplyProportion,
+                        Role: role,
+                        Level: userDataMap[uid].level ?? 1, // TODO: get correct level from somewhere
+                        Activity: "", // TODO: get correct activity from somewhere
+                        NumFollowers: userDataMap[uid].followers ? userDataMap[uid].followers.length : 0,
+                    });
+                });
+            }
+            res.send({ success: true, data: retData });
+        } else {
+            res.send({ success: false });
+        }
     }
     catch (e) {
         return ('Error in controllers/communitiesControllers -> getMemberData()' + e)
@@ -664,51 +735,51 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
         const discordId = body.discordId;
         const communityId = body.communityId;
         const monthPrior = new Date(new Date().setDate(new Date().getDate() - 30));
-    
+
         // Blog posts
         const blogPosts = await db.collection(collections.blogPost)
-          .where("communityId", "==", communityId).get();
-        if(!blogPosts.empty) {
-          for (const doc of blogPosts.docs) {
-            let post = { ...doc.data()};
-            commentsCounter++;
-
-            if(new Date(post.createdAt) > monthPrior){
-                commentsMonthCounter++;
-                conversationsMonthCounter++;
-                
-                if(post.responses && post.responses.length > 0){
-                    commentsMonthCounter = commentsMonthCounter + post.responses.length
-                    commentsCounter = commentsCounter + post.responses.length
-                }
-            }
-            else{
-                if(post.responses && post.responses.length > 0){
-                    commentsCounter = commentsCounter + post.responses.length
-                }
-            }
-          }
-        }
-
-        // Wall Posts
-        const communityWallPostQuery = await db.collection(collections.communityWallPost)
-              .where("communityId", "==", communityId).get();
-        if(!communityWallPostQuery.empty) {
-            for (const doc of communityWallPostQuery.docs) {
-                let post = { ...doc.data()};
+            .where("communityId", "==", communityId).get();
+        if (!blogPosts.empty) {
+            for (const doc of blogPosts.docs) {
+                let post = { ...doc.data() };
                 commentsCounter++;
 
-                if(new Date(post.createdAt) > monthPrior){
+                if (new Date(post.createdAt) > monthPrior) {
                     commentsMonthCounter++;
                     conversationsMonthCounter++;
-                    
-                    if(post.responses && post.responses.length > 0){
+
+                    if (post.responses && post.responses.length > 0) {
                         commentsMonthCounter = commentsMonthCounter + post.responses.length
                         commentsCounter = commentsCounter + post.responses.length
                     }
                 }
-                else{
-                    if(post.responses && post.responses.length > 0){
+                else {
+                    if (post.responses && post.responses.length > 0) {
+                        commentsCounter = commentsCounter + post.responses.length
+                    }
+                }
+            }
+        }
+
+        // Wall Posts
+        const communityWallPostQuery = await db.collection(collections.communityWallPost)
+            .where("communityId", "==", communityId).get();
+        if (!communityWallPostQuery.empty) {
+            for (const doc of communityWallPostQuery.docs) {
+                let post = { ...doc.data() };
+                commentsCounter++;
+
+                if (new Date(post.createdAt) > monthPrior) {
+                    commentsMonthCounter++;
+                    conversationsMonthCounter++;
+
+                    if (post.responses && post.responses.length > 0) {
+                        commentsMonthCounter = commentsMonthCounter + post.responses.length
+                        commentsCounter = commentsCounter + post.responses.length
+                    }
+                }
+                else {
+                    if (post.responses && post.responses.length > 0) {
                         commentsCounter = commentsCounter + post.responses.length
                     }
                 }
@@ -723,7 +794,7 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
             counter++;
             let discordRoom = { ...doc.data() }
 
-            if(new Date(discordRoom.created) > monthPrior){
+            if (new Date(discordRoom.created) > monthPrior) {
                 conversationsMonthCounter++;
             }
 
@@ -735,9 +806,9 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
                     // console.log("messageGet: " + JSON.stringify(messageGet))
                     const message = { ...messageGet.data() }
                     commentsCounter++;
-                    
-                    if(new Date(message.created) > monthPrior){
-                        commentsMonthCounter++;   
+
+                    if (new Date(message.created) > monthPrior) {
+                        commentsMonthCounter++;
                     }
                 }
             };
@@ -745,7 +816,7 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
 
 
         })
-         
+
     } catch (e) {
         console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);
         res.send({ success: false, error: 'Error in controllers/communitiesControllers -> getCommunityCounters()' + e });
@@ -896,15 +967,15 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
 exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
-        if(body.userId && body.communityId && body.role) {
+        if (body.userId && body.communityId && body.role) {
             const communityRef = db.collection(collections.community)
-              .doc(body.communityId);
+                .doc(body.communityId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
-            if(communityGet.exists && community) {
-                if(body.role === 'Admin') {
-                    if(community.Admins && community.Admins.length > 0) {
+            if (communityGet.exists && community) {
+                if (body.role === 'Admin') {
+                    if (community.Admins && community.Admins.length > 0) {
                         let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
 
                         let copyAdmins = [...community.Admins];
@@ -915,7 +986,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         });
                     }
                 } else {
-                    if(community.UserRoles && community.UserRoles.length > 0) {
+                    if (community.UserRoles && community.UserRoles.length > 0) {
                         let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
 
                         let copyUserRoles = [...community.UserRoles];
@@ -979,15 +1050,15 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
 exports.declineRoleInvitation = async (req: express.Request, res: express.Response) => {
     try {
         let body = req.body;
-        if(body.userId && body.communityId && body.role) {
+        if (body.userId && body.communityId && body.role) {
             const communityRef = db.collection(collections.community)
-              .doc(body.communityId);
+                .doc(body.communityId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
-            if(communityGet.exists && community) {
-                if(body.role === 'Admin') {
-                    if(community.Admins && community.Admins.length > 0) {
+            if (communityGet.exists && community) {
+                if (body.role === 'Admin') {
+                    if (community.Admins && community.Admins.length > 0) {
                         let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
 
                         let copyAdmins = [...community.Admins];
@@ -998,7 +1069,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         });
                     }
                 } else {
-                    if(community.UserRoles && community.UserRoles.length > 0) {
+                    if (community.UserRoles && community.UserRoles.length > 0) {
                         let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
 
                         let copyUserRoles = [...community.UserRoles];

@@ -24,8 +24,8 @@ router.get('/getBalanceData', authenticateJWT, walletController.getBalanceData);
 router.get('/getTokensRateChange', authenticateJWT, walletController.getTokensRateChange);  // tokens rate change respect last day
 router.get('/getTotalBalance_v2', authenticateJWT, walletController.getTotalBalance_v2);
 router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.getTokenBalances_v2);
-router.get('/getAllTokenBalances/:address', walletController.getAllTokenBalances);  // all token balances of the user with extra data (Type, ...)
-router.get('/getAllTokensWithBuyingPrice', walletController.getAllTokensWithBuyingPrice);
+router.get('/getAllTokenBalances/:address', authenticateJWT, walletController.getAllTokenBalances);  // all token balances of the user with extra data (Type, ...)
+router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.getAllTokensWithBuyingPrice);
 router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes);  // for evoluction graphs
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
 
