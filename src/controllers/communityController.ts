@@ -648,7 +648,7 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         if (lastCommunityAddress) {
             communitiesSnap = await db.collection(collections.community).startAfter(lastCommunityAddress).limit(5).get();
         } else {
-            communitiesSnap = await db.collection(collections.community).limit(5).get();
+            communitiesSnap = await db.collection(collections.community).get();
         }
         const rateOfChange = await getRateOfChangeAsMap();
         const docs = communitiesSnap.docs;
