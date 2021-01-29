@@ -29,15 +29,15 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
         for (let i = 0; i < 30; i++) {
           Last30DaysImpressions[i] = {
             Impressions: 0,
-            Date: CreationDate,
+            Date: new Date(DateMonth).setDate(DateMonth.getDate() - 1 * i),
           };
           Last30DaysUsers[i] = {
             Users: 0,
-            Date: CreationDate,
+            Date: new Date(DateMonth).setDate(DateMonth.getDate() - 1 * i),
           };
           Last30DaysClicks[i] = {
             Clicks: 0,
-            Date: CreationDate,
+            Date: new Date(DateMonth).setDate(DateMonth.getDate() - 1 * i),
           };
           CreationDate.setDate(CreationDate.getDate() - 1);
         }
@@ -50,15 +50,15 @@ const createCampaign = async (req: express.Request, res: express.Response) => {
         for (let i = 0; i < 12; i++) {
           Last12MonthImpressions[i] = {
             Impressions: 0,
-            Date: DateMonth,
+            Date: new Date(DateMonth).setMonth(DateMonth.getMonth() - 1 * i),
           };
           Last12MonthUsers[i] = {
             Users: 0,
-            Date: DateMonth,
+            Date: new Date(DateMonth).setMonth(DateMonth.getMonth() - 1 * i),
           };
           Last12MonthClicks[i] = {
             Clicks: 0,
-            Date: DateMonth,
+            Date: new Date(DateMonth).setMonth(DateMonth.getMonth() - 1 * i),
           };
           DateMonth.setDate(DateMonth.getDate() - 1);
         }
@@ -385,8 +385,10 @@ const campaignClick = async (req: express.Request, res: express.Response) => {
           res.send({ success: false });
         }
       });
-    campaign.Last30DaysClicks[0] = campaign.Last30DaysClicks[0] + 1;
-    campaign.Last12MonthClicks[0] = campaign.Last12MonthClicks[0] + 1;
+    campaign.Last30DaysClicks[0].Clicks =
+      campaign.Last30DaysClicks[0].Clicks + 1;
+    campaign.Last12MonthClicks[0].Clicks =
+      campaign.Last12MonthClicks[0].Clicks + 1;
     await campaignRef.update({
       NumClicks: campaign.NumClicks + 1,
       Last30DaysClicks: campaign.Last30DaysClicks,
