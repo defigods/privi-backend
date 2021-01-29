@@ -40,6 +40,7 @@ module.exports = {
     priviCreditDepositedHistory: "PriviCreditsDepositedHistory",
     priviCreditBorrowedHistory: "PriviCreditsBorrowedHistory",
     priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
+    trendingPriviCredit: "TrendingPriviCredit",
 
     // community
     community: 'Community',
@@ -52,9 +53,11 @@ module.exports = {
     voting: 'Voting',
 
     podsFT: "PodsFT",
+    trendingPodsFT: "TrendingPodsFT",
     buyingOffers: "BuyingOffers",
     sellingOffers: "SellingOffers",
     podsNFT: "PodsNFT",
+    trendingPodsNFT: "TrendingPodsNFT",
     podTransactions: "PodTransactions",
     priceOfTheDay: "PriceOfTheDay",
     priceHistory: "PriceHistory",
