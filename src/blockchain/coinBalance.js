@@ -1,11 +1,25 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
+module.exports.getToken = async (token, caller) => {
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/getToken",
+		data: JSON.stringify({
+			Token: token,
+			Caller: caller,
+		})
+	}
+	let blockchainRes = await axios(config);
+	return blockchainRes.data;
+};
+
 module.exports.balanceOf = async (userAddress, token) => {
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
-		url: api.blockchainCoinBalanceAPI + "/balanceOf",
+		url: api.blockchainCoinBalanceAPI2 + "/balanceOf",
 		params: {
 			PublicId: userAddress,
 			Token: token,
