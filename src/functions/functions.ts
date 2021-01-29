@@ -590,12 +590,22 @@ export async function getEmailUidMap() {
     return res;
 };
 
+export async function getUidAddressMap() {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).get();
+    usersQuery.forEach((doc) => {
+        const data: any = doc.data();
+        const address = data.address;
+        if (address) res[doc.id] = address;
+    })
+    return res;
+};
+
 export async function getUidFromEmail(email) {
     let res = {};
     const usersQuery = await db.collection(collections.user).where("email", "==", email).get();
     for (const doc of usersQuery.docs) {
         const email = doc.data().email;
-        res[doc.id] = email;
         res[email] = doc.id;
     }
     return res;
@@ -666,10 +676,10 @@ export function filterTrending(allElems) {
 };
 
 // follow function shared between pods, credits, communities... 
-export async function follow(userAddress, productAddress, collectionName, fieldName) {
+export async function follow(userId, productAddress, collectionName, fieldName) {
     try {
         // update user
-        const userSnap = await db.collection(collections.user).doc(userAddress).get();
+        const userSnap = await db.collection(collections.user).doc(userId).get();
 
         const userData: any = userSnap.data();
 
@@ -685,24 +695,24 @@ export async function follow(userAddress, productAddress, collectionName, fieldN
         const followerArray = prodData.Followers ?? [];
         followerArray.push({
             date: Date.now(),
-            id: userAddress
+            id: userId
         })
         prodSnap.ref.update({
             Followers: followerArray
         });
         return true;
     } catch (err) {
-        console.log(`error at following ${collectionName} ${productAddress} by the user ${userAddress}`, err);
+        console.log(`error at following ${collectionName} ${productAddress} by the user ${userId}`, err);
         return false;
     }
 
 }
 
 // unfollow function shared between pods, credits, communities... 
-export async function unfollow(userAddress, productAddress, collectionName, fieldName) {
+export async function unfollow(userId, productAddress, collectionName, fieldName) {
     try {
         // update user
-        const userSnap = await db.collection(collections.user).doc(userAddress).get();
+        const userSnap = await db.collection(collections.user).doc(userId).get();
 
         const userData: any = userSnap.data();
 
@@ -719,14 +729,14 @@ export async function unfollow(userAddress, productAddress, collectionName, fiel
         const prodData: any = prodSnap.data();
         let followerArray = prodData.Followers ?? [];
         followerArray = followerArray.filter((val, index, arr) => {
-            return val.id && val.id !== userAddress;
+            return val.id && val.id !== userId;
         });
         prodSnap.ref.update({
             Followers: followerArray
         });
         return true;
     } catch (err) {
-        console.log(`error at unfollowing ${collectionName} ${productAddress} by the user ${userAddress}`, err);
+        console.log(`error at unfollowing ${collectionName} ${productAddress} by the user ${userId}`, err);
         return false;
     }
 
@@ -748,6 +758,8 @@ export function isPaymentDay(frequency, paymentDay) {
     }
     return false;
 };
+
+// ------------------- Formulas to calculate Amount --------------------
 
 // calculates the market price of a token (community/FT pod)
 export function getMarketPrice(amm: string, supplyRealeased: number, initialSupply: number = 0, targetPrice: number = 0, targetSupply: number = 0) {
@@ -882,6 +894,8 @@ export function getSellTokenAmountPod(amm: string, supplyReleased: number, amoun
     }
     return fundingPhase + exchangePhase;
 }
+
+// -----------------------------------------
 
 // add 7 days of 0 to History
 export async function addZerosToHistory(colRef, fieldName) {
