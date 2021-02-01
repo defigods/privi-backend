@@ -1254,33 +1254,42 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         res.send({
           success: true,
           data: {
-            followers: 0,
+            followers: 0
           },
         });
       } else {
         let followers: any[] = [];
         user.followers.forEach(async (follower, id) => {
-          const followerInfo = await db
-            .collection(collections.user)
-            .doc(follower)
-            .get();
-          const followerData: any = followerInfo.data();
+          if(follower.accepted) {
+            const followerInfo = await db.collection(collections.user)
+              .doc(follower.user)
+              .get();
+            const followerData: any = followerInfo.data();
 
-          let isFollowing = user.followings.find(
-            (following) => following === follower
-          );
+            let isFollowing = user.followings.find(
+              (following) => following.user === follower.user
+            );
 
-          let followerObj = {
-            id: follower,
-            name: followerData.firstName + " " + followerData.lastName,
-            endorsementScore: followerData.endorsementScore,
-            trustScore: followerData.trustScore,
-            numFollowers: followerData.numFollowers,
-            numFollowings: followerData.numFollowings,
-            isFollowing: !!isFollowing,
-          };
+            let numFollowing : number = 0;
+            if(isFollowing && isFollowing.accepted) {
+              numFollowing = 2;
+            } else if(isFollowing && !isFollowing.accepted) {
+              numFollowing = 1;
+            }
 
-          followers.push(followerObj);
+            let followerObj = {
+              id: follower,
+              name: followerData.firstName,
+              endorsementScore: followerData.endorsementScore,
+              trustScore: followerData.trustScore,
+              numFollowers: followerData.numFollowers,
+              numFollowings: followerData.numFollowings,
+              isFollowing: numFollowing,
+            };
+
+            followers.push(followerObj);
+          }
+
 
           if (user.followers.length === id + 1) {
             res.send({
@@ -1292,10 +1301,13 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
           }
         });
       }
+    } else {
+      console.log("Error in controllers/profile -> getFollowers()", 'Error getting followers');
+      res.send({ success: false, error: 'Error getting followers' });
     }
   } catch (err) {
     console.log("Error in controllers/profile -> getFollowers()", err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 };
 
@@ -1318,18 +1330,25 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
         user.followings.forEach(async (following, id) => {
           const followingInfo = await db
             .collection(collections.user)
-            .doc(following)
+            .doc(following.user)
             .get();
           const followingData: any = followingInfo.data();
 
+          let numFollowing : number = 0;
+          if(following && following.accepted) {
+            numFollowing = 2;
+          } else if(following && !following.accepted) {
+            numFollowing = 1;
+          }
+
           let followingObj = {
             id: following,
-            name: followingData.firstName + " " + followingData.lastName,
+            name: followingData.firstName,
             endorsementScore: followingData.endorsementScore,
             trustScore: followingData.trustScore,
             numFollowers: followingData.numFollowers,
             numFollowings: followingData.numFollowings,
-            isFollowing: true,
+            isFollowing: numFollowing,
           };
 
           followings.push(followingObj);
@@ -1556,7 +1575,7 @@ const declineFollowUser = async (req: express.Request, res: express.Response) =>
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/userController -> declineFollowUser()', err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 };
 
@@ -1593,7 +1612,7 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/userController -> unFollowUser()', err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 };
 
