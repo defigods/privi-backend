@@ -30,11 +30,33 @@ export async function updateTxOneToOneSwap(swapDocID, txId) {
 export async function getRecentSwaps(userAddress) {
     // console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
     let recentSwaps = {};
+    let recentSwapsArray: any[] = [];
     const swapQuery = await db.collection(collections.ethTransactions).where('address', '==', userAddress)/*.orderBy('lastUpdate', 'desc').limit(10)*/.get();
     for (const doc of swapQuery.docs) {
         const swap = doc.data();
-        recentSwaps[doc.id] = swap;
+        // recentSwaps[doc.id] = swap;
+        recentSwapsArray.push({...swap, id: doc.id});
     }
+
+    let sortedArray: any[] = recentSwapsArray.sort((obj1, obj2) => {
+        if (obj1.lastUpdate < obj2.lastUpdate) {
+            return 1;
+        }
+    
+        if (obj1.lastUpdate > obj2.lastUpdate) {
+            return -1;
+        }
+    
+        return 0;
+    });
+
+    // console.log('getRecentSwaps', sortedArray)
+
+    for (let index = 0; index < 5; index++) {
+        const element = sortedArray[index];
+        recentSwaps[element.id] = element;
+    }
+
     return recentSwaps;
 };
 

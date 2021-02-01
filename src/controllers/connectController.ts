@@ -177,22 +177,34 @@ const executeTX = (params: any) => {
         };
 
         // Sign transaction
+        let txHash = '0x'
         web3_l.eth.accounts.signTransaction(tx, params.fromAddressKey)
             .then((signed: any) => {
                 // Send transaction
-                web3_l.eth.sendSignedTransaction(signed.rawTransaction)
-                    .then(async (res: any) => {
-                        console.log('Response: ', res)
-                        resolve({ success: true, error: '', data: res });
+                web3_l.eth.sendSignedTransaction(signed.rawTransaction, 
+                    async (err, hash) => {
+                        if (err) {
+                          console.error("sendSignedTransaction error", err);
+                        } else {
+                            txHash = hash;
+                            console.error("sendSignedTransaction hash", 'hash', hash);
+                        }
+                      }
+                    )
+                    .on('receipt', (recipt) => {
+                        if (recipt.status) {
+                            resolve({ success: true, error: '', data: recipt });
+                        } else {
+                            resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: recipt });
+                        }
                     })
-                    .catch((err: string) => {
-                        console.log('Error in ethUtils.js (A) -> executeTX(): ', err);
-                        resolve({ success: false, error: err, data: null });
+                    .on('error', (err) => {
+                        resolve({ success: false, error: err.toString(), data: txHash });
                     });
             })
-            .catch((err: string) => {
+            .catch((err: any) => {
                 console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
-                resolve({ success: false, error: err, data: null });
+                resolve({ success: false, error: err, data: txHash });
             });
     });
 };
@@ -525,7 +537,7 @@ const withdraw = async (
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
-        // console.log('contract.address, contractBalanceWei', contract.options.address, contractBalanceWei)
+        console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amountWei', amountWei)
 
         // Choose method from SwapManager to be called
         const method = (action === Action.WITHDRAW_ETH)
@@ -542,7 +554,7 @@ const withdraw = async (
         };
 
         // Execute transaction to withdraw in Ethereum
-        const { success, data } = await executeTX(paramsTX);
+        const { success, error, data } = await executeTX(paramsTX);
 
         if (success) {
             console.log('--> Withdraw: TX confirmed in Ethereum', data);
@@ -551,9 +563,9 @@ const withdraw = async (
             updateStatusOneToOneSwap(swapDocId, 'confirmed');
             updateTxOneToOneSwap(swapDocId, txHash);
         } else {
-            console.warn('--> Withdraw: TX failed in Ethereum', data);
+            console.warn('--> Withdraw: TX failed in Ethereum', 'error', error, 'data', data, 'type of data is string?:', typeof data === 'string');
             console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
-            const txHash = data.transactionHash;
+            const txHash = data;
             updateStatusOneToOneSwap(swapDocId, 'failed');
             updateTxOneToOneSwap(swapDocId, txHash);
 
