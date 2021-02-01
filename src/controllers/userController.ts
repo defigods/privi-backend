@@ -485,21 +485,8 @@ const signUp = async (req: express.Request, res: express.Response) => {
           email: email,
           password: hash,
           role: role,
-
           validationSecret: validationSecret,
           isEmailValidated: false,
-
-          /*
-                                        gender: gender,
-                                        age: age,
-                                        location: location,
-                                        address: address,
-                                        postalCode: postalCode,
-                                        lastName: lastName,
-                                        dialCode: dialCode,
-                                        phone: phone,
-                    */
-
           lastUpdate: lastUpdate,
           endorsementScore: 0.5,
           trustScore: 0.5,
@@ -528,6 +515,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
           mnemonic: "",
           pubKey: "",
           address: "",
+          userAddress: "",
           tutorialsSeen: {
             communities: false,
             pods: false,
@@ -933,7 +921,10 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 };
-const getNotifications = async (req: express.Request, res: express.Response) => {
+const getNotifications = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let userId = req.params.userId;
     const userSnap = await db.collection(collections.user).doc(userId).get();
@@ -1317,7 +1308,9 @@ const followUser = async (req: express.Request, res: express.Response) => {
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToFollowRef = db.collection(collections.user).doc(userToFollow.id);
+    const userToFollowRef = db
+      .collection(collections.user)
+      .doc(userToFollow.id);
     const userToFollowGet = await userToFollowRef.get();
     const userToFollowData: any = userToFollowGet.data();
 
@@ -1335,184 +1328,226 @@ const followUser = async (req: express.Request, res: express.Response) => {
       followers: userToFollowData.followers,
     });
 
-    let alreadyFollowing = user.followings.find((item) => item.user === body.user.id);
+    let alreadyFollowing = user.followings.find(
+      (item) => item.user === body.user.id
+    );
     if (!alreadyFollowing) {
       user.followings.push({
         user: body.userToFollow.id,
-        accepted: false
+        accepted: false,
       });
     }
 
     await userRef.update({
-      followings: user.followings
+      followings: user.followings,
     });
 
-        await notificationsController.addNotification({
-            userId: userToFollow.id,
-            notification: {
-                type: 1,
-                typeItemId: 'user',
-                itemId: body.user.id,
-                follower: user.firstName,
-                pod: '',
-                comment: '',
-                token: '',
-                amount: 0,
-                onlyInformation: false,
-                otherItemId: ''
-            }
-        });
-        res.send({ success: true, data: userToFollowData });
-    } catch (err) {
-        console.log('Error in controllers/followUser -> followUser()', err);
-        res.send({ success: false, error: err });
-    }
+    await notificationsController.addNotification({
+      userId: userToFollow.id,
+      notification: {
+        type: 1,
+        typeItemId: "user",
+        itemId: body.user.id,
+        follower: user.firstName,
+        pod: "",
+        comment: "",
+        token: "",
+        amount: 0,
+        onlyInformation: false,
+        otherItemId: "",
+      },
+    });
+    res.send({ success: true, data: userToFollowData });
+  } catch (err) {
+    console.log("Error in controllers/followUser -> followUser()", err);
+    res.send({ success: false, error: err });
+  }
 };
 
-const acceptFollowUser = async (req: express.Request, res: express.Response) => {
+const acceptFollowUser = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let body = req.body;
     let userToAcceptFollow = body.userToAcceptFollow;
 
-    const userRef = db.collection(collections.user)
-      .doc(body.user.id);
+    const userRef = db.collection(collections.user).doc(body.user.id);
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToAcceptRef = db.collection(collections.user)
+    const userToAcceptRef = db
+      .collection(collections.user)
       .doc(userToAcceptFollow.id);
     const userToAcceptGet = await userToAcceptRef.get();
     const userToAcceptData: any = userToAcceptGet.data();
 
-    let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToAcceptFollow.id);
+    let alreadyFollowerIndex = user.followers.findIndex(
+      (item) => item.user === userToAcceptFollow.id
+    );
     if (alreadyFollowerIndex !== -1) {
       user.followers[alreadyFollowerIndex] = {
         user: userToAcceptFollow.id,
-        accepted: true
-      }
+        accepted: true,
+      };
     } else {
-      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
-      res.send({ success: false, error: 'Following request not found' });
+      console.log(
+        "Error in controllers/userController -> acceptFollowUser()",
+        "Following request not found"
+      );
+      res.send({ success: false, error: "Following request not found" });
       return;
     }
 
-    let followersAccepted = user.followers.filter((item) => item.accepted === true);
+    let followersAccepted = user.followers.filter(
+      (item) => item.accepted === true
+    );
     user.numFollowers = followersAccepted.length;
 
-    let alreadyFollowingIndex = userToAcceptData.followings.findIndex((item) => item.user === body.user.id);
+    let alreadyFollowingIndex = userToAcceptData.followings.findIndex(
+      (item) => item.user === body.user.id
+    );
     if (alreadyFollowingIndex !== -1) {
       userToAcceptData.followings[alreadyFollowingIndex] = {
         user: body.user.id,
-        accepted: true
-      }
+        accepted: true,
+      };
     } else {
-      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
-      res.send({ success: false, error: 'Following request not found'});
+      console.log(
+        "Error in controllers/userController -> acceptFollowUser()",
+        "Following request not found"
+      );
+      res.send({ success: false, error: "Following request not found" });
       return;
     }
 
-    let followingAccepted = userToAcceptData.followings.filter((item) => item.accepted === true);
+    let followingAccepted = userToAcceptData.followings.filter(
+      (item) => item.accepted === true
+    );
     userToAcceptData.numFollowings = followingAccepted.length;
 
     await userRef.update({
       followers: user.followers,
-      numFollowers: user.numFollowers
+      numFollowers: user.numFollowers,
     });
 
     await userToAcceptRef.update({
       followings: userToAcceptData.followings,
-      numFollowings: userToAcceptData.numFollowings
+      numFollowings: userToAcceptData.numFollowings,
     });
 
-    if(body.idNotification) {
+    if (body.idNotification) {
       await notificationsController.removeNotification({
         userId: body.user.id,
-        notificationId: body.idNotification
-      })
+        notificationId: body.idNotification,
+      });
     }
 
     await notificationsController.addNotification({
       userId: userToAcceptFollow.id,
       notification: {
         type: 2,
-        typeItemId: 'user',
+        typeItemId: "user",
         itemId: body.user.id,
         follower: user.firstName,
-        pod: '',
-        comment: '',
-        token: '',
+        pod: "",
+        comment: "",
+        token: "",
         amount: 0,
         onlyInformation: false,
-        otherItemId: ''
-      }
+        otherItemId: "",
+      },
     });
 
     res.send({ success: true });
   } catch (err) {
-    console.log('Error in controllers/userController -> acceptFollowUser()', err);
+    console.log(
+      "Error in controllers/userController -> acceptFollowUser()",
+      err
+    );
     res.send({ success: false, error: err });
   }
 };
 
-const declineFollowUser = async (req: express.Request, res: express.Response) => {
+const declineFollowUser = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let body = req.body;
     let userToDeclineFollow = body.userToDeclineFollow;
 
-    const userRef = db.collection(collections.user)
-      .doc(body.user.id);
+    const userRef = db.collection(collections.user).doc(body.user.id);
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToDeclineRef = db.collection(collections.user)
+    const userToDeclineRef = db
+      .collection(collections.user)
       .doc(userToDeclineFollow.id);
     const userToDeclineGet = await userToDeclineRef.get();
     const userToDeclineData: any = userToDeclineGet.data();
 
-    let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToDeclineFollow.id);
+    let alreadyFollowerIndex = user.followers.findIndex(
+      (item) => item.user === userToDeclineFollow.id
+    );
     if (alreadyFollowerIndex !== -1) {
       user.followers.splice(alreadyFollowerIndex, 1);
     } else {
-      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
-      res.send({ success: false, error: 'Following request not found'});
+      console.log(
+        "Error in controllers/userController -> acceptFollowUser()",
+        "Following request not found"
+      );
+      res.send({ success: false, error: "Following request not found" });
       return;
     }
 
-    let followersAccepted = user.followers.filter((item) => item.accepted === true);
+    let followersAccepted = user.followers.filter(
+      (item) => item.accepted === true
+    );
     user.numFollowers = followersAccepted.length;
 
-    let alreadyFollowingIndex = userToDeclineData.followings.findIndex((item) => item.user === body.user.id);
+    let alreadyFollowingIndex = userToDeclineData.followings.findIndex(
+      (item) => item.user === body.user.id
+    );
     if (alreadyFollowingIndex !== -1) {
       userToDeclineData.followings.splice(alreadyFollowingIndex, 1);
     } else {
-      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
-      res.send({ success: false, error: 'Following request not found'});
+      console.log(
+        "Error in controllers/userController -> acceptFollowUser()",
+        "Following request not found"
+      );
+      res.send({ success: false, error: "Following request not found" });
       return;
     }
 
-    let followingAccepted = userToDeclineData.followings.filter((item) => item.accepted === true);
+    let followingAccepted = userToDeclineData.followings.filter(
+      (item) => item.accepted === true
+    );
     userToDeclineData.numFollowings = followingAccepted.length;
 
     await userRef.update({
       followers: user.followers,
-      numFollowers: user.numFollowers
+      numFollowers: user.numFollowers,
     });
 
     await userToDeclineRef.update({
       followings: userToDeclineData.followings,
-      numFollowings: userToDeclineData.numFollowings
+      numFollowings: userToDeclineData.numFollowings,
     });
 
-    if(body.idNotification) {
+    if (body.idNotification) {
       await notificationsController.removeNotification({
         userId: body.user.id,
-        notificationId: body.idNotification
-      })
+        notificationId: body.idNotification,
+      });
     }
 
     res.send({ success: true });
   } catch (err) {
-    console.log('Error in controllers/userController -> declineFollowUser()', err);
+    console.log(
+      "Error in controllers/userController -> declineFollowUser()",
+      err
+    );
     res.send({ success: false });
   }
 };
@@ -1522,34 +1557,42 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
     let body = req.body;
     let userToUnFollow = body.userToUnFollow;
 
-    const userRef = db.collection(collections.user)
-      .doc(body.user.id);
+    const userRef = db.collection(collections.user).doc(body.user.id);
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToUnFollowRef = db.collection(collections.user)
+    const userToUnFollowRef = db
+      .collection(collections.user)
       .doc(userToUnFollow.id);
     const userToUnFollowGet = await userToUnFollowRef.get();
     const userToUnFollowData: any = userToUnFollowGet.data();
 
-    let newFollowings = user.followings.filter(item => item.user != userToUnFollow.id);
-    let newFollowingNum = user.followings.filter((item) => item.user != userToUnFollow.id && item.accepted === true);
+    let newFollowings = user.followings.filter(
+      (item) => item.user != userToUnFollow.id
+    );
+    let newFollowingNum = user.followings.filter(
+      (item) => item.user != userToUnFollow.id && item.accepted === true
+    );
 
-    let newFollowers = userToUnFollowData.followers.filter((item) => item.user !== body.user.id);
-    let newFollowersNum = userToUnFollowData.followers.filter((item) => item.user !== body.user.id && item.accepted === true);
+    let newFollowers = userToUnFollowData.followers.filter(
+      (item) => item.user !== body.user.id
+    );
+    let newFollowersNum = userToUnFollowData.followers.filter(
+      (item) => item.user !== body.user.id && item.accepted === true
+    );
 
     await userToUnFollowRef.update({
       followers: newFollowers,
-      numFollowers: newFollowersNum.length
+      numFollowers: newFollowersNum.length,
     });
     await userRef.update({
       followings: newFollowings,
-      numFollowings: newFollowingNum.length
+      numFollowings: newFollowingNum.length,
     });
 
     res.send({ success: true });
   } catch (err) {
-    console.log('Error in controllers/userController -> unFollowUser()', err);
+    console.log("Error in controllers/userController -> unFollowUser()", err);
     res.send({ success: false });
   }
 };
@@ -1710,11 +1753,11 @@ const editUser = async (req: express.Request, res: express.Response) => {
     await userRef.update({
       firstName: body.firstName,
       lastName: body.lastName,
-      // dob: body.dob,
+      dob: body.dob,
       country: body.country,
       postalCode: body.postalCode,
       location: body.location,
-      address: body.address,
+      userAddress: body.userAddress,
       bio: body.bio,
       instagram: body.instagram,
       twitter: body.twitter,
@@ -1727,11 +1770,11 @@ const editUser = async (req: express.Request, res: express.Response) => {
         id: body.id,
         firstName: body.firstName,
         lastName: body.lastName,
-        //dob: body.dob,
+        dob: body.dob,
         country: body.country,
         postalCode: body.postalCode,
         location: body.location,
-        address: body.address,
+        userAddress: body.userAddress,
         bio: body.bio,
         instagram: body.instagram,
         twitter: body.twitter,
@@ -2364,30 +2407,33 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.userId && body.userSearch && body.userSearch !== '') {
-      const userRef = db.collection(collections.user)
-        .doc(body.userId);
+    if (body && body.userId && body.userSearch && body.userSearch !== "") {
+      const userRef = db.collection(collections.user).doc(body.userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      let users : any[] = [];
+      let users: any[] = [];
 
-      const userQuery = await db.collection(collections.user)
-        .orderBy('firstName')
+      const userQuery = await db
+        .collection(collections.user)
+        .orderBy("firstName")
         .startAt(body.userSearch)
-        .endAt(body.userSearch+"\uf8ff").get();
+        .endAt(body.userSearch + "\uf8ff")
+        .get();
       if (!userQuery.empty) {
         for (const doc of userQuery.docs) {
           let data = doc.data();
-          if(doc.id !== body.userId) {
-            let isFollowing : number = 0;
+          if (doc.id !== body.userId) {
+            let isFollowing: number = 0;
             // 0 -> Not following
             // 1 -> Requested
             // 2 -> Following
-            if(user.followings && user.followings.length > 0) {
-              let followingUser = user.followings.find(usr => usr.user === doc.id);
+            if (user.followings && user.followings.length > 0) {
+              let followingUser = user.followings.find(
+                (usr) => usr.user === doc.id
+              );
               if (followingUser && followingUser !== {}) {
-                if(followingUser.accepted) {
+                if (followingUser.accepted) {
                   isFollowing = 2;
                 } else {
                   isFollowing = 1;
@@ -2397,26 +2443,29 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
             users.push({
               id: doc.id,
               firstName: data.firstName,
-              isFollowing: isFollowing
+              isFollowing: isFollowing,
             });
           }
         }
         res.status(200).send({
           success: true,
-          data: users
+          data: users,
         });
       } else {
         res.send({ success: true, data: [] });
       }
     } else {
-      console.log('Error in controllers/userController -> searchUsers()', 'No Information');
-      res.send({ success: false, error: 'No Information' });
+      console.log(
+        "Error in controllers/userController -> searchUsers()",
+        "No Information"
+      );
+      res.send({ success: false, error: "No Information" });
     }
   } catch (err) {
-    console.log('Error in controllers/userController -> searchUsers()', err);
+    console.log("Error in controllers/userController -> searchUsers()", err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 const updateUserCred = (userId, sum) => {
   return new Promise(async (resolve, reject) => {
@@ -2446,7 +2495,10 @@ const updateUserCred = (userId, sum) => {
   });
 };
 
-const updateTutorialsSeen = async (req: express.Request, res: express.Response) => {
+const updateTutorialsSeen = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let body = req.body;
 
@@ -2474,73 +2526,95 @@ const updateTutorialsSeen = async (req: express.Request, res: express.Response) 
   }
 };
 
-const removeNotification = async (req: express.Request, res: express.Response) => {
+const removeNotification = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let body = req.body;
 
     if (body && body.userId && body.notificationId) {
       await notificationsController.removeNotification({
         userId: body.userId,
-        notificationId: body.notificationId
+        notificationId: body.notificationId,
       });
 
       res.send({ success: true });
     } else {
-      console.log("Error in controllers/userController -> removeNotification()", "No Information");
+      console.log(
+        "Error in controllers/userController -> removeNotification()",
+        "No Information"
+      );
       res.send({ success: false, error: "No Information" });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> removeNotification()", err);
+    console.log(
+      "Error in controllers/userController -> removeNotification()",
+      err
+    );
     res.send({ success: false, error: err });
   }
-}
+};
 
 const inviteUserToPod = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
     if (body && body.userId && body.podName && body.podId && body.creatorId) {
-
-      const userRef = db.collection(collections.user)
-        .doc(body.userId);
+      const userRef = db.collection(collections.user).doc(body.userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const userCreatorRef = db.collection(collections.user)
+      const userCreatorRef = db
+        .collection(collections.user)
         .doc(body.creatorId);
       const userCreatorGet = await userCreatorRef.get();
       const userCreator: any = userCreatorGet.data();
 
-      let podIndexFound = user.followingFTPods.findIndex(pod => pod === body.podId);
-      if(podIndexFound === -1) {
+      let podIndexFound = user.followingFTPods.findIndex(
+        (pod) => pod === body.podId
+      );
+      if (podIndexFound === -1) {
         await notificationsController.addNotification({
           userId: body.userId,
           notification: {
             type: 85,
-            typeItemId: 'user',
+            typeItemId: "user",
             itemId: body.creatorId,
             follower: userCreator.firstName,
             pod: body.podName,
-            comment: '',
-            token: '',
+            comment: "",
+            token: "",
             amount: 0,
             onlyInformation: false,
-            otherItemId: body.podId
-          }
+            otherItemId: body.podId,
+          },
         });
-        res.send({ success: true, data: 'Notification sent to ' + user.firstName });
+        res.send({
+          success: true,
+          data: "Notification sent to " + user.firstName,
+        });
       } else {
-        res.send({ success: true, data: user.firstName + ' is already following Pod' });
+        res.send({
+          success: true,
+          data: user.firstName + " is already following Pod",
+        });
       }
     } else {
-      console.log("Error in controllers/userController -> inviteUserToPod()", "No Information");
+      console.log(
+        "Error in controllers/userController -> inviteUserToPod()",
+        "No Information"
+      );
       res.send({ success: false, error: "No Information" });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> inviteUserToPod()", err);
+    console.log(
+      "Error in controllers/userController -> inviteUserToPod()",
+      err
+    );
     res.send({ success: false, error: err });
   }
-}
+};
 
 module.exports = {
   emailValidation,
@@ -2592,5 +2666,5 @@ module.exports = {
   searchUsers,
   updateTutorialsSeen,
   removeNotification,
-  inviteUserToPod
+  inviteUserToPod,
 };
