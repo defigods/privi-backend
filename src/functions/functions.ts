@@ -54,7 +54,9 @@ export async function getRecentSwaps(userAddress) {
 
     for (let index = 0; index < 5; index++) {
         const element = sortedArray[index];
-        recentSwaps[element.id] = element;
+        if (element) {
+            recentSwaps[element.id] = element;    
+        }
     }
 
     return recentSwaps;
