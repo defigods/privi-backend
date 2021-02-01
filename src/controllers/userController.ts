@@ -45,6 +45,7 @@ const notificationsController = require("./notificationsController");
 const apiKey = "PRIVI"; // just for now
 
 import { sockets } from "./serverController";
+import {user} from "firebase-functions/lib/providers/auth";
 
 const emailValidation = async (req: express.Request, res: express.Response) => {
   let success = false;
@@ -815,10 +816,43 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
         b.date > a.date ? 1 : a.date > b.date ? -1 : 0
       );
       res.send({ success: true, data: userData });
-    } else res.send({ success: false });
+    } else {
+      res.send({ success: false, error: 'User not found' });
+    }
   } catch (err) {
     console.log("Error in controllers/profile -> getBasicInfo()", err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
+  }
+};
+
+const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    if (userData !== undefined) {
+
+      let badges = await getBadgesFunction(userId);
+      let myPods = await getMyPodsFunction(userId);
+      let podsFollowed = await getPodsFollowedFunction(userId);
+      let podsInvestments = await getPodsInvestmentsFunction(userId);
+      let followPodsInfo = await getFollowPodsInfoFunction(userId);
+
+      res.send({ success: true, data: {
+          badges: badges,
+          myPods: myPods,
+          podsFollowed: podsFollowed,
+          podsInvestments: podsInvestments,
+          followPodsInfo: followPodsInfo
+        }
+      });
+    } else  {
+      res.send({ success: false, error: 'User not found' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/profile -> getBasicInfo()", err);
+    res.send({ success: false, error: err });
   }
 };
 
@@ -842,45 +876,54 @@ interface Action {
   date: number;
 }
 
-const getFollowPodsInfo = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getFollowPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     console.log(userId);
-    const actions = [];
-    let action: Action = {
-      name: "",
-      profilePhoto: "",
-      description: "",
-      date: Date.now(),
-    };
-    const userSnap = await db.collection(collections.user).doc(userId).get();
-    const userData = userSnap.data();
-    if (userData !== undefined) {
-      const followingFTPods = userData.followingFTPods;
-      const followingNFTPods = userData.followingNFTPods;
-      for (let i = 0; i < followingFTPods.length; i++) {
-        const podSnap = await db
-          .collection(collections.podsFT)
-          .doc(followingFTPods[i])
-          .get();
-        const podData = podSnap.data();
-        // create action and fill actions (to be specified)
-      }
-      res.send({ success: true, data: actions });
-    } else res.send({ success: false });
+
+    let actions = await getFollowPodsInfoFunction(userId);
+
+    res.send({ success: true, data: actions });
   } catch (err) {
     console.log("Error in controllers/profile -> getFollowPodsInfo()", err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 };
 
-const getFollowingUserInfo = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getFollowPodsInfoFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const actions = [];
+      let action: Action = {
+        name: "",
+        profilePhoto: "",
+        description: "",
+        date: Date.now(),
+      };
+      const userSnap = await db.collection(collections.user).doc(userId).get();
+      const userData = userSnap.data();
+      if (userData !== undefined) {
+        const followingFTPods = userData.followingFTPods;
+        const followingNFTPods = userData.followingNFTPods;
+        for (let i = 0; i < followingFTPods.length; i++) {
+          const podSnap = await db
+            .collection(collections.podsFT)
+            .doc(followingFTPods[i])
+            .get();
+          const podData = podSnap.data();
+          // create action and fill actions (to be specified)
+        }
+        resolve(actions);
+      } else {
+        reject('User not found');
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+const getFollowingUserInfo = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     console.log(userId);
@@ -1559,64 +1602,50 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
 const getMyPods = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   try {
-    const userRef = await db.collection(collections.user).doc(userId).get();
-    const user: any = userRef.data();
-    let myNFTPods: any[] = [];
-    let myFTPods: any[] = [];
 
-    if (user.myNFTPods && user.myNFTPods.length > 0) {
-      myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT);
-    }
+    let myPods = await getMyPodsFunction(userId);
 
-    if (user.myFTPods && user.myFTPods.length > 0) {
-      myFTPods = await getPodsArray(user.myFTPods, collections.podsFT);
-    }
-
-    res.send({
-      success: true,
-      data: {
-        NFT: myNFTPods || [],
-        FT: myFTPods || [],
-      },
-    });
+    res.send({ success: true, data: myPods});
   } catch (err) {
     console.log("Error in controllers/profile -> getMyPods()", err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 };
 
-const getPodsInvestments = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getMyPodsFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      const user: any = userRef.data();
+      let myNFTPods: any[] = [];
+      let myFTPods: any[] = [];
+
+      if (user.myNFTPods && user.myNFTPods.length > 0) {
+        myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT);
+      }
+
+      if (user.myFTPods && user.myFTPods.length > 0) {
+        myFTPods = await getPodsArray(user.myFTPods, collections.podsFT);
+      }
+
+      resolve({
+        NFT: myNFTPods || [],
+        FT: myFTPods || [],
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+const getPodsInvestments = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   try {
-    const userRef = await db.collection(collections.user).doc(userId).get();
-    const user: any = userRef.data();
-
-    let investedNFTPods: any[] = [];
-    let investedFTPods: any[] = [];
-
-    if (user.investedNFTPods && user.investedNFTPods.length > 0) {
-      investedNFTPods = await getPodsArray(
-        user.investedNFTPods,
-        collections.podsNFT
-      );
-    }
-
-    if (user.investedFTPods && user.investedFTPods.length > 0) {
-      investedFTPods = await getPodsArray(
-        user.investedFTPods,
-        collections.podsFT
-      );
-    }
+    let pods = await getPodsInvestmentsFunction(userId);
 
     res.send({
       success: true,
-      data: {
-        NFT: investedNFTPods,
-        FT: investedFTPods,
-      },
+      data: pods,
     });
   } catch (err) {
     console.log("Error in controllers/profile -> getPodsInvestments()", err);
@@ -1624,41 +1653,81 @@ const getPodsInvestments = async (
   }
 };
 
+const getPodsInvestmentsFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      const user: any = userRef.data();
+
+      let investedNFTPods: any[] = [];
+      let investedFTPods: any[] = [];
+
+      if (user.investedNFTPods && user.investedNFTPods.length > 0) {
+        investedNFTPods = await getPodsArray(
+          user.investedNFTPods,
+          collections.podsNFT
+        );
+      }
+
+      if (user.investedFTPods && user.investedFTPods.length > 0) {
+        investedFTPods = await getPodsArray(
+          user.investedFTPods,
+          collections.podsFT
+        );
+      }
+      resolve({
+        NFT: investedNFTPods,
+        FT: investedFTPods,
+      })
+    } catch(e) {
+      reject(e);
+    }
+  });
+}
+
 const getPodsFollowed = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   try {
-    const userRef = await db.collection(collections.user).doc(userId).get();
-    const user: any = userRef.data();
+    let pods = await getPodsFollowedFunction(userId);
 
-    let followingNFTPods: any[] = [];
-    let followingFTPods: any[] = [];
-
-    if (user.followingNFTPods && user.followingNFTPods.length > 0) {
-      followingNFTPods = await getPodsArray(
-        user.followingNFTPods,
-        collections.podsNFT
-      );
-    }
-
-    if (user.followingFTPods && user.followingFTPods.length > 0) {
-      followingFTPods = await getPodsArray(
-        user.followingFTPods,
-        collections.podsFT
-      );
-    }
-
-    res.send({
-      success: true,
-      data: {
-        NFT: followingNFTPods,
-        FT: followingFTPods,
-      },
-    });
+    res.send({ success: true, data: pods });
   } catch (err) {
     console.log("Error in controllers/profile -> getPodsFollowed()", err);
-    res.send({ success: false });
+    res.send({ success: false, error: err });
   }
 };
+
+const getPodsFollowedFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      const user: any = userRef.data();
+
+      let followingNFTPods: any[] = [];
+      let followingFTPods: any[] = [];
+
+      if (user.followingNFTPods && user.followingNFTPods.length > 0) {
+        followingNFTPods = await getPodsArray(
+          user.followingNFTPods,
+          collections.podsNFT
+        );
+      }
+
+      if (user.followingFTPods && user.followingFTPods.length > 0) {
+        followingFTPods = await getPodsArray(
+          user.followingFTPods,
+          collections.podsFT
+        );
+      }
+      resolve({
+        NFT: followingNFTPods,
+        FT: followingFTPods,
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 
 const getPodsArray = (arrayPods: any[], collection: any): Promise<any[]> => {
   return new Promise((resolve, reject) => {
@@ -1889,38 +1958,54 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 // get all badges
 const getBadges = async (req: express.Request, res: express.Response) => {
   try {
-    let { userAddress } = req.query;
-    const retData: any[] = [];
-    const blockchainRes = await coinBalance.getBalancesByType(
-      userAddress,
-      collections.badgeToken,
-      apiKey
-    );
-    if (blockchainRes && blockchainRes.success) {
-      const badgesBalance = blockchainRes.output;
-      const badgeSnap = await db.collection(collections.badges).get();
-      badgeSnap.forEach((doc) => {
-        let amount = 0;
-        if (badgesBalance[doc.id]) amount = badgesBalance[doc.id].Amount;
-        if (amount > 0) {
-          retData.push({
-            ...doc.data(),
-            Amount: amount,
-          });
-        }
-      });
-      res.send({ success: true, data: retData });
-    } else {
-      console.log(
-        "Error in controllers/userController -> getBadges()",
-        blockchainRes.message
-      );
-      res.send({ success: false });
-    }
+    let userId = req.params.userId;
+
+    let retData = await getBadgesFunction(userId);
+
+    res.send({ success: true, data: retData });
   } catch (e) {
-    return "Error in controllers/userController -> getBadges()" + e;
+    console.log("Error in controllers/userController -> getBadges()" + e)
+    res.send({ success: false, error: e });
   }
 };
+
+const getBadgesFunction = (userId: string) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = db.collection(collections.user)
+        .doc(userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      const retData: any[] = [];
+      const blockchainRes = await coinBalance.getBalancesByType(
+        user.address,
+        collections.badgeToken,
+        apiKey
+      );
+      if (blockchainRes && blockchainRes.success) {
+        const badgesBalance = blockchainRes.output;
+        const badgeSnap = await db.collection(collections.badges).get();
+        badgeSnap.forEach((doc) => {
+          let amount = 0;
+          if (badgesBalance[doc.id]) amount = badgesBalance[doc.id].Amount;
+          if (amount > 0) {
+            retData.push({
+              ...doc.data(),
+              Amount: amount,
+            });
+          }
+        });
+        resolve(retData);
+      } else {
+        console.log("Error in controllers/userController -> getBadges()", blockchainRes.message);
+        reject(blockchainRes.message);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
 
 const createBadge = async (req: express.Request, res: express.Response) => {
   try {
@@ -2592,5 +2677,6 @@ module.exports = {
   searchUsers,
   updateTutorialsSeen,
   removeNotification,
-  inviteUserToPod
+  inviteUserToPod,
+  getAllInfoProfile
 };
