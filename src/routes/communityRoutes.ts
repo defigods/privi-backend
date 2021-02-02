@@ -131,7 +131,9 @@ router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTok
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
 
 router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
+router.post('/blog/deletePost', authenticateJWT, blogController.blogDelete);
 router.get('/blog/getBlogPosts/:communityId', authenticateJWT, blogController.getBlogPost);
+router.get('/blog/getBlogPost/:postId', authenticateJWT, blogController.getBlogPostById);
 router.post('/blog/changePostPhoto', authenticateJWT, upload3.single('image'), blogController.changePostPhoto);
 router.post('/blog/changePostDescriptionPhotos/:blogPostId', authenticateJWT, upload2.array('image'), blogController.changePostDescriptionPhotos);
 router.get('/blog/getPostPhoto/:blogPostId', blogController.getBlogPostPhotoById);

@@ -101,8 +101,8 @@ router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), u
 router.get('/wall/getPostPhoto/:postId', userController.getPostPhotoById);*/
 
 // CONNECTIONS - GETS
-router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
-router.get('/connections/getFollowings/:userId', authenticateJWT, userController.getFollowing);
+router.get('/connections/getFollowers/:userId/:ownUser', authenticateJWT, userController.getFollowers);
+router.get('/connections/getFollowings/:userId/:ownUser', authenticateJWT, userController.getFollowing);
 
 // INVESTMENTS - GETS
 router.get('/investments/getMyPods/:userId', authenticateJWT, userController.getMyPods);
