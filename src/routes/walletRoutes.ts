@@ -29,8 +29,6 @@ router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.get
 router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes);  // for evoluction graphs
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
 
-
-router.get('/getBalancesOfAddress', authenticateJWT, walletController.getBalancesOfAddress);
 router.get('/getBalancesByType', authenticateJWT, walletController.getBalancesByType);
 
 
