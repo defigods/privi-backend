@@ -11,9 +11,10 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
+    let isUserRole = await checkUserRole(body.author, body.communityId, ['Admin', 'Moderator', 'Treasurer', 'Member']);
     let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
 
-    if(body && body.communityId && isCreator) {
+    if(body && body.communityId && isUserRole && isCreator) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
       const communityRef = db.collection(collections.community)
@@ -36,7 +37,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
       })
 
       res.send({success: true, data: ret});
-    } else if (!isCreator){
+    } else if (!isUserRole || !isCreator){
       console.log('Error in controllers/communityWallController -> postCreate()', "You can't create a post");
       res.send({ success: false, error: "You can't create a post"});
     } else {
@@ -54,9 +55,10 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
+    let isUserRole = await checkUserRole(body.author, body.communityId, ['Admin', 'Moderator']);
     let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
 
-    if(body && body.communityId && isCreator) {
+    if(body && body.communityId && isUserRole && isCreator) {
       const communityRef = db.collection(collections.community)
         .doc(body.communityId);
       const communityGet = await communityRef.get();
@@ -73,7 +75,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
           error: 'Post Delete Error'
         });
       }
-    } else if (!isCreator){
+    } else if (!isUserRole || !isCreator){
       console.log('Error in controllers/communityWallController -> postDelete()', "You can't create a post");
       res.send({ success: false, error: "You can't delete a post"});
     } else {
@@ -444,6 +446,32 @@ const checkIfUserIsCreator = (userId, communityId) => {
 
     if (community && community.Creator && community.Creator === userId) {
       resolve(true);
+    } else {
+      resolve(false);
+    }
+  })
+}
+
+const checkUserRole = (userId, communityId, userRolesAccepted) => {
+  return new Promise(async (resolve, reject) => {
+    const communityRef = db.collection(collections.community)
+      .doc(communityId);
+    const communityGet = await communityRef.get();
+    const community: any = communityGet.data();
+
+    let userRoles = community.UserRoles;
+
+    if(userRoles[userId]) {
+      let bool : boolean = false;
+      userRolesAccepted.forEach(role => {
+        if(role === userRoles[userId].role) {
+          bool = true;
+          resolve(true)
+        }
+      });
+      if(!bool) {
+        resolve(false);
+      }
     } else {
       resolve(false);
     }
