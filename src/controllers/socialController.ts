@@ -6,6 +6,8 @@ import notificationTypes from "../constants/notificationType";
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
+import fs from "fs";
+import path from "path";
 const notificationsController = require('./notificationsController');
 
 const apiKey = process.env.API_KEY;
@@ -40,7 +42,8 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
             // add more fields
             const description = body.Description;
             db.collection(collections.socialPools).doc(socialAddress).set({
-                Description: description
+                Description: description,
+                HasPhoto: false
             });
 
             await notificationsController.addNotification({
@@ -59,7 +62,7 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
                 }
             });
 
-            res.send({ success: true });
+            res.send({ success: true, data: {id: socialAddress} });
         } else {
             console.log('Error in controllers/socialController -> createSocialToken(): success = false.', blockchainRes.message);
             res.send({ success: false, error: blockchainRes.message });
@@ -136,13 +139,73 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
     }
 };
 
+exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file) {
+            const socialPoolsRef = db.collection(collections.socialPools)
+              .doc(req.file.originalname);
+            const socialPoolsGet = await socialPoolsRef.get();
+            const socialPool: any = socialPoolsGet.data();
 
+            if (socialPool.HasPhoto) {
+                await socialPool.update({
+                    HasPhoto: true
+                });
+            }
 
+            let dir = 'uploads/socialTokens/' + 'photos-' + req.file.originalname;
 
+            if (!fs.existsSync(dir)){
+                fs.mkdirSync(dir);
+            }
 
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/socialController -> changeSocialTokenPhoto() ', "There's no file...");
+            res.send({ success: false, error: "There's no file..." });
+        }
+    } catch (err) {
+        console.log('Error in controllers/socialController -> changeSocialTokenPhoto()', err);
+        res.send({ success: false, error: err });
+    }
+}
 
+exports.getPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let socialId = req.params.socialId;
+        console.log(socialId);
+        if (socialId) {
+            const directoryPath = path.join('uploads', 'socialTokens');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
 
+            });
 
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'socialTokens', socialId + '.png'));
+            raw.on('error', function (err) {
+                console.log(err)
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/socialController -> getPhotoById()', "There's no pod id...");
+            res.send({ success: false, error: "There's no pod id..." });
+        }
+    } catch (err) {
+        console.log('Error in controllers/socialController -> getPhotoById()', err);
+        res.send({ success: false, error: err });
+    }
+};
 
 // exports.sellSocialToken = async (req: express.Request, res: express.Response) => {
 //     try {

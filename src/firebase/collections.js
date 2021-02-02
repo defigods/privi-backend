@@ -87,6 +87,7 @@ module.exports = {
     // staking
     stakingRates: "StakingRates",
     stakingDeposit: "StakingDeposit",
+    userStakings: "UserStakings",
     stakingToken: "StakingToken",
     retunHistory: "ReturnHistory",
     stakedHistory: "StakedHistory",

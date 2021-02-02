@@ -12,7 +12,7 @@ router.post('/transfer', authenticateJWT, walletController.transfer);
 router.post('/burn', walletController.burn);
 router.post('/mint', walletController.mint);
 router.post('/registerTokens', walletController.registerTokens);
-router.post('/updateTokens', walletController.updateTokens);
+router.post('/updateTokensCollection', walletController.updateTokensCollection);
 
 router.get('/getCryptosRateAsList', authenticateJWT, walletController.getCryptosRateAsList);
 router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosRateAsMap);
@@ -29,8 +29,6 @@ router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.get
 router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes);  // for evoluction graphs
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
 
-
-router.get('/getBalancesOfAddress', authenticateJWT, walletController.getBalancesOfAddress);
 router.get('/getBalancesByType', authenticateJWT, walletController.getBalancesByType);
 
 

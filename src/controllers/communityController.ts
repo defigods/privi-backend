@@ -82,13 +82,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const apps = body.Apps;
 
             const admins = body.Admins;
-            const emailUidMap = await getEmailUidMap();
-            const userRolesArray: any[] = body.UserRoles;
-            const userRolesObj = {};
-            userRolesArray.forEach((elem) => {
-                const uid = emailUidMap[elem.email];
-                if (uid) userRolesObj[uid] = elem;
-            });
+            // const emailUidMap = await getEmailUidMap();
+            const userRolesObj: any[] = body.UserRoles ?? {};
+            const userRolesArray = Object.values(userRolesObj);
+            // userRolesArray.forEach((elem) => {
+            //     const uid = emailUidMap[elem.email];
+            //     if (uid) userRolesObj[uid] = elem;
+            // });
 
             const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
 
@@ -199,16 +199,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for (const admin of admins) {
                 if(admin.userId) {
-                    const userRef = db.collection(collections.user).doc(admin.userId);
-                    const userGet = await userRef.get();
-                    const user: any = userGet.data();
-
                     await notificationsController.addNotification({
                         userId: userGet.id,
                         notification: {
                             type: 86,
                             typeItemId: 'user',
-                            itemId: userGet.id,
+                            itemId: creator,
                             follower: user.firstName,
                             pod: name, // community name
                             comment: 'Admin',
@@ -227,8 +223,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                             notification: {
                                 type: 86,
                                 typeItemId: 'user',
-                                itemId: '',
-                                follower: '',
+                                itemId: creator,
+                                follower: user.firstName,
                                 pod: name, // community name
                                 comment: 'Admin',
                                 token: '',
@@ -243,16 +239,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             for(const userRole of userRolesArray) {
                 if(userRole.userId) {
-                    const userRef = db.collection(collections.user).doc(userRole.userId);
-                    const userGet = await userRef.get();
-                    const user: any = userGet.data();
-
                     await notificationsController.addNotification({
                         userId: userGet.id,
                         notification: {
                             type: 86,
                             typeItemId: 'user',
-                            itemId: userGet.id,
+                            itemId: creator,
                             follower: user.firstName,
                             pod: name, // community name
                             comment: userRole.role,
@@ -270,8 +262,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                             notification: {
                                 type: 86,
                                 typeItemId: 'user',
-                                itemId: '',
-                                follower: '',
+                                itemId: creator,
+                                follower: user.firstName,
                                 pod: name, // community name
                                 comment: userRole.role,
                                 token: '',
@@ -551,7 +543,35 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
 
 /////////////////////////// GETS /////////////////////////////
 
-// get the members data needed for frontend
+// get community token balance needed for Treasury tab
+exports.getTreasuryData = async (req: express.Request, res: express.Response) => {
+    try {
+        const retData: any[] = [];
+        const communityAddress: any = req.query.communityAddress;
+        const blockchainRes = await coinBalance.getTokensOfAddress(communityAddress, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const tokenList = blockchainRes.output;
+            const promises: any[] = [];
+            tokenList.forEach((token) => promises.push(coinBalance.balanceOf(communityAddress, token)));
+            const responses = await Promise.all(promises);
+            responses.forEach((response) => {
+                if (response && response.success) {
+                    retData.push({
+                        ...response.output
+                    });
+                }
+            });
+            res.send({ success: true, data: retData });
+        } else {
+            res.send({ success: false });
+        }
+    }
+    catch (e) {
+        return ('Error in controllers/communitiesControllers -> getTreasuryData()' + e)
+    }
+}
+
+// get members data needed for Member tab
 exports.getMembersData = async (req: express.Request, res: express.Response) => {
     try {
         const retData: any[] = [];
@@ -656,7 +676,7 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         if (lastCommunityAddress) {
             communitiesSnap = await db.collection(collections.community).startAfter(lastCommunityAddress).limit(5).get();
         } else {
-            communitiesSnap = await db.collection(collections.community).limit(5).get();
+            communitiesSnap = await db.collection(collections.community).get();
         }
         const rateOfChange = await getRateOfChangeAsMap();
         const docs = communitiesSnap.docs;
@@ -1008,7 +1028,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1024,7 +1044,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1032,7 +1052,17 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+
+                let notifications = [...user.notifications];
+                let foundIndex = notifications.findIndex(noti => noti.comment === body.role && noti.itemId === body.userId
+                  && noti.otherItemId === body.communityId && noti.type === 86);
+                notifications.splice(foundIndex, 1);
+
+                await userRef.update({
+                    notifications: notifications
+                });
+
+                res.send({ success: true, data: 'Invitation accepted' });
             } else {
                 console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
@@ -1090,7 +1120,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1106,7 +1136,7 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         typeItemId: 'user',
                         itemId: body.userId,
                         follower: user.firstName,
-                        pod: name, // community name
+                        pod: community.Name, // community name
                         comment: body.role,
                         token: '',
                         amount: 0,
@@ -1114,7 +1144,17 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                         otherItemId: body.communityId
                     }
                 });
-                res.send({ success: true });
+
+                let notifications = [...user.notifications];
+                let foundIndex = notifications.findIndex(noti => noti.comment === body.role && noti.itemId === body.userId
+                  && noti.otherItemId === body.communityId && noti.type === 86);
+                notifications.splice(foundIndex, 1);
+
+                await userRef.update({
+                    notifications: notifications
+                });
+
+                res.send({ success: true, data: 'Invitation declined' });
             } else {
                 console.log('Error in controllers/communityController -> declineRoleInvitation()', 'Community not found');
                 res.send({ success: false, message: 'Community not found' });
