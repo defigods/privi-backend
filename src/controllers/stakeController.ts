@@ -21,8 +21,6 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
         const hash = body.Hash;
         const signature = body.Signature;
 
-        // const txnId = generateUniqueId();
-        // const date = Date.now();
         const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, hash, signature, apiKey)
         if (blockchainRes && blockchainRes.success) {
             // updateFirebase(blockchainRes);
@@ -223,6 +221,11 @@ exports.getStakedAmounts = async (req: express.Request, res: express.Response) =
     try {
         const token: any = req.query.token;
         const userId: any = req.query.userId;
+        console.log(req.query);
+        if (!token || !userId) {
+            res.send({ success: false });
+            return;
+        }
         const stakedHistorySnap = await db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(userId).get();
         const data: any = stakedHistorySnap.data();
         if (data) {

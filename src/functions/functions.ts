@@ -415,13 +415,12 @@ export async function updateFirebase(blockchainRes) {
             let token: string = '';
             let obj: any = {};
             for ([token, obj] of Object.entries(updateStakings)) {
-                const userAddress = obj.UserAddress;
+                const uid = obj.UserAddress;
                 const token = obj.Token;
-                transaction.set(db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(userAddress),
+                transaction.set(db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(uid),
                     obj, { merge: true });
             }
         }
-
         // update social pools
         if (updateSocialPools) {
             let socialPoolToken: string = '';
