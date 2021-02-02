@@ -2004,6 +2004,28 @@ exports.getNFTPodHistories = async (req: express.Request, res: express.Response)
     }
 };
 
+/**
+ * Function to check pods data before creation.
+ * @param req {podName}. podName: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
+ */
+exports.checkPodInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        const podSnap = await db.collection(collections.podsFT)
+            .where("Name", "==", body.podName).get();
+        const podCheckSize:number = podSnap.size;
+        let podExists:boolean = podCheckSize === 1 ? true : false;
+
+        res.send({
+            success: true,
+            data: {podExists: podExists}
+        });
+    } catch (e) {
+        return ('Error in controllers/podController -> checkPodInfo(): ' + e)
+    }        
+};
+
 
 //////////////////////////////////////////////////////////////
 /////////////////////////// CRON JOBS //////////////////////////////
