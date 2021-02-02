@@ -243,11 +243,11 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
             raw.pipe(res);
         } else {
             console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
-            res.send({ success: false });
+            res.send({ success: false, error: "There's no pod id..." });
         }
     } catch (err) {
-        console.log('Error in controllers/podController -> changePodPhoto()', err);
-        res.send({ success: false });
+        console.log('Error in controllers/podController -> getPhotoId()', err);
+        res.send({ success: false, error: err });
     }
 };
 
