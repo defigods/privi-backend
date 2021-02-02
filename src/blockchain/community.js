@@ -15,7 +15,7 @@ module.exports.getCommunityTokenPrice = async (communityAddress, caller) => {
     return blockchainRes.data;
 };
 
-module.exports.createCommunity = async (creator, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply, dateLockUpDate, hash, signature, caller) => {
+module.exports.createCommunity = async (creator, amm, spreadDividend, frequency, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/createCommunity", {
         Creator: creator,
         AMM: amm,
@@ -35,6 +35,11 @@ module.exports.createCommunity = async (creator, amm, targetSupply, targetPrice,
     });
     return blockchainRes.data;
 };
+
+module.exports.createCommunityToken = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/createCommunityToken", data);
+    return blockchainRes.data;
+}
 
 module.exports.sellCommunityToken = async (investor, communityAddress, amount, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/sellCommunityToken", {

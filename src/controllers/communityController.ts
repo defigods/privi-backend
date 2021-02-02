@@ -4,14 +4,16 @@ import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import coinBalance from "../blockchain/coinBalance";
 import notificationTypes from "../constants/notificationType";
-import { db } from "../firebase/firebase";
+import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
 import fields from '../firebase/fields';
 import cron from 'node-cron';
-import { clearLine } from "readline";
+import {clearLine} from "readline";
 import path from "path";
 import fs from "fs";
-import { sendNewCommunityUsersEmail } from "../email_templates/emailTemplates";
+import {sendNewCommunityUsersEmail} from "../email_templates/emailTemplates";
+import {ChainId, Token, WETH, Fetcher, Route} from '@uniswap/sdk'
+import {USDT_ADDRESS} from '../constants/ethContracts'
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
@@ -27,21 +29,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         const body = req.body;
         const creator = body.Creator;
         const amm = body.AMM;
-        const initialSupply = body.InitialSupply;
-        const targetSupply = body.TargetSupply;
-        const targetPrice = body.TargetPrice;
         const spreadDividend = body.SpreadDividend;
-        const fundingToken = body.FundingToken;
-        const tokenSymbol = body.TokenSymbol;
-        const tokenName = body.TokenName;
         const frequency = body.Frequency;
-        const lockupDate = body.LockUpDate;
 
         const hash = body.Hash;
         const signature = body.Signature;
 
-        const blockchainRes = await community.createCommunity(creator, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply,
-            lockupDate, hash, signature, apiKey);
+        const blockchainRes = await community.createCommunity(creator, amm, spreadDividend, frequency, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);
             const updateCommunities = blockchainRes.output.UpdateCommunities;
@@ -171,15 +165,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             }, { merge: true });
 
-            // add txn to community
-            const output = blockchainRes.output;
-            const transactions = output.Transactions;
-            let tid = "";
-            let txnArray: any = null;
-            for ([tid, txnArray] of Object.entries(transactions)) {
-                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
-            }
-
             // send invitation email to admins, roles and users here
             let usersData = {
                 admins: admins,
@@ -293,6 +278,56 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
     }
 };
 
+exports.createCommunityToken = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        let data: any = {
+            Creator: body.Creator,
+            CommunityAddress: body.CommunityAddress,
+            FromAddress: body.FromAddress,
+            FundingTokenAddress: body.FundingTokenAddress,
+            FundingToken: body.FundingToken,
+            TokenType: body.TokenType,
+            TokenSymbol: body.TokenSymbol,
+            TokenName: body.TokenName,
+            LockUpDate: body.LockUpDate,
+            InitialSupply: body.InitialSupply,
+            TargetPrice: body.TargetPrice,
+            TargetSupply: body.TargetSupply,
+
+            Hash: body.Hash,
+            Signature: body.Signature,
+            Caller: apiKey
+        }
+        if (body.TokenType && body.TokenType == 'Ethereum' && body.FundingTokenAddress) {
+            const usdt = await Fetcher.fetchTokenData(ChainId.MAINNET, USDT_ADDRESS);
+            const fundingToken = await Fetcher.fetchTokenData(ChainId.MAINNET, body.FundingTokenAddress);
+            const pairData = await Fetcher.fetchPairData(fundingToken, usdt);
+            const route = new Route([pairData], usdt);
+            data.TargetPrice = route.midPrice.toSignificant(6);
+        }
+        const blockchainRes = await community.createCommunityToken(data);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+
+            // add txn to community
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.community).doc(body.communityAddress).collection(collections.communityTransactions).doc(tid).set({Transactions: txnArray}); // add all because some of them dont have From or To (tokens are burned)
+            }
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/communityController -> createCommunityToken(): success = false', blockchainRes.message);
+            res.send({success: false});
+        }
+    } catch (e) {
+        console.log('Error in controllers/communityController -> createCommunityToken(): ', e);
+        res.send({success: false});
+    }
+}
 
 exports.sellCommunityToken = async (req: express.Request, res: express.Response) => {
     try {
