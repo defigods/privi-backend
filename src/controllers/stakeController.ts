@@ -141,15 +141,15 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
 exports.getStakingAmount = async (req: express.Request, res: express.Response) => {
     try {
         const userId = req.params.userId;
-        // console.log('getStakingAmount', userId);
         const blockchainRes = await priviGovernance.getUserStakings(userId, apiKey);
+        // console.log(blockchainRes)
         if (blockchainRes && blockchainRes.success) {
             let preparedRes: any = {}
             const data = blockchainRes.output;
             data.forEach(element => {
                 preparedRes[element.Token] = element;
             });
-            // console.log('getStakingAmount res',preparedRes)
+            // console.log('getStakingAmount res', preparedRes)
             res.send({ success: true, data: preparedRes });
         } else {
             res.send({ success: false });
@@ -219,8 +219,101 @@ exports.getStakedHistory = async (req: express.Request, res: express.Response) =
     }
 };
 
+exports.getStakedAmounts = async (req: express.Request, res: express.Response) => {
+    try {
+        const token: any = req.query.token;
+        const userId: any = req.query.userId;
+        const stakedHistorySnap = await db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(userId).get();
+        const data: any = stakedHistorySnap.data();
+        if (data) {
+            res.send({ success: true, data: data });
+        } else {
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/stakingController -> getStakedAmounts(): ', err);
+        res.send({ success: false });
+    }
+};
+
 
 // ----------------------------------- CRON -------------------------------------------
+
+// ---------------------- SAVE LAST STAKED AMOUNT --------------------
+const listTokens = ["PRIVI", "pDATA", "pINS"];
+// daily save each users staking amount
+exports.saveStakingAmountEndOfDay = cron.schedule('0 0 * * *', async () => {
+    try {
+        console.log("********* Staking saveStakingAmountEndOfDay() cron job started *********");
+        const userSnaps = await db.collection(collections.user).get();
+        for (let doc of userSnaps.docs) {
+            const uid = doc.id;
+            for (let token of listTokens) {
+                priviGovernance.getUserStakings(uid, token, apiKey).then((blockchainRes) => {
+                    if (blockchainRes && blockchainRes.success) {
+                        const amount = blockchainRes.output;
+                        db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(uid).set({
+                            LastDayStakedAmount: amount
+                        }, { merge: true });
+                    }
+                });
+            }
+        }
+    }
+    catch (err) {
+        console.log('Error in controllers/stakingController -> manageStakedAmount()', err);
+    }
+});
+
+// weekly save each users staking amount
+exports.saveStakingAmountEndOfWeek = cron.schedule('0 0 * * 0', async () => {
+    try {
+        console.log("********* Staking saveStakingAmountEndOfWeek() cron job started *********");
+        const userSnaps = await db.collection(collections.user).get();
+        for (let doc of userSnaps.docs) {
+            const uid = doc.id;
+            for (let token of listTokens) {
+                priviGovernance.getUserStakings(uid, token, apiKey).then((blockchainRes) => {
+                    if (blockchainRes && blockchainRes.success) {
+                        const amount = blockchainRes.output;
+                        db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(uid).set({
+                            LastWeekStakedAmount: amount
+                        }, { merge: true });
+                    }
+                });
+            }
+        }
+    }
+    catch (err) {
+        console.log('Error in controllers/stakingController -> manageStakedAmount()', err);
+    }
+});
+
+// monthly save each users staking amount
+exports.saveStakingAmountEndOfMonth = cron.schedule('0 0 1 * *', async () => {
+    try {
+        console.log("********* Staking saveStakingAmountEndOfMonth() cron job started *********");
+        const userSnaps = await db.collection(collections.user).get();
+        for (let doc of userSnaps.docs) {
+            const uid = doc.id;
+            for (let token of listTokens) {
+                priviGovernance.getUserStakings(uid, token, apiKey).then((blockchainRes) => {
+                    if (blockchainRes && blockchainRes.success) {
+                        const amount = blockchainRes.output;
+                        db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(uid).set({
+                            LastMonthStakedAmount: amount
+                        }, { merge: true });
+                    }
+                });
+            }
+        }
+    }
+    catch (err) {
+        console.log('Error in controllers/stakingController -> manageStakedAmount()', err);
+    }
+});
+// --------------------------------------------------------
+
 
 // daily save staked amount to history collection for every staking token
 exports.manageStakedAmount = cron.schedule('0 0 * * *', async () => {

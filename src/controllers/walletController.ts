@@ -336,34 +336,6 @@ module.exports.getBalanceData = async (req: express.Request, res: express.Respon
     }
 }
 
-module.exports.getBalancesOfAddress = async (req: express.Request, res: express.Response) => {
-    try {
-        let { userAddress } = req.query;
-        userAddress = userAddress!.toString();
-
-        const retData: any[] = [];
-        const tokenTypeMap = await getTokenToTypeMap();
-        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
-        if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            output.forEach((elem) => {
-                const type = tokenTypeMap[elem.Token] ?? collections.cryptoToken;
-                retData.push({
-                    ...elem,
-                    Type: type
-                })
-            });
-            res.send({ success: true, data: retData });
-        } else {
-            console.log("cant getBalancesOfAddress for", userAddress);
-            res.send({ success: false });
-        }
-
-    } catch (err) {
-        console.log('Error in controllers/walletController -> getBalancesOfAddress()', err);
-        res.send({ success: false });
-    }
-}
 
 module.exports.getBalancesByType = async (req: express.Request, res: express.Response) => {
     try {
@@ -412,7 +384,7 @@ module.exports.getAllTokenBalances = async (req: express.Request, res: express.R
         let address = req.params.address;
         const data = {};
         const tokenToTypeMap = await getTokenToTypeMap();
-        const blockchainRes = await coinBalance.getBalancesOfAddress(address, apiKey);
+        const blockchainRes = await coinBalance.getBalancesOfAddress(address);
         if (blockchainRes && blockchainRes.success) {
             let userBalances = blockchainRes.output;
             userBalances.forEach((balanceObj) => {
@@ -607,17 +579,15 @@ module.exports.getTotalBalance_v2 = async (req: express.Request, res: express.Re
 
 module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.Response) => {
     try {
-        let { userId, userAddress } = req.query;
+        let { userAddress } = req.query;
         if (!userAddress) userAddress = req.params.address;
         const retData: {}[] = [];
-        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
+        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            // console.log('getTokenBalances_v2 blockchain output', output)
             for (let balance of output) {
                 retData.push({ token: balance.Token, value: balance.Amount });
             }
-            // console.log('getTokenBalances_v2 blockchain retData', retData)
             res.send({ success: true, data: retData });
         } else {
             console.log("cant getTokenBalances_v2 for", userAddress);
