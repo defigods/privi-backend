@@ -416,7 +416,9 @@ export async function updateFirebase(blockchainRes) {
             let obj: any = {};
             for ([token, obj] of Object.entries(updateStakings)) {
                 const userAddress = obj.UserAddress;
-                transaction.set(db.collection(collections.stakingDeposit).doc(userAddress), obj, { merge: true });
+                const token = obj.Token;
+                transaction.set(db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(userAddress),
+                    obj, { merge: true });
             }
         }
 
