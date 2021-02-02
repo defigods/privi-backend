@@ -949,12 +949,12 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
         const trendingCommunities = filterTrending(allCommunities);
         let batch = db.batch()
 
-        db.collection(collections.trendingCommunity).listDocuments().then(val => {
+        await db.collection(collections.trendingCommunity).listDocuments().then(val => {
             val.map((val) => {
                 batch.delete(val)
             })
         })
-        trendingCommunities.forEach((doc) => {
+        await trendingCommunities.forEach((doc) => {
             let docRef = db.collection(collections.trendingCommunity).doc(); //automatically generate unique id
             batch.set(docRef, doc);
         })

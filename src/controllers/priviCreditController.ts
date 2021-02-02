@@ -606,12 +606,12 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
         const trendingCredits = filterTrending(allCredits);
         let batch = db.batch()
 
-        db.collection(collections.trendingPriviCredit).listDocuments().then(val => {
+        await db.collection(collections.trendingPriviCredit).listDocuments().then(val => {
             val.map((val) => {
                 batch.delete(val)
             })
         })
-        trendingCredits.forEach((doc) => {
+        await trendingCredits.forEach((doc) => {
             let docRef = db.collection(collections.trendingCommunity).doc();
             batch.set(docRef, doc);
         })

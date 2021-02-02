@@ -1083,12 +1083,12 @@ exports.setTrendingPodsFT = cron.schedule('0 2 * * *', async () => {
 
         let batch = db.batch();
 
-        db.collection(collections.trendingPodsFT).listDocuments().then(val => {
+        await db.collection(collections.trendingPodsFT).listDocuments().then(val => {
             val.map((val) => {
                 batch.delete(val)
             })
         })
-        trendingFTPods.forEach((doc) => {
+        await trendingFTPods.forEach((doc) => {
             let docRef = db.collection(collections.trendingPodsFT).doc();
             batch.set(docRef, doc);
         })
@@ -1395,12 +1395,12 @@ exports.setTrendingPodsNFT = cron.schedule('0 2 * * *', async () => {
 
         let batch = db.batch();
 
-        db.collection(collections.trendingPodsNFT).listDocuments().then(val => {
+        await db.collection(collections.trendingPodsNFT).listDocuments().then(val => {
             val.map((val) => {
                 batch.delete(val)
             })
         })
-        trendingNFTPods.forEach((doc) => {
+        await trendingNFTPods.forEach((doc) => {
             let docRef = db.collection(collections.trendingPodsNFT).doc();
             batch.set(docRef, doc);
         })
