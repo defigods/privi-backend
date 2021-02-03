@@ -1,40 +1,41 @@
 //import dotenv from 'dotenv';
-import express from 'express';
-import path from 'path';
-import helmet from 'helmet';
+import express from "express";
+import path from "path";
+import helmet from "helmet";
 import { db } from "../firebase/firebase";
-import collections from '../firebase/collections';
+import collections from "../firebase/collections";
 import { generateUniqueId } from "../functions/functions";
 
-const logger = require('morgan');
-const cors = require('cors')
-const https = require('https')
-const fs = require('fs');
-const os = require('os');
+const logger = require("morgan");
+const cors = require("cors");
+const https = require("https");
+const fs = require("fs");
+const os = require("os");
 
-const userRoutes = require('../routes/userRoutes');
-const podRoutes = require('../routes/podRoutes');
-const stakeRoutes = require('../routes/stakeRoutes');
-const lendingRoutes = require('../routes/lendingRoutes');
-const walletRoutes = require('../routes/walletRoutes');
-const priviScanRoutes = require('../routes/priviScanRoutes');
-const priviCreditRoutes = require('../routes/priviCreditRoutes');
-const priviDataRoutes = require('../routes/priviDataRoutes');
-const liquidityPoolRoutes = require('../routes/liquidityPoolRoutes');
-const ethereumRoutes = require('../routes/ethereumRoutes');
-const insuranceRoutes = require('../routes/insuranceRoutes');
-const forumRoutes = require('../routes/forumRoutes');
-const communityRoutes = require('../routes/communityRoutes');
-const chatRoutes = require('../routes/chatRoutes');
-const votingRoutes = require('../routes/votingRoutes');
-const userLevelsRoutes = require('../routes/userLevelsRoutes');
-const socialRoutes = require('../routes/socialRoutes');
+const userRoutes = require("../routes/userRoutes");
+const podRoutes = require("../routes/podRoutes");
+const stakeRoutes = require("../routes/stakeRoutes");
+const lendingRoutes = require("../routes/lendingRoutes");
+const walletRoutes = require("../routes/walletRoutes");
+const priviScanRoutes = require("../routes/priviScanRoutes");
+const priviCreditRoutes = require("../routes/priviCreditRoutes");
+const priviDataRoutes = require("../routes/priviDataRoutes");
+const liquidityPoolRoutes = require("../routes/liquidityPoolRoutes");
+const ethereumRoutes = require("../routes/ethereumRoutes");
+const insuranceRoutes = require("../routes/insuranceRoutes");
+const forumRoutes = require("../routes/forumRoutes");
+const communityRoutes = require("../routes/communityRoutes");
+const chatRoutes = require("../routes/chatRoutes");
+const votingRoutes = require("../routes/votingRoutes");
+const userLevelsRoutes = require("../routes/userLevelsRoutes");
+const socialRoutes = require("../routes/socialRoutes");
+const tasksRoutes = require("../routes/tasksRoutes");
 
-const notificationsController = require('../controllers/notificationsController');
+const notificationsController = require("../controllers/notificationsController");
 
-const crons = require('../controllers/crons');
+const crons = require("../controllers/crons");
 
-type Env = 'dev' | 'prod' | 'devssl';
+type Env = "dev" | "prod" | "devssl";
 
 export let myServer;
 export let io;
@@ -47,7 +48,7 @@ export const startServer = (env: Env) => {
   const app = express();
 
   // Show API calls in console
-  app.use(logger('dev'));
+  app.use(logger("dev"));
 
   // CORS policy
   // *** TODO: filter by priviweb.tech origin if Env='prod' ***
@@ -63,37 +64,37 @@ export const startServer = (env: Env) => {
   app.set("views", path.join(__dirname, "views"));
 
   // Routes definition
-  app.use('/user', userRoutes);
-  app.use('/pod', podRoutes);
-  app.use('/stake', stakeRoutes);
-  app.use('/lendings', lendingRoutes);
-  app.use('/wallet', walletRoutes);
-  app.use('/privi-scan', priviScanRoutes);
-  app.use('/priviCredit', priviCreditRoutes);
-  app.use('/liquidityPool', liquidityPoolRoutes);
-  app.use('/ethereum', ethereumRoutes);
-  app.use('/privi-data', priviDataRoutes);
-  app.use('/forum', forumRoutes);
-  app.use('/insurance', insuranceRoutes);
-  app.use('/community', communityRoutes);
-  app.use('/chat', chatRoutes);
-  app.use('/voting', votingRoutes);
-  app.use('/user-levels', userLevelsRoutes);
-  app.use('/social', socialRoutes);
+  app.use("/user", userRoutes);
+  app.use("/pod", podRoutes);
+  app.use("/stake", stakeRoutes);
+  app.use("/lendings", lendingRoutes);
+  app.use("/wallet", walletRoutes);
+  app.use("/privi-scan", priviScanRoutes);
+  app.use("/priviCredit", priviCreditRoutes);
+  app.use("/liquidityPool", liquidityPoolRoutes);
+  app.use("/ethereum", ethereumRoutes);
+  app.use("/privi-data", priviDataRoutes);
+  app.use("/forum", forumRoutes);
+  app.use("/insurance", insuranceRoutes);
+  app.use("/community", communityRoutes);
+  app.use("/chat", chatRoutes);
+  app.use("/voting", votingRoutes);
+  app.use("/user-levels", userLevelsRoutes);
+  app.use("/social", socialRoutes);
+  app.use("/tasks", tasksRoutes);
 
   // start all cron jobs
   let name: string;
   let cronJob: any;
   for ([name, cronJob] of Object.entries(crons)) {
-    cronJob.start()
+    cronJob.start();
   }
-
 
   // Start server
   switch (env) {
     // Run in local (development) environment without SSL
-    case 'dev':
-      myServer = require('http').createServer(app);
+    case "dev":
+      myServer = require("http").createServer(app);
       if (myServer) {
         myServer!.listen(port, () => {
           console.log(`Back-end DEV (Non-SSL) running on port ${port}`);
@@ -101,10 +102,10 @@ export const startServer = (env: Env) => {
       }
       break;
     // Run in local (development) environment with SSL
-    case 'devssl':
+    case "devssl":
       const credentials = {
-        key: fs.readFileSync('server.key'),
-        cert: fs.readFileSync('server.cert'),
+        key: fs.readFileSync("server.key"),
+        cert: fs.readFileSync("server.cert"),
       };
       const httpsServer = https.createServer(credentials, app);
       myServer = httpsServer;
@@ -113,15 +114,24 @@ export const startServer = (env: Env) => {
       });
       break;
     // Run in production environment with SSL
-    case 'prod':
+    case "prod":
       try {
-        const privateKey = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/privkey.pem', 'utf8');
-        const certificate = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/cert.pem', 'utf8');
-        const ca = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/chain.pem', 'utf8');
+        const privateKey = fs.readFileSync(
+          "/etc/letsencrypt/live/priviweb.tech/privkey.pem",
+          "utf8"
+        );
+        const certificate = fs.readFileSync(
+          "/etc/letsencrypt/live/priviweb.tech/cert.pem",
+          "utf8"
+        );
+        const ca = fs.readFileSync(
+          "/etc/letsencrypt/live/priviweb.tech/chain.pem",
+          "utf8"
+        );
         const credentials = {
           key: privateKey,
           cert: certificate,
-          ca: ca
+          ca: ca,
         };
         const httpsServer = https.createServer(credentials, app);
         myServer = httpsServer;
@@ -129,15 +139,14 @@ export const startServer = (env: Env) => {
           console.log(`Back-end PROD (SSL) running on port ${port}`);
         });
       } catch (err) {
-        console.log('Certificate not found!', err);
+        console.log("Certificate not found!", err);
       }
       break;
 
     default:
       console.log(`Invalid environment ('dev' or 'prod' not found)`);
       break;
-  };
-
+  }
 
   // Show IP address in console
   const ifaces = os.networkInterfaces();
@@ -145,17 +154,17 @@ export const startServer = (env: Env) => {
   Object.keys(ifaces).forEach(function (ifname) {
     var alias = 0;
     ifaces[ifname].forEach(function (iface: any) {
-      if ('IPv4' !== iface.family || iface.internal !== false) {
+      if ("IPv4" !== iface.family || iface.internal !== false) {
         // skip over internal (i.e. 127.0.0.1) and non-ipv4 addresses
         return;
       }
       if (alias >= 1) {
         // this single interface has multiple ipv4 addresses
-        console.log(ifname + ':' + alias, iface.address);
+        console.log(ifname + ":" + alias, iface.address);
       } else {
         // this interface has only one ipv4 adress
         console.log(ifname, iface.address);
-      };
+      }
       ++alias;
     });
   });
@@ -182,100 +191,108 @@ export const startServer = (env: Env) => {
 
 export const startSocket = (env: Env) => {
   // socket io
-  io = require('socket.io')(myServer, {
+  io = require("socket.io")(myServer, {
     cors: {
       origin: "*",
       // methods: ["GET", "POST"]
-    }
+    },
   });
 
-  io.on('connection', (socket) => {
-    console.log('socket.io connection successful')
+  io.on("connection", (socket) => {
+    console.log("socket.io connection successful");
 
     // when the client emits 'add user', this listens and executes
-    socket.on('add user', async (userId) => {
-      console.log('add user', userId, socket.id);
+    socket.on("add user", async (userId) => {
+      console.log("add user", userId, socket.id);
 
       socket.userId = userId;
 
       sockets[socket.userId] = socket; // save reference
       socket.join(userId); // subscribe to own room
 
-      const userRef = db.collection(collections.user)
-        .doc(userId);
+      const userRef = db.collection(collections.user).doc(userId);
       // const userGet = await userRef.get();
       // const user: any = userGet.data();
       await userRef.update({
         connected: true,
-        socketId: socket.id
+        socketId: socket.id,
       });
     });
 
     // when the user disconnects.. perform this
-    socket.on('disconnect', async () => {
-      console.log('disconnect', socket.id);
+    socket.on("disconnect", async () => {
+      console.log("disconnect", socket.id);
 
       let usersRef = db.collection(collections.user);
-      let userRef = await usersRef.where('socketId', '==', socket.id);
+      let userRef = await usersRef.where("socketId", "==", socket.id);
       const userGet = await userRef.get();
       userGet.forEach(async (user) => {
         console.log(user.id);
         if (user.id) {
-          const userRef = db.collection(collections.user)
-            .doc(user.id);
+          const userRef = db.collection(collections.user).doc(user.id);
 
           sockets[user.id] = null;
           await userRef.update({
             connected: false,
-            socketId: null
+            socketId: null,
           });
         } else {
-          console.log('disconnect');
+          console.log("disconnect");
         }
       });
     });
 
     // when the client emits 'new message', this listens and executes
-    socket.on('new message', (data) => {
-      console.log('new message');
+    socket.on("new message", (data) => {
+      console.log("new message");
     });
 
-
     // when the client emits 'typing'
-    socket.on('typing', () => {
-      console.log('typing');
+    socket.on("typing", () => {
+      console.log("typing");
     });
 
     // when the client emits 'stop typing'
-    socket.on('stop typing', () => {
-      console.log('stop typing');
+    socket.on("stop typing", () => {
+      console.log("stop typing");
     });
 
-    socket.on('subscribe', async function (users) {
+    socket.on("subscribe", async function (users) {
       let room;
-      if (users && users.userFrom && users.userFrom.userName && users.userTo && users.userTo.userName) {
+      if (
+        users &&
+        users.userFrom &&
+        users.userFrom.userName &&
+        users.userTo &&
+        users.userTo.userName
+      ) {
         if (users.userFrom.userName && users.userTo.userName) {
-          if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
+          if (
+            users.userFrom.userName.toLowerCase() <
+            users.userTo.userName.toLowerCase()
+          ) {
             room = "" + users.userFrom.userId + "" + users.userTo.userId;
           } else {
             room = "" + users.userTo.userId + "" + users.userFrom.userId;
           }
         }
-        const chatQuery = await db.collection(collections.chat)
-          .where("room", "==", room).get();
+        const chatQuery = await db
+          .collection(collections.chat)
+          .where("room", "==", room)
+          .get();
         if (!chatQuery.empty) {
           for (const doc of chatQuery.docs) {
-            let data = doc.data()
+            let data = doc.data();
             if (users.userFrom.userId === data.users.userFrom.userId) {
               db.collection(collections.chat).doc(doc.id).update({
-                "users.userFrom.lastView": Date.now()
+                "users.userFrom.lastView": Date.now(),
               });
             } else if (users.userFrom.userId === data.users.userTo.userId) {
               db.collection(collections.chat).doc(doc.id).update({
-                "users.userTo.lastView": Date.now()
+                "users.userTo.lastView": Date.now(),
               });
             }
-            console.log('joining room', room);
+            console.log("joining room", room);
             socket.join(room);
           }
         } else {
@@ -289,35 +306,38 @@ export const startSocket = (env: Env) => {
               room: room,
               lastMessage: null,
               lastMessageDate: null,
-              messages: []
+              messages: [],
             });
           });
 
-          console.log('joining room', room);
+          console.log("joining room", room);
           socket.join(room);
         }
       }
     });
 
-    socket.on('subscribeToYou', async (user) => {
+    socket.on("subscribeToYou", async (user) => {
       socket.join(user._id);
     });
 
-    socket.on('numberMessages', async (id) => {
-      const messageQuery = await db.collection(collections.message)
+    socket.on("numberMessages", async (id) => {
+      const messageQuery = await db
+        .collection(collections.message)
         .where("to", "==", id)
-        .where("seen", "==", false).get();
+        .where("seen", "==", false)
+        .get();
       if (!messageQuery.empty) {
-        socket.to(id).emit('numberMessages', { number: messageQuery.docs.length });
+        socket
+          .to(id)
+          .emit("numberMessages", { number: messageQuery.docs.length });
       }
     });
 
-    socket.on('add-message', async (message) => {
-      console.log('message', message);
+    socket.on("add-message", async (message) => {
+      console.log("message", message);
 
       const uid = generateUniqueId();
       await db.runTransaction(async (transaction) => {
-
         // userData - no check if firestore insert works? TODO
         transaction.set(db.collection(collections.message).doc(uid), {
           room: message.room,
@@ -325,76 +345,85 @@ export const startSocket = (env: Env) => {
           from: message.from,
           to: message.to,
           created: Date.now(),
-          seen: false
+          seen: false,
         });
       });
-      const chatQuery = await db.collection(collections.chat)
-        .where("room", "==", message.room).get();
+      const chatQuery = await db
+        .collection(collections.chat)
+        .where("room", "==", message.room)
+        .get();
       if (!chatQuery.empty) {
         for (const doc of chatQuery.docs) {
           let data = doc.data();
           let messages: any = data.messages;
-          messages.push(uid)
+          messages.push(uid);
 
           db.collection(collections.chat).doc(doc.id).update({
             messages: messages,
             lastMessage: message.message,
-            lastMessageDate: message.created
+            lastMessageDate: message.created,
           });
         }
       }
 
-      const messageQuery = await db.collection(collections.message)
+      const messageQuery = await db
+        .collection(collections.message)
         .where("to", "==", message.to)
-        .where("seen", "==", false).get();
+        .where("seen", "==", false)
+        .get();
       if (!messageQuery.empty) {
-        socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+        socket
+          .to(message.to)
+          .emit("numberMessages", { number: messageQuery.docs.length });
       }
 
-      console.log('sending room post', message);
-      socket.to(message.room).emit('message', {
+      console.log("sending room post", message);
+      socket.to(message.room).emit("message", {
         room: message.room,
         message: message.message,
         from: message.from,
         to: message.to,
         created: Date.now(),
         seen: false,
-        id: uid
+        id: uid,
       });
     });
 
-    socket.on('subscribe-discord', async function (chatInfo) {
+    socket.on("subscribe-discord", async function (chatInfo) {
       if (chatInfo.discordChatId && chatInfo.discordRoomId) {
-        const discordRoomRef = db.collection(collections.discordChat)
-          .doc(chatInfo.discordChatId).collection(collections.discordRoom)
+        const discordRoomRef = db
+          .collection(collections.discordChat)
+          .doc(chatInfo.discordChatId)
+          .collection(collections.discordRoom)
           .doc(chatInfo.discordRoomId);
         const discordRoomGet = await discordRoomRef.get();
         const discordRoom: any = discordRoomGet.data();
 
-        let users: any[] = [...discordRoom.users]
-        let findUserIndex = users.findIndex((user, i) => chatInfo.userId === user.userId);
+        let users: any[] = [...discordRoom.users];
+        let findUserIndex = users.findIndex(
+          (user, i) => chatInfo.userId === user.userId
+        );
         if (findUserIndex !== -1) {
           users[findUserIndex].lastView = Date.now();
           users[findUserIndex].userConnected = true;
         }
 
-        console.log('joining room', chatInfo.discordRoomId);
+        console.log("joining room", chatInfo.discordRoomId);
         socket.join(chatInfo.discordRoomId);
       } else {
-        console.log('Error subscribe-discord socket: No Room provided')
+        console.log("Error subscribe-discord socket: No Room provided");
       }
     });
 
-    socket.on('numberMessages-discord', async function (room) {
+    socket.on("numberMessages-discord", async function (room) {
       // Not need it now, think how to implement it
     });
 
-    socket.on('add-message-discord', async function (message) {
-      console.log('message', message);
+    socket.on("add-message-discord", async function (message) {
+      console.log("message", message);
 
       const uid = generateUniqueId();
       await db.runTransaction(async (transaction) => {
-
         // userData - no check if firestore insert works? TODO
         transaction.set(db.collection(collections.discordMessage).doc(uid), {
           discordRoom: message.discordRoom,
@@ -406,11 +435,13 @@ export const startSocket = (env: Env) => {
           dislikes: [],
           numLikes: 0,
           numDislikes: 0,
-          numReplies: 0
+          numReplies: 0,
         });
       });
-      const discordRoomRef = db.collection(collections.discordChat)
-        .doc(message.discordChatId).collection(collections.discordRoom)
+      const discordRoomRef = db
+        .collection(collections.discordChat)
+        .doc(message.discordChatId)
+        .collection(collections.discordRoom)
         .doc(message.discordRoom);
       const discordRoomGet = await discordRoomRef.get();
       const discordRoom: any = discordRoomGet.data();
@@ -421,7 +452,7 @@ export const startSocket = (env: Env) => {
       await discordRoomRef.update({
         messages: messages,
         lastMessage: message.message,
-        lastMessageDate: Date.now()
+        lastMessageDate: Date.now(),
       });
 
       /*const messageQuery = await db.collection(collections.message)
@@ -434,8 +465,8 @@ export const startSocket = (env: Env) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      console.log('sending room post', message);
-      socket.to(message.discordRoom).emit('message-discord', {
+      console.log("sending room post", message);
+      socket.to(message.discordRoom).emit("message-discord", {
         discordRoom: message.discordRoom,
         message: message.message,
         from: message.from,
@@ -452,44 +483,54 @@ export const startSocket = (env: Env) => {
         numLikes: 0,
         numDislikes: 0,
         numReplies: 0,
-        id: uid
+        id: uid,
       });
     });
 
-    socket.on('add-reply-discord', async function (message) {
-      console.log('message', message);
+    socket.on("add-reply-discord", async function (message) {
+      console.log("message", message);
 
       const uid = generateUniqueId();
       await db.runTransaction(async (transaction) => {
-
         // userData - no check if firestore insert works? TODO
-        transaction.set(db.collection(collections.discordMessage).doc(message.discordMessage)
-          .collection(collections.discordMessageReplies).doc(uid), {
-          discordRoom: message.discordRoom,
-          discordMessage: message.discordMessage,
-          message: message.message,
-          from: message.from,
-          created: Date.now(),
-          seen: [],
-          likes: [],
-          dislikes: [],
-          numLikes: 0,
-          numDislikes: 0,
-          numReplies: 0
-        });
+        transaction.set(
+          db
+            .collection(collections.discordMessage)
+            .doc(message.discordMessage)
+            .collection(collections.discordMessageReplies)
+            .doc(uid),
+          {
+            discordRoom: message.discordRoom,
+            discordMessage: message.discordMessage,
+            message: message.message,
+            from: message.from,
+            created: Date.now(),
+            seen: [],
+            likes: [],
+            dislikes: [],
+            numLikes: 0,
+            numDislikes: 0,
+            numReplies: 0,
+          }
+        );
       });
-      const discordMessageRef = db.collection(collections.discordMessage)
+      const discordMessageRef = db
+        .collection(collections.discordMessage)
         .doc(message.discordMessage);
       const discordMessageGet = await discordMessageRef.get();
       const discordMessage: any = discordMessageGet.data();
 
-      if (discordMessage && discordMessage.numReplies && discordMessage.numReplies !== 0) {
+      if (
+        discordMessage &&
+        discordMessage.numReplies &&
+        discordMessage.numReplies !== 0
+      ) {
         await discordMessageRef.update({
-          numReplies: discordMessage.numReplies + 1
+          numReplies: discordMessage.numReplies + 1,
         });
       } else {
         await discordMessageRef.update({
-          numReplies: 1
+          numReplies: 1,
         });
       }
 
@@ -505,10 +546,13 @@ export const startSocket = (env: Env) => {
 
       let updateMessage: any = { ...discordMessage };
       updateMessage.numReplies = updateMessage.numReplies + 1;
-      console.log('sending room post', updateMessage);
-      socket.to(message.discordRoom).emit('update-message-discord', updateMessage);
+      console.log("sending room post", updateMessage);
+      socket
+        .to(message.discordRoom)
+        .emit("update-message-discord", updateMessage);
 
-      const discordChatRef = db.collection(collections.discordChat)
+      const discordChatRef = db
+        .collection(collections.discordChat)
         .doc(message.discordRoom);
       const discordChatGet = await discordChatRef.get();
       const discordChat: any = discordChatGet.data();
@@ -517,16 +561,16 @@ export const startSocket = (env: Env) => {
         userId: discordMessage.from,
         notification: {
           type: 81,
-          typeItemId: 'user',
+          typeItemId: "user",
           itemId: message.from,
           follower: user.firstName,
-          pod: '',
+          pod: "",
           comment: discordMessage.message,
-          token: '',
+          token: "",
           amount: 0,
           onlyInformation: false,
-          otherItemId: uid
-        }
+          otherItemId: uid,
+        },
       });
     });
   });

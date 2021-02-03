@@ -1247,6 +1247,8 @@ const getPostPhotoById = async (
 
 const getFollowers = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
+  let ownUser = req.params.ownUser;
+
   try {
     const userRef = await db.collection(collections.user).doc(userId).get();
     const user: any = userRef.data();
@@ -1263,22 +1265,24 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         let followers: any[] = [];
         user.followers.forEach(async (follower, id) => {
           if (follower.accepted) {
-            const followerInfo = await db
-              .collection(collections.user)
+            const followerInfo = await db.collection(collections.user)
               .doc(follower.user)
               .get();
             const followerData: any = followerInfo.data();
 
-            let isFollowing = user.followings.find(
-              (following) => following.user === follower.user
-            );
-
             let numFollowing: number = 0;
-            if (isFollowing && isFollowing.accepted) {
-              numFollowing = 2;
-            } else if (isFollowing && !isFollowing.accepted) {
-              numFollowing = 1;
+            if(ownUser) {
+              let isFollowing = user.followings.find(
+                (following) => following.user === follower.user
+              );
+
+              if (isFollowing && isFollowing.accepted) {
+                numFollowing = 2;
+              } else if (isFollowing && !isFollowing.accepted) {
+                numFollowing = 1;
+              }
             }
+
 
             let followerObj = {
               id: follower,
@@ -1304,10 +1308,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         });
       }
     } else {
-      console.log(
-        "Error in controllers/profile -> getFollowers()",
-        "Error getting followers"
-      );
+      console.log("Error in controllers/profile -> getFollowers()", "Error getting followers");
       res.send({ success: false, error: "Error getting followers" });
     }
   } catch (err) {
@@ -1318,6 +1319,8 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
 
 const getFollowing = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
+  let ownUser = req.params.ownUser;
+
   try {
     const userRef = await db.collection(collections.user).doc(userId).get();
     const user: any = userRef.data();
@@ -1333,17 +1336,18 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
         });
       } else {
         user.followings.forEach(async (following, id) => {
-          const followingInfo = await db
-            .collection(collections.user)
+          const followingInfo = await db.collection(collections.user)
             .doc(following.user)
             .get();
           const followingData: any = followingInfo.data();
 
           let numFollowing: number = 0;
-          if (following && following.accepted) {
-            numFollowing = 2;
-          } else if (following && !following.accepted) {
-            numFollowing = 1;
+          if(ownUser) {
+            if (following && following.accepted) {
+              numFollowing = 2;
+            } else if (following && !following.accepted) {
+              numFollowing = 1;
+            }
           }
 
           let followingObj = {

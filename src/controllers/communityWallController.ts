@@ -334,7 +334,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
       const communityWallPostGet = await communityWallPostRef.get();
       const communityWallPost: any = communityWallPostGet.data();
 
-      let podPost = await blogController.likeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+      let communityPost = await blogController.likeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
 
       await notificationsController.addNotification({
         userId: communityWallPost.createdBy,
@@ -352,7 +352,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         }
       });
 
-      res.send({ success: true, data: podPost });
+      res.send({ success: true, data: communityPost });
 
     } else {
       console.log('Error in controllers/communityWallController -> likePost()', "Info not provided");
@@ -374,7 +374,7 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const communityWallPostGet = await communityWallPostRef.get();
       const communityWallPost: any = communityWallPostGet.data();
 
-      let podPost = await blogController.dislikeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+      let communityPost = await blogController.dislikeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
 
       await notificationsController.addNotification({
         userId: communityWallPost.createdBy,
@@ -392,7 +392,7 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
         }
       });
 
-      res.send({ success: true, data: podPost });
+      res.send({ success: true, data: communityPost });
 
     } else {
       console.log('Error in controllers/communityWallController -> dislikePost()', "Info not provided");
@@ -423,7 +423,7 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
     } else if (!isCreator){
       console.log('Error in controllers/communityWallController -> pinPost()', "You can't pin a post");
       res.send({ success: false, error: "You can't pin a post"});
-    }else {
+    } else {
       console.log('Error in controllers/communityWallController -> pinPost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
     }
