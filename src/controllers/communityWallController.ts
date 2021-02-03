@@ -11,10 +11,15 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isUserRole = await checkUserRole(body.author, body.communityId, true, true, ['Moderator', 'Treasurer']);
+    const userRef = db.collection(collections.user)
+      .doc(body.author);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
+    let isUserRole : any = await checkUserRole(body.author, user.email, body.communityId, true, true, ['Moderator', 'Treasurer']);
     let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
 
-    if(body && body.communityId && isUserRole && isCreator) {
+    if(body && body.communityId && (isUserRole.checked || isCreator)) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
       const communityRef = db.collection(collections.community)
@@ -55,10 +60,15 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isUserRole = await checkUserRole(body.author, body.communityId, true, false,['Moderator']);
-    let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
+    const userRef = db.collection(collections.user)
+      .doc(body.author);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
 
-    if(body && body.communityId && isUserRole && isCreator) {
+    let isUserRole = await checkUserRole(body.author, user.email, body.communityId, true, false,['Moderator']);
+    let isCreator : any = await checkIfUserIsCreator(body.userId, body.communityId);
+
+    if(body && body.communityId && (isUserRole.checked || isCreator)) {
       const communityRef = db.collection(collections.community)
         .doc(body.communityId);
       const communityGet = await communityRef.get();
@@ -452,7 +462,7 @@ const checkIfUserIsCreator = (userId, communityId) => {
   })
 }
 
-const checkUserRole = (userId, communityId, adminAccepted, memberAccepted, otherRolesAccepted) => {
+const checkUserRole = (userId, userEmail, communityId, adminAccepted, memberAccepted, otherRolesAccepted) : Promise<any> => {
   return new Promise(async (resolve, reject) => {
     const communityRef = db.collection(collections.community)
       .doc(communityId);
@@ -474,15 +484,32 @@ const checkUserRole = (userId, communityId, adminAccepted, memberAccepted, other
 
     let roles = community.UserRoles;
 
-    if(roles[userId] && roles[userId].role) {
-      userRoles.push(roles[userId].role)
-      otherRolesAccepted.forEach(role => {
-        if(role === roles[userId].role) {
-          userRoles.push(role);
-
+    if(roles[userEmail] && roles[userEmail].roles) {
+      let rolesOfUsers = Object.keys(roles[userEmail].roles);
+      rolesOfUsers.forEach((role) => {
+        if(roles[userEmail].roles[role]) {
+          userRoles.push(role)
+        }
+        let findIndex = otherRolesAccepted.findIndex(roleAccepted => roleAccepted === role);
+        if(findIndex !== -1) {
+          checked = true;
         }
       });
-
     }
+
+    let members = [...community.Members];
+    members.forEach((member) => {
+      if(member.id && member.id === userId) {
+        userRoles.push('Member');
+        if(memberAccepted) {
+          checked = true;
+        }
+      }
+    });
+
+    resolve({
+      userRoles: userRoles,
+      checked: checked
+    })
   })
 }
