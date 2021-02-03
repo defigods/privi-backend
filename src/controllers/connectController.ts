@@ -137,10 +137,10 @@ const wsListen = () => {
 };
 
 const getWeb3forChain = (chainId: string): Web3 => {
-    if(chainId === '0x3'){
+    if(chainId === '0x3' || chainId === '3'){
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
-    } else if (chainId === '0x4') {
+    } else if (chainId === '0x4' || chainId === '4') {
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
     } else {
@@ -191,11 +191,18 @@ const executeTX = (params: any) => {
                         }
                       }
                     )
-                    .on('receipt', (recipt) => {
-                        if (recipt.status) {
-                            resolve({ success: true, error: '', data: recipt });
+                    // .on('receipt', (recipt) => {
+                    //     if (recipt.status) {
+                    //         resolve({ success: true, error: '', data: recipt });
+                    //     } else {
+                    //         resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: recipt });
+                    //     }
+                    // })
+                    .on('confirmation', function(confirmationNumber, receipt) {
+                        if (receipt.status) {
+                            resolve({ success: true, error: '', data: receipt });
                         } else {
-                            resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: recipt });
+                            resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: receipt });
                         }
                     })
                     .on('error', (err) => {
@@ -609,8 +616,79 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     }
 }
 
+const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: express.Response) => {
+    const { symbol, tokenAddress, chainId } = req.body;
+    console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId)
+    const _chain: any = chainId?.toString();
+    const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
+    const web3 = getWeb3forChain(_chainId);
+
+    const swapManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
+    // Get SwapManager contract code
+    const swapManagerContract = new web3.eth.Contract(swapManagerJson.abi, swapManagerJson.networks[_chainId]["address"]);
+
+    // Choose method from SwapManager to be called
+    const method = swapManagerContract.methods.registerTokenERC20(symbol, tokenAddress).encodeABI();
+
+    // Transaction parameters
+    const paramsTX = {
+        chainId: chainId,
+        fromAddress: ETH_PRIVI_ADDRESS,
+        fromAddressKey: ETH_PRIVI_KEY,
+        encodedABI: method,
+        toAddress: swapManagerContract.options.address,
+    };
+
+    const balance = await getEthBalanceOf(ETH_PRIVI_ADDRESS, _chainId)
+    console.log('getBridgeRegisteredToken ETH_PRIVI_ADDRESS, balance', balance)
+    if (balance > 100) {
+
+        // Execute transaction to withdraw in Ethereum
+        const { success, error, data } = await executeTX(paramsTX);
+
+        if (success) {
+            res.send({ success: true, data: data });
+        } else {
+            res.send({ success: false, data: error });
+        }
+
+    } else {
+        res.send({ success: false, data: 'Not Enough Blance in ETH_PRIVI_ADDRESS, ask admin to address this issue' });
+    }
+    
+}
+
+const getBridgeRegisteredToken = async (req: express.Request, res: express.Response) => {
+    const { chainId } = req.query;
+    console.log('getBridgeRegisteredToken req:', chainId)
+    const _chain: any = chainId?.toString();
+    const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
+    const web3 = getWeb3forChain(_chainId);
+
+    const bridgeManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/BridgeManager.json')));
+    // Get SwapManager contract code
+    const bridgeManagerContract = new web3.eth.Contract(bridgeManagerJson.abi, bridgeManagerJson.networks[_chainId]["address"]);
+
+    const arrayRegisteredToken = await bridgeManagerContract.methods.getAllErc20Registered().call();
+    // console.log('getBridgeRegisteredToken bridge array', arrayRegisteredToken)
+    let tempArrayOfTokens: any[] = [{ id: 0, name: "Ethereum", symbol: "ETH", amount: 0 }];
+    arrayRegisteredToken.forEach((element, index) => {
+        tempArrayOfTokens.push({
+        id: (index + 1), name: element.name, symbol: element.symbol, amount: 0, address: element.deployedAddress
+        });
+    });
+    console.log('getBridgeRegisteredToken bridge , token list', tempArrayOfTokens)
+    
+    if (tempArrayOfTokens) {
+        res.send({ success: true, data: tempArrayOfTokens });
+    } else {
+        res.send({ success: false });
+    }
+}
+
 module.exports = {
-    // getERC20Balance,
+    registerNewERC20TokenOnSwapManager, 
+    getBridgeRegisteredToken,
     send,
     checkTx,
     getRecentSwaps
