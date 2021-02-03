@@ -62,16 +62,79 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
             });
 
             res.send({ success: true });
-        }
-        else {
+        } else {
             console.log('Error in controllers/stakingController -> stakeToken(): success = false', blockchainRes.message);
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/stakingController -> stakeToken(): ', err);
-        res.send({ success: false });
+        res.send({success: false});
     }
 };
+
+exports.verifyProfileStaking = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const userAddress = body.UserAddress;
+        const token = body.Token;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
+
+        const blockchainRes = await priviGovernance.stakeToken(userAddress, token, amount, hash, signature, apiKey)
+        if (blockchainRes && blockchainRes.success) {
+
+            // update stakedAmount and members of the token
+            const tokenSnap = await db.collection(collections.stakingToken).doc(token).get();
+            const data: any = tokenSnap.data();
+            let newAmount = 0;
+            let newMembers = {};
+            if (data) {
+                if (data.StakedAmount) newAmount = data.StakedAmount;
+                if (data.Members) newMembers = data.Members;
+            }
+            newAmount += amount;
+            if (!newMembers[userAddress]) newMembers[userAddress] = amount;
+            else newMembers[userAddress] += amount;
+            tokenSnap.ref.set({StakedAmount: newAmount, Members: newMembers}, {merge: true});
+
+            // add zeros for graph
+            addZerosToHistory(tokenSnap.ref.collection(collections.retunHistory), 'return');
+            addZerosToHistory(tokenSnap.ref.collection(collections.stakedHistory), 'amount');
+
+            await notificationsController.addNotification({
+                userId: userAddress,
+                notification: {
+                    type: 49,
+                    typeItemId: 'user',
+                    itemId: userAddress,
+                    follower: '',
+                    pod: '',
+                    comment: '',
+                    token: token,
+                    amount: amount,
+                    onlyInformation: false,
+                    otherItemId: ''
+                }
+            });
+
+            if (newMembers[userAddress] >= 15) {
+                const userRef = db.collection(collections.user).doc(userAddress);
+                await userRef.update({
+                    verified: true
+                })
+            }
+
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/stakingController -> stakeToken(): success = false', blockchainRes.message);
+            res.send({success: false});
+        }
+    } catch (e) {
+        console.log('Error in controllers/stakingController -> verifyProfileStaking(): ', e);
+        res.send({success: false});
+    }
+}
 
 // user unstakes in a token
 exports.unstakeToken = async (req: express.Request, res: express.Response) => {

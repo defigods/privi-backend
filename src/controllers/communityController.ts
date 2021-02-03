@@ -34,7 +34,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         const hash = body.Hash;
         const signature = body.Signature;
 
-        const blockchainRes = await community.createCommunity(creator, amm, spreadDividend, frequency, hash, signature, apiKey);
+        const blockchainRes = await community.createCommunity(creator, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);
             const updateCommunities = blockchainRes.output.UpdateCommunities;
@@ -303,10 +303,13 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
             TokenType: body.TokenType,
             TokenSymbol: body.TokenSymbol,
             TokenName: body.TokenName,
+            AMM: body.AMM,
             LockUpDate: body.LockUpDate,
             InitialSupply: body.InitialSupply,
             TargetPrice: body.TargetPrice,
             TargetSupply: body.TargetSupply,
+            Frequency: body.Frequency,
+            SpreadDividend: body.SpreadDividend,
 
             Hash: body.Hash,
             Signature: body.Signature,

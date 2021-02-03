@@ -15,20 +15,9 @@ module.exports.getCommunityTokenPrice = async (communityAddress, caller) => {
     return blockchainRes.data;
 };
 
-module.exports.createCommunity = async (creator, amm, spreadDividend, frequency, hash, signature, caller) => {
+module.exports.createCommunity = async (creator, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/createCommunity", {
         Creator: creator,
-        AMM: amm,
-        TargetSupply: targetSupply,
-        TargetPrice: targetPrice,
-        SpreadDividend: spreadDividend,
-        FundingToken: fundingToken,
-        TokenSymbol: tokenSymbol,
-        TokenName: tokenName,
-        Frequency: frequency,
-        InitialSupply: initialSupply,
-        DateLockUpDate: dateLockUpDate,
-
         Hash: hash,
         Signature: signature,
         Caller: caller

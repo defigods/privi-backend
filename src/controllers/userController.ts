@@ -15,20 +15,16 @@ import {
   singTransaction,
   updateFirebase,
 } from "../functions/functions";
-import { addListener } from "cluster";
 import path from "path";
 import fs from "fs";
-import notificationTypes from "../constants/notificationType";
+import configuration from "../constants/configuration";
+import {sendEmailValidation, sendForgotPasswordEmail,} from "../email_templates/emailTemplates";
+import {sockets} from "./serverController";
+
 const bcrypt = require("bcrypt");
 const FieldValue = require("firebase-admin").firestore.FieldValue;
-import configuration from "../constants/configuration";
-import { accessSync } from "fs";
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
-import {
-  sendForgotPasswordEmail,
-  sendEmailValidation,
-} from "../email_templates/emailTemplates";
 const bip39 = require("bip39");
 const hdkey = require("hdkey");
 const {
@@ -43,9 +39,6 @@ const { PRIVI_WALLET_PATH } = require("../constants/configuration");
 const notificationsController = require("./notificationsController");
 
 const apiKey = "PRIVI"; // just for now
-
-import { sockets } from "./serverController";
-import { user } from "firebase-functions/lib/providers/auth";
 
 const emailValidation = async (req: express.Request, res: express.Response) => {
   let success = false;
@@ -2731,16 +2724,188 @@ const inviteUserToPod = async (req: express.Request, res: express.Response) => {
         "Error in controllers/userController -> inviteUserToPod()",
         "No Information"
       );
-      res.send({ success: false, error: "No Information" });
+      res.send({success: false, error: "No Information"});
     }
   } catch (err) {
     console.log(
-      "Error in controllers/userController -> inviteUserToPod()",
-      err
+        "Error in controllers/userController -> inviteUserToPod()",
+        err
     );
-    res.send({ success: false, error: err });
+    res.send({success: false, error: err});
   }
 };
+
+const getSuggestedUsers = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const userRef = db.collection(collections.user).doc(body.userId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
+    const randomArr: any[] = await getRandomForSuggestedUser();
+    let sugUsers = new Set();
+
+    let followings = new Set(user.followings);
+
+    if (randomArr[0] > 0 && user.followers) {
+      let count = randomArr[0];
+      for (let j = 0; j < user.followers.length; ++j) {
+        if (count == 0) {
+          break;
+        }
+        let usr = user.followers[j];
+        if (!followings.has(usr)) {
+          const userRef = db.collection(collections.user).doc(usr.user);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+
+          sugUsers.add(user);
+          count--;
+        }
+      }
+    } else if (randomArr[1] > 0 && user.FollowingCommunities) {
+      let count = randomArr[1];
+      for (let i = 0; i < user.FollowingCommunities; ++i) {
+        if (count == 0) {
+          break;
+        }
+
+        const communityRef = db.collection(collections.community).doc(user.FollowingCommunities[i]);
+        const communityGet = await communityRef.get();
+        const community: any = communityGet.data();
+
+        let followers = community.Followers;
+        for (let j = 0; j < followers.length; ++j) {
+          if (count == 0) {
+            break;
+          }
+
+          if (!followings.has(followers[i])) {
+            const userRef = db.collection(collections.user).doc(followers[i].id);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            sugUsers.add(user);
+            count--;
+          }
+        }
+      }
+    } else if (randomArr[2] > 0 && (user.FollowingFTPods || user.FollowingNFTPods)) {
+      let count = randomArr[2];
+      for (let i = 0; i < user.FollowingFTPods; ++i) {
+        if (count == 0) {
+          break;
+        }
+        const podRef = db.collection(collections.podsFT).doc(user.FollowingFTPods[i]);
+        const podGet = await podRef.get();
+        const pod: any = podGet.data();
+
+        let followers = pod.Followers;
+        for (let j = 0; j < followers.length; ++j) {
+          if (count == 0) {
+            break;
+          }
+          if (!followings.has(followers[i])) {
+            const userRef = db.collection(collections.user).doc(followers[i].id);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            sugUsers.add(user);
+            count--;
+          }
+        }
+      }
+
+      for (let i = 0; i < user.FollowingNFTPods; ++i) {
+        if (count == 0) {
+          break;
+        }
+        const podRef = db.collection(collections.podsNFT).doc(user.FollowingNFTPods[i]);
+        const podGet = await podRef.get();
+        const pod: any = podGet.data();
+
+        let followers = pod.Followers;
+        for (let j = 0; j < followers.length; ++j) {
+          if (count == 0) {
+            break;
+          }
+          if (!followings.has(followers[i])) {
+            const userRef = db.collection(collections.user).doc(followers[i].id);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            sugUsers.add(user);
+            count--;
+          }
+        }
+      }
+    } else if (randomArr[3] > 0 && user.FollowingCredits) {
+      let count = randomArr[3];
+      for (let i = 0; i < user.FollowingCredits; ++i) {
+        if (count == 0) {
+          break;
+        }
+        const creditRef = db.collection(collections.priviCredits).doc(user.FollowingCredits[i]);
+        const creditGet = await creditRef.get();
+        const credit: any = creditGet.data();
+
+        let followers = credit.Followers;
+        for (let j = 0; j < followers.length; ++j) {
+          if (count == 0) {
+            break;
+          }
+          if (!followings.has(followers[i])) {
+            const userRef = db.collection(collections.user).doc(followers[i].id);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            sugUsers.add(user);
+            count--;
+          }
+        }
+      }
+    }
+    res.send({success: true, data: sugUsers});
+  } catch (e) {
+    console.log(
+        "Error in controllers/userController -> getSuggestedUsers()",
+        e
+    );
+    res.send({success: false, error: e});
+  }
+}
+
+async function getRandomForSuggestedUser() {
+  let weights = [0.35, 0.3, 0.2, 0.15]; // probabilities
+  let results = [0, 1, 2, 3]; // values to return
+  let probArr: any[] = [];
+  let res: any[] = [];
+  let num = Math.random(),
+      s = 0,
+      lastIndex = weights.length - 1;
+
+  for (let i = 0; i < 5; ++i) {
+    let notAdded = true;
+    for (let i = 0; i < lastIndex; ++i) {
+      s += weights[i];
+      if (num < s) {
+        probArr.push(results[i]);
+        notAdded = false;
+        break;
+      }
+    }
+    if (notAdded) {
+      probArr.push(results[lastIndex]);
+    }
+  }
+
+  for (let i = 0; i < lastIndex; i++) {
+    res[probArr[i]] = ++res[probArr[i]];
+  }
+
+  return res;
+}
 
 module.exports = {
   emailValidation,
@@ -2794,4 +2959,5 @@ module.exports = {
   removeNotification,
   inviteUserToPod,
   getAllInfoProfile,
+  getSuggestedUsers
 };
