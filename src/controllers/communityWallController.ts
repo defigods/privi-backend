@@ -11,7 +11,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isUserRole = await checkUserRole(body.author, body.communityId, ['Admin', 'Moderator', 'Treasurer', 'Member']);
+    let isUserRole = await checkUserRole(body.author, body.communityId, true, true, ['Moderator', 'Treasurer']);
     let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
 
     if(body && body.communityId && isUserRole && isCreator) {
@@ -55,7 +55,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isUserRole = await checkUserRole(body.author, body.communityId, ['Admin', 'Moderator']);
+    let isUserRole = await checkUserRole(body.author, body.communityId, true, false,['Moderator']);
     let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
 
     if(body && body.communityId && isUserRole && isCreator) {
@@ -452,28 +452,37 @@ const checkIfUserIsCreator = (userId, communityId) => {
   })
 }
 
-const checkUserRole = (userId, communityId, userRolesAccepted) => {
+const checkUserRole = (userId, communityId, adminAccepted, memberAccepted, otherRolesAccepted) => {
   return new Promise(async (resolve, reject) => {
     const communityRef = db.collection(collections.community)
       .doc(communityId);
     const communityGet = await communityRef.get();
     const community: any = communityGet.data();
 
-    let userRoles = community.UserRoles;
+    let userRoles : string[] = [];
+    let checked : boolean = false;
 
-    if(userRoles[userId]) {
-      let bool : boolean = false;
-      userRolesAccepted.forEach(role => {
-        if(role === userRoles[userId].role) {
-          bool = true;
-          resolve(true)
+    let admins = [...community.Admins];
+    admins.forEach((admin) => {
+      if(admin.userId && admin.userId === userId) {
+        userRoles.push('Admin');
+        if(adminAccepted) {
+          checked = true;
+        }
+      }
+    });
+
+    let roles = community.UserRoles;
+
+    if(roles[userId] && roles[userId].role) {
+      userRoles.push(roles[userId].role)
+      otherRolesAccepted.forEach(role => {
+        if(role === roles[userId].role) {
+          userRoles.push(role);
+
         }
       });
-      if(!bool) {
-        resolve(false);
-      }
-    } else {
-      resolve(false);
+
     }
   })
 }
