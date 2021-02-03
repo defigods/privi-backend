@@ -41,11 +41,12 @@ module.exports.createCommunityToken = async (data) => {
     return blockchainRes.data;
 }
 
-module.exports.sellCommunityToken = async (investor, communityAddress, amount, hash, signature, caller) => {
+module.exports.sellCommunityToken = async (investor, communityAddress, amount, price, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/sellCommunityToken", {
         Investor: investor,
         CommunityAddress: communityAddress,
         Amount: amount,
+        ExternalPrice: price,
         Hash: hash,
         Signature: signature,
         Caller: caller
@@ -53,11 +54,12 @@ module.exports.sellCommunityToken = async (investor, communityAddress, amount, h
     return blockchainRes.data;
 };
 
-module.exports.buyCommunityToken = async (investor, communityAddress, amount, hash, signature, caller) => {
+module.exports.buyCommunityToken = async (investor, communityAddress, amount, price, hash, signature, caller) => {
     let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/buyCommunityToken", {
         Investor: investor,
         CommunityAddress: communityAddress,
         Amount: amount,
+        ExternalPrice: price,
         Hash: hash,
         Signature: signature,
         Caller: caller

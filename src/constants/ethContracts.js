@@ -1,5 +1,5 @@
 // const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+// const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 // export const CONTRACT = {
 //     "Mainnet": {
 //         "DAI": ZERO_ADDRESS,
@@ -13,6 +13,6 @@ const USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'
 //     },
 // }
 
-module.exports = {
-    USDT_ADDRESS
-}
+// module.exports = {
+//     USDT_ADDRESS
+// }
