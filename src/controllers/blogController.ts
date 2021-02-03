@@ -16,7 +16,7 @@ import fs from "fs";
 import cron from "node-cron";
 
 const userController = require("./userController");
-const notificationsController = require('./notificationsController');
+const notificationsController = require("./notificationsController");
 
 exports.blogCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -25,15 +25,21 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
 
     let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
 
-    if(body && body.communityId && isCreator) {
-      let ret = await createPost(body, 'blogPost', body.priviUser.id)
-      res.send({success: true, data: ret});
-    } else if (!isCreator){
-      console.log('Error in controllers/blogController -> blogCreate()', "You can't create a post");
-      res.send({ success: false, error: "You can't create a post"});
+    if (body && body.communityId && isCreator) {
+      let ret = await createPost(body, "blogPost", body.priviUser.id);
+      res.send({ success: true, data: ret });
+    } else if (!isCreator) {
+      console.log(
+        "Error in controllers/blogController -> blogCreate()",
+        "You can't create a post"
+      );
+      res.send({ success: false, error: "You can't create a post" });
     } else {
-      console.log('Error in controllers/blogController -> blogCreate()', 'Missing Community Id');
-      res.send({ success: false, error: 'Missing Community Id'});
+      console.log(
+        "Error in controllers/blogController -> blogCreate()",
+        "Missing Community Id"
+      );
+      res.send({ success: false, error: "Missing Community Id" });
     }
   } catch (err) {
     console.log("Error in controllers/blogController -> blogCreate()", err);
@@ -47,39 +53,59 @@ exports.blogDelete = async (req: express.Request, res: express.Response) => {
 
     let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
 
-    if(body && body.communityId && isCreator) {
-      const communityRef = db.collection(collections.community)
+    if (body && body.communityId && isCreator) {
+      const communityRef = db
+        .collection(collections.community)
         .doc(body.communityId);
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
 
-      let ret = await deletePost(communityRef, communityGet, community, body.postId, collections.blogPost);
+      let ret = await deletePost(
+        communityRef,
+        communityGet,
+        community,
+        body.postId,
+        collections.blogPost
+      );
 
-      if(ret) {
-        res.send({success: true});
+      if (ret) {
+        res.send({ success: true });
       } else {
-        console.log('Error in controllers/communityWallController -> postDelete()', 'Post Delete Error');
+        console.log(
+          "Error in controllers/communityWallController -> postDelete()",
+          "Post Delete Error"
+        );
         res.send({
           success: false,
-          error: 'Post Delete Error'
+          error: "Post Delete Error",
         });
       }
-    } else if (!isCreator){
-      console.log('Error in controllers/communityWallController -> postDelete()', "You can't create a post");
-      res.send({ success: false, error: "You can't delete a post"});
+    } else if (!isCreator) {
+      console.log(
+        "Error in controllers/communityWallController -> postDelete()",
+        "You can't create a post"
+      );
+      res.send({ success: false, error: "You can't delete a post" });
     } else {
-      console.log('Error in controllers/communityWallController -> postDelete()', 'Missing Community Id');
-      res.send({ success: false, error: 'Missing Community Id'});
+      console.log(
+        "Error in controllers/communityWallController -> postDelete()",
+        "Missing Community Id"
+      );
+      res.send({ success: false, error: "Missing Community Id" });
     }
-
   } catch (err) {
-    console.log('Error in controllers/communityWallController -> postCreate()', err);
-    res.send({ success: false, error: err});
+    console.log(
+      "Error in controllers/communityWallController -> postCreate()",
+      err
+    );
+    res.send({ success: false, error: err });
   }
 };
 
-
-exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
+exports.changePostPhoto = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     if (req.file) {
       const blogPostRef = db
@@ -87,9 +113,9 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         .doc(req.file.originalname);
       const blogPostGet = await blogPostRef.get();
       const blogPost: any = blogPostGet.data();
-      if (blogPost.HasPhoto) {
+      if (blogPost.hasPhoto) {
         await blogPostRef.update({
-          HasPhoto: true,
+          hasPhoto: true,
         });
       }
 
@@ -101,7 +127,10 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
 
       res.send({ success: true });
     } else {
-      console.log("Error in controllers/blogController -> changePostPhoto()", "There's no file...");
+      console.log(
+        "Error in controllers/blogController -> changePostPhoto()",
+        "There's no file..."
+      );
       res.send({ success: false });
     }
   } catch (err) {
@@ -113,7 +142,10 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
   }
 };
 
-exports.changePostDescriptionPhotos = async (req: express.Request, res: express.Response) => {
+exports.changePostDescriptionPhotos = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let blogPostId = req.params.blogPostId;
     let files: any[] = [];
@@ -138,11 +170,17 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
       });
       res.send({ success: true });
     } else {
-      console.log("Error in controllers/blogController -> changePostDescriptionPhotos()", "There's no file...");
+      console.log(
+        "Error in controllers/blogController -> changePostDescriptionPhotos()",
+        "There's no file..."
+      );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/blogController -> changePostDescriptionPhotos()", err);
+    console.log(
+      "Error in controllers/blogController -> changePostDescriptionPhotos()",
+      err
+    );
     res.send({ success: false });
   }
 };
@@ -152,7 +190,8 @@ exports.getBlogPost = async (req: express.Request, res: express.Response) => {
     let params: any = req.params;
     let posts: any[] = [];
 
-    const blogPostQuery = await db.collection(collections.blogPost)
+    const blogPostQuery = await db
+      .collection(collections.blogPost)
       .where("communityId", "==", params.communityId)
       .get();
     if (!blogPostQuery.empty) {
@@ -177,27 +216,37 @@ exports.getBlogPost = async (req: express.Request, res: express.Response) => {
   }
 };
 
-
-exports.getBlogPostById =  async (req: express.Request, res: express.Response) => {
+exports.getBlogPostById = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
-    let params : any = req.params;
+    let params: any = req.params;
 
-    const blogPostSnap = await db.collection(collections.blogPost)
-      .doc(params.postId).get();
-    const blogPost : any = blogPostSnap.data();
+    const blogPostSnap = await db
+      .collection(collections.blogPost)
+      .doc(params.postId)
+      .get();
+    const blogPost: any = blogPostSnap.data();
     blogPost.id = blogPostSnap.id;
 
     res.status(200).send({
       success: true,
-      data: blogPost
+      data: blogPost,
     });
   } catch (err) {
-    console.log('Error in controllers/blogController -> getBlogPostById()', err);
+    console.log(
+      "Error in controllers/blogController -> getBlogPostById()",
+      err
+    );
     res.send({ success: false, error: err });
   }
-}
+};
 
-exports.getBlogPostPhotoById = async (req: express.Request, res: express.Response) => {
+exports.getBlogPostPhotoById = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let postId = req.params.blogPostId;
     if (postId) {
@@ -225,16 +274,25 @@ exports.getBlogPostPhotoById = async (req: express.Request, res: express.Respons
       });
       raw.pipe(res);
     } else {
-      console.log("Error in controllers/blogController -> getBlogPostPhotoById()", "There's no post id...");
+      console.log(
+        "Error in controllers/blogController -> getBlogPostPhotoById()",
+        "There's no post id..."
+      );
       res.send({ success: false, error: "There's no post id..." });
     }
   } catch (err) {
-    console.log("Error in controllers/blogController -> getBlogPostPhotoById()", err);
+    console.log(
+      "Error in controllers/blogController -> getBlogPostPhotoById()",
+      err
+    );
     res.send({ success: false, error: err });
   }
 };
 
-exports.getBlogPostDescriptionPhotoById = async (req: express.Request, res: express.Response) => {
+exports.getBlogPostDescriptionPhotoById = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let postId = req.params.blogPostId;
     let photoId = req.params.photoId;
@@ -268,21 +326,37 @@ exports.getBlogPostDescriptionPhotoById = async (req: express.Request, res: expr
       });
       raw.pipe(res);
     } else {
-      console.log("Error in controllers/blogController -> getBlogPostPhotoById()", "There's no post id...");
+      console.log(
+        "Error in controllers/blogController -> getBlogPostPhotoById()",
+        "There's no post id..."
+      );
       res.send({ success: false, error: "There's no post id..." });
     }
   } catch (err) {
-    console.log("Error in controllers/blogController -> getBlogPostPhotoById()", err);
+    console.log(
+      "Error in controllers/blogController -> getBlogPostPhotoById()",
+      err
+    );
     res.send({ success: false, error: err });
   }
 };
 
-exports.makeResponseBlogPost = async (req: express.Request, res: express.Response) => {
+exports.makeResponseBlogPost = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     let body = req.body;
     console.log("body", body);
-    if (body && body.blogPostId && body.response && body.userId && body.userName) {
-      const blogPostRef = db.collection(collections.blogPost)
+    if (
+      body &&
+      body.blogPostId &&
+      body.response &&
+      body.userId &&
+      body.userName
+    ) {
+      const blogPostRef = db
+        .collection(collections.blogPost)
         .doc(body.blogPostId);
       const blogPostGet = await blogPostRef.get();
       const blogPost: any = blogPostGet.data();
@@ -299,11 +373,17 @@ exports.makeResponseBlogPost = async (req: express.Request, res: express.Respons
       });
       res.send({ success: true, data: responses });
     } else {
-      console.log("Error in controllers/blogController -> makeResponseBlogPost()", "Missing data provided");
+      console.log(
+        "Error in controllers/blogController -> makeResponseBlogPost()",
+        "Missing data provided"
+      );
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
-    console.log("Error in controllers/blogController -> makeResponseBlogPost()", err);
+    console.log(
+      "Error in controllers/blogController -> makeResponseBlogPost()",
+      err
+    );
     res.send({ success: false, error: err });
   }
 };
@@ -313,32 +393,42 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
     let body = req.body;
 
     if (body && body.itemPostId && body.userId) {
-      const blogPostRef = db.collection(collections.blogPost)
+      const blogPostRef = db
+        .collection(collections.blogPost)
         .doc(body.itemPostId);
       const blogPostGet = await blogPostRef.get();
       const blogPost: any = blogPostGet.data();
 
-      let post = await likeItemPost(blogPostRef, blogPostGet, blogPost, body.userId, blogPost.createdBy)
+      let post = await likeItemPost(
+        blogPostRef,
+        blogPostGet,
+        blogPost,
+        body.userId,
+        blogPost.createdBy
+      );
 
       await notificationsController.addNotification({
         userId: blogPost.createdBy,
         notification: {
           type: 77,
-          typeItemId: 'community',
+          typeItemId: "community",
           itemId: body.userId,
           follower: body.userName,
-          pod: '',
+          pod: "",
           comment: blogPost.name,
-          token: '',
+          token: "",
           amount: 0,
           onlyInformation: false,
-          otherItemId: blogPostGet.id
-        }
+          otherItemId: blogPostGet.id,
+        },
       });
 
       res.send({ success: true, data: post });
     } else {
-      console.log("Error in controllers/blogController -> likePost()", "Missing data provided");
+      console.log(
+        "Error in controllers/blogController -> likePost()",
+        "Missing data provided"
+      );
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -352,32 +442,42 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
     let body = req.body;
 
     if (body && body.itemPostId && body.userId) {
-      const blogPostRef = db.collection(collections.blogPost)
+      const blogPostRef = db
+        .collection(collections.blogPost)
         .doc(body.itemPostId);
       const blogPostGet = await blogPostRef.get();
       const blogPost: any = blogPostGet.data();
 
-      let post = await dislikeItemPost(blogPostRef, blogPostGet, blogPost, body.userId, blogPost.createdBy)
+      let post = await dislikeItemPost(
+        blogPostRef,
+        blogPostGet,
+        blogPost,
+        body.userId,
+        blogPost.createdBy
+      );
 
       await notificationsController.addNotification({
         userId: blogPost.createdBy,
         notification: {
           type: 78,
-          typeItemId: 'user',
+          typeItemId: "user",
           itemId: body.userId,
           follower: body.userName,
-          pod: '',
+          pod: "",
           comment: blogPost.name,
-          token: '',
+          token: "",
           amount: 0,
           onlyInformation: false,
-          otherItemId: blogPostGet.id
-        }
+          otherItemId: blogPostGet.id,
+        },
       });
 
       res.send({ success: true, data: post });
     } else {
-      console.log("Error in controllers/blogController -> likePost()", "Missing data provided");
+      console.log(
+        "Error in controllers/blogController -> likePost()",
+        "Missing data provided"
+      );
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
@@ -386,7 +486,6 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
   }
 };
 
-
 exports.pinPost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
@@ -394,24 +493,35 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
     let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
 
     if (body && body.wallPostId && isCreator) {
-      const blogPostRef = db.collection(collections.communityWallPost)
+      const blogPostRef = db
+        .collection(collections.communityWallPost)
         .doc(body.wallPostId);
       const blogPostGet = await blogPostRef.get();
       const blogPost: any = blogPostGet.data();
 
-      let podPost = await pinItemPost(blogPostRef, blogPostGet, blogPost, body.pinned)
+      let podPost = await pinItemPost(
+        blogPostRef,
+        blogPostGet,
+        blogPost,
+        body.pinned
+      );
 
       res.send({ success: true, data: podPost });
-
-    } else if (!isCreator){
-      console.log('Error in controllers/blogController -> pinPost()', "You can't pin a post");
-      res.send({ success: false, error: "You can't pin a post"});
+    } else if (!isCreator) {
+      console.log(
+        "Error in controllers/blogController -> pinPost()",
+        "You can't pin a post"
+      );
+      res.send({ success: false, error: "You can't pin a post" });
     } else {
-      console.log('Error in controllers/blogController -> pinPost()', "Info not provided");
+      console.log(
+        "Error in controllers/blogController -> pinPost()",
+        "Info not provided"
+      );
       res.send({ success: false, error: "Missing data provided" });
     }
   } catch (err) {
-    console.log('Error in controllers/blogController -> pinPost()', err);
+    console.log("Error in controllers/blogController -> pinPost()", err);
     res.send({ success: false, error: err });
   }
 };
@@ -619,7 +729,7 @@ exports.getAdPostDescriptionPhotoById = async (req: express.Request, res: expres
   }
 };*/
 
-const createPost = exports.createPost = (body, collection, userId) => {
+const createPost = (exports.createPost = (body, collection, userId) => {
   return new Promise(async (resolve, reject) => {
     try {
       const comments = body.comments || false; // allow comments?
@@ -631,6 +741,7 @@ const createPost = exports.createPost = (body, collection, userId) => {
       const selectedFormat = body.selectedFormat; // 0 story 1 wall post
       const description = body.description;
       const descriptionArray = body.descriptionArray;
+      const hasPhoto = body.hasPhoto || false;
 
       /*let blogPostGet = await db.collection(collections.blogPost).get();
       let newId = blogPostGet.size + 1;*/
@@ -651,7 +762,7 @@ const createPost = exports.createPost = (body, collection, userId) => {
           descriptionImages: [],
           responses: [],
           pinned: false,
-          hasPhoto: false,
+          hasPhoto: hasPhoto,
           createdBy: userId,
           createdAt: Date.now(),
           updatedAt: null,
@@ -722,12 +833,18 @@ const createPost = exports.createPost = (body, collection, userId) => {
       reject("Error in createPost: " + e);
     }
   });
-};
+});
 
-const deletePost = exports.deletePost = (itemRef, itemGet, item, id, postCollection) => {
+const deletePost = (exports.deletePost = (
+  itemRef,
+  itemGet,
+  item,
+  id,
+  postCollection
+) => {
   return new Promise(async (resolve, reject) => {
     try {
-      if(postCollection !== 'BlogPost') {
+      if (postCollection !== "BlogPost") {
         let posts = [...item.Posts];
         let indexFound = posts.findIndex((post) => post === id);
 
@@ -744,9 +861,15 @@ const deletePost = exports.deletePost = (itemRef, itemGet, item, id, postCollect
       reject("Error in deletePost: " + e);
     }
   });
-};
+});
 
-const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
+const likeItemPost = (exports.likeItemPost = (
+  dbRef,
+  dbGet,
+  dbItem,
+  userId,
+  creator
+) => {
   return new Promise(async (resolve, reject) => {
     try {
       let likes: any[] = [];
@@ -794,9 +917,15 @@ const likeItemPost = exports.likeItemPost = (dbRef, dbGet, dbItem, userId, creat
       reject("Error in controllers/blogController -> likeItemPost()" + e);
     }
   });
-};
+});
 
-const dislikeItemPost = exports.dislikeItemPost = (dbRef, dbGet, dbItem, userId, creator) => {
+const dislikeItemPost = (exports.dislikeItemPost = (
+  dbRef,
+  dbGet,
+  dbItem,
+  userId,
+  creator
+) => {
   return new Promise(async (resolve, reject) => {
     try {
       let likes: any[] = [];
@@ -840,13 +969,16 @@ const dislikeItemPost = exports.dislikeItemPost = (dbRef, dbGet, dbItem, userId,
 
       resolve(dbItem);
     } catch (e) {
-      console.log("Error in controllers/blogController -> dislikeItemPost()", e);
+      console.log(
+        "Error in controllers/blogController -> dislikeItemPost()",
+        e
+      );
       reject("Error in controllers/blogController -> dislikeItemPost()" + e);
     }
   });
-};
+});
 
-const pinItemPost = exports.pinItemPost = (dbRef, dbGet, dbItem, pinned) => {
+const pinItemPost = (exports.pinItemPost = (dbRef, dbGet, dbItem, pinned) => {
   return new Promise(async (resolve, reject) => {
     try {
       await dbRef.update({
@@ -860,7 +992,7 @@ const pinItemPost = exports.pinItemPost = (dbRef, dbGet, dbItem, pinned) => {
       reject("Error in controllers/blogController -> pinItemPost()" + e);
     }
   });
-};
+});
 
 exports.removeStories = cron.schedule("* * */1 * *", async () => {
   // TODO at some point we should add here request with limit and offset to avoid performance issue
@@ -868,17 +1000,28 @@ exports.removeStories = cron.schedule("* * */1 * *", async () => {
     console.log("********* Stories removeStories() cron job started *********");
 
     // Communities
-    await elementWallPost(collections.communityWallPost, collections.community, "communityId");
+    await elementWallPost(
+      collections.communityWallPost,
+      collections.community,
+      "communityId"
+    );
 
     // Pod
     await elementWallPost(collections.podWallPost, collections.podsFT, "podId");
 
     // Credit
-    await elementWallPost(collections.creditWallPost, collections.priviCredits, "creditPoolId");
+    await elementWallPost(
+      collections.creditWallPost,
+      collections.priviCredits,
+      "creditPoolId"
+    );
 
     // Insurance
-    await elementWallPost(collections.insuranceWallPost, collections.insurance, "insuranceId");
-
+    await elementWallPost(
+      collections.insuranceWallPost,
+      collections.insurance,
+      "insuranceId"
+    );
   } catch (err) {
     console.log("Error in controllers/blogController -> removeStories()", err);
   }
@@ -917,11 +1060,9 @@ const elementWallPost = async (postCollection, itemCollection, itemIdLabel) => {
   }
 };
 
-
 const checkIfUserIsCreator = (userId, communityId) => {
   return new Promise(async (resolve, reject) => {
-    const communityRef = db.collection(collections.community)
-      .doc(communityId);
+    const communityRef = db.collection(collections.community).doc(communityId);
     const communityGet = await communityRef.get();
     const community: any = communityGet.data();
 
@@ -932,5 +1073,5 @@ const checkIfUserIsCreator = (userId, communityId) => {
     } else {
       resolve(false);
     }
-  })
-}
+  });
+};
