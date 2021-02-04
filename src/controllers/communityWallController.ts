@@ -462,7 +462,7 @@ const checkIfUserIsCreator = (userId, communityId) => {
   })
 }
 
-const checkUserRole = (userId, userEmail, communityId, adminAccepted, memberAccepted, otherRolesAccepted) : Promise<any> => {
+const checkUserRole = exports.checkUserRole = (userId, userEmail, communityId, adminAccepted, memberAccepted, otherRolesAccepted) : Promise<any> => {
   return new Promise(async (resolve, reject) => {
     const communityRef = db.collection(collections.community)
       .doc(communityId);
