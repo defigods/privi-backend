@@ -11,6 +11,7 @@ import { countDecimals } from "../functions/utilities";
 import { identifyTypeOfToken } from '../functions/functions';
 import cron from 'node-cron';
 import { user } from "firebase-functions/lib/providers/auth";
+import { Address } from "ethereumjs-util";
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
@@ -384,7 +385,7 @@ module.exports.getAllTokenBalances = async (req: express.Request, res: express.R
         let address = req.params.address;
         const data = {};
         const tokenToTypeMap = await getTokenToTypeMap();
-        const blockchainRes = await coinBalance.getBalancesOfAddress(address);
+        const blockchainRes = await coinBalance.getBalancesOfAddress(address, apiKey);
         if (blockchainRes && blockchainRes.success) {
             let userBalances = blockchainRes.output;
             userBalances.forEach((balanceObj) => {
@@ -582,7 +583,7 @@ module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.R
         let { userAddress } = req.query;
         if (!userAddress) userAddress = req.params.address;
         const retData: {}[] = [];
-        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress);
+        const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             for (let balance of output) {
@@ -591,7 +592,7 @@ module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.R
             res.send({ success: true, data: retData });
         } else {
             console.log("cant getTokenBalances_v2 for", userAddress);
-            res.send({ success: false, retData: {} });
+            res.send({ success: false });
         }
     } catch (err) {
         console.log('Error in controllers/walletController -> getTokenBalances_v2()', err);

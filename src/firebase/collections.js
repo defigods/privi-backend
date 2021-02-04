@@ -1,35 +1,35 @@
 module.exports = {
-    user: "User",
-    tokens: "Tokens",
-    wallet: "Wallet",
-    walletNFT: "WalletNFT",
-    walletFT: "WalletFT",
+  user: "User",
+  tokens: "Tokens",
+  wallet: "Wallet",
+  walletNFT: "WalletNFT",
+  walletFT: "WalletFT",
 
-    // token types
-    tokens: "Tokens",
-    unknown: "UNKNOWN",
-    cryptoToken: "CRYPTO",
-    nftToken: "NFTPOD",
-    ftToken: "FTPOD",
-    socialToken: "SOCIAL",
-    communityToken: "COMMUNITY",
-    badgeToken: "BADGE",
+  // token types
+  tokens: "Tokens",
+  unknown: "UNKNOWN",
+  cryptoToken: "CRYPTO",
+  nftToken: "NFTPOD",
+  ftToken: "FTPOD",
+  socialToken: "SOCIAL",
+  communityToken: "COMMUNITY",
+  badgeToken: "BADGE",
 
-    rates: "ratesOfChange",
+  rates: "ratesOfChange",
 
-    // histories
-    cryptoHistory: "CryptoHistory",
-    nftHistory: "NftHistory",
-    ftHistory: "FtHistory",
-    socialHistory: "SocialHistory",
-    communityHistory: "CommunityHistory",
+  // histories
+  cryptoHistory: "CryptoHistory",
+  nftHistory: "NftHistory",
+  ftHistory: "FtHistory",
+  socialHistory: "SocialHistory",
+  communityHistory: "CommunityHistory",
 
-    priviScan: "PriviScan",
-    history: "History",
-    allTransactions: "AllTransaction",
-    ethTransactions: "EthTransactions",
-    waitlist: "Waitlist",
-    cloudDatabase: "CloudDatabase",
+  priviScan: "PriviScan",
+  history: "History",
+  allTransactions: "AllTransaction",
+  ethTransactions: "EthTransactions",
+  waitlist: "Waitlist",
+  cloudDatabase: "CloudDatabase",
 
     // privi credit
     priviCredits: "PriviCredits",
@@ -42,15 +42,15 @@ module.exports = {
     priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
     trendingPriviCredit: "TrendingPriviCredit",
 
-    // community
-    community: 'Community',
-    trendingCommunity: 'TrendingCommunity',
-    communityLP: 'CommunityLP',
-    communityTransactions: 'CommunityTransactions',
-    votation: 'Votation',
-    votationState: 'VotationState',
-    voter: 'Voter',
-    voting: 'Voting',
+  // community
+  community: "Community",
+  trendingCommunity: "TrendingCommunity",
+  communityLP: "CommunityLP",
+  communityTransactions: "CommunityTransactions",
+  votation: "Votation",
+  votationState: "VotationState",
+  voter: "Voter",
+  voting: "Voting",
 
     podsFT: "PodsFT",
     trendingPodsFT: "TrendingPodsFT",
@@ -64,67 +64,69 @@ module.exports = {
     supplyHistory: "SupplyHistory",
     podRoleInvitation: "PodRoleInvitation",
 
-    podViewInvitation: "PodViewInvitation",
-    insurancePools: "InsurancePools",
-    insuranceClients: "InsuranceCleints",
-    insuranceInvestors: "InsurnaceInvestors",
-    notificaction: "Notification",
+  podViewInvitation: "PodViewInvitation",
+  insurancePools: "InsurancePools",
+  insuranceClients: "InsuranceCleints",
+  insuranceInvestors: "InsurnaceInvestors",
+  notificaction: "Notification",
 
-    constants: "manualConstants",
-    traditionalLendingConstants: "TraditionalLendingConstants",
-    podFTConstants: "FTPodConstants",
-    podNFTConstants: "NFTPodConstants",
-    reserveConstants: "StakingReserveContants",
-    reserveConstants: "StakingReserveContants",
+  constants: "manualConstants",
+  traditionalLendingConstants: "TraditionalLendingConstants",
+  podFTConstants: "FTPodConstants",
+  podNFTConstants: "NFTPodConstants",
+  reserveConstants: "StakingReserveContants",
+  reserveConstants: "StakingReserveContants",
 
-    // liquidity pools
-    liquidityPools: "LiquidityPools",
-    liquidityHistory: "LiquidityHistory",
-    rewardHistory: "RewardHistory",
-    liquidityPairs: "LiquidityPairs",
-    feeHistory: "FeeHistory",
+  // liquidity pools
+  liquidityPools: "LiquidityPools",
+  liquidityHistory: "LiquidityHistory",
+  rewardHistory: "RewardHistory",
+  liquidityPairs: "LiquidityPairs",
+  feeHistory: "FeeHistory",
 
-    // staking
-    stakingRates: "StakingRates",
-    stakingDeposit: "StakingDeposit",
-    userStakings: "UserStakings",
-    stakingToken: "StakingToken",
-    retunHistory: "ReturnHistory",
-    stakedHistory: "StakedHistory",
+  // staking
+  stakingRates: "StakingRates",
+  stakingDeposit: "StakingDeposit",
+  userStakings: "UserStakings",
+  stakingToken: "StakingToken",
+  retunHistory: "ReturnHistory",
+  stakedHistory: "StakedHistory",
 
-    badges: "Badges",
-    issues: "Issues",
-    proposals: "Proposals",
-    campaigns: "Campaigns",
+  badges: "Badges",
+  issues: "Issues",
+  proposals: "Proposals",
+  campaigns: "Campaigns",
 
-    forumCategory: "ForumCategory",
-    forumPost: "ForumPost",
-    forumComment: "ForumComment",
+  forumCategory: "ForumCategory",
+  forumPost: "ForumPost",
+  forumComment: "ForumComment",
 
-    blogPost: "BlogPost",
+  blogPost: "BlogPost",
 
-    wallPost: "WallPost",
+  wallPost: "WallPost",
 
-    podWallPost: "PodWallPost",
-    creditWallPost: "CreditWallPost",
-    insuranceWallPost: "InsuranceWallPost",
-    communityWallPost: "CommunityWallPost",
-    userWallPost: "UserWallPost",
+  podWallPost: "PodWallPost",
+  creditWallPost: "CreditWallPost",
+  insuranceWallPost: "InsuranceWallPost",
+  communityWallPost: "CommunityWallPost",
+  userWallPost: "UserWallPost",
 
-    insurance: "Insurance",
+  insurance: "Insurance",
 
-    chat: "Chat",
-    message: "Message",
-    discordChat: "DiscordChat",
-    discordRoom: "DiscordRoom",
-    discordMessage: "DiscordMessage",
-    discordMessageReplies: "DiscordMessageReplies",
+  chat: "Chat",
+  message: "Message",
+  discordChat: "DiscordChat",
+  discordRoom: "DiscordRoom",
+  discordMessage: "DiscordMessage",
+  discordMessageReplies: "DiscordMessageReplies",
 
-    socialPools: "SocialPools",
+  socialPools: "SocialPools",
 
-    levels: "Levels",
+  levels: "Levels",
 
-    socialPools: "SocialPools",
+  socialPools: "SocialPools",
 
-    pendingNotifications: 'PendingNotifications'
-}
+  pendingNotifications: "PendingNotifications",
+
+  tasks: "Tasks",
+};

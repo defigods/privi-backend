@@ -1079,23 +1079,51 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
                     if (community.Admins && community.Admins.length > 0) {
                         let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
 
-                        let copyAdmins = [...community.Admins];
-                        copyAdmins[adminIndex].status = 'Accepted';
+                        if(adminIndex !== -1) {
+                            let copyAdmins = [...community.Admins];
+                            copyAdmins[adminIndex].status = 'Accepted';
 
-                        await communityRef.update({
-                            Admins: copyAdmins
-                        });
+                            await communityRef.update({
+                                Admins: copyAdmins
+                            });
+                        } else {
+                            console.log('Error in controllers/communityController -> acceptRoleInvitation()', "You are not invited");
+                            res.send({ success: false, message: 'You are not invited' });
+                            return;
+                        }
+                    }
+                } else if (body.role === 'Member') {
+                    if (community.Members) {
+                        let memberIndex = community.Members.findIndex(member => member.id === body.userId);
+
+                        if(memberIndex === -1) {
+                            let copyMembers = [...community.Members];
+                            copyMembers.push({
+                                date: Date.now(),
+                                id: body.userId
+                            })
+
+                            await communityRef.update({
+                                Members: copyMembers
+                            });
+                        }
                     }
                 } else {
                     if (community.UserRoles && community.UserRoles.length > 0) {
                         let userRolesIndex = community.UserRoles.findIndex(userRole => userRole.userId === body.userId);
 
-                        let copyUserRoles = [...community.UserRoles];
-                        copyUserRoles[userRolesIndex].status = 'Accepted';
+                        if(userRolesIndex !== -1) {
+                            let copyUserRoles = [...community.UserRoles];
+                            copyUserRoles[userRolesIndex].status = 'Accepted';
 
-                        await communityRef.update({
-                            UserRoles: copyUserRoles
-                        });
+                            await communityRef.update({
+                                UserRoles: copyUserRoles
+                            });
+                        } else {
+                            console.log('Error in controllers/communityController -> acceptRoleInvitation()', "You are not invited");
+                            res.send({ success: false, message: 'You are not invited' });
+                            return;
+                        }
                     }
                 }
 
@@ -1172,12 +1200,18 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                     if (community.Admins && community.Admins.length > 0) {
                         let adminIndex = community.Admins.findIndex(admin => admin.userId === body.userId);
 
-                        let copyAdmins = [...community.Admins];
-                        copyAdmins.splice(adminIndex, 1);
+                        if(adminIndex !== -1) {
+                            let copyAdmins = [...community.Admins];
+                            copyAdmins.splice(adminIndex, 1);
 
-                        await communityRef.update({
-                            Admins: copyAdmins
-                        });
+                            await communityRef.update({
+                                Admins: copyAdmins
+                            });
+                        } else {
+                            console.log('Error in controllers/communityController -> acceptRoleInvitation()', "You are not invited");
+                            res.send({ success: false, message: 'You are not invited' });
+                            return;
+                        }
                     }
                 } else {
                     if (community.UserRoles && community.UserRoles.length > 0) {
