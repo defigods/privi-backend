@@ -11,9 +11,15 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
+    const userRef = db.collection(collections.user)
+      .doc(body.author);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
+    let isUserRole : any = await checkUserRole(body.author, user.email, body.communityId, true, true, ['Moderator', 'Treasurer']);
     let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
 
-    if(body && body.communityId && isCreator) {
+    if(body && body.communityId && (isUserRole.checked || isCreator)) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
       const communityRef = db.collection(collections.community)
@@ -36,7 +42,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
       })
 
       res.send({success: true, data: ret});
-    } else if (!isCreator){
+    } else if (!isUserRole || !isCreator){
       console.log('Error in controllers/communityWallController -> postCreate()', "You can't create a post");
       res.send({ success: false, error: "You can't create a post"});
     } else {
@@ -54,9 +60,15 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isCreator = await checkIfUserIsCreator(body.userId, body.communityId);
+    const userRef = db.collection(collections.user)
+      .doc(body.author);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
 
-    if(body && body.communityId && isCreator) {
+    let isUserRole = await checkUserRole(body.author, user.email, body.communityId, true, false,['Moderator']);
+    let isCreator : any = await checkIfUserIsCreator(body.userId, body.communityId);
+
+    if(body && body.communityId && (isUserRole.checked || isCreator)) {
       const communityRef = db.collection(collections.community)
         .doc(body.communityId);
       const communityGet = await communityRef.get();
@@ -73,7 +85,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
           error: 'Post Delete Error'
         });
       }
-    } else if (!isCreator){
+    } else if (!isUserRole || !isCreator){
       console.log('Error in controllers/communityWallController -> postDelete()', "You can't create a post");
       res.send({ success: false, error: "You can't delete a post"});
     } else {
@@ -334,7 +346,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
       const communityWallPostGet = await communityWallPostRef.get();
       const communityWallPost: any = communityWallPostGet.data();
 
-      let podPost = await blogController.likeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+      let communityPost = await blogController.likeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
 
       await notificationsController.addNotification({
         userId: communityWallPost.createdBy,
@@ -352,7 +364,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         }
       });
 
-      res.send({ success: true, data: podPost });
+      res.send({ success: true, data: communityPost });
 
     } else {
       console.log('Error in controllers/communityWallController -> likePost()', "Info not provided");
@@ -374,7 +386,7 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
       const communityWallPostGet = await communityWallPostRef.get();
       const communityWallPost: any = communityWallPostGet.data();
 
-      let podPost = await blogController.dislikeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
+      let communityPost = await blogController.dislikeItemPost(communityWallPostRef, communityWallPostGet, communityWallPost, body.userId, communityWallPost.createdBy)
 
       await notificationsController.addNotification({
         userId: communityWallPost.createdBy,
@@ -392,7 +404,7 @@ exports.dislikePost = async (req: express.Request, res: express.Response) => {
         }
       });
 
-      res.send({ success: true, data: podPost });
+      res.send({ success: true, data: communityPost });
 
     } else {
       console.log('Error in controllers/communityWallController -> dislikePost()', "Info not provided");
@@ -423,7 +435,7 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
     } else if (!isCreator){
       console.log('Error in controllers/communityWallController -> pinPost()', "You can't pin a post");
       res.send({ success: false, error: "You can't pin a post"});
-    }else {
+    } else {
       console.log('Error in controllers/communityWallController -> pinPost()', "Info not provided");
       res.send({ success: false, error: "Missing data provided" });
     }
@@ -447,5 +459,57 @@ const checkIfUserIsCreator = (userId, communityId) => {
     } else {
       resolve(false);
     }
+  })
+}
+
+const checkUserRole = exports.checkUserRole = (userId, userEmail, communityId, adminAccepted, memberAccepted, otherRolesAccepted) : Promise<any> => {
+  return new Promise(async (resolve, reject) => {
+    const communityRef = db.collection(collections.community)
+      .doc(communityId);
+    const communityGet = await communityRef.get();
+    const community: any = communityGet.data();
+
+    let userRoles : string[] = [];
+    let checked : boolean = false;
+
+    let admins = [...community.Admins];
+    admins.forEach((admin) => {
+      if(admin.userId && admin.userId === userId) {
+        userRoles.push('Admin');
+        if(adminAccepted) {
+          checked = true;
+        }
+      }
+    });
+
+    let roles = community.UserRoles;
+
+    if(roles[userEmail] && roles[userEmail].roles) {
+      let rolesOfUsers = Object.keys(roles[userEmail].roles);
+      rolesOfUsers.forEach((role) => {
+        if(roles[userEmail].roles[role]) {
+          userRoles.push(role)
+        }
+        let findIndex = otherRolesAccepted.findIndex(roleAccepted => roleAccepted === role);
+        if(findIndex !== -1) {
+          checked = true;
+        }
+      });
+    }
+
+    let members = [...community.Members];
+    members.forEach((member) => {
+      if(member.id && member.id === userId) {
+        userRoles.push('Member');
+        if(memberAccepted) {
+          checked = true;
+        }
+      }
+    });
+
+    resolve({
+      userRoles: userRoles,
+      checked: checked
+    })
   })
 }

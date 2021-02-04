@@ -87,6 +87,7 @@ router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
 router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
+router.get('/getAllInfoProfile/:userId', authenticateJWT, userController.getAllInfoProfile);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
@@ -100,8 +101,8 @@ router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), u
 router.get('/wall/getPostPhoto/:postId', userController.getPostPhotoById);*/
 
 // CONNECTIONS - GETS
-router.get('/connections/getFollowers/:userId', authenticateJWT, userController.getFollowers);
-router.get('/connections/getFollowings/:userId', authenticateJWT, userController.getFollowing);
+router.get('/connections/getFollowers/:userId/:ownUser', authenticateJWT, userController.getFollowers);
+router.get('/connections/getFollowings/:userId/:ownUser', authenticateJWT, userController.getFollowing);
 
 // INVESTMENTS - GETS
 router.get('/investments/getMyPods/:userId', authenticateJWT, userController.getMyPods);
@@ -136,7 +137,7 @@ router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
 // BADGES
-router.get('/badges/getBadges', authenticateJWT, userController.getBadges);
+router.get('/badges/getBadges/:userId', authenticateJWT, userController.getBadges);
 router.post('/badges/create', authenticateJWT, userController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 router.get('/badges/getPhoto/:badgeId', userController.getBadgePhotoById);

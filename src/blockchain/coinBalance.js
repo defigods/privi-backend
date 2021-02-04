@@ -19,7 +19,7 @@ module.exports.balanceOf = async (userAddress, token) => {
 	const config = {
 		method: 'get',
 		headers: { 'Content-Type': 'application/json' },
-		url: api.blockchainCoinBalanceAPI2 + "/balanceOf",
+		url: api.blockchainCoinBalanceAPI + "/balanceOf",
 		params: {
 			PublicId: userAddress,
 			Token: token,
@@ -36,7 +36,7 @@ module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 		url: api.blockchainCoinBalanceAPI + "/getBalancesOfAddress",
 		data: JSON.stringify({
 			Address: userAddress,
-			Caller: caller,
+			Caller: caller
 		})
 	}
 	let blockchainRes = await axios(config);

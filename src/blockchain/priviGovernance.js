@@ -25,13 +25,14 @@ module.exports.unstakeToken = async (userAddress, token, amount, hash, signature
     return blockchainRes.data;
 };
 
-module.exports.getUserStakings = async (userAddress, caller) => {
+module.exports.getUserStakings = async (userAddress, token, caller) => {
     const config = {
-		method: 'get',
-		headers: { 'Content-Type': 'application/json' },
-		url: api.blockchainPriviGovernanceAPI + "/getUserStakings",
-		data: {
+        method: 'get',
+        headers: { 'Content-Type': 'application/json' },
+        url: api.blockchainPriviGovernanceAPI + "/getUserStakings",
+        data: {
             UserAddress: userAddress,
+            Token: token,
             Caller: caller
         }
     }
