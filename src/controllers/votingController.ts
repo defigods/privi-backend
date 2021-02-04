@@ -6,6 +6,7 @@ import cron from 'node-cron';
 import votation from "../blockchain/votation";
 import coinBalance from '../blockchain/coinBalance';
 
+const communityWallController = require('./communityWallController');
 const apiKey = "PRIVI"; // just for now
 const treasurer = "TREASURER";
 
@@ -14,7 +15,12 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
         const body = req.body;
         const uid = generateUniqueId();
 
-        let isAdmin: boolean = false;
+        let isAdmin : boolean = false;
+        let checkUserRole : any;
+
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
 
         if (body.itemType === 'Pod') {
             const podRef = db.collection(collections.podsFT).doc(body.itemId);
@@ -28,6 +34,11 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
+            if(body.type === 'regular') {
+                checkUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, false, ['Moderator'])
+            } else {
+                checkUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, false, ['Treasurer'])
+            }
             isAdmin = await checkIfUserIsAdmin(community.Creator, body.userId);
             console.log(isAdmin, community.Creator, body.userId)
 
@@ -43,7 +54,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             res.send({success: false, error: 'Voting ItemType is unknown'})
         }
 
-        if(isAdmin) {
+        if(isAdmin || checkUserRole.checked) {
             let voting: any = {
                 VotationId: uid,
                 Type: body.type,
@@ -73,11 +84,15 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     voting.Signature = body.signature;
                     voting.PossibleAnswers = ['Yes', 'No'];
                     voting.Caller = 'PRIVI';
+                    voting.hasPhoto = false;
 
                     console.log(voting);
                     const blockchainRes = await votation.createVotation(voting);
                     if (blockchainRes && blockchainRes.success) {
                         updateFirebase(blockchainRes);
+                        await db.runTransaction(async (transaction) => {
+                            transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
+                        })
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
                         res.send({success: false, error: blockchainRes.message});
@@ -105,7 +120,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                         }
                     }
 
-                    let isRightRole = checkIfUserHasRightRole(voting.CreatorId, treasurer)
+                    /*let isRightRole = checkIfUserHasRightRole(voting.CreatorId, treasurer)
                     if (isRightRole) {
                         voting.NumberOfSignatures = body.numberOfSignatures;
                         voting.AmountToTransfer = body.amountToTransfer;
@@ -118,7 +133,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                         let mes = 'User ' + voting.CreatorId + ' does not have the right role for creating multisignature votation';
                         console.log('Error in controllers/votingController -> createVotation()', mes);
                         res.send({success: false, error: mes});
-                    }
+                    }*/
 
                 } else {
                     console.log('Error in controllers/votingController -> createVotation()', 'Voting type is unknown');
@@ -185,11 +200,11 @@ exports.changeVotingPhoto = async (req: express.Request, res: express.Response) 
 
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/communityController -> changeBadgePhoto()', "There's no file...");
+            console.log('Error in controllers/communityController -> changeVotingPhoto()', "There's no file...");
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/communityController -> changeBadgePhoto()', err);
+        console.log('Error in controllers/communityController -> changeVotingPhoto()', err);
         res.send({ success: false });
     }
 }
@@ -206,17 +221,25 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
             let possibleVoters : any[] = await getPossibleVoters(body.itemType, body.itemId);
 
             let foundUser : boolean = false;
+            let isUserRole : any;
 
             if(body.itemType === 'Pod' || body.itemType === 'CreditPool') {
                 let foundUserIndex = possibleVoters.findIndex(voter => voter === body.userId);
                 if(foundUserIndex !== -1) {
                     foundUser = true;
                 }
+            } else if(body.itemType === 'Community') {
+                const userRef = db.collection(collections.user).doc(body.userId);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
+
+                isUserRole = await communityWallController.checkUserRole(body.author, user.email, body.communityId, true, true, ['Moderator', 'Treasurer']);
             } else {
                 foundUser = true;
             }
 
-            if(foundUser) {
+
+            if(foundUser || isUserRole.checked) {
                 let vote: any = {
                     UserId: body.userId,
                     VoteIndex: body.voteIndex,

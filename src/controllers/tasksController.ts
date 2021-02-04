@@ -48,12 +48,17 @@ exports.getTasks = async (req: express.Request, res: express.Response) => {
       }
 
       //and add info to the list to be returned
-      if (userTasks.some((task) => task.Id === doc.id)) {
+      if (
+        userTasks.some((task) => task.Id === doc.id) &&
+        doc.data().Level !== 0
+      ) {
         let taskTodisplay = { ...doc.data() };
 
-        taskTodisplay.Completed = userTasks.findIndex(
-          (task) => task.Id === doc.id
-        ).Completed;
+        taskTodisplay.Completed =
+          userTasks[
+            userTasks.findIndex((task) => task.Id === doc.id)
+          ].Completed;
+
         userTasksToDisplay.push(taskTodisplay);
       }
     });
