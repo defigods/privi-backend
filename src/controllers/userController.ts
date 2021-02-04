@@ -2737,9 +2737,9 @@ const inviteUserToPod = async (req: express.Request, res: express.Response) => {
 
 const getSuggestedUsers = async (req: express.Request, res: express.Response) => {
   try {
-    let body = req.body;
+    let userId = req.params.userId;
 
-    const userRef = db.collection(collections.user).doc(body.userId);
+    const userRef = db.collection(collections.user).doc(userId);
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
@@ -2868,10 +2868,7 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
     }
     res.send({success: true, data: sugUsers});
   } catch (e) {
-    console.log(
-        "Error in controllers/userController -> getSuggestedUsers()",
-        e
-    );
+    console.log("Error in controllers/userController -> getSuggestedUsers()", e);
     res.send({success: false, error: e});
   }
 }

@@ -79,7 +79,8 @@ router.get('/FT/getPodTransactions/:podId', authenticateJWT, podController.getFT
 router.get('/FT/getMyPods/:userId', authenticateJWT, podController.getMyPodsFT);
 router.get('/FT/getTrendingPods', authenticateJWT, podController.getTrendingPodsFT);
 router.get('/FT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsFT);
-router.get('/FT/getAllPodsInfo', authenticateJWT, podController.getAllFTPodsInfo);
+router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFTPodsInfo);
+router.post('/FT/checkPodInfo', authenticateJWT, podController.checkPodInfo);
 
 
 // NFT 
@@ -98,7 +99,7 @@ router.get('/NFT/getPodTransactions/:podId', authenticateJWT, podController.getN
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
 router.get('/NFT/getTrendingPods', authenticateJWT, podController.getTrendingPodsNFT);
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
-router.get('/NFT/getAllPodsInfo', authenticateJWT, podController.getAllNFTPodsInfo);
+router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 
 router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, podWallController.postDelete);

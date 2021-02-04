@@ -5,6 +5,8 @@ import collections from "../firebase/collections";
 import cron from 'node-cron';
 import votation from "../blockchain/votation";
 import coinBalance from '../blockchain/coinBalance';
+import path from "path";
+import fs from "fs";
 
 const communityWallController = require('./communityWallController');
 const apiKey = "PRIVI"; // just for now
@@ -510,3 +512,42 @@ exports.getVotationState = async (req: express.Request, res: express.Response) =
         });
     }
 }
+
+
+exports.getPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.votingId;
+        console.log(userId);
+        if (userId) {
+            const directoryPath = path.join("uploads", "voting");
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log("Unable to scan directory: " + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+            });
+
+            // stream the image back by loading the file
+            res.setHeader("Content-Type", "image");
+            let raw = fs.createReadStream(
+              path.join("uploads", "voting", userId + ".png")
+            );
+            raw.on("error", function (err) {
+                console.log(err);
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log("Error in controllers/votingController -> getPhotoById()", "There's no id...");
+            res.send({ success: false, error: "There's no id..." });
+        }
+    } catch (err) {
+        console.log("Error in controllers/votingController -> getPhotoById()", err);
+        res.send({ success: false, error: err });
+    }
+};
