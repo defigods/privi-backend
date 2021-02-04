@@ -813,6 +813,14 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
                 const votingData: any = votingSnap.data();
                 if (votingSnap.exists) {
                     votingData.id = votingSnap.id;
+
+                    const userRef = db.collection(collections.user)
+                      .doc(votingData.CreatorId);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    votingData.CreatorName = user.firstName;
+
                     data.VotingsArray.push(votingData);
                 }
             }
