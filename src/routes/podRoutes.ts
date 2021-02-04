@@ -58,6 +58,7 @@ router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 router.post('/inviteRole', authenticateJWT, podController.inviteRole);
 router.post('/replyRoleInvitation', authenticateJWT, podController.replyRoleInvitation);
 router.post('/inviteView', authenticateJWT, podController.inviteView);
+router.post('/verifyPod', authenticateJWT, podController.verifyPod);
 
 
 // FT
