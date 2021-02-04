@@ -45,6 +45,7 @@ router.post('/depositFunds', authenticateJWT, priviCreditController.depositFunds
 router.post('/borrowFunds', authenticateJWT, priviCreditController.borrowFunds);
 router.post('/followCredit', authenticateJWT, priviCreditController.followCredit);
 router.post('/unfollowCredit', authenticateJWT, priviCreditController.unfollowCredit);
+router.post('/checkCreditInfo', authenticateJWT, priviCreditController.checkCreditInfo);
 
 
 router.post('/wall/createPost', authenticateJWT, priviCreditWallController.postCreate);

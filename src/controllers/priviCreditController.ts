@@ -513,6 +513,30 @@ exports.unfollowCredit = async (req: express.Request, res: express.Response) => 
     }
 };
 
+
+/**
+ * Function to check pods data before creation.
+ * @param req {podName}. podName: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
+ */
+exports.checkCreditInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        const creditSnap = await db.collection(collections.priviCredits)
+            .where("CreditName", "==", body.creditName).get();
+        const creditCheckSize:number = creditSnap.size;
+        let creditExists:boolean = creditCheckSize === 1 ? true : false;
+
+        res.send({
+            success: true,
+            data: {creditExists: creditExists}
+        });
+    } catch (e) {
+        return ('Error in controllers/creditController -> checkcreditInfo(): ' + e)
+    }
+};
+
+
 ///////////////////////////// GETS //////////////////////////////
 
 // getter for the whole collection, Optimization TODO: only return the necessary data to FE in order to reduce transmission load
