@@ -11,11 +11,6 @@ router.post(
   authenticateJWT,
   stakeController.verifyProfileStaking
 );
-router.post(
-  "/verifyPodStaking",
-  authenticateJWT,
-  stakeController.verifyPodStaking
-);
 
 router.get("/getStakedAmounts", stakeController.getStakedAmounts);
 router.get(
