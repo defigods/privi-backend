@@ -223,6 +223,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
             let possibleVoters : any[] = await getPossibleVoters(body.itemType, body.itemId);
 
             let foundUser : boolean = false;
+            let isCreator : boolean = false;
             let isUserRole : any;
 
             if(body.itemType === 'Pod' || body.itemType === 'CreditPool') {
@@ -235,13 +236,14 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                 const userGet = await userRef.get();
                 const user: any = userGet.data();
 
-                isUserRole = await communityWallController.checkUserRole(body.author, user.email, body.communityId, true, true, ['Moderator', 'Treasurer']);
+                isCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.itemId);
+                isUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, true, ['Moderator', 'Treasurer']);
             } else {
                 foundUser = true;
             }
 
 
-            if(foundUser || isUserRole.checked) {
+            if(foundUser || isUserRole.checked || isCreator) {
                 let vote: any = {
                     UserId: body.userId,
                     VoteIndex: body.voteIndex,
@@ -254,6 +256,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     vote.StakedAmount = body.stakedAmount;
                     vote.Hash = body.hash;
                     vote.Signature = body.signature;
+                    vote.Caller = 'PRIVI';
 
                     const blockchainRes = await votation.makeVote(vote);
                     if (blockchainRes && blockchainRes.success) {
@@ -261,6 +264,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
                         res.send({success: false, error: blockchainRes.message})
+                        return;
                     }
                 } else if (body.type === 'regular' || body.type === 'multisignature') {
                     const votingRef = db.collection(collections.voting).doc(body.votationId);
@@ -271,7 +275,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     if (!(voting && voting.OpenVotation && voting.StartingDate < Date.now() && voting.EndingDate > Date.now())) {
                         console.log('Error in controllers/votingController -> makeVote()', 'Voting is closed or missing')
                         res.send({success: false, error: 'Voting is closed or missing'});
-                        return
+                        return;
                     }
 
                     if (voting.Answers && voting.Answers.length > 0) {
@@ -286,7 +290,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                     let mes = 'User ' + vote.VoterAddress + ' does not have the right role for voting in multisignature votation';
                                     console.log('Error in controllers/votingController -> createVotation()', mes);
                                     res.send({success: false, error: mes});
-
+                                    return;
                                 }
                                 if (answers.length >= voting.NumberOfSignatures) {
                                     coinBalance.transfer("transfer", voting.TransferFrom, voting.TransferTo,
@@ -294,6 +298,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                         if (!blockchainRes.success) {
                                             console.log(`user ${voting.TransferTo} did not get ${voting.TokenToTransfer}, ${blockchainRes.message}`);
                                             res.send({success: false});
+                                            return;
                                         }
                                     });
                                     await votingRef.update({
@@ -301,6 +306,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                         OpenVotation: false
                                     });
                                     res.send({success: true, data: vote});
+                                    return;
                                 }
                             }
                         } else {
