@@ -1292,6 +1292,28 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
     }
 }
 
+/**
+ * Function to check pods data before creation.
+ * @param req {podName}. podName: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
+ */
+exports.checkCommunityInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        const communitySnap = await db.collection(collections.community)
+            .where("Name", "==", body.communityName).get();
+        const communityCheckSize:number = communitySnap.size;
+        let communityExists:boolean = communityCheckSize === 1 ? true : false;
+
+        res.send({
+            success: true,
+            data: {communityExists: communityExists}
+        });
+    } catch (e) {
+        return ('Error in controllers/communityController -> checkCommunityInfo(): ' + e)
+    }
+};
+
 
 /*
 exports.createVotation = async (req: express.Request, res: express.Response) => {
