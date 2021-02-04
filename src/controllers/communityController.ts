@@ -4,14 +4,15 @@ import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import coinBalance from "../blockchain/coinBalance";
 import notificationTypes from "../constants/notificationType";
-import { db } from "../firebase/firebase";
+import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
 import fields from '../firebase/fields';
 import cron from 'node-cron';
-import { clearLine } from "readline";
+import {clearLine} from "readline";
 import path from "path";
 import fs from "fs";
-import { sendNewCommunityUsersEmail } from "../email_templates/emailTemplates";
+import {sendNewCommunityUsersEmail} from "../email_templates/emailTemplates";
+import {ChainId, Token, WETH, Fetcher, Route} from '@uniswap/sdk'
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
@@ -27,21 +28,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         const body = req.body;
         const creator = body.Creator;
         const amm = body.AMM;
-        const initialSupply = body.InitialSupply;
-        const targetSupply = body.TargetSupply;
-        const targetPrice = body.TargetPrice;
         const spreadDividend = body.SpreadDividend;
-        const fundingToken = body.FundingToken;
-        const tokenSymbol = body.TokenSymbol;
-        const tokenName = body.TokenName;
         const frequency = body.Frequency;
-        const lockupDate = body.LockUpDate;
 
         const hash = body.Hash;
         const signature = body.Signature;
 
-        const blockchainRes = await community.createCommunity(creator, amm, targetSupply, targetPrice, spreadDividend, fundingToken, tokenSymbol, tokenName, frequency, initialSupply,
-            lockupDate, hash, signature, apiKey);
+        const blockchainRes = await community.createCommunity(creator, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             await updateFirebase(blockchainRes);
             const updateCommunities = blockchainRes.output.UpdateCommunities;
@@ -171,15 +164,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
             }, { merge: true });
 
-            // add txn to community
-            const output = blockchainRes.output;
-            const transactions = output.Transactions;
-            let tid = "";
-            let txnArray: any = null;
-            for ([tid, txnArray] of Object.entries(transactions)) {
-                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
-            }
-
             // send invitation email to admins, roles and users here
             let usersData = {
                 admins: admins,
@@ -282,28 +266,65 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                     communityAddress: communityAddress
                 }
             });
-        }
-        else {
+        } else {
             console.log('Error in controllers/communityController -> createCommunity(): success = false', blockchainRes.message);
-            res.send({ success: false });
+            res.send({success: false});
         }
     } catch (err) {
         console.log('Error in controllers/communityController -> createCommunity(): ', err);
-        res.send({ success: false });
+        res.send({success: false});
     }
 };
 
+async function getPriceFromUniswap(communityTokenAddress, fundingTokenPrice) {
+    try {
+        const communityToken = await Fetcher.fetchTokenData(ChainId.MAINNET, communityTokenAddress);
+        const fundingToken = await Fetcher.fetchTokenData(ChainId.MAINNET, fundingTokenPrice);
+        const pairData = await Fetcher.fetchPairData(fundingToken, communityToken);
+        const route = new Route([pairData], communityToken);
+        let targetPrice = route.midPrice.toSignificant(6);
+        return {targetPrice: targetPrice};
+    } catch (e) {
+        console.log("ERROR CALLING getPriceFromUniswap: ", e)
+        return e
+    }
+}
 
-exports.sellCommunityToken = async (req: express.Request, res: express.Response) => {
+exports.createCommunityToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const investor = body.Investor;
-        const communityAddress = body.CommunityAddress;
-        const amount = body.Amount;
-        const hash = body.Hash;
-        const signature = body.Signature;
+        let data: any = {
+            Creator: body.Creator,
+            CommunityAddress: body.CommunityAddress,
+            FromAddress: body.FromAddress,
+            FundingTokenAddress: body.FundingTokenAddress,
+            CommunityTokenAddress: body.CommunityTokenAddress,
+            FundingToken: body.FundingToken,
+            TokenType: body.TokenType,
+            TokenSymbol: body.TokenSymbol,
+            TokenName: body.TokenName,
+            AMM: body.AMM,
+            LockUpDate: body.LockUpDate,
+            InitialSupply: body.InitialSupply,
+            TargetPrice: body.TargetPrice,
+            TargetSupply: body.TargetSupply,
+            Frequency: body.Frequency,
+            SpreadDividend: body.SpreadDividend,
 
-        const blockchainRes = await community.sellCommunityToken(investor, communityAddress, amount, hash, signature, apiKey);
+            Hash: body.Hash,
+            Signature: body.Signature,
+            Caller: apiKey
+        }
+        if (body.TokenType && body.TokenType == 'Ethereum' && body.FundingTokenAddress && body.CommunityTokenAddress) {
+            let resp = await getPriceFromUniswap(body.communityTokenAddress, body.FundingTokenAddress);
+            if (resp.targetPrice) {
+                data.TargetPrice = resp.targetPrice;
+            } else {
+                console.log('Error in controllers/communityController -> createCommunityToken(): ', resp);
+                res.send({success: false});
+            }
+        }
+        const blockchainRes = await community.createCommunityToken(data);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
@@ -313,7 +334,52 @@ exports.sellCommunityToken = async (req: express.Request, res: express.Response)
             let tid = "";
             let txnArray: any = null;
             for ([tid, txnArray] of Object.entries(transactions)) {
-                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
+                db.collection(collections.community).doc(body.communityAddress).collection(collections.communityTransactions).doc(tid).set({Transactions: txnArray}); // add all because some of them dont have From or To (tokens are burned)
+            }
+            res.send({success: true});
+        } else {
+            console.log('Error in controllers/communityController -> createCommunityToken(): success = false', blockchainRes.message);
+            res.send({success: false});
+        }
+    } catch (e) {
+        console.log('Error in controllers/communityController -> createCommunityToken(): ', e);
+        res.send({success: false});
+    }
+}
+
+exports.sellCommunityToken = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const investor = body.Investor;
+        const communityAddress = body.CommunityAddress;
+        const tokenType = body.TokenType;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        let price;
+        if (tokenType && tokenType == "Ethereum") {
+            const commSnap = await db.collection(collections.community).doc(communityAddress).get();
+            const data: any = commSnap.data();
+
+            let resp = await getPriceFromUniswap(data.CommunityTokenAddress, data.FundingTokenAddress);
+            if (resp.targetPrice) {
+                price = resp.targetPrice;
+            } else {
+                console.log('Error in controllers/communityController -> createCommunityToken(): ', resp);
+                res.send({success: false});
+            }
+        }
+        const blockchainRes = await community.sellCommunityToken(investor, communityAddress, amount, price, hash, signature, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes);
+
+            // add txn to community
+            const output = blockchainRes.output;
+            const transactions = output.Transactions;
+            let tid = "";
+            let txnArray: any = null;
+            for ([tid, txnArray] of Object.entries(transactions)) {
+                db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).doc(tid).set({Transactions: txnArray}); // add all because some of them dont have From or To (tokens are burned)
             }
             res.send({ success: true });
         }
@@ -333,6 +399,21 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
         const investor = body.Investor;
         const communityAddress = body.CommunityAddress;
         const amount = body.Amount;
+        const tokenType = body.TokenType;
+
+        let price;
+        if (tokenType && tokenType == "Ethereum") {
+            const commSnap = await db.collection(collections.community).doc(communityAddress).get();
+            const data: any = commSnap.data();
+
+            let resp = await getPriceFromUniswap(data.CommunityTokenAddress, data.FundingTokenAddress);
+            if (resp.targetPrice) {
+                price = resp.targetPrice;
+            } else {
+                console.log('Error in controllers/communityController -> createCommunityToken(): ', resp);
+                res.send({success: false});
+            }
+        }
         const hash = body.Hash;
         const signature = body.Signature;
 
@@ -732,6 +813,14 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
                 const votingData: any = votingSnap.data();
                 if (votingSnap.exists) {
                     votingData.id = votingSnap.id;
+
+                    const userRef = db.collection(collections.user)
+                      .doc(votingData.CreatorId);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    votingData.CreatorName = user.firstName;
+
                     data.VotingsArray.push(votingData);
                 }
             }
@@ -969,12 +1058,12 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
         const trendingCommunities = filterTrending(allCommunities);
         let batch = db.batch()
 
-        db.collection(collections.trendingCommunity).listDocuments().then(val => {
+        await db.collection(collections.trendingCommunity).listDocuments().then(val => {
             val.map((val) => {
                 batch.delete(val)
             })
         })
-        trendingCommunities.forEach((doc) => {
+        await trendingCommunities.forEach((doc) => {
             let docRef = db.collection(collections.trendingCommunity).doc(); //automatically generate unique id
             batch.set(docRef, doc);
         })
@@ -1202,6 +1291,28 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
         res.send({ success: false, message: e });
     }
 }
+
+/**
+ * Function to check pods data before creation.
+ * @param req {podName}. podName: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
+ */
+exports.checkCommunityInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        const communitySnap = await db.collection(collections.community)
+            .where("Name", "==", body.communityName).get();
+        const communityCheckSize:number = communitySnap.size;
+        let communityExists:boolean = communityCheckSize === 1 ? true : false;
+
+        res.send({
+            success: true,
+            data: {communityExists: communityExists}
+        });
+    } catch (e) {
+        return ('Error in controllers/communityController -> checkCommunityInfo(): ' + e)
+    }
+};
 
 
 /*

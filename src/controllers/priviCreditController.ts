@@ -513,15 +513,46 @@ exports.unfollowCredit = async (req: express.Request, res: express.Response) => 
     }
 };
 
+
+/**
+ * Function to check pods data before creation.
+ * @param req {podName}. podName: identifier of the pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
+ */
+exports.checkCreditInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        const creditSnap = await db.collection(collections.priviCredits)
+            .where("CreditName", "==", body.creditName).get();
+        const creditCheckSize:number = creditSnap.size;
+        let creditExists:boolean = creditCheckSize === 1 ? true : false;
+
+        res.send({
+            success: true,
+            data: {creditExists: creditExists}
+        });
+    } catch (e) {
+        return ('Error in controllers/creditController -> checkcreditInfo(): ' + e)
+    }
+};
+
+
 ///////////////////////////// GETS //////////////////////////////
 
 // getter for the whole collection, Optimization TODO: only return the necessary data to FE in order to reduce transmission load
 exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
     try {
         const t1 = Date.now();
+        const lastCredit = req.query.lastCredit;
         const allCredits: any[] = [];
-        const creditsSnap = await db.collection(collections.priviCredits).get();
-        for (var i = 0; i < creditsSnap.docs.length; i++) {
+
+        let creditsSnap
+        if (lastCredit) {
+            creditsSnap = await db.collection(collections.priviCredits).startAfter(lastCredit).limit(5).get();
+        } else {
+            creditsSnap = await db.collection(collections.priviCredits).limit(5);
+        }
+        for (let i = 0; i < creditsSnap.docs.length; i++) {
             const doc = creditsSnap.docs[i];
             const data = doc.data();
             const popularity = 0.5;
@@ -544,19 +575,75 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
         }
 
         // get the trending ones
-        const trendingCredits = filterTrending(allCredits);
         console.log(Date.now() - t1, "ms");
         res.send({
             success: true, data: {
                 allCredits: allCredits,
-                trendingCredits: trendingCredits
             }
         });
     } catch (err) {
         console.log('Error in controllers/priviCredit -> getPriviCredits(): ', err);
-        res.send({ success: false });
+        res.send({success: false});
     }
 };
+
+exports.getTrendingPriviCredits = async (req: express.Request, res: express.Response) => {
+    try {
+        const trendingCredits: any[] = [];
+        const creditsSnap = await db.collection(collections.trendingPriviCredit).get();
+        creditsSnap.docs.forEach(c => {
+            trendingCredits.push(c.data());
+        });
+        res.send({success: true, data: {trending: trendingCredits}});
+    } catch (e) {
+        console.log('Error in controllers/priviCredit -> getTrendingPriviCredits(): ', e);
+        res.send({success: false, message: e});
+    }
+}
+
+exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
+    try {
+        const allCredits: any[] = [];
+        const creditsSnap = await db.collection(collections.priviCreditsLending).get();
+        const popularity = 0.5;
+        creditsSnap.docs.forEach(async c => {
+            const data = c.data();
+            const lenders: any[] = [];
+            const borrowers: any[] = [];
+            const lendersSnap = await c.ref.collection(collections.priviCreditsLending).get();
+            const borrowersSnap = await c.ref.collection(collections.priviCreditsBorrowing).get();
+            lendersSnap.forEach((doc) => {
+                lenders.push(doc.data());
+            });
+            borrowersSnap.forEach((doc) => {
+                borrowers.push(doc.data());
+            });
+
+            allCredits.push({
+                ...data,
+                popularity: popularity,
+                Lenders: lenders,
+                Borrowers: borrowers
+            });
+        });
+
+        const trendingCredits = filterTrending(allCredits);
+        let batch = db.batch()
+
+        await db.collection(collections.trendingPriviCredit).listDocuments().then(val => {
+            val.map((val) => {
+                batch.delete(val)
+            })
+        })
+        await trendingCredits.forEach((doc) => {
+            let docRef = db.collection(collections.trendingCommunity).doc();
+            batch.set(docRef, doc);
+        })
+        await batch.commit();
+    } catch (err) {
+        console.log('Error in controllers/priviCredit -> setTrendingPriviCredits(): ', err);
+    }
+})
 
 // given an id, return the complete data of a certain privi credit
 exports.getPriviCredit = async (req: express.Request, res: express.Response) => {

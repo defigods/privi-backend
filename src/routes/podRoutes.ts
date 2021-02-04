@@ -58,6 +58,7 @@ router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 router.post('/inviteRole', authenticateJWT, podController.inviteRole);
 router.post('/replyRoleInvitation', authenticateJWT, podController.replyRoleInvitation);
 router.post('/inviteView', authenticateJWT, podController.inviteView);
+router.post('/verifyPod', authenticateJWT, podController.verifyPod);
 
 
 // FT
@@ -76,10 +77,10 @@ router.get('/FT/getSupplyHistory/:podId', authenticateJWT, podController.getFTPo
 router.get('/FT/getPod/:podId', authenticateJWT, podController.getFTPod);
 router.get('/FT/getPodTransactions/:podId', authenticateJWT, podController.getFTPodTransactions);
 router.get('/FT/getMyPods/:userId', authenticateJWT, podController.getMyPodsFT);
-router.get('/FT/getTrendingPods/:userId', authenticateJWT, podController.getTrendingPodsFT);
+router.get('/FT/getTrendingPods', authenticateJWT, podController.getTrendingPodsFT);
 router.get('/FT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsFT);
 router.get('/FT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllFTPodsInfo);
-router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
+router.post('/FT/checkPodInfo', authenticateJWT, podController.checkPodInfo);
 
 
 // NFT 
@@ -96,8 +97,9 @@ router.get('/NFT/getHistories/:podId', authenticateJWT, podController.getNFTPodH
 router.get('/NFT/getPod/:podId', authenticateJWT, podController.getNFTPod);
 router.get('/NFT/getPodTransactions/:podId', authenticateJWT, podController.getNFTPodTransactions);
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
-router.get('/NFT/getTrendingPods/:userId', authenticateJWT, podController.getTrendingPodsNFT);
+router.get('/NFT/getTrendingPods', authenticateJWT, podController.getTrendingPodsNFT);
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
+router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 
 router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, podWallController.postDelete);

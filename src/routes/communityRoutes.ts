@@ -126,6 +126,7 @@ router.post('/createCommunity', authenticateJWT, communityController.createCommu
 router.post('/sellCommunityToken', authenticateJWT, communityController.sellCommunityToken);
 router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommunityToken);
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
+router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCommunityInfo);
 
 router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);

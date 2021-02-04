@@ -12,12 +12,15 @@ const priviDataController = require('./priviDataController');
 // Credit
 const priviCreditPayInterest = priviCreditController.payInterest;
 const priviCreditManageHistory = priviCreditController.manageHistory;
+const setTrendingPriviCredits = priviCreditController.setTrendingPriviCredits;
 // Lending
 // const payInterest = lendingController.payInterest;
 // const checkLiquidation = lendingController.checkLiquidation;
 // Pods
 // const podCheckLiquidation = podController.checkLiquidation;
 // const podPayInterest = podController.payInterest;
+const setTrendingPodsFT = podController.setTrendingPodsFT;
+const setTrendingPodsNFT = podController.setTrendingPodsNFT;
 const nftManagePriceHistory = podController.managePriceHistory;
 // Connect
 const checkTx = connectController.checkTx;
@@ -55,5 +58,8 @@ module.exports = {
     removeStories,
     campaignsDataNextMonth,
     campaignsDataNextDay,
-    trendingCommunities
+    trendingCommunities,
+    setTrendingPodsFT,
+    setTrendingPodsNFT,
+    setTrendingPriviCredits
 }

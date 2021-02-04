@@ -20,6 +20,7 @@ let upload = multer({
 
 router.post('/create', authenticateJWT, votingController.createVoting);
 router.post('/changeVotingPhoto', authenticateJWT, upload.single('image'), votingController.changeVotingPhoto);
+router.get('/getPhoto/:votingId', votingController.getPhotoById);
 
 
 router.post('/vote', authenticateJWT, votingController.makeVote);
