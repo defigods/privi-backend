@@ -919,6 +919,7 @@ exports.getUserPaymentData = async (req: express.Request, res: express.Response)
         const userAddress: any = params.userAddress;
         const communityToken: any = params.communityToken;
 
+        const addressUidMap = await getAddresUidMap();
         const blockchainRes = await coinBalance.balanceOf(userAddress, communityToken);
         const output = blockchainRes.output;
         const balance = output ? output.Amount ?? 0 : 0;
@@ -934,8 +935,8 @@ exports.getUserPaymentData = async (req: express.Request, res: express.Response)
                     else if (txn.To == userAddress) paymentsReceived++;
                     paymentHistory.push({
                         Quantity: txn.Amount,
-                        Token: txn.Token,
-                        Sender: txn.To,
+                        Token: addressUidMap[txn.Token] ?? txn.Token,
+                        Sender: addressUidMap[txn.To] ?? txn.To,
                         Receiver: txn.To,
                     });
                 }
