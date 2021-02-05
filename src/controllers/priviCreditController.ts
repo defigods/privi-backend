@@ -8,6 +8,7 @@ import collections from '../firebase/collections';
 import fields from '../firebase/fields';
 import { user } from 'firebase-functions/lib/providers/auth';
 
+const tasks = require("./tasksController");
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
 
@@ -395,12 +396,22 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
                     });
                 }
             }
-            res.send({ success: true });
+
+            const userBorrows = await priviCredit.getUserBorrowings(address, apiKey);
+            if (userBorrows && userBorrows.success && userBorrows.output.length >= 3 && !userData.borrowedFromThree) {
+                await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
+                await userSnap.ref.update({
+                    borrowedFromThree: true,
+                });
+            }
+            res.send({success: true});
         }
         else {
             console.log('Error in controllers/priviCredit -> borrowFunds(): success = false', blockchainRes.message);
             res.send({ success: false });
         }
+
+
     } catch (err) {
         console.log('Error in controllers/priviCredit -> borrowFunds(): ', err);
         res.send({ success: false });

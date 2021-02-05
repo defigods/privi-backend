@@ -9,8 +9,10 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 import priviGovernance from "../blockchain/priviGovernance";
+import coinBalance from "../blockchain/coinBalance.js";
 
 const notificationsController = require('./notificationsController');
+const tasks = require("./tasksController");
 const chatController = require('./chatController');
 require('dotenv').config();
 const apiKey = 'PRIVI'; // process.env.API_KEY;
@@ -463,7 +465,8 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
             await db.collection(collections.podsFT).doc(podId).set({
                 InterstDue: interestDue,
                 DiscordId: discordChatCreation.id,
-                Posts: []
+                Posts: [],
+                PodReachInvestors: false,
             }, {merge: true});
 
             //     createNotification(creator, "FT Pod - Pod Created",
@@ -669,7 +672,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
 
             if (newInvestors[investorId]) newInvestors[investorId] += amount;
             else newInvestors[investorId] = amount;
-            podSnap.ref.update({ Investors: newInvestors });
+            await podSnap.ref.update({Investors: newInvestors});
 
             //update discord chat
             const discordRoomSnap = await db.collection(collections.discordChat).doc(data.DiscordId)
@@ -691,6 +694,10 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
             const investorSnap = await db.collection(collections.user).doc(investorId).get();
             const investorData: any = investorSnap.data();
 
+            if (!podData.PodReachInvestors && Object.keys(newInvestors).length >= 5) {
+                await tasks.updateTask(podData.Creator, "Your Pod has at least 5 investors who invested test tokens")
+                await podSnap.ref.update({PodReachInvestors: true});
+            }
             await notificationsController.addNotification({
                 userId: investorId,
                 notification: {
@@ -1949,7 +1956,22 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
                     otherItemId: ''
                 }
             });
-            res.send({ success: true });
+
+            let userTokens = await coinBalance.getTokensOfAddress(buyerAddress);
+            if (userTokens && userTokens.success) {
+                const output = userTokens.output;
+                if (userTokens["NFTPOD"].length >= 5) {
+                    const userRef = db.collection(collections.user)
+                        .doc(buyerAddress);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+                    if (!user.boughtFiveTokens) {
+                        await tasks.updateTask(buyerAddress, "Own 5 different NFT Pod Tokens");
+                        await userRef.update({boughtFiveTokens: true});
+                    }
+                }
+            }
+            res.send({success: true});
         }
         else {
             console.log('Error in controllers/podController -> buyPodTokens(), blockchain success = false, ', blockchainRes.message);

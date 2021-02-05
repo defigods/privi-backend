@@ -14,6 +14,7 @@ import fs from "fs";
 import {sendNewCommunityUsersEmail} from "../email_templates/emailTemplates";
 import {ChainId, Token, WETH, Fetcher, Route} from '@uniswap/sdk'
 
+const tasks = require("./tasksController");
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
 
@@ -160,8 +161,9 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 Admins: admins || [],
                 InvitationUsers: invitedUsers,
                 Posts: [],
-                Votings: []
+                Votings: [],
 
+                MembersReached: false,
             }, { merge: true });
 
             // send invitation email to admins, roles and users here
@@ -433,7 +435,22 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
                     commSnap.ref.collection(collections.communityTransactions).add(obj)
                 }
             }
-            res.send({ success: true });
+            let userTokens = await coinBalance.getTokensOfAddress(body.Investor);
+            if (userTokens && userTokens.success) {
+                const output = userTokens.output;
+                if (userTokens["COMMUNITY"].length >= 3) {
+                    const userRef = db.collection(collections.user)
+                        .doc(investor.Investor);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+                    if (!user.Own3CommunityTokens) {
+                        await tasks.updateTask(body.Investor, "Own 3 Community Tokens with test tokens ");
+                        await userRef.update({Own3CommunityTokens: true});
+                    }
+                }
+            }
+
+            res.send({success: true});
         }
         else {
             console.log('Error in controllers/communityController -> buyCommunityToken(): success = false', blockchainRes.message);
@@ -506,6 +523,7 @@ exports.join = async (req: express.Request, res: express.Response) => {
         const userData: any = userSnap.data();
 
         let joinedCommuntities = userData[fields.joinedCommunities] ?? [];
+        let jcLength = joinedCommuntities.length;
         joinedCommuntities.push(communityAddress);
         const userUpdateObj = {};
         userUpdateObj[fields.joinedCommunities] = joinedCommuntities;
@@ -521,7 +539,7 @@ exports.join = async (req: express.Request, res: express.Response) => {
         });
         const commUpdateObj = {};
         commUpdateObj[fields.joinedUsers] = joinedUsers;
-        communitySnap.ref.update(commUpdateObj);
+        await communitySnap.ref.update(commUpdateObj);
 
         //update discord chat
         const discordRoomSnap = await db.collection(collections.discordChat).doc(commData.DiscordId)
@@ -535,7 +553,18 @@ exports.join = async (req: express.Request, res: express.Response) => {
             }
         }
 
-        res.send({ success: true });
+        if (joinedUsers.length >= 15 && !commData.MembersReached) {
+            await communitySnap.ref.update({
+                MembersReached: true,
+            })
+            await tasks.updateTask(commData.Creator, "Own a community with 15 or more members");
+        }
+
+        if (jcLength == 2) {
+            await tasks.updateTask(userAddress, "Join 3 Communities");
+        }
+
+        res.send({success: true});
     } catch (err) {
         console.log('Error in controllers/communityController -> join(): ', err);
         res.send({ success: false });

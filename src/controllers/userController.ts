@@ -21,6 +21,7 @@ import configuration from "../constants/configuration";
 import {sendEmailValidation, sendForgotPasswordEmail,} from "../email_templates/emailTemplates";
 import {sockets} from "./serverController";
 
+const tasks = require("./tasksController");
 const bcrypt = require("bcrypt");
 const FieldValue = require("firebase-admin").firestore.FieldValue;
 const jwt = require("jsonwebtoken");
@@ -1388,29 +1389,37 @@ const followUser = async (req: express.Request, res: express.Response) => {
     const userToFollowData: any = userToFollowGet.data();
 
     let alreadyFollower = userToFollowData.followers.find(
-      (item) => item === body.user.id
+        (item) => item === body.user.id
     );
+    let userFollowersLength = userToFollowData.followers.length;
     if (!alreadyFollower) {
       userToFollowData.followers.push({
         user: body.user.id,
         accepted: false,
       });
     }
-
+    let userFollowersLengthAfter = user.followings.length;
+    if (userFollowersLength == 4 && userFollowersLengthAfter == 5) {
+      await tasks.updateTask(userToFollowData.user)
+    }
     await userToFollowRef.update({
       followers: userToFollowData.followers,
     });
 
     let alreadyFollowing = user.followings.find(
-      (item) => item.user === body.user.id
+        (item) => item.user === body.user.id
     );
+    let userFollowingsLength = user.followings.length;
     if (!alreadyFollowing) {
       user.followings.push({
         user: body.userToFollow.id,
         accepted: false,
       });
     }
-
+    let userFollowingsLengthAfter = user.followings.length;
+    if (userFollowingsLength == 4 && userFollowingsLengthAfter == 5) {
+      await tasks.updateTask(body.user.id, "Follow 5 people")
+    }
     await userRef.update({
       followings: user.followings,
     });
@@ -2317,15 +2326,16 @@ const createProposal = async (req: express.Request, res: express.Response) => {
       await db.runTransaction(async (transaction) => {
         transaction.set(
           db.collection(collections.proposals).doc("" + (id + 1)),
-          {
-            proposal: body.proposal,
-            userId: body.userId,
-            date: new Date(),
-            item: body.item,
-            itemType: body.itemType,
-            itemId: body.itemId,
-            responses: [],
-          }
+            {
+              proposal: body.proposal,
+              userId: body.userId,
+              date: new Date(),
+              item: body.item,
+              itemType: body.itemType,
+              itemId: body.itemId,
+              isReachResponses: false,
+              responses: [],
+            }
         );
       });
       res.send({
@@ -2420,7 +2430,12 @@ const responseProposal = async (
       await proposalRef.update({
         responses: proposal.responses,
       });
-      res.send({ success: true, data: proposal });
+
+      if (proposal.responses.length >= 10 && proposal.isReachResponses) {
+        await tasks.updateTask(proposal.userId, "Create 1 Proposal in Governance that receives 10 or more responses");
+        await proposalRef.update({})
+      }
+      res.send({success: true, data: proposal});
     } else {
       console.log(
         "Error in controllers/userController -> responseIssue()",
@@ -2594,15 +2609,26 @@ const updateUserCred = (userId, sum) => {
       const user: any = userGet.data();
 
       let creds = user.creds;
+      let credsForTask = user.credsForTask;
+
       if (sum) {
         creds = creds + 1;
       } else {
         creds = creds - 1;
       }
+      if (creds >= 15 && !credsForTask) {
+        credsForTask = true
+        await userRef.update({
+          creds: creds,
+          credsForTask: credsForTask
+        });
 
-      await userRef.update({
-        creds: creds,
-      });
+        await tasks.updateTask(userId, "Receive 15 creds")
+      } else {
+        await userRef.update({
+          creds: creds,
+        });
+      }
 
       user.creds = creds;
 

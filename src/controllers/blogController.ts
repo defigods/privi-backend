@@ -16,6 +16,7 @@ import fs from "fs";
 import cron from "node-cron";
 
 const userController = require("./userController");
+const tasks = require("./tasksController");
 const notificationsController = require("./notificationsController");
 
 exports.blogCreate = async (req: express.Request, res: express.Response) => {
@@ -766,6 +767,7 @@ const createPost = (exports.createPost = (body, collection, userId) => {
           createdBy: userId,
           createdAt: Date.now(),
           updatedAt: null,
+          got10creds: false,
           likes: [],
           dislikes: [],
           numLikes: 0,
@@ -907,6 +909,10 @@ const likeItemPost = (exports.likeItemPost = (
       dbItem.numLikes = numLikes;
       dbItem.numDislikes = numDislikes;
 
+      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
+        await tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
+        await dbRef.update({got10creds: true});
+      }
       if (creator !== userId) {
         await userController.updateUserCred(creator, true);
       }
@@ -962,6 +968,11 @@ const dislikeItemPost = (exports.dislikeItemPost = (
       dbItem.dislikes = dislikes;
       dbItem.numLikes = numLikes;
       dbItem.numDislikes = numDislikes;
+
+      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
+        await tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
+        await dbRef.update({got10creds: true});
+      }
 
       if (creator !== userId) {
         await userController.updateUserCred(creator, true);
