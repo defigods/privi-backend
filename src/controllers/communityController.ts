@@ -751,13 +751,22 @@ const getExtraData = async (data, rateOfChange) => {
 // get all communities, highlighting the trending ones
 exports.getCommunities = async (req: express.Request, res: express.Response) => {
     try {
-        const lastCommunityAddress = req.query.lastCommunityAddress;
+        const lastCommunity : number = +req.params.pagination;
         const allCommunities: any[] = [];
-        let communitiesSnap
-        if (lastCommunityAddress) {
-            communitiesSnap = await db.collection(collections.community).startAfter(lastCommunityAddress).limit(5).get();
+
+        let communitiesSnap : any;
+        if (lastCommunity) {
+            const lastId : any = req.params.lastId;
+            const communityRef = db.collection(collections.community)
+              .doc(lastId);
+            const communityGet = await communityRef.get();
+            const community: any = communityGet.data();
+
+            communitiesSnap = await db.collection(collections.community).orderBy('Date')
+              .startAfter(community.Date).limit(6).get();
         } else {
-            communitiesSnap = await db.collection(collections.community).get();
+            communitiesSnap = await db.collection(collections.community).orderBy('Date')
+              .limit(6).get();
         }
         const rateOfChange = await getRateOfChangeAsMap();
         const docs = communitiesSnap.docs;
