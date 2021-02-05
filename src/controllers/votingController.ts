@@ -68,8 +68,8 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                 Answers: [],
                 OpenVotation: false,
                 Description: body.description,
-                StartingDate: body.startingDate,
-                EndingDate: body.endingDate
+                StartingDate: Math.round(body.startingDate/1000),
+                EndingDate: Math.round(body.endingDate/1000)
             }
 
             if(body.startingDate < Date.now()) {
@@ -79,7 +79,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             if(voting.Type && voting.ItemType) {
                 if (voting.Type === 'staking') {
                     voting.VotationAddress = body.votationAddress;
-                    voting.VotationToken = body.votationToken;
+                    voting.VotingToken = body.VotingToken;
                     voting.TotalVotes = body.totalVotes;
                     voting.QuorumRequired = body.quorumRequired/100;
                     voting.Hash = body.hash;
@@ -251,16 +251,29 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                 }
 
                 if (body.type === 'staking') {
-                    vote.VoterAddress = body.voterAddress;
-                    vote.VotationId = body.votationId;
-                    vote.StakedAmount = body.stakedAmount;
+                    vote.VoterAddress = body.VoterAddress;
+                    vote.VotationId = body.VotationId;
+                    vote.StakedAmount = body.StakedAmount;
+                    vote.VotingType = body.VotingType;
                     vote.Hash = body.hash;
                     vote.Signature = body.signature;
                     vote.Caller = 'PRIVI';
 
+                    console.log(vote);
+
                     const blockchainRes = await votation.makeVote(vote);
                     if (blockchainRes && blockchainRes.success) {
                         updateFirebase(blockchainRes);
+
+                        /*const votingRef = db.collection(collections.voting).doc(body.VotationId);
+                        const votingGet = await votingRef.get();
+                        const voting: any = votingGet.data();
+
+                        let answers = [...voting.Answers];
+                        answers.push(votationId + vote.VoterAddress)
+                        await votingRef.update({
+                            Answers: answers
+                        });*/
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
                         res.send({success: false, error: blockchainRes.message})
@@ -557,3 +570,39 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
         res.send({ success: false, error: err });
     }
 };
+
+exports.getDaoProposalById = async (req: express.Request, res: express.Response) => {
+    try {
+        let proposalId = req.params.proposalId;
+        console.log(proposalId);
+        if (proposalId) {
+            const votingSnap = await db.collection(collections.voting).doc(proposalId).get();
+            const votingData: any = votingSnap.data();
+            votingData.id = votingSnap.id;
+
+            const votersQuery = await db.collection(collections.voter)
+              .where("VotationId", "==", proposalId).get();
+
+            let voters : any[] = [];
+            if (!votersQuery.empty) {
+                for (const doc of votersQuery.docs) {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    voters.push(data);
+                }
+            }
+            res.send({success: true, data: {
+                    voting: votingData,
+                    voters: voters
+                }
+            });
+
+        } else {
+            console.log("Error in controllers/votingController -> getDaoProposalById()", "There's no id...");
+            res.send({success: false, error: "There's no id..."});
+        }
+    } catch (err) {
+        console.log("Error in controllers/votingController -> getDaoProposalById()", err);
+        res.send({success: false, error: err});
+    }
+}

@@ -522,34 +522,34 @@ exports.getPriviCredits = async (req: express.Request, res: express.Response) =>
         const lastCredit = req.query.lastCredit;
         const allCredits: any[] = [];
 
-        let creditsSnap
+        let creditsSnap : any;
         if (lastCredit) {
             creditsSnap = await db.collection(collections.priviCredits).startAfter(lastCredit).limit(5).get();
         } else {
-            creditsSnap = await db.collection(collections.priviCredits).limit(5);
+            creditsSnap = await db.collection(collections.priviCredits).limit(5).get();
         }
-        for (let i = 0; i < creditsSnap.docs.length; i++) {
-            const doc = creditsSnap.docs[i];
-            const data = doc.data();
-            const popularity = 0.5;
-            const lenders: any[] = [];
-            const borrowers: any[] = [];
-            const lendersSnap = await doc.ref.collection(collections.priviCreditsLending).get();
-            const borrowersSnap = await doc.ref.collection(collections.priviCreditsBorrowing).get();
-            lendersSnap.forEach((doc) => {
-                lenders.push(doc.data());
-            });
-            borrowersSnap.forEach((doc) => {
-                borrowers.push(doc.data());
-            });
-            allCredits.push({
-                ...data,
-                popularity: popularity,
-                Lenders: lenders,
-                Borrowers: borrowers
-            });
+        if(!creditsSnap.empty) {
+            for (const doc of creditsSnap.docs) {
+                const data = doc.data();
+                const popularity = 0.5;
+                const lenders: any[] = [];
+                const borrowers: any[] = [];
+                const lendersSnap = await doc.ref.collection(collections.priviCreditsLending).get();
+                const borrowersSnap = await doc.ref.collection(collections.priviCreditsBorrowing).get();
+                lendersSnap.forEach((doc) => {
+                    lenders.push(doc.data());
+                });
+                borrowersSnap.forEach((doc) => {
+                    borrowers.push(doc.data());
+                });
+                allCredits.push({
+                    ...data,
+                    popularity: popularity,
+                    Lenders: lenders,
+                    Borrowers: borrowers
+                });
+            }
         }
-
         // get the trending ones
         console.log(Date.now() - t1, "ms");
         res.send({
