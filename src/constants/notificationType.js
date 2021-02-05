@@ -1,4 +1,5 @@
 module.exports = {
+    transfer: "transfer",
     transferReceive: "transfer_receive",
     transferSend: "transfer_send",
     swap: "swap_ethereum",
