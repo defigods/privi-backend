@@ -87,6 +87,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     voting.PossibleAnswers = ['Yes', 'No'];
                     voting.Caller = 'PRIVI';
                     voting.hasPhoto = false;
+                    voting.NumVotes = 0;
 
                     console.log(voting);
                     const blockchainRes = await votation.createVotation(voting);
@@ -259,21 +260,23 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     vote.Signature = body.signature;
                     vote.Caller = 'PRIVI';
 
-                    console.log(vote);
-
                     const blockchainRes = await votation.makeVote(vote);
                     if (blockchainRes && blockchainRes.success) {
                         updateFirebase(blockchainRes);
 
-                        /*const votingRef = db.collection(collections.voting).doc(body.VotationId);
+                        const votingRef = db.collection(collections.voting).doc(body.VotationId);
                         const votingGet = await votingRef.get();
                         const voting: any = votingGet.data();
 
-                        let answers = [...voting.Answers];
-                        answers.push(votationId + vote.VoterAddress)
+                        if(voting.NumVotes !== 0) {
+                            voting.NumVotes = voting.NumVotes + 1;
+                        } else {
+                            voting.NumVotes = 1;
+                        }
+
                         await votingRef.update({
-                            Answers: answers
-                        });*/
+                            NumVotes: voting.NumVotes
+                        });
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
                         res.send({success: false, error: blockchainRes.message})
