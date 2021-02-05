@@ -1032,44 +1032,43 @@ const getExtraData = async (data, rateOfChange) => {
 };
 
 // get all communities, highlighting the trending ones
-exports.getCommunities = async (
-  req: express.Request,
-  res: express.Response
-) => {
-  try {
-    const lastCommunityAddress = req.query.lastCommunityAddress;
-    const allCommunities: any[] = [];
-    let communitiesSnap;
-    if (lastCommunityAddress) {
-      communitiesSnap = await db
-        .collection(collections.community)
-        .startAfter(lastCommunityAddress)
-        .limit(5)
-        .get();
-    } else {
-      communitiesSnap = await db.collection(collections.community).get();
+exports.getCommunities = async (req: express.Request, res: express.Response) => {
+    try {
+        const lastCommunity : number = +req.params.pagination;
+        const allCommunities: any[] = [];
+
+        let communitiesSnap : any;
+        if (lastCommunity) {
+            const lastId : any = req.params.lastId;
+            const communityRef = db.collection(collections.community)
+              .doc(lastId);
+            const communityGet = await communityRef.get();
+            const community: any = communityGet.data();
+
+            communitiesSnap = await db.collection(collections.community).orderBy('Date')
+              .startAfter(community.Date).limit(6).get();
+        } else {
+            communitiesSnap = await db.collection(collections.community).orderBy('Date')
+              .limit(6).get();
+        }
+        const rateOfChange = await getRateOfChangeAsMap();
+        const docs = communitiesSnap.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+            const data: any = doc.data();
+            const id: any = doc.id;
+            const extraData = await getExtraData(data, rateOfChange);
+            allCommunities.push({ ...data, ...extraData, id: id });
+        }
+        res.send({
+            success: true, data: {
+                all: allCommunities
+            }
+        });
+    } catch (e) {
+        return ('Error in controllers/communitiesControllers -> getAllCommunities()' + e)
     }
-    const rateOfChange = await getRateOfChangeAsMap();
-    const docs = communitiesSnap.docs;
-    for (let i = 0; i < docs.length; i++) {
-      const doc = docs[i];
-      const data: any = doc.data();
-      const id: any = doc.id;
-      const extraData = await getExtraData(data, rateOfChange);
-      allCommunities.push({ ...data, ...extraData, id: id });
-    }
-    res.send({
-      success: true,
-      data: {
-        all: allCommunities,
-      },
-    });
-  } catch (e) {
-    return (
-      "Error in controllers/communitiesControllers -> getAllCommunities()" + e
-    );
-  }
-};
+}
 
 // get a single community data
 exports.getCommunity = async (req: express.Request, res: express.Response) => {
