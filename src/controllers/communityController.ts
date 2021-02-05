@@ -33,6 +33,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
         const hash = body.Hash;
         const signature = body.Signature;
+        // console.log('createCommunity', body)
 
         const blockchainRes = await community.createCommunity(creator, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
@@ -100,8 +101,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                     }
                 }
             }
-            for (const [index, userRole] of userRolesArray.entries()) {
-                const user = await db.collection(collections.user).where("email", "==", userRole.name).get();
+            console.log('userRolesObj', userRolesObj)
+            console.log('userRolesArray', userRolesArray)
+            const userRolkeys = Object.keys(userRolesObj);
+            console.log('userRolkeys', userRolkeys)
+            for (const [index, userRole] of userRolkeys.entries()) {
+                console.log('userRole', userRole)
+                const user = await db.collection(collections.user).where("email", "==", userRole).get();
                 if (user.empty) {
                     userRolesArray[index].userId = null;
                 } else {
