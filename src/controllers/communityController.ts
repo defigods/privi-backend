@@ -93,6 +93,18 @@ module.exports.transfer = async (
   }
 };
 
+exports.setComunityBirdgeRegistered = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const comunityAddress = body.address;
+        db.collection(collections.community).doc(comunityAddress).update({registeredOnBridge: true});
+        res.send({success: true});
+    } catch (e) {
+        console.log('Error in controllers/setComunityBirdgeRegistered -> setComunityBirdgeRegistered(): ', e);
+        res.send({success: false});
+    }
+}
+
 exports.createCommunity = async (
   req: express.Request,
   res: express.Response
@@ -186,19 +198,19 @@ exports.createCommunity = async (
           }
         }
       }
-      for (const [index, userRole] of userRolesArray.entries()) {
-        const user = await db
-          .collection(collections.user)
-          .where("email", "==", userRole.name)
-          .get();
+    const userRolkeys = Object.keys(userRolesObj);
+    console.log('userRolkeys', userRolkeys)
+    for (const [index, userRole] of userRolkeys.entries()) {
+                console.log('userRole', userRole)
+                const user = await db.collection(collections.user).where("email", "==", userRole).get();
         if (user.empty) {
-          userRolesArray[index].userId = null;
+            userRolesArray[index].userId = null;
         } else {
-          for (const doc of user.docs) {
+            for (const doc of user.docs) {
             userRolesArray[index].userId = doc.id;
-          }
+            }
         }
-      }
+    }
 
       const discordChatCreation: any = await chatController.createDiscordChat(
         creator,
