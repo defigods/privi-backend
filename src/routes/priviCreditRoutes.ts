@@ -33,7 +33,7 @@ let upload2 = multer({
   storage: storage2
 });
 
-router.get('/getPriviCredits', authenticateJWT, priviCreditController.getPriviCredits);
+router.get('/getPriviCredits/:pagination/:lastId', authenticateJWT, priviCreditController.getPriviCredits);
 router.get('/getTrendingPriviCredits', authenticateJWT, priviCreditController.getTrendingPriviCredits);
 router.get('/getPriviCredit/:creditId', authenticateJWT, priviCreditController.getPriviCredit);
 router.get('/getPriviTransactions/:creditId', authenticateJWT, priviCreditController.getPriviTransactions);

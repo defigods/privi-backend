@@ -1206,13 +1206,12 @@ exports.getOtherPodsFT = async (
   }
 };
 
-exports.getAllFTPodsInfo = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getAllFTPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
-    const lastFTPod = req.query.lastFTPod;
-    let allFTPods = await getFTPods(lastFTPod);
+    const lastCommunity = +req.params.pagination;
+    const lastId : string = req.params.lastId;
+
+    let allFTPods = await getFTPods(lastCommunity, lastId);
 
     res.send({
       success: true,
@@ -1297,26 +1296,32 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
   });
 };
 
-const getFTPods = (exports.getFTPods = (lastFTPod): Promise<any[]> => {
+const getFTPods = exports.getFTPods = (pagination, lastId): Promise<any[]> => {
   return new Promise<any[]>(async (resolve, reject) => {
-    let podsFT;
-    if (lastFTPod) {
-      podsFT = await db
-        .collection(collections.podsFT)
-        .startAfter(lastFTPod)
-        .limit(5)
-        .get();
+    let podsFT : any;
+
+    if (lastId && lastId !== 'null') {
+      const podFTRef = db.collection(collections.podsFT)
+        .doc(lastId);
+      const podFTGet = await podFTRef.get();
+      const podFT: any = podFTGet.data();
+
+      podsFT = await db.collection(collections.podsFT).orderBy('Date')
+        .startAfter(podFT.Date).limit(6).get();
     } else {
-      podsFT = await db.collection(collections.podsFT).limit(5).get();
+      podsFT = await db.collection(collections.podsFT).orderBy('Date')
+        .limit(6).get();
     }
 
     let array: any[] = [];
     podsFT.docs.map((doc) => {
-      array.push(doc.data());
+      let data = doc.data();
+      data.id = doc.id;
+      array.push(data);
     });
     resolve(array);
   });
-});
+};
 
 exports.getFTPod = async (req: express.Request, res: express.Response) => {
   try {
