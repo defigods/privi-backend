@@ -526,7 +526,7 @@ exports.createCommunityToken = async (
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
         db.collection(collections.community)
-          .doc(body.communityAddress)
+          .doc(body.CommunityAddress)
           .collection(collections.communityTransactions)
           .doc(tid)
           .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)

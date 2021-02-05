@@ -161,7 +161,8 @@ const executeTX = (params: any) => {
     return new Promise<PromiseResponse>(async (resolve) => {
         // get proper chain web3
         const chainId = params.chainId;
-        const web3_l = getWeb3forChain(chainId);
+        const web3_l = getWeb3forChain((typeof chainId !== 'string') ? chainId.toString() : chainId);
+        // console.log('executeTX: web3 ', web3_l)
         
         // Prepare transaction
         // remark: added 'pending' to avoid 'Known Transaction' error
