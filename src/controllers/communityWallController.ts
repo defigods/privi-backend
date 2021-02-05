@@ -445,14 +445,12 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const checkIfUserIsCreator = (userId, communityId) => {
+const checkIfUserIsCreator = exports.checkIfUserIsCreator = (userId, communityId) => {
   return new Promise(async (resolve, reject) => {
     const communityRef = db.collection(collections.community)
       .doc(communityId);
     const communityGet = await communityRef.get();
     const community: any = communityGet.data();
-
-    console.log(userId, community, community.Creator);
 
     if (community && community.Creator && community.Creator === userId) {
       resolve(true);
@@ -464,52 +462,56 @@ const checkIfUserIsCreator = (userId, communityId) => {
 
 const checkUserRole = exports.checkUserRole = (userId, userEmail, communityId, adminAccepted, memberAccepted, otherRolesAccepted) : Promise<any> => {
   return new Promise(async (resolve, reject) => {
-    const communityRef = db.collection(collections.community)
-      .doc(communityId);
-    const communityGet = await communityRef.get();
-    const community: any = communityGet.data();
+    try {
+      const communityRef = db.collection(collections.community)
+        .doc(communityId);
+      const communityGet = await communityRef.get();
+      const community: any = communityGet.data();
 
-    let userRoles : string[] = [];
-    let checked : boolean = false;
+      let userRoles : string[] = [];
+      let checked : boolean = false;
 
-    let admins = [...community.Admins];
-    admins.forEach((admin) => {
-      if(admin.userId && admin.userId === userId) {
-        userRoles.push('Admin');
-        if(adminAccepted) {
-          checked = true;
-        }
-      }
-    });
-
-    let roles = community.UserRoles;
-
-    if(roles[userEmail] && roles[userEmail].roles) {
-      let rolesOfUsers = Object.keys(roles[userEmail].roles);
-      rolesOfUsers.forEach((role) => {
-        if(roles[userEmail].roles[role]) {
-          userRoles.push(role)
-        }
-        let findIndex = otherRolesAccepted.findIndex(roleAccepted => roleAccepted === role);
-        if(findIndex !== -1) {
-          checked = true;
+      let admins = [...community.Admins];
+      admins.forEach((admin) => {
+        if(admin.userId && admin.userId === userId) {
+          userRoles.push('Admin');
+          if(adminAccepted) {
+            checked = true;
+          }
         }
       });
-    }
 
-    let members = [...community.Members];
-    members.forEach((member) => {
-      if(member.id && member.id === userId) {
-        userRoles.push('Member');
-        if(memberAccepted) {
-          checked = true;
-        }
+      let roles = community.UserRoles;
+
+      if(roles[userEmail] && roles[userEmail].roles) {
+        let rolesOfUsers = Object.keys(roles[userEmail].roles);
+        rolesOfUsers.forEach((role) => {
+          if(roles[userEmail].roles[role]) {
+            userRoles.push(role)
+          }
+          let findIndex = otherRolesAccepted.findIndex(roleAccepted => roleAccepted === role);
+          if(findIndex !== -1) {
+            checked = true;
+          }
+        });
       }
-    });
 
-    resolve({
-      userRoles: userRoles,
-      checked: checked
-    })
+      let members = [...community.Members];
+      members.forEach((member) => {
+        if(member.id && member.id === userId) {
+          userRoles.push('Member');
+          if(memberAccepted) {
+            checked = true;
+          }
+        }
+      });
+
+      resolve({
+        userRoles: userRoles,
+        checked: checked
+      })
+    } catch (e) {
+      reject(e)
+    }
   })
 }
