@@ -35,18 +35,18 @@ export async function getRecentSwaps(userAddress) {
     for (const doc of swapQuery.docs) {
         const swap = doc.data();
         // recentSwaps[doc.id] = swap;
-        recentSwapsArray.push({...swap, id: doc.id});
+        recentSwapsArray.push({ ...swap, id: doc.id });
     }
 
     let sortedArray: any[] = recentSwapsArray.sort((obj1, obj2) => {
         if (obj1.lastUpdate < obj2.lastUpdate) {
             return 1;
         }
-    
+
         if (obj1.lastUpdate > obj2.lastUpdate) {
             return -1;
         }
-    
+
         return 0;
     });
 
@@ -55,7 +55,7 @@ export async function getRecentSwaps(userAddress) {
     for (let index = 0; index < 5; index++) {
         const element = sortedArray[index];
         if (element) {
-            recentSwaps[element.id] = element;    
+            recentSwaps[element.id] = element;
         }
     }
 
@@ -622,6 +622,17 @@ export async function getUidAddressMap() {
         const data: any = doc.data();
         const address = data.address;
         if (address) res[doc.id] = address;
+    })
+    return res;
+};
+
+export async function getAddresUidMap() {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).get();
+    usersQuery.forEach((doc) => {
+        const data: any = doc.data();
+        const address = data.address;
+        if (address) res[address] = doc.id;
     })
     return res;
 };
