@@ -543,18 +543,27 @@ exports.checkCreditInfo = async (req: express.Request, res: express.Response) =>
 exports.getPriviCredits = async (req: express.Request, res: express.Response) => {
     try {
         const t1 = Date.now();
-        const lastCredit = req.query.lastCredit;
+        const lastCredit : number = +req.params.pagination;
         const allCredits: any[] = [];
 
         let creditsSnap : any;
-        if (lastCredit) {
-            creditsSnap = await db.collection(collections.priviCredits).startAfter(lastCredit).limit(5).get();
+        if (lastCredit !== 0) {
+            const lastId : any = req.params.lastId;
+            const priviCreditRef = db.collection(collections.priviCredits)
+              .doc(lastId);
+            const priviCreditGet = await priviCreditRef.get();
+            const priviCredit: any = priviCreditGet.data();
+
+            creditsSnap = await db.collection(collections.priviCredits).orderBy('Date')
+              .startAfter(priviCredit.Date).limit(6).get()
         } else {
-            creditsSnap = await db.collection(collections.priviCredits).limit(5).get();
+            creditsSnap = await db.collection(collections.priviCredits).orderBy('Date')
+              .limit(6).get();
         }
         if(!creditsSnap.empty) {
             for (const doc of creditsSnap.docs) {
                 const data = doc.data();
+                data.id = doc.id;
                 const popularity = 0.5;
                 const lenders: any[] = [];
                 const borrowers: any[] = [];
