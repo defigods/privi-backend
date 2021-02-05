@@ -49,9 +49,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             const hasPhoto = body.HasPhoto;
             const twitterId = body.TwitterId;
             const openAdvertising = body.OpenAdvertising;
-            const ethereumAddr = body.EthereumContractAddress;
-            const paymentsAllowed = body.PaymentsAllowed;
+            const EthereumContractAddress = body.EthereumContractAddress;
+            const EthChainId = body.EthChainId;
+            const TokenDecimals = body.TokenDecimals;
+            const registeredOnBridge = false;
+            const registeredOnSwapManager = false;
 
+            const paymentsAllowed = body.PaymentsAllowed;
             const collateralQuantity = Number(body.CollateralQuantity);
             const collateralOption = body.CollateralOption;
             const collateralToken = body.CollateralToken;
@@ -137,7 +141,11 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 DiscordId: discordChatCreation.id || '',
                 JarrId: discordChatJarrCreation.id || '',
                 TwitterId: twitterId || '',
-                EthereumAddress: ethereumAddr || '',
+                EthereumContractAddress: EthereumContractAddress || '',
+                EthChainId: EthChainId || '',
+                TokenDecimals: TokenDecimals || 18,
+                registeredOnBridge: registeredOnBridge,
+                registeredOnSwapManager: registeredOnSwapManager,
 
                 CollateralQuantity: collateralQuantity || 0,
                 CollateralOption: collateralOption || '',
@@ -295,10 +303,21 @@ async function getPriceFromUniswap(communityTokenAddress, fundingTokenPrice) {
         return e
     }
 }
-
+exports.setComunityBirdgeRegistered = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const comunityAddress = body.address;
+        db.collection(collections.community).doc(comunityAddress).update({registeredOnBridge: true});
+        res.send({success: true});
+    } catch (e) {
+        console.log('Error in controllers/setComunityBirdgeRegistered -> setComunityBirdgeRegistered(): ', e);
+        res.send({success: false});
+    }
+}
 exports.createCommunityToken = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        // console.log('createCommunityToken body', body)
         let data: any = {
             Creator: body.Creator,
             CommunityAddress: body.CommunityAddress,
@@ -311,36 +330,44 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
             TokenName: body.TokenName,
             AMM: body.AMM,
             LockUpDate: body.LockUpDate,
-            InitialSupply: body.InitialSupply,
+            InitialSupply: parseFloat(body.InitialSupply),
             TargetPrice: body.TargetPrice,
             TargetSupply: body.TargetSupply,
             Frequency: body.Frequency,
             SpreadDividend: body.SpreadDividend,
+            EthereumContractAddress: body.EthereumContractAddress,
+            TokenDecimals: parseInt(body.TokenDecimals),
+            EthChainId: body.EthChainId,
 
             Hash: body.Hash,
             Signature: body.Signature,
             Caller: apiKey
         }
-        if (body.TokenType && body.TokenType == 'Ethereum' && body.FundingTokenAddress && body.CommunityTokenAddress) {
-            let resp = await getPriceFromUniswap(body.communityTokenAddress, body.FundingTokenAddress);
-            if (resp.targetPrice) {
-                data.TargetPrice = resp.targetPrice;
-            } else {
-                console.log('Error in controllers/communityController -> createCommunityToken(): ', resp);
-                res.send({success: false});
-            }
-        }
+        // if (body.TokenType && body.TokenType == 'Ethereum' && body.FundingTokenAddress && body.CommunityTokenAddress) {
+        //     let resp = await getPriceFromUniswap(body.communityTokenAddress, body.FundingTokenAddress);
+        //     if (resp.targetPrice) {
+        //         data.TargetPrice = resp.targetPrice;
+        //     } else {
+        //         console.log('Error in controllers/communityController -> createCommunityToken(): ', resp);
+        //         res.send({success: false});
+        //     }
+        // }
+        
+        console.log('createCommunityToken: data', data )
         const blockchainRes = await community.createCommunityToken(data);
         if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
 
+            updateFirebase(blockchainRes);
+            console.log('createCommunityToken: blockchainRes', blockchainRes)
+            // update comunity data
+            db.collection(collections.community).doc(data.CommunityAddress).update({EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId})
             // add txn to community
             const output = blockchainRes.output;
             const transactions = output.Transactions;
             let tid = "";
             let txnArray: any = null;
             for ([tid, txnArray] of Object.entries(transactions)) {
-                db.collection(collections.community).doc(body.communityAddress).collection(collections.communityTransactions).doc(tid).set({Transactions: txnArray}); // add all because some of them dont have From or To (tokens are burned)
+                db.collection(collections.community).doc(data.CommunityAddress).collection(collections.communityTransactions).doc(tid).set({Transactions: txnArray}); // add all because some of them dont have From or To (tokens are burned)
             }
             res.send({success: true});
         } else {
