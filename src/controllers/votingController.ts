@@ -68,8 +68,8 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                 Answers: [],
                 OpenVotation: false,
                 Description: body.description,
-                StartingDate: body.startingDate,
-                EndingDate: body.endingDate
+                StartingDate: Math.round(body.startingDate/1000),
+                EndingDate: Math.round(body.endingDate/1000)
             }
 
             if(body.startingDate < Date.now()) {
@@ -79,7 +79,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             if(voting.Type && voting.ItemType) {
                 if (voting.Type === 'staking') {
                     voting.VotationAddress = body.votationAddress;
-                    voting.VotationToken = body.votationToken;
+                    voting.VotingToken = body.VotingToken;
                     voting.TotalVotes = body.totalVotes;
                     voting.QuorumRequired = body.quorumRequired/100;
                     voting.Hash = body.hash;
@@ -87,6 +87,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     voting.PossibleAnswers = ['Yes', 'No'];
                     voting.Caller = 'PRIVI';
                     voting.hasPhoto = false;
+                    voting.NumVotes = 0;
 
                     console.log(voting);
                     const blockchainRes = await votation.createVotation(voting);
@@ -223,6 +224,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
             let possibleVoters : any[] = await getPossibleVoters(body.itemType, body.itemId);
 
             let foundUser : boolean = false;
+            let isCreator : boolean = false;
             let isUserRole : any;
 
             if(body.itemType === 'Pod' || body.itemType === 'CreditPool') {
@@ -235,13 +237,14 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                 const userGet = await userRef.get();
                 const user: any = userGet.data();
 
-                isUserRole = await communityWallController.checkUserRole(body.author, user.email, body.communityId, true, true, ['Moderator', 'Treasurer']);
+                isCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.itemId);
+                isUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, true, ['Moderator', 'Treasurer']);
             } else {
                 foundUser = true;
             }
 
 
-            if(foundUser || isUserRole.checked) {
+            if(foundUser || isUserRole.checked || isCreator) {
                 let vote: any = {
                     UserId: body.userId,
                     VoteIndex: body.voteIndex,
@@ -249,18 +252,35 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                 }
 
                 if (body.type === 'staking') {
-                    vote.VoterAddress = body.voterAddress;
-                    vote.VotationId = body.votationId;
-                    vote.StakedAmount = body.stakedAmount;
+                    vote.VoterAddress = body.VoterAddress;
+                    vote.VotationId = body.VotationId;
+                    vote.StakedAmount = body.StakedAmount;
+                    vote.VotingType = body.VotingType;
                     vote.Hash = body.hash;
                     vote.Signature = body.signature;
+                    vote.Caller = 'PRIVI';
 
                     const blockchainRes = await votation.makeVote(vote);
                     if (blockchainRes && blockchainRes.success) {
                         updateFirebase(blockchainRes);
+
+                        const votingRef = db.collection(collections.voting).doc(body.VotationId);
+                        const votingGet = await votingRef.get();
+                        const voting: any = votingGet.data();
+
+                        if(voting.NumVotes !== 0) {
+                            voting.NumVotes = voting.NumVotes + 1;
+                        } else {
+                            voting.NumVotes = 1;
+                        }
+
+                        await votingRef.update({
+                            NumVotes: voting.NumVotes
+                        });
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
                         res.send({success: false, error: blockchainRes.message})
+                        return;
                     }
                 } else if (body.type === 'regular' || body.type === 'multisignature') {
                     const votingRef = db.collection(collections.voting).doc(body.votationId);
@@ -271,7 +291,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     if (!(voting && voting.OpenVotation && voting.StartingDate < Date.now() && voting.EndingDate > Date.now())) {
                         console.log('Error in controllers/votingController -> makeVote()', 'Voting is closed or missing')
                         res.send({success: false, error: 'Voting is closed or missing'});
-                        return
+                        return;
                     }
 
                     if (voting.Answers && voting.Answers.length > 0) {
@@ -286,7 +306,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                     let mes = 'User ' + vote.VoterAddress + ' does not have the right role for voting in multisignature votation';
                                     console.log('Error in controllers/votingController -> createVotation()', mes);
                                     res.send({success: false, error: mes});
-
+                                    return;
                                 }
                                 if (answers.length >= voting.NumberOfSignatures) {
                                     coinBalance.transfer("transfer", voting.TransferFrom, voting.TransferTo,
@@ -294,6 +314,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                         if (!blockchainRes.success) {
                                             console.log(`user ${voting.TransferTo} did not get ${voting.TokenToTransfer}, ${blockchainRes.message}`);
                                             res.send({success: false});
+                                            return;
                                         }
                                     });
                                     await votingRef.update({
@@ -301,6 +322,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                         OpenVotation: false
                                     });
                                     res.send({success: true, data: vote});
+                                    return;
                                 }
                             }
                         } else {
@@ -551,3 +573,39 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
         res.send({ success: false, error: err });
     }
 };
+
+exports.getDaoProposalById = async (req: express.Request, res: express.Response) => {
+    try {
+        let proposalId = req.params.proposalId;
+        console.log(proposalId);
+        if (proposalId) {
+            const votingSnap = await db.collection(collections.voting).doc(proposalId).get();
+            const votingData: any = votingSnap.data();
+            votingData.id = votingSnap.id;
+
+            const votersQuery = await db.collection(collections.voter)
+              .where("VotationId", "==", proposalId).get();
+
+            let voters : any[] = [];
+            if (!votersQuery.empty) {
+                for (const doc of votersQuery.docs) {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    voters.push(data);
+                }
+            }
+            res.send({success: true, data: {
+                    voting: votingData,
+                    voters: voters
+                }
+            });
+
+        } else {
+            console.log("Error in controllers/votingController -> getDaoProposalById()", "There's no id...");
+            res.send({success: false, error: "There's no id..."});
+        }
+    } catch (err) {
+        console.log("Error in controllers/votingController -> getDaoProposalById()", err);
+        res.send({success: false, error: err});
+    }
+}
