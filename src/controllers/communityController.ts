@@ -517,8 +517,11 @@ exports.createCommunityToken = async (
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // update comunity data
-      db.collection(collections.community).doc(data.CommunityAddress).update({EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId})
-            
+      if (data.TokenType && data.TokenType === 'ETHEREUM') {
+        console.log('data.TokenType', data.TokenType)
+        db.collection(collections.community).doc(data.CommunityAddress).update({EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId})
+      }
+           
       // add txn to community
       const output = blockchainRes.output;
       const transactions = output.Transactions;
