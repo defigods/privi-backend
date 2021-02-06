@@ -1749,7 +1749,7 @@ exports.initiateNFTPod = async (
     const tokenName = body.TokenName;
     const supply = body.Supply;
     const royalty = body.Royalty;
-    const expirationDate = body.ExpirationDate;
+    const expirationDate = new Date(body.ExpirationDate);
 
     const hash = body.Hash;
     const signature = body.Signature;
