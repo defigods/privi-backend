@@ -1,5 +1,16 @@
 import express, { response } from "express";
-import { generateUniqueId, getAddresUidMap, updateFirebase, filterTrending, follow, unfollow, getRateOfChangeAsMap, getBuyTokenAmount, getSellTokenAmount, getUidAddressMap } from "../functions/functions";
+import {
+    generateUniqueId,
+    getAddresUidMap,
+    updateFirebase,
+    filterTrending,
+    follow,
+    unfollow,
+    getRateOfChangeAsMap,
+    getBuyTokenAmount,
+    getSellTokenAmount,
+    getUidAddressMap,
+} from "../functions/functions";
 import badge from "../blockchain/badge";
 import community from "../blockchain/community";
 import coinBalance from "../blockchain/coinBalance";
@@ -22,7 +33,10 @@ require("dotenv").config();
 const apiKey = "PRIVI";
 
 ///////////////////////////// POST ///////////////////////////////
-module.exports.transfer = async (req: express.Request, res: express.Response) => {
+module.exports.transfer = async (
+    req: express.Request,
+    res: express.Response
+) => {
     try {
         const body = req.body;
         const userId = body.userId;
@@ -34,32 +48,50 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
         const hash = body.Hash;
         const signature = body.Signature;
         // check that fromUid is same as user in jwt
-        if (!req.body.priviUser.id || (req.body.priviUser.id != userId)) {
+        if (!req.body.priviUser.id || req.body.priviUser.id != userId) {
             console.log("error: jwt user is not the same as fromUid ban?");
-            res.send({ success: false, message: "jwt user is not the same as fromUid" });
+            res.send({
+                success: false,
+                message: "jwt user is not the same as fromUid",
+            });
             return;
         }
-        const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
+        const blockchainRes = await coinBalance.transfer(
+            from,
+            to,
+            amount,
+            token,
+            type,
+            hash,
+            signature,
+            apiKey
+        );
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             const output = blockchainRes.output;
             const transcations = output.Transactions;
-            let tid: string = '';
+            let tid: string = "";
             let txnArray: any = undefined;
             for ([tid, txnArray] of Object.entries(transcations)) {
-                db.collection(collections.community).doc(to).collection(collections.communityTransactions).doc(tid).set({ Transactions: txnArray });
+                db.collection(collections.community)
+                    .doc(to)
+                    .collection(collections.communityTransactions)
+                    .doc(tid)
+                    .set({ Transactions: txnArray });
             }
             res.send({ success: true });
         } else {
-            console.log('Error in controllers/communityController -> transfer(), blockchain returned false', blockchainRes.message);
+            console.log(
+                "Error in controllers/communityController -> transfer(), blockchain returned false",
+                blockchainRes.message
+            );
             res.send({ success: false });
         }
     } catch (err) {
-        console.log('Error in controllers/communityController -> transfer()', err);
+        console.log("Error in controllers/communityController -> transfer()", err);
         res.send({ success: false });
     }
-
-}
+};
 
 exports.createCommunity = async (
     req: express.Request,
@@ -940,7 +972,10 @@ exports.getCommunityTransactions = async (req: express.Request, res: express.Res
 }
 
 // get community token balance needed for Treasury tab
-exports.getUserPaymentData = async (req: express.Request, res: express.Response) => {
+exports.getUserPaymentData = async (
+    req: express.Request,
+    res: express.Response
+) => {
     try {
         const params = req.query;
         const communityAddress: any = params.communityAddress;
@@ -949,13 +984,20 @@ exports.getUserPaymentData = async (req: express.Request, res: express.Response)
         const communityToken: any = params.communityToken;
 
         const addressUidMap = await getAddresUidMap();
-        const blockchainRes = await coinBalance.balanceOf(userAddress, communityToken);
+        const blockchainRes = await coinBalance.balanceOf(
+            userAddress,
+            communityToken
+        );
         const output = blockchainRes.output;
         const balance = output ? output.Amount ?? 0 : 0;
         let paymentsReceived = 0;
         let paymentsMade = 0;
         const paymentHistory: any[] = [];
-        const transactionsSnap = await db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).get();
+        const transactionsSnap = await db
+            .collection(collections.community)
+            .doc(communityAddress)
+            .collection(collections.communityTransactions)
+            .get();
         transactionsSnap.forEach((doc) => {
             const txns = doc.data().Transactions ?? [];
             txns.forEach((txn) => {
@@ -964,9 +1006,9 @@ exports.getUserPaymentData = async (req: express.Request, res: express.Response)
                     else if (txn.To == userAddress) paymentsReceived++;
                     paymentHistory.push({
                         Quantity: txn.Amount,
-                        Token: addressUidMap[txn.Token] ?? txn.Token,
-                        Sender: addressUidMap[txn.To] ?? txn.To,
-                        Receiver: txn.To,
+                        Token: txn.Token,
+                        Sender: addressUidMap[txn.From] ?? txn.From,
+                        Receiver: addressUidMap[txn.To] ?? txn.To,
                     });
                 }
             });
@@ -977,15 +1019,16 @@ exports.getUserPaymentData = async (req: express.Request, res: express.Response)
                 PaymentsReceived: paymentsReceived,
                 PaymentsMade: paymentsMade,
             },
-            PaymentHistory: paymentHistory
+            PaymentHistory: paymentHistory,
         };
         res.send({ success: true, data: retData });
-    }
-    catch (e) {
-        return ('Error in controllers/communitiesControllers -> getUserPaymentData()' + e)
+    } catch (e) {
+        return (
+            "Error in controllers/communitiesControllers -> getUserPaymentData()" + e
+        );
         res.send({ success: false });
     }
-}
+};
 
 // get members data needed for Member tab
 exports.getMembersData = async (
@@ -1099,7 +1142,10 @@ const getExtraData = async (data, rateOfChange) => {
 };
 
 // get all communities, highlighting the trending ones
-exports.getCommunities = async (req: express.Request, res: express.Response) => {
+exports.getCommunities = async (
+    req: express.Request,
+    res: express.Response
+) => {
     try {
         const lastCommunity: number = +req.params.pagination;
         const allCommunities: any[] = [];
@@ -1107,16 +1153,22 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         let communitiesSnap: any;
         if (lastCommunity) {
             const lastId: any = req.params.lastId;
-            const communityRef = db.collection(collections.community)
-                .doc(lastId);
+            const communityRef = db.collection(collections.community).doc(lastId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
-            communitiesSnap = await db.collection(collections.community).orderBy('Date')
-                .startAfter(community.Date).limit(6).get();
+            communitiesSnap = await db
+                .collection(collections.community)
+                .orderBy("Date")
+                .startAfter(community.Date)
+                .limit(6)
+                .get();
         } else {
-            communitiesSnap = await db.collection(collections.community).orderBy('Date')
-                .limit(6).get();
+            communitiesSnap = await db
+                .collection(collections.community)
+                .orderBy("Date")
+                .limit(6)
+                .get();
         }
         const rateOfChange = await getRateOfChangeAsMap();
         const docs = communitiesSnap.docs;
@@ -1128,14 +1180,17 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
             allCommunities.push({ ...data, ...extraData, id: id });
         }
         res.send({
-            success: true, data: {
-                all: allCommunities
-            }
+            success: true,
+            data: {
+                all: allCommunities,
+            },
         });
     } catch (e) {
-        return ('Error in controllers/communitiesControllers -> getAllCommunities()' + e)
+        return (
+            "Error in controllers/communitiesControllers -> getAllCommunities()" + e
+        );
     }
-}
+};
 
 // get a single community data
 exports.getCommunity = async (req: express.Request, res: express.Response) => {
@@ -1197,26 +1252,30 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 
         data.TreasuryHistory = [];
         const addressUidMap = await getAddresUidMap();
-        const communityTransactions = await communitySnap.ref.collection(collections.communityTransactions).get();
+        const communityTransactions = await communitySnap.ref
+            .collection(collections.communityTransactions)
+            .get();
         communityTransactions.forEach((doc) => {
             const txns = doc.data().Transactions;
             txns.forEach((txn) => {
                 if (txn.Type && txn.Type == "transfer") {
                     data.TreasuryHistory.push({
                         Action: txn.From == communityAddress ? "receive" : "send",
-                        UserId: txn.From == communityAddress ? addressUidMap[txn.To] : addressUidMap[txn.From],
+                        UserId:
+                            txn.From == communityAddress
+                                ? addressUidMap[txn.To]
+                                : addressUidMap[txn.From],
                         Token: txn.Token,
                         Quantity: txn.Amount,
-                        Date: txn.Date
+                        Date: txn.Date,
                     });
                 }
             });
         });
-        const retData = { ...data, ...extraData, id: id, ads: ads };
-        console.log(retData);
+
         res.send({
             success: true,
-            data: retData
+            data: { ...data, ...extraData, id: id, ads: ads },
         });
     } catch (e) {
         console.log(
