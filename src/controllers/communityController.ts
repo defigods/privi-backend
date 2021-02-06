@@ -910,6 +910,35 @@ exports.getSellTokenAmount = async (
 
 /////////////////////////// GETS /////////////////////////////
 
+// get community transactions
+exports.getCommunityTransactions = async (req: express.Request, res: express.Response) => {
+    try {
+        const params = req.query;
+        const communityAddress: any = params.communityAddress;
+        const retData: any = [];
+        const transactionsSnap = await db.collection(collections.community).doc(communityAddress).collection(collections.communityTransactions).get();
+        transactionsSnap.forEach((doc) => {
+            const txns = doc.data().Transactions ?? [];
+            txns.forEach((txn) => {
+                if (txn.Type == "transfer") {
+                    if (txn.From == communityAddress || txn.To == communityAddress) {
+                        retData.push({
+                            ...txn,
+                            EventType: txn.From == communityAddress ? "Send" : "Receive"
+                        });
+                    }
+                }
+            });
+        });
+        console.log(retData);
+        res.send({ success: true, data: retData });
+    }
+    catch (e) {
+        res.send({ success: false });
+        return ('Error in controllers/communitiesControllers -> getUserPaymentData()' + e)
+    }
+}
+
 // get community token balance needed for Treasury tab
 exports.getUserPaymentData = async (req: express.Request, res: express.Response) => {
     try {
@@ -1183,10 +1212,11 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
                 }
             });
         });
-
+        const retData = { ...data, ...extraData, id: id, ads: ads };
+        console.log(retData);
         res.send({
             success: true,
-            data: { ...data, ...extraData, id: id, ads: ads },
+            data: retData
         });
     } catch (e) {
         console.log(
