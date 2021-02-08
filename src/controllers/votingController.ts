@@ -244,7 +244,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
             }
 
 
-            if(foundUser || isUserRole.checked || isCreator) {
+            if(foundUser || (isUserRole && isUserRole.checked) || isCreator) {
                 let vote: any = {
                     UserId: body.userId,
                     VoteIndex: body.voteIndex,
