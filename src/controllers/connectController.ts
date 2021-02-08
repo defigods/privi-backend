@@ -137,10 +137,10 @@ const wsListen = () => {
 };
 
 const getWeb3forChain = (chainId: string): Web3 => {
-    if(chainId === '0x3'){
+    if(chainId === '0x3' || chainId === '3'){
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
-    } else if (chainId === '0x4') {
+    } else if (chainId === '0x4' || chainId === '4') {
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
     } else {
@@ -177,22 +177,41 @@ const executeTX = (params: any) => {
         };
 
         // Sign transaction
+        let txHash = '0x'
         web3_l.eth.accounts.signTransaction(tx, params.fromAddressKey)
             .then((signed: any) => {
                 // Send transaction
-                web3_l.eth.sendSignedTransaction(signed.rawTransaction)
-                    .then(async (res: any) => {
-                        console.log('Response: ', res)
-                        resolve({ success: true, error: '', data: res });
+                web3_l.eth.sendSignedTransaction(signed.rawTransaction, 
+                    async (err, hash) => {
+                        if (err) {
+                          console.error("sendSignedTransaction error", err);
+                        } else {
+                            txHash = hash;
+                            console.error("sendSignedTransaction hash", 'hash', hash);
+                        }
+                      }
+                    )
+                    // .on('receipt', (recipt) => {
+                    //     if (recipt.status) {
+                    //         resolve({ success: true, error: '', data: recipt });
+                    //     } else {
+                    //         resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: recipt });
+                    //     }
+                    // })
+                    .on('confirmation', function(confirmationNumber, receipt) {
+                        if (receipt.status) {
+                            resolve({ success: true, error: '', data: receipt });
+                        } else {
+                            resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: receipt });
+                        }
                     })
-                    .catch((err: string) => {
-                        console.log('Error in ethUtils.js (A) -> executeTX(): ', err);
-                        resolve({ success: false, error: err, data: null });
+                    .on('error', (err) => {
+                        resolve({ success: false, error: err.toString(), data: txHash });
                     });
             })
-            .catch((err: string) => {
+            .catch((err: any) => {
                 console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
-                resolve({ success: false, error: err, data: null });
+                resolve({ success: false, error: err, data: txHash });
             });
     });
 };
@@ -525,7 +544,7 @@ const withdraw = async (
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
-        // console.log('contract.address, contractBalanceWei', contract.options.address, contractBalanceWei)
+        console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amountWei', amountWei)
 
         // Choose method from SwapManager to be called
         const method = (action === Action.WITHDRAW_ETH)
@@ -542,7 +561,7 @@ const withdraw = async (
         };
 
         // Execute transaction to withdraw in Ethereum
-        const { success, data } = await executeTX(paramsTX);
+        const { success, error, data } = await executeTX(paramsTX);
 
         if (success) {
             console.log('--> Withdraw: TX confirmed in Ethereum', data);
@@ -551,9 +570,9 @@ const withdraw = async (
             updateStatusOneToOneSwap(swapDocId, 'confirmed');
             updateTxOneToOneSwap(swapDocId, txHash);
         } else {
-            console.warn('--> Withdraw: TX failed in Ethereum', data);
+            console.warn('--> Withdraw: TX failed in Ethereum', 'error', error, 'data', data, 'type of data is string?:', typeof data === 'string');
             console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
-            const txHash = data.transactionHash;
+            const txHash = data;
             updateStatusOneToOneSwap(swapDocId, 'failed');
             updateTxOneToOneSwap(swapDocId, txHash);
 
@@ -597,8 +616,79 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     }
 }
 
+const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: express.Response) => {
+    const { symbol, tokenAddress, chainId } = req.body;
+    console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId)
+    const _chain: any = chainId?.toString();
+    const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
+    const web3 = getWeb3forChain(_chainId);
+
+    const swapManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
+    // Get SwapManager contract code
+    const swapManagerContract = new web3.eth.Contract(swapManagerJson.abi, swapManagerJson.networks[_chainId]["address"]);
+
+    // Choose method from SwapManager to be called
+    const method = swapManagerContract.methods.registerTokenERC20(symbol, tokenAddress).encodeABI();
+
+    // Transaction parameters
+    const paramsTX = {
+        chainId: chainId,
+        fromAddress: ETH_PRIVI_ADDRESS,
+        fromAddressKey: ETH_PRIVI_KEY,
+        encodedABI: method,
+        toAddress: swapManagerContract.options.address,
+    };
+
+    const balance = await getEthBalanceOf(ETH_PRIVI_ADDRESS, _chainId)
+    console.log('getBridgeRegisteredToken ETH_PRIVI_ADDRESS, balance', balance)
+    if (balance > 100) {
+
+        // Execute transaction to withdraw in Ethereum
+        const { success, error, data } = await executeTX(paramsTX);
+
+        if (success) {
+            res.send({ success: true, data: data });
+        } else {
+            res.send({ success: false, data: error });
+        }
+
+    } else {
+        res.send({ success: false, data: 'Not Enough Blance in ETH_PRIVI_ADDRESS, ask admin to address this issue' });
+    }
+    
+}
+
+const getBridgeRegisteredToken = async (req: express.Request, res: express.Response) => {
+    const { chainId } = req.query;
+    console.log('getBridgeRegisteredToken req:', chainId)
+    const _chain: any = chainId?.toString();
+    const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
+    const web3 = getWeb3forChain(_chainId);
+
+    const bridgeManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/BridgeManager.json')));
+    // Get SwapManager contract code
+    const bridgeManagerContract = new web3.eth.Contract(bridgeManagerJson.abi, bridgeManagerJson.networks[_chainId]["address"]);
+
+    const arrayRegisteredToken = await bridgeManagerContract.methods.getAllErc20Registered().call();
+    // console.log('getBridgeRegisteredToken bridge array', arrayRegisteredToken)
+    let tempArrayOfTokens: any[] = [{ id: 0, name: "Ethereum", symbol: "ETH", amount: 0 }];
+    arrayRegisteredToken.forEach((element, index) => {
+        tempArrayOfTokens.push({
+        id: (index + 1), name: element.name, symbol: element.symbol, amount: 0, address: element.deployedAddress
+        });
+    });
+    console.log('getBridgeRegisteredToken bridge , token list', tempArrayOfTokens)
+    
+    if (tempArrayOfTokens) {
+        res.send({ success: true, data: tempArrayOfTokens });
+    } else {
+        res.send({ success: false });
+    }
+}
+
 module.exports = {
-    // getERC20Balance,
+    registerNewERC20TokenOnSwapManager, 
+    getBridgeRegisteredToken,
     send,
     checkTx,
     getRecentSwaps

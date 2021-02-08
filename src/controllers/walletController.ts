@@ -104,18 +104,13 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
         const type = body.Type;
         const hash = body.Hash;
         const signature = body.Signature;
-
-        console.log(body)
         // check that fromUid is same as user in jwt
         if (!req.body.priviUser.id || (req.body.priviUser.id != userId)) {
             console.log("error: jwt user is not the same as fromUid ban?");
             res.send({ success: false, message: "jwt user is not the same as fromUid" });
             return;
         }
-
         const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
-        console.log(blockchainRes)
-
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             // let senderName = fromUid;
@@ -810,7 +805,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
 
         res.send({ success: true, data: retData });
     } catch (err) {
-        console.log('Error in controllers/walletController -> getUserTokenBalance()', err);
+        console.log('Error in controllers/walletController -> getAllTokensWithBuyingPrice()', err);
         res.send({ success: false });
     }
 }

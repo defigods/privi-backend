@@ -108,14 +108,16 @@ router.post('/badges/getBadges/:communityAddress', authenticateJWT, communityCon
 // router.post('/badges/create', authenticateJWT, communityController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);
 router.get('/badges/getPhoto/:badgeId', communityController.getBadgePhotoById);
+router.post('/transfer', authenticateJWT, communityController.transfer);
 
 // communities
-router.get('/getCommunities', authenticateJWT, communityController.getCommunities);
+router.get('/getCommunities/:pagination/:lastId', authenticateJWT, communityController.getCommunities);
 router.get('/getCommunity/:communityAddress', authenticateJWT, communityController.getCommunity);
 router.post('/getCommunityCounters', authenticateJWT, communityController.getCommunityCounters);
 router.get('/getTrendingCommunities', authenticateJWT, communityController.getTrendingCommunities);
 router.get('/getMembersData', authenticateJWT, communityController.getMembersData);
-router.get('/getTreasuryData', communityController.getTreasuryData);
+router.get('/getUserPaymentData', authenticateJWT, communityController.getUserPaymentData);
+router.get('/getCommunityTransactions', authenticateJWT, communityController.getCommunityTransactions);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);
@@ -126,6 +128,7 @@ router.post('/createCommunity', authenticateJWT, communityController.createCommu
 router.post('/sellCommunityToken', authenticateJWT, communityController.sellCommunityToken);
 router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommunityToken);
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
+router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCommunityInfo);
 
 router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
