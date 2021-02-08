@@ -1398,9 +1398,10 @@ const followUser = async (req: express.Request, res: express.Response) => {
         accepted: false,
       });
     }
+    let task;
     let userFollowersLengthAfter = user.followings.length;
     if (userFollowersLength == 4 && userFollowersLengthAfter == 5) {
-      await tasks.updateTask(userToFollowData.user)
+      task = await tasks.updateTask(userToFollowData.user, "Follow 5 people");
     }
     await userToFollowRef.update({
       followers: userToFollowData.followers,
@@ -1418,7 +1419,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
     }
     let userFollowingsLengthAfter = user.followings.length;
     if (userFollowingsLength == 4 && userFollowingsLengthAfter == 5) {
-      await tasks.updateTask(body.user.id, "Follow 5 people")
+      task = tasks.updateTask(body.user.id, "Follow 5 people")
     }
     await userRef.update({
       followings: user.followings,
@@ -1439,7 +1440,10 @@ const followUser = async (req: express.Request, res: express.Response) => {
         otherItemId: "",
       },
     });
-    res.send({ success: true, data: userToFollowData });
+    if (task) {
+      res.send({success: true, data: userToFollowData, task: task});
+    }
+    res.send({success: true, data: userToFollowData});
   } catch (err) {
     console.log("Error in controllers/followUser -> followUser()", err);
     res.send({ success: false, error: err });
@@ -2424,8 +2428,9 @@ const responseProposal = async (
       });
 
       if (proposal.responses.length >= 10 && proposal.isReachResponses) {
-        await tasks.updateTask(proposal.userId, "Create 1 Proposal in Governance that receives 10 or more responses");
-        await proposalRef.update({})
+        let task = await tasks.updateTask(proposal.userId, "Create 1 Proposal in Governance that receives 10 or more responses");
+        await proposalRef.update({isReachResponses: true});
+        res.send({success: true, data: proposal, task: task})
       }
       res.send({success: true, data: proposal});
     } else {
@@ -2615,7 +2620,9 @@ const updateUserCred = (userId, sum) => {
           credsForTask: credsForTask
         });
 
-        await tasks.updateTask(userId, "Receive 15 creds")
+        let task = await tasks.updateTask(userId, "Receive 15 creds")
+        user.task = task;
+        resolve(user);
       } else {
         await userRef.update({
           creds: creds,

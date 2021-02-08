@@ -763,10 +763,6 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         .doc(investorId)
         .get();
       const investorData: any = investorSnap.data();
-      if (!podData.PodReachInvestors && Object.keys(newInvestors).length >= 5) {
-        await tasks.updateTask(podData.Creator, "Your Pod has at least 5 investors who invested test tokens")
-        await podSnap.ref.update({PodReachInvestors: true});
-      }
 
       await notificationsController.addNotification({
         userId: investorId,
@@ -820,7 +816,14 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
           }
         });
       }
-      res.send({ success: true });
+
+      if (!podData.PodReachInvestors && Object.keys(newInvestors).length >= 5) {
+        let task = await tasks.updateTask(podData.Creator, "Your Pod has at least 5 investors who invested test tokens")
+        await podSnap.ref.update({PodReachInvestors: true});
+        res.send({success: true});
+      }
+
+      res.send({success: true});
     } else {
       console.log(
         "Error in controllers/podController -> investPOD(): success = false.",
@@ -2341,8 +2344,9 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
               const userGet = await userRef.get();
               const user: any = userGet.data();
               if (!user.boughtFiveTokens) {
-                  await tasks.updateTask(buyerAddress, "Own 5 different NFT Pod Tokens");
-                  await userRef.update({boughtFiveTokens: true});
+                let task = await tasks.updateTask(buyerAddress, "Own 5 different NFT Pod Tokens");
+                await userRef.update({boughtFiveTokens: true});
+                res.send({success: true});
               }
           }
         }

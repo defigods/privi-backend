@@ -399,10 +399,11 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
 
             const userBorrows = await priviCredit.getUserBorrowings(address, apiKey);
             if (userBorrows && userBorrows.success && userBorrows.output.length >= 3 && !userData.borrowedFromThree) {
-                await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
+                let task = await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
                 await userSnap.ref.update({
                     borrowedFromThree: true,
                 });
+                res.send({success: true, task: task});
             }
             res.send({success: true});
         }

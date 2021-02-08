@@ -669,8 +669,9 @@ exports.buyCommunityToken = async (
                     const userGet = await userRef.get();
                     const user: any = userGet.data();
                     if (!user.Own3CommunityTokens) {
-                        await tasks.updateTask(body.Investor, "Own 3 Community Tokens with test tokens ");
+                        let task = await tasks.updateTask(body.Investor, "Own 3 Community Tokens with test tokens ");
                         await userRef.update({Own3CommunityTokens: true});
+                        res.send({success: true, task: task});
                     }
                 }
             }
@@ -831,11 +832,13 @@ exports.join = async (req: express.Request, res: express.Response) => {
             await communitySnap.ref.update({
                 MembersReached: true,
             })
-            await tasks.updateTask(commData.Creator, "Own a community with 15 or more members");
+            let task = await tasks.updateTask(commData.Creator, "Own a community with 15 or more members");
+            res.send({success: true, task: task});
         }
 
         if (jcLength == 2) {
-            await tasks.updateTask(userAddress, "Join 3 Communities");
+            let task = await tasks.updateTask(userAddress, "Join 3 Communities");
+            res.send({success: true, task: task});
         }
 
         res.send({success: true});

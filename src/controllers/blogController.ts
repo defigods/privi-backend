@@ -909,12 +909,15 @@ const likeItemPost = (exports.likeItemPost = (
       dbItem.numLikes = numLikes;
       dbItem.numDislikes = numDislikes;
 
-      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
-        await tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
-        await dbRef.update({got10creds: true});
-      }
       if (creator !== userId) {
         await userController.updateUserCred(creator, true);
+      }
+
+      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
+        let res = await tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
+        await dbRef.update({got10creds: true});
+        dbItem.task = res;
+        resolve(dbItem);
       }
 
       resolve(dbItem);
@@ -969,13 +972,15 @@ const dislikeItemPost = (exports.dislikeItemPost = (
       dbItem.numLikes = numLikes;
       dbItem.numDislikes = numDislikes;
 
-      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
-        await tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
-        await dbRef.update({got10creds: true});
-      }
-
       if (creator !== userId) {
         await userController.updateUserCred(creator, true);
+      }
+
+      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
+        let res = tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
+        await dbRef.update({got10creds: true});
+        dbItem.task = res;
+        resolve(dbItem);
       }
 
       resolve(dbItem);
