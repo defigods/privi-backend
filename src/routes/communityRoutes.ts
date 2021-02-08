@@ -116,7 +116,8 @@ router.get('/getCommunity/:communityAddress', authenticateJWT, communityControll
 router.post('/getCommunityCounters', authenticateJWT, communityController.getCommunityCounters);
 router.get('/getTrendingCommunities', authenticateJWT, communityController.getTrendingCommunities);
 router.get('/getMembersData', authenticateJWT, communityController.getMembersData);
-router.get('/getUserPaymentData', communityController.getUserPaymentData);
+router.get('/getUserPaymentData', authenticateJWT, communityController.getUserPaymentData);
+router.get('/getCommunityTransactions', authenticateJWT, communityController.getCommunityTransactions);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);

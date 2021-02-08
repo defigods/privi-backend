@@ -1693,11 +1693,11 @@ const getMyPodsFunction = (userId) => {
       let myFTPods: any[] = [];
 
       if (user.myNFTPods && user.myNFTPods.length > 0) {
-        myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT);
+        myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT, 'NFT');
       }
 
       if (user.myFTPods && user.myFTPods.length > 0) {
-        myFTPods = await getPodsArray(user.myFTPods, collections.podsFT);
+        myFTPods = await getPodsArray(user.myFTPods, collections.podsFT, 'FT');
       }
 
       resolve({
@@ -1738,17 +1738,11 @@ const getPodsInvestmentsFunction = (userId) => {
       let investedFTPods: any[] = [];
 
       if (user.investedNFTPods && user.investedNFTPods.length > 0) {
-        investedNFTPods = await getPodsArray(
-          user.investedNFTPods,
-          collections.podsNFT
-        );
+        investedNFTPods = await getPodsArray(user.investedNFTPods, collections.podsNFT, 'NFT');
       }
 
       if (user.investedFTPods && user.investedFTPods.length > 0) {
-        investedFTPods = await getPodsArray(
-          user.investedFTPods,
-          collections.podsFT
-        );
+        investedFTPods = await getPodsArray(user.investedFTPods, collections.podsFT, 'FT');
       }
       resolve({
         NFT: investedNFTPods,
@@ -1782,17 +1776,11 @@ const getPodsFollowedFunction = (userId) => {
       let followingFTPods: any[] = [];
 
       if (user.followingNFTPods && user.followingNFTPods.length > 0) {
-        followingNFTPods = await getPodsArray(
-          user.followingNFTPods,
-          collections.podsNFT
-        );
+        followingNFTPods = await getPodsArray(user.followingNFTPods, collections.podsNFT, 'NFT');
       }
 
       if (user.followingFTPods && user.followingFTPods.length > 0) {
-        followingFTPods = await getPodsArray(
-          user.followingFTPods,
-          collections.podsFT
-        );
+        followingFTPods = await getPodsArray(user.followingFTPods, collections.podsFT, 'FT');
       }
       resolve({
         NFT: followingNFTPods,
@@ -1804,13 +1792,17 @@ const getPodsFollowedFunction = (userId) => {
   });
 };
 
-const getPodsArray = (arrayPods: any[], collection: any): Promise<any[]> => {
+const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     let podInfo: any[] = [];
     arrayPods.forEach(async (item, i) => {
       const podRef = await db.collection(collection).doc(item).get();
 
-      podInfo.push(podRef.data());
+      if(podRef.exists) {
+        let podData : any = podRef.data();
+        podData.type = type;
+        podInfo.push(podData);
+      }
 
       if (arrayPods.length === i + 1) {
         resolve(podInfo);

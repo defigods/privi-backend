@@ -509,28 +509,9 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const discordChatCreation: any = await chatController.createDiscordChat(
-        creator,
-        user.firstName
-      );
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        "Discussions",
-        creator,
-        user.firstName,
-        "general",
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        "Information",
-        creator,
-        user.firstName,
-        "announcements",
-        false,
-        []
-      );
+      const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
+      await chatController.createDiscordRoom(discordChatCreation.id, "Discussions", creator, user.firstName, "general", false, []);
+      await chatController.createDiscordRoom(discordChatCreation.id, "Information", creator, user.firstName, "announcements", false, []);
 
       await db.collection(collections.podsFT).doc(podId).set(
         {
@@ -541,22 +522,6 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         { merge: true }
       );
 
-      //     createNotification(creator, "FT Pod - Pod Created",
-      //         ` `,
-      //         notificationTypes.podCreation
-      //     );
-
-      //     // Create Pod Rate Doc
-      //     const newPodRate = 0.01;
-      //     db.collection(collections.rates).doc(podId).set({ type: "FTPod", rate: newPodRate });
-      //     db.collection(collections.rates).doc(podId).collection(collections.rateHistory).add({
-      //         rateUSD: newPodRate,
-      //         timestamp: Date.now()
-      //     });
-      /*createNotification(creator, "FT Pod - Pod Created",
-                ` `,
-                notificationTypes.podCreation
-            );*/
       const userSnap = await db.collection(collections.user).doc(creator).get();
       const userData: any = userSnap.data();
 
@@ -601,7 +566,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 
       let myFTPods: any[] = user.myFTPods || [];
       // todo: consider, which info we really want to put here
-      myFTPods.push(podSnap.data());
+      myFTPods.push(podSnap.id);
 
       await userRef.update({
         myFTPods: myFTPods,
@@ -1749,7 +1714,7 @@ exports.initiateNFTPod = async (
     const tokenName = body.TokenName;
     const supply = body.Supply;
     const royalty = body.Royalty;
-    const expirationDate = body.ExpirationDate;
+    const expirationDate = new Date(body.ExpirationDate);
 
     const hash = body.Hash;
     const signature = body.Signature;
