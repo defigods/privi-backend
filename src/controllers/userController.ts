@@ -2327,7 +2327,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       let pointsGet = await db.collection(collections.points).where("date", ">", yesterday).get();
       let totalPointsToday = pointsGet.size;
       // totalBadgesToday
-      let badgesGet = await db.collection(collections.badgeToken).where("date", ">", yesterday).get();
+      let badgesGet = await db.collection(collections.badges).where("date", ">", yesterday).get();
       let totalBadgesToday = badgesGet.size;
 
       // totalUsersLevels userLevel
@@ -2363,7 +2363,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       // ranking
       let usersSnap = await db
       .collection(collections.user)
-      .orderBy("points") // todo fix this order by total points user
+      .orderBy("points")
       .limit(12)
       .get();
 
@@ -2392,7 +2392,6 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       for (let i = 0; i < docs2.length; i++) {
           const doc2 = docs2[i];
           const data2: any = doc2.data();
-          // adapt to Points document in fb!
           const record: any = {
             user: data2.id, 
             name: data2.name, 
