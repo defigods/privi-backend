@@ -372,7 +372,12 @@ exports.makeResponseBlogPost = async (
       await blogPostRef.update({
         responses: responses,
       });
-      res.send({ success: true, data: responses });
+
+      if (responses.length == 1) {
+        let task = await tasks.updateTask(body.userId, "Make your first comment");
+        res.send({success: true, data: responses, task});
+      }
+      res.send({success: true, data: responses});
     } else {
       console.log(
         "Error in controllers/blogController -> makeResponseBlogPost()",
