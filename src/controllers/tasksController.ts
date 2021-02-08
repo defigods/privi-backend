@@ -1,7 +1,12 @@
 import collections from "../firebase/collections";
-import { db } from "../firebase/firebase";
+import {db} from "../firebase/firebase";
 import express from "express";
+import {BADGES_MAP} from '../constants/badges';
+import badge from "../blockchain/badge";
+import {updateFirebase} from "../functions/functions";
 
+const levelsController = require("./userLevelsController");
+const apiKey = "PRIVI";
 /**
  * Function to get user tasks
  */
@@ -91,24 +96,65 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
     if (!taskQuery.empty) {
       for (const doc of taskQuery.docs) {
         let task = doc.data();
-        console.log(JSON.stringify(task))
         const userPoints: any = user.Points;
+        const usrLevel = level.level;
         const rewardPointsTask: any = task.RewardPoints;
         // update user task in db
         await db.collection(collections.user).doc(userId).update({
           UserTasks: rewardPointsTask,
         });
         // update user levels in db
-        await db.collection(collections.levels).doc(userId).update({
-          taskTitle: userPoints + rewardPointsTask,
-        });
+        let userLevelNew = await levelsController.sumPoints(userId, rewardPointsTask, taskTitle);
         // update user points in db
         await db.collection(collections.user).doc(userId).update({
           Points: userPoints + rewardPointsTask,
         });
+        let isLevelUp = false;
+        const usrLevelNew = await levelsController.checkLevel(userId);
+        if (usrLevel !== usrLevelNew) {
+          isLevelUp = true;
+          await db.collection(collections.user).doc(userId).update({
+            isLevelUp: isLevelUp
+          });
+        }
+        if (user.isLevelUp && !isLevelUp) {
+          await db.collection(collections.user).doc(userId).update({
+            isLevelUp: isLevelUp
+          })
+        }
+
+        let badgeRes;
+
+        if (BADGES_MAP[taskTitle]) {
+          const blockchainRes = await badge.rewardBadge({
+            UserId: userId,
+            Symbol: BADGES_MAP[taskTitle],
+            Caller: apiKey
+          });
+          if (blockchainRes && blockchainRes.success) {
+            await updateFirebase(blockchainRes);
+            badgeRes = {
+              isNew: true,
+              badgeId: BADGES_MAP[taskTitle]
+            }
+
+            let badges: any[] = user.badges;
+            if (!badges) {
+              badges = [];
+            }
+            badges.push(badgeRes);
+            await db.collection(collections.user).doc(userId).update({
+              badges: badges
+            })
+          }
+        }
+
+        res.send({success: true, userId: userId, isLevelUp: isLevelUp, taskId: task.Title, userLevelNew})
       }
     }
   } catch (error) {
+    res.send({success: false, message: error})
+
     console.log(error);
   }
 }
@@ -124,24 +170,57 @@ exports.updateTask = (userId, title) => {
       if (!taskQuery.empty) {
         for (const doc of taskQuery.docs) {
           let task = doc.data();
-          console.log(JSON.stringify(task))
           const userPoints: any = user.Points;
+          const usrLevel = level.level;
           const rewardPointsTask: any = task.RewardPoints;
           // update user task in db
           await db.collection(collections.user).doc(userId).update({
             UserTasks: rewardPointsTask,
           });
           // update user levels in db
-          await db.collection(collections.levels).doc(userId).update({
-            taskTitle: userPoints + rewardPointsTask,
-          });
+          let userLevelNew = await levelsController.sumPoints(userId, rewardPointsTask, title);
           // update user points in db
           await db.collection(collections.user).doc(userId).update({
             Points: userPoints + rewardPointsTask,
           });
+          let isLevelUp = false;
+          const usrLevelNew = await levelsController.checkLevel(userId);
+          if (usrLevel !== usrLevelNew) {
+            isLevelUp = true;
+            await db.collection(collections.user).doc(userId).update({
+              isLevelUp: isLevelUp
+            });
+          }
+          if (user.isLevelUp && !isLevelUp) {
+            await db.collection(collections.user).doc(userId).update({
+              isLevelUp: isLevelUp
+            })
+          }
+          let badgeRes;
+          if (BADGES_MAP[title]) {
+            const blockchainRes = await badge.rewardBadge({
+              UserId: userId,
+              Symbol: BADGES_MAP[title],
+              Caller: apiKey
+            });
+            if (blockchainRes && blockchainRes.success) {
+              await updateFirebase(blockchainRes);
+              badgeRes = {
+                isNew: true,
+                badgeId: BADGES_MAP[title]
+              }
+
+              let badges = user.badges;
+              badges = badges.push(badgeRes);
+              await db.collection(collections.user).doc(userId).update({
+                badges: badges
+              })
+            }
+          }
+
+          resolve({success: true, userId: userId, isLevelUp: isLevelUp, taskId: task.Title, userLevelNew, badgeRes});
         }
       }
-      resolve({success: true});
     } catch (e) {
       console.log("Error in controllers/tasks -> updateTask()", e);
       reject(e)
