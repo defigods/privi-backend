@@ -109,12 +109,12 @@ exports.createCommunity = async (
   req: express.Request,
   res: express.Response
 ) => {
-  try {
-    const body = req.body;
-    const creator = body.Creator;
+    try {
+        const body = req.body;
+        const creator = body.Creator;
 
-    const hash = body.Hash;
-    const signature = body.Signature;
+        const hash = body.Hash;
+        const signature = body.Signature;
 
     const blockchainRes = await community.createCommunity(
       creator,
@@ -145,50 +145,50 @@ exports.createCommunity = async (
 
       const paymentsAllowed = body.PaymentsAllowed;
 
-      const collateralQuantity = Number(body.CollateralQuantity);
-      const collateralOption = body.CollateralOption;
-      const collateralToken = body.CollateralToken;
+            const collateralQuantity = Number(body.CollateralQuantity);
+            const collateralOption = body.CollateralOption;
+            const collateralToken = body.CollateralToken;
 
-      const ruleBased = body.RuleBased !== undefined ? body.RuleBased : true;
+            const ruleBased = body.RuleBased !== undefined ? body.RuleBased : true;
 
-      const requiredTokens = body.RequiredTokens;
+            const requiredTokens = body.RequiredTokens;
 
-      const minUserLevel =
-        body.MinimumUserLevel == "Not required" ? 0 : body.MinimumUserLevel;
-      const minEndorsementScore =
-        body.MinimumEndorsementScore == "Not required"
-          ? 0
-          : body.MinimumEndorsementScore / 100;
-      const minTrustScore =
-        body.MinimumTrustScore == "Not required"
-          ? 0
-          : body.MinimumTrustScore / 100;
+            const minUserLevel =
+                body.MinimumUserLevel == "Not required" ? 0 : body.MinimumUserLevel;
+            const minEndorsementScore =
+                body.MinimumEndorsementScore == "Not required"
+                    ? 0
+                    : body.MinimumEndorsementScore / 100;
+            const minTrustScore =
+                body.MinimumTrustScore == "Not required"
+                    ? 0
+                    : body.MinimumTrustScore / 100;
 
-      const levels = body.Levels; // list of {name, description}
+            const levels = body.Levels; // list of {name, description}
 
-      const blogsEnabled = body.BlogsEnabled;
-      const blogs = body.Blogs;
-      const memberDirectoriesEnabled = body.MemberDirectoriesEnabled;
-      const memberDirectories = body.MemberDirectories;
-      const projectsEnabled = body.ProjectsEnabled;
-      const projects = body.Projects;
-      const appsEnabled = body.AppsEnabled;
-      const apps = body.Apps;
+            const blogsEnabled = body.BlogsEnabled;
+            const blogs = body.Blogs;
+            const memberDirectoriesEnabled = body.MemberDirectoriesEnabled;
+            const memberDirectories = body.MemberDirectories;
+            const projectsEnabled = body.ProjectsEnabled;
+            const projects = body.Projects;
+            const appsEnabled = body.AppsEnabled;
+            const apps = body.Apps;
 
-      const admins = body.Admins;
-      // const emailUidMap = await getEmailUidMap();
-      const userRolesObj: any[] = body.UserRoles ?? {};
-      const userRolesArray = Object.values(userRolesObj);
-      // userRolesArray.forEach((elem) => {
-      //     const uid = emailUidMap[elem.email];
-      //     if (uid) userRolesObj[uid] = elem;
-      // });
+            const admins = body.Admins;
+            // const emailUidMap = await getEmailUidMap();
+            const userRolesObj: any[] = body.UserRoles ?? {};
+            const userRolesArray = Object.values(userRolesObj);
+            // userRolesArray.forEach((elem) => {
+            //     const uid = emailUidMap[elem.email];
+            //     if (uid) userRolesObj[uid] = elem;
+            // });
 
-      const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
+            const invitedUsers = body.InvitationUsers; // list of string (email), TODO: send some kind of notification to these users
 
-      const userRef = db.collection(collections.user).doc(creator);
-      const userGet = await userRef.get();
-      const user: any = userGet.data();
+            const userRef = db.collection(collections.user).doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
 
       for (const [index, admin] of admins.entries()) {
         const user = await db
@@ -217,51 +217,51 @@ exports.createCommunity = async (
         }
     }
 
-      const discordChatCreation: any = await chatController.createDiscordChat(
-        creator,
-        user.firstName
-      );
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        "Discussions",
-        creator,
-        user.firstName,
-        "general",
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        "Information",
-        creator,
-        user.firstName,
-        "announcements",
-        false,
-        []
-      );
+            const discordChatCreation: any = await chatController.createDiscordChat(
+                creator,
+                user.firstName
+            );
+            await chatController.createDiscordRoom(
+                discordChatCreation.id,
+                "Discussions",
+                creator,
+                user.firstName,
+                "general",
+                false,
+                []
+            );
+            await chatController.createDiscordRoom(
+                discordChatCreation.id,
+                "Information",
+                creator,
+                user.firstName,
+                "announcements",
+                false,
+                []
+            );
 
-      const discordChatJarrCreation: any = await chatController.createDiscordChat(
-        creator,
-        user.firstName
-      );
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        "Discussions",
-        creator,
-        user.firstName,
-        "general",
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        "Information",
-        creator,
-        user.firstName,
-        "announcements",
-        false,
-        []
-      );
+            const discordChatJarrCreation: any = await chatController.createDiscordChat(
+                creator,
+                user.firstName
+            );
+            await chatController.createDiscordRoom(
+                discordChatJarrCreation.id,
+                "Discussions",
+                creator,
+                user.firstName,
+                "general",
+                false,
+                []
+            );
+            await chatController.createDiscordRoom(
+                discordChatJarrCreation.id,
+                "Information",
+                creator,
+                user.firstName,
+                "announcements",
+                false,
+                []
+            );
 
       db.collection(collections.community)
         .doc(communityAddress)
@@ -284,55 +284,35 @@ exports.createCommunity = async (
           registeredOnBridge: registeredOnBridge,
           registeredOnSwapManager: registeredOnSwapManager,
 
-          CollateralQuantity: collateralQuantity || 0,
-          CollateralOption: collateralOption || "",
-          CollateralToken: collateralToken || "",
+                    CollateralQuantity: collateralQuantity || 0,
+                    CollateralOption: collateralOption || "",
+                    CollateralToken: collateralToken || "",
 
-          RuleBased: ruleBased,
+                    RuleBased: ruleBased,
 
-          RequiredTokens: requiredTokens || {},
+                    RequiredTokens: requiredTokens || {},
 
-          MinimumUserLevel: minUserLevel || 0,
-          MinimumEndorsementScore: minEndorsementScore || 0,
-          MinimumTrustScore: minTrustScore || 0,
+                    MinimumUserLevel: minUserLevel || 0,
+                    MinimumEndorsementScore: minEndorsementScore || 0,
+                    MinimumTrustScore: minTrustScore || 0,
 
-          Levels: levels,
+                    Levels: levels,
 
-          BlogsEnabled: blogsEnabled,
-          Blogs: blogs,
-          MemberDirectoriesEnabled: memberDirectoriesEnabled,
-          MemberDirectories: memberDirectories,
-          ProjectsEnabled: projectsEnabled,
-          Projects: projects,
-          AppsEnabled: appsEnabled,
-          Apps: apps,
+                    BlogsEnabled: blogsEnabled,
+                    Blogs: blogs,
+                    MemberDirectoriesEnabled: memberDirectoriesEnabled,
+                    MemberDirectories: memberDirectories,
+                    ProjectsEnabled: projectsEnabled,
+                    Projects: projects,
+                    AppsEnabled: appsEnabled,
+                    Apps: apps,
 
-          UserRoles: userRolesObj,
-          Admins: admins || [],
-          InvitationUsers: invitedUsers,
-          Posts: [],
-          Votings: [],
-        });
-
-      // send invitation email to admins, roles and users here
-      let usersData = {
-        admins: admins,
-        roles: userRolesArray,
-        users: invitedUsers,
-      };
-
-      let communityData = {
-        communityName: name,
-        communityAddress: communityAddress,
-      };
-
-      let invitationEmails = await sendNewCommunityUsersEmail(
-        usersData,
-        communityData
-      );
-      if (!invitationEmails) {
-        console.log("failed to send invitation e-mails.");
-      }
+                    UserRoles: userRolesObj,
+                    Admins: admins || [],
+                    InvitationUsers: invitedUsers,
+                    Posts: [],
+                    Votings: [],
+                });
 
       for (const admin of admins) {
         if (admin.userId) {
@@ -465,87 +445,91 @@ exports.createCommunityToken = async (
     req: express.Request,
     res: express.Response
 ) => {
-    try {
-      const body = req.body;
-      let data: any = {
-        Creator: body.Creator,
-        CommunityAddress: body.CommunityAddress,
-        FromAddress: body.FromAddress,
-        FundingTokenAddress: body.FundingTokenAddress,
-        CommunityTokenAddress: body.CommunityTokenAddress,
-        FundingToken: body.FundingToken,
-        TokenType: body.TokenType,
-        TokenSymbol: body.TokenSymbol,
-        TokenName: body.TokenName,
-        AMM: body.AMM,
-        LockUpDate: body.LockUpDate,
-        InitialSupply: parseFloat(body.InitialSupply),
-        TargetPrice: body.TargetPrice,
-        TargetSupply: body.TargetSupply,
-        Frequency: body.Frequency,
-        SpreadDividend: body.SpreadDividend,
+  try {
+    const body = req.body;
+    let data: any = {
+      Creator: body.Creator,
+      CommunityAddress: body.CommunityAddress,
+      FromAddress: body.FromAddress,
+      FundingTokenAddress: body.FundingTokenAddress,
+      CommunityTokenAddress: body.CommunityTokenAddress,
+      FundingToken: body.FundingToken,
+      TokenType: body.TokenType,
+      TokenSymbol: body.TokenSymbol,
+      TokenName: body.TokenName,
+      AMM: body.AMM,
+      LockUpDate: body.LockUpDate,
+      InitialSupply: parseFloat(body.InitialSupply),
+      TargetPrice: body.TargetPrice,
+      TargetSupply: body.TargetSupply,
+      Frequency: body.Frequency,
+      SpreadDividend: body.SpreadDividend,
 
-        EthereumContractAddress: body.EthereumContractAddress,
-        TokenDecimals: parseInt(body.TokenDecimals),
-        EthChainId: body.EthChainId,
+      EthereumContractAddress: body.EthereumContractAddress,
+      TokenDecimals: parseInt(body.TokenDecimals),
+      EthChainId: body.EthChainId,
 
-        Hash: body.Hash,
-        Signature: body.Signature,
-        Caller: apiKey,
-      };
-      // if (
-      //   body.TokenType &&
-      //   body.TokenType == "Ethereum" &&
-      //   body.FundingTokenAddress &&
-      //   body.CommunityTokenAddress
-      // ) {
-      //   let resp = await getPriceFromUniswap(
-      //     body.communityTokenAddress,
-      //     body.FundingTokenAddress
-      //   );
-      //   if (resp.targetPrice) {
-      //     data.TargetPrice = resp.targetPrice;
-      //   } else {
-      //     console.log(
-      //       "Error in controllers/communityController -> createCommunityToken(): ",
-      //       resp
-      //     );
-      //     res.send({ success: false });
-      //   }
-      // }
-      const blockchainRes = await community.createCommunityToken(data);
-      if (blockchainRes && blockchainRes.success) {
-        updateFirebase(blockchainRes);
-        // update comunity data
-        if (data.TokenType && data.TokenType === 'ETHEREUM') {
-          console.log('data.TokenType', data.TokenType)
-          db.collection(collections.community).doc(data.CommunityAddress).update({EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId})
-        }
-            
-        // add txn to community
-        const output = blockchainRes.output;
-        const transactions = output.Transactions;
-        let tid = "";
-        let txnArray: any = null;
-        for ([tid, txnArray] of Object.entries(transactions)) {
-          db.collection(collections.community)
-            .doc(body.CommunityAddress)
-            .collection(collections.communityTransactions)
-            .doc(tid)
-            .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
-        }
-        res.send({ success: true });
-      } else {
-        console.log(
-          "Error in controllers/communityController -> createCommunityToken(): success = false",
-          blockchainRes.message
-        );
-        res.send({ success: false });
+      Hash: body.Hash,
+      Signature: body.Signature,
+      Caller: apiKey,
+    };
+    // if (
+    //   body.TokenType &&
+    //   body.TokenType == "Ethereum" &&
+    //   body.FundingTokenAddress &&
+    //   body.CommunityTokenAddress
+    // ) {
+    //   let resp = await getPriceFromUniswap(
+    //     body.communityTokenAddress,
+    //     body.FundingTokenAddress
+    //   );
+    //   if (resp.targetPrice) {
+    //     data.TargetPrice = resp.targetPrice;
+    //   } else {
+    //     console.log(
+    //       "Error in controllers/communityController -> createCommunityToken(): ",
+    //       resp
+    //     );
+    //     res.send({ success: false });
+    //   }
+    // }
+    const blockchainRes = await community.createCommunityToken(data);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      // update comunity data
+      if (data.TokenType && data.TokenType === 'ETHEREUM') {
+        console.log('data.TokenType', data.TokenType)
+        db.collection(collections.community).doc(data.CommunityAddress).update({EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId})
       }
-  } catch (e) {
 
+      // add txn to community
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = "";
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.community)
+          .doc(body.CommunityAddress)
+          .collection(collections.communityTransactions)
+          .doc(tid)
+          .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
+      }
+      res.send({ success: true });
+    } else {
+      console.log(
+        "Error in controllers/communityController -> createCommunityToken(): success = false",
+        blockchainRes.message
+      );
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log(
+      "Error in controllers/communityController -> createCommunityToken(): ",
+      e
+    );
+    res.send({ success: false });
   }
-}
+};
 
 exports.sellCommunityToken = async (
     req: express.Request,
