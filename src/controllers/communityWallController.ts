@@ -19,7 +19,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
     let isUserRole : any = await checkUserRole(body.author, user.email, body.communityId, true, true, ['Moderator', 'Treasurer']);
     let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
 
-    if(body && body.communityId && (isUserRole.checked || isCreator)) {
+    if(body && body.communityId && (isUserRole && isUserRole.checked || isCreator)) {
       let ret = await blogController.createPost(body, 'communityWallPost', body.priviUser.id)
 
       const communityRef = db.collection(collections.community)
@@ -68,7 +68,7 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
     let isUserRole = await checkUserRole(body.author, user.email, body.communityId, true, false,['Moderator']);
     let isCreator : any = await checkIfUserIsCreator(body.userId, body.communityId);
 
-    if(body && body.communityId && (isUserRole.checked || isCreator)) {
+    if(body && body.communityId && (isUserRole && isUserRole.checked || isCreator)) {
       const communityRef = db.collection(collections.community)
         .doc(body.communityId);
       const communityGet = await communityRef.get();
