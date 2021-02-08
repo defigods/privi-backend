@@ -161,7 +161,8 @@ const executeTX = (params: any) => {
     return new Promise<PromiseResponse>(async (resolve) => {
         // get proper chain web3
         const chainId = params.chainId;
-        const web3_l = getWeb3forChain(chainId);
+        const web3_l = getWeb3forChain((typeof chainId !== 'string') ? chainId.toString() : chainId);
+        // console.log('executeTX: web3 ', web3_l)
         
         // Prepare transaction
         // remark: added 'pending' to avoid 'Known Transaction' error
@@ -171,10 +172,11 @@ const executeTX = (params: any) => {
             gasPrice: '30000000000',
             from: params.fromAddress,
             data: params.encodedABI,
-            chainId: params.chainId,
+            chainId: chainId,
             to: params.toAddress,
             nonce: nonce,
         };
+        console.log('executeTX: trying to sign and send:', tx)
 
         // Sign transaction
         let txHash = '0x'
@@ -617,8 +619,8 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
 }
 
 const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: express.Response) => {
-    const { symbol, tokenAddress, chainId } = req.body;
-    console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId)
+    const { symbol, tokenAddress, chainId, comunityAddress } = req.body;
+    console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId, comunityAddress)
     const _chain: any = chainId?.toString();
     const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
     const web3 = getWeb3forChain(_chainId);
@@ -641,12 +643,16 @@ const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: exp
 
     const balance = await getEthBalanceOf(ETH_PRIVI_ADDRESS, _chainId)
     console.log('getBridgeRegisteredToken ETH_PRIVI_ADDRESS, balance', balance)
-    if (balance > 100) {
+    if (balance > 0.25) {
 
         // Execute transaction to withdraw in Ethereum
         const { success, error, data } = await executeTX(paramsTX);
 
         if (success) {
+            if (typeof comunityAddress !== 'undefined' && comunityAddress !== '' && comunityAddress !== null) {
+                // update comunity data
+                db.collection(collections.community).doc(comunityAddress).update({registeredOnSwapManager: true})
+            }
             res.send({ success: true, data: data });
         } else {
             res.send({ success: false, data: error });

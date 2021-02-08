@@ -125,6 +125,8 @@ router.post('/join', authenticateJWT, communityController.join);
 router.post('/leave', authenticateJWT, communityController.leave);
 
 router.post('/createCommunity', authenticateJWT, communityController.createCommunity);
+router.post('/createCommunityToken', authenticateJWT, communityController.createCommunityToken);
+router.post('/setComunityBirdgeRegistered', authenticateJWT, communityController.setComunityBirdgeRegistered); 
 router.post('/sellCommunityToken', authenticateJWT, communityController.sellCommunityToken);
 router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommunityToken);
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);

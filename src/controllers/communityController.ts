@@ -93,6 +93,18 @@ module.exports.transfer = async (
     }
 };
 
+exports.setComunityBirdgeRegistered = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const comunityAddress = body.address;
+        db.collection(collections.community).doc(comunityAddress).update({registeredOnBridge: true});
+        res.send({success: true});
+    } catch (e) {
+        console.log('Error in controllers/setComunityBirdgeRegistered -> setComunityBirdgeRegistered(): ', e);
+        res.send({success: false});
+    }
+}
+
 exports.createCommunity = async (
     req: express.Request,
     res: express.Response
@@ -104,29 +116,34 @@ exports.createCommunity = async (
         const hash = body.Hash;
         const signature = body.Signature;
 
-        const blockchainRes = await community.createCommunity(
-            creator,
-            hash,
-            signature,
-            apiKey
-        );
-        if (blockchainRes && blockchainRes.success) {
-            await updateFirebase(blockchainRes);
-            const updateCommunities = blockchainRes.output.UpdateCommunities;
-            const [communityAddress, communityObj]: [any, any] = Object.entries(
-                updateCommunities
-            )[0];
-            // add other common infos
-            const name = body.Name;
-            const description = body.Description;
-            const mainHashtag = body.MainHashtag;
-            const hashtags = body.Hashtags;
-            const privacy = body.Privacy;
-            const hasPhoto = body.HasPhoto;
-            const twitterId = body.TwitterId;
-            const openAdvertising = body.OpenAdvertising;
-            const ethereumAddr = body.EthereumContractAddress;
-            const paymentsAllowed = body.PaymentsAllowed;
+    const blockchainRes = await community.createCommunity(
+      creator,
+      hash,
+      signature,
+      apiKey
+    );
+    if (blockchainRes && blockchainRes.success) {
+      await updateFirebase(blockchainRes);
+      const updateCommunities = blockchainRes.output.UpdateCommunities;
+      const [communityAddress, communityObj]: [any, any] = Object.entries(
+        updateCommunities
+      )[0];
+      // add other common infos
+      const name = body.Name;
+      const description = body.Description;
+      const mainHashtag = body.MainHashtag;
+      const hashtags = body.Hashtags;
+      const privacy = body.Privacy;
+      const hasPhoto = body.HasPhoto;
+      const twitterId = body.TwitterId;
+      const openAdvertising = body.OpenAdvertising;
+      const EthereumContractAddress = body.EthereumContractAddress;
+      const EthChainId = body.EthChainId;
+      const TokenDecimals = body.TokenDecimals;
+      const registeredOnBridge = false;
+      const registeredOnSwapManager = false;
+
+      const paymentsAllowed = body.PaymentsAllowed;
 
             const collateralQuantity = Number(body.CollateralQuantity);
             const collateralOption = body.CollateralOption;
@@ -173,32 +190,32 @@ exports.createCommunity = async (
             const userGet = await userRef.get();
             const user: any = userGet.data();
 
-            for (const [index, admin] of admins.entries()) {
-                const user = await db
-                    .collection(collections.user)
-                    .where("email", "==", admin.name)
-                    .get();
-                if (user.empty) {
-                    admins[index].userId = null;
-                } else {
-                    for (const doc of user.docs) {
-                        admins[index].userId = doc.id;
-                    }
-                }
+      for (const [index, admin] of admins.entries()) {
+        const user = await db
+          .collection(collections.user)
+          .where("email", "==", admin.name)
+          .get();
+        if (user.empty) {
+          admins[index].userId = null;
+        } else {
+          for (const doc of user.docs) {
+            admins[index].userId = doc.id;
+          }
+        }
+      }
+    const userRolkeys = Object.keys(userRolesObj);
+    console.log('userRolkeys', userRolkeys)
+    for (const [index, userRole] of userRolkeys.entries()) {
+                console.log('userRole', userRole)
+                const user = await db.collection(collections.user).where("email", "==", userRole).get();
+        if (user.empty) {
+            userRolesArray[index].userId = null;
+        } else {
+            for (const doc of user.docs) {
+            userRolesArray[index].userId = doc.id;
             }
-            for (const [index, userRole] of userRolesArray.entries()) {
-                const user = await db
-                    .collection(collections.user)
-                    .where("email", "==", userRole.name)
-                    .get();
-                if (user.empty) {
-                    userRolesArray[index].userId = null;
-                } else {
-                    for (const doc of user.docs) {
-                        userRolesArray[index].userId = doc.id;
-                    }
-                }
-            }
+        }
+    }
 
             const discordChatCreation: any = await chatController.createDiscordChat(
                 creator,
@@ -246,21 +263,26 @@ exports.createCommunity = async (
                 []
             );
 
-            db.collection(collections.community)
-                .doc(communityAddress)
-                .update({
-                    HasPhoto: hasPhoto || false,
-                    Name: name || "",
-                    Description: description || "",
-                    MainHashtag: mainHashtag || "",
-                    Hashtags: hashtags || [],
-                    Privacy: privacy,
-                    OpenAdvertising: openAdvertising || false,
-                    PaymentsAllowed: paymentsAllowed || false,
-                    DiscordId: discordChatCreation.id || "",
-                    JarrId: discordChatJarrCreation.id || "",
-                    TwitterId: twitterId || "",
-                    EthereumAddress: ethereumAddr || "",
+      db.collection(collections.community)
+        .doc(communityAddress)
+        .update({
+          HasPhoto: hasPhoto || false,
+          Name: name || "",
+          Description: description || "",
+          MainHashtag: mainHashtag || "",
+          Hashtags: hashtags || [],
+          Privacy: privacy,
+          OpenAdvertising: openAdvertising || false,
+          PaymentsAllowed: paymentsAllowed || false,
+          DiscordId: discordChatCreation.id || "",
+          JarrId: discordChatJarrCreation.id || "",
+          TwitterId: twitterId || "",
+
+          EthereumContractAddress: EthereumContractAddress || '',
+          EthChainId: EthChainId || '',
+          TokenDecimals: TokenDecimals || 18,
+          registeredOnBridge: registeredOnBridge,
+          registeredOnSwapManager: registeredOnSwapManager,
 
                     CollateralQuantity: collateralQuantity || 0,
                     CollateralOption: collateralOption || "",
@@ -443,81 +465,90 @@ exports.createCommunityToken = async (
     req: express.Request,
     res: express.Response
 ) => {
-    try {
-        const body = req.body;
-        let data: any = {
-            Creator: body.Creator,
-            CommunityAddress: body.CommunityAddress,
-            FromAddress: body.FromAddress,
-            FundingTokenAddress: body.FundingTokenAddress,
-            CommunityTokenAddress: body.CommunityTokenAddress,
-            FundingToken: body.FundingToken,
-            TokenType: body.TokenType,
-            TokenSymbol: body.TokenSymbol,
-            TokenName: body.TokenName,
-            AMM: body.AMM,
-            LockUpDate: body.LockUpDate,
-            InitialSupply: body.InitialSupply,
-            TargetPrice: body.TargetPrice,
-            TargetSupply: body.TargetSupply,
-            Frequency: body.Frequency,
-            SpreadDividend: body.SpreadDividend,
+  try {
+    const body = req.body;
+    let data: any = {
+      Creator: body.Creator,
+      CommunityAddress: body.CommunityAddress,
+      FromAddress: body.FromAddress,
+      FundingTokenAddress: body.FundingTokenAddress,
+      CommunityTokenAddress: body.CommunityTokenAddress,
+      FundingToken: body.FundingToken,
+      TokenType: body.TokenType,
+      TokenSymbol: body.TokenSymbol,
+      TokenName: body.TokenName,
+      AMM: body.AMM,
+      LockUpDate: body.LockUpDate,
+      InitialSupply: parseFloat(body.InitialSupply),
+      TargetPrice: body.TargetPrice,
+      TargetSupply: body.TargetSupply,
+      Frequency: body.Frequency,
+      SpreadDividend: body.SpreadDividend,
 
-            Hash: body.Hash,
-            Signature: body.Signature,
-            Caller: apiKey,
-        };
-        if (
-            body.TokenType &&
-            body.TokenType == "Ethereum" &&
-            body.FundingTokenAddress &&
-            body.CommunityTokenAddress
-        ) {
-            let resp = await getPriceFromUniswap(
-                body.communityTokenAddress,
-                body.FundingTokenAddress
-            );
-            if (resp.targetPrice) {
-                data.TargetPrice = resp.targetPrice;
-            } else {
-                console.log(
-                    "Error in controllers/communityController -> createCommunityToken(): ",
-                    resp
-                );
-                res.send({ success: false });
-            }
-        }
-        const blockchainRes = await community.createCommunityToken(data);
-        if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
+      EthereumContractAddress: body.EthereumContractAddress,
+      TokenDecimals: parseInt(body.TokenDecimals),
+      EthChainId: body.EthChainId,
 
-            // add txn to community
-            const output = blockchainRes.output;
-            const transactions = output.Transactions;
-            let tid = "";
-            let txnArray: any = null;
-            for ([tid, txnArray] of Object.entries(transactions)) {
-                db.collection(collections.community)
-                    .doc(body.communityAddress)
-                    .collection(collections.communityTransactions)
-                    .doc(tid)
-                    .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
-            }
-            res.send({ success: true });
-        } else {
-            console.log(
-                "Error in controllers/communityController -> createCommunityToken(): success = false",
-                blockchainRes.message
-            );
-            res.send({ success: false });
-        }
-    } catch (e) {
-        console.log(
-            "Error in controllers/communityController -> createCommunityToken(): ",
-            e
-        );
-        res.send({ success: false });
+      Hash: body.Hash,
+      Signature: body.Signature,
+      Caller: apiKey,
+    };
+    // if (
+    //   body.TokenType &&
+    //   body.TokenType == "Ethereum" &&
+    //   body.FundingTokenAddress &&
+    //   body.CommunityTokenAddress
+    // ) {
+    //   let resp = await getPriceFromUniswap(
+    //     body.communityTokenAddress,
+    //     body.FundingTokenAddress
+    //   );
+    //   if (resp.targetPrice) {
+    //     data.TargetPrice = resp.targetPrice;
+    //   } else {
+    //     console.log(
+    //       "Error in controllers/communityController -> createCommunityToken(): ",
+    //       resp
+    //     );
+    //     res.send({ success: false });
+    //   }
+    // }
+    const blockchainRes = await community.createCommunityToken(data);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      // update comunity data
+      if (data.TokenType && data.TokenType === 'ETHEREUM') {
+        console.log('data.TokenType', data.TokenType)
+        db.collection(collections.community).doc(data.CommunityAddress).update({EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId})
+      }
+
+      // add txn to community
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = "";
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.community)
+          .doc(body.CommunityAddress)
+          .collection(collections.communityTransactions)
+          .doc(tid)
+          .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
+      }
+      res.send({ success: true });
+    } else {
+      console.log(
+        "Error in controllers/communityController -> createCommunityToken(): success = false",
+        blockchainRes.message
+      );
+      res.send({ success: false });
     }
+  } catch (e) {
+    console.log(
+      "Error in controllers/communityController -> createCommunityToken(): ",
+      e
+    );
+    res.send({ success: false });
+  }
 };
 
 exports.sellCommunityToken = async (
