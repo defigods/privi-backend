@@ -1,6 +1,6 @@
-import express, { response } from "express";
-import podFTProtocol from "../blockchain/podFTProtocol";
-import podNFTProtocol from "../blockchain/podNFTProtocol";
+import express, { response } from 'express';
+import podFTProtocol from '../blockchain/podFTProtocol';
+import podNFTProtocol from '../blockchain/podNFTProtocol';
 import {
   updateFirebase,
   getRateOfChangeAsMap,
@@ -12,18 +12,18 @@ import {
   getSellTokenAmountPod,
   getBuyTokenAmountPod,
   addZerosToHistory,
-} from "../functions/functions";
-import notificationTypes from "../constants/notificationType";
-import collections from "../firebase/collections";
-import { db } from "../firebase/firebase";
-import cron from "node-cron";
-import fs from "fs";
-import path from "path";
-import priviGovernance from "../blockchain/priviGovernance";
-const notificationsController = require("./notificationsController");
-const chatController = require("./chatController");
-require("dotenv").config();
-const apiKey = "PRIVI"; // process.env.API_KEY;
+} from '../functions/functions';
+import notificationTypes from '../constants/notificationType';
+import collections from '../firebase/collections';
+import { db } from '../firebase/firebase';
+import cron from 'node-cron';
+import fs from 'fs';
+import path from 'path';
+import priviGovernance from '../blockchain/priviGovernance';
+const notificationsController = require('./notificationsController');
+const chatController = require('./chatController');
+require('dotenv').config();
+const apiKey = 'PRIVI'; // process.env.API_KEY;
 
 /////////////////////////// COMMON //////////////////////////////
 
@@ -48,16 +48,16 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
 
   podRef.set(
     {
-      Name: name || "",
-      Description: description || "",
-      MainHashtag: mainHashtag || "",
+      Name: name || '',
+      Description: description || '',
+      MainHashtag: mainHashtag || '',
       Hashtags: hashtags || [],
       Private: isPrivate || false,
       HasPhoto: hasPhoto || false,
       EndorsementScore: endorsementScore || 0.5,
       TrustScore: trustScore || 0.5,
       Admins: admins || [],
-      DiscordId: dicordId || "",
+      DiscordId: dicordId || '',
       RequiredTokens: requiredTokens || {},
       Advertising: advertising || true,
       Verified: verified || false,
@@ -85,15 +85,9 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
       const role: string = obj.role;
 
       const emailToUid = await getEmailUidMap();
-      const adminSnap = await db
-        .collection(collections.user)
-        .doc(inviterId)
-        .get();
+      const adminSnap = await db.collection(collections.user).doc(inviterId).get();
       if (!adminSnap.exists) ok = false;
-      const invitedSnap = await db
-        .collection(collections.user)
-        .doc(emailToUid[invitedUser])
-        .get();
+      const invitedSnap = await db.collection(collections.user).doc(emailToUid[invitedUser]).get();
       if (!invitedSnap.exists) ok = false;
       let podCol = collections.podsFT;
       if (!isPodFT) podCol = collections.podsNFT;
@@ -103,36 +97,31 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
       // if (!podData || !podData.Admin || !podData.Admin.includes(inviterId)) ok = false;
       if (ok) {
         // save invitation in pod invitation colecction
-        const map = "RoleInvitation." + invitedUser;
-        const newDocRef = await podSnap.ref
-          .collection(collections.podRoleInvitation)
-          .add({
-            invitedEmail: invitedUser,
-            invitedId: emailToUid[invitedUser],
-            role: role,
-            date: Date.now(),
-            replied: false,
-            accept: false,
-          });
+        const map = 'RoleInvitation.' + invitedUser;
+        const newDocRef = await podSnap.ref.collection(collections.podRoleInvitation).add({
+          invitedEmail: invitedUser,
+          invitedId: emailToUid[invitedUser],
+          role: role,
+          date: Date.now(),
+          replied: false,
+          accept: false,
+        });
         // save invitation at user invitation collection (both invitation doc have same docId)
-        invitedSnap.ref
-          .collection(collections.podRoleInvitation)
-          .doc(newDocRef.id)
-          .set({
-            podId: podId,
-            isPodFT: isPodFT,
-            inviter: inviterId,
-            role: role,
-            date: Date.now(),
-            replied: false,
-            accept: false,
-          });
+        invitedSnap.ref.collection(collections.podRoleInvitation).doc(newDocRef.id).set({
+          podId: podId,
+          isPodFT: isPodFT,
+          inviter: inviterId,
+          role: role,
+          date: Date.now(),
+          replied: false,
+          accept: false,
+        });
       }
     }
     if (ok) res.send({ success: true });
     else res.send({ success: false });
   } catch (err) {
-    console.log("Error in controllers/podController -> inviteRole(): ", err);
+    console.log('Error in controllers/podController -> inviteRole(): ', err);
     res.send({ success: false });
   }
 };
@@ -142,10 +131,7 @@ exports.inviteRole = async (req: express.Request, res: express.Response) => {
  * @param req {userId, invitationId, accept}. userId is the uid of the user, invitationId the doc id of the invitation, accept is a boolean
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.replyRoleInvitation = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.replyRoleInvitation = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const userId: string = body.userId;
@@ -171,7 +157,7 @@ exports.replyRoleInvitation = async (
           if (podData) {
             const currRoleArray: string[] = podData.roles[invitationData.role]; // get current users (array) for this role
             if (!currRoleArray.includes(userId)) currRoleArray.push(userId); // add this new accepted user
-            const rolesMap = "roles." + invitationData.role; // update
+            const rolesMap = 'roles.' + invitationData.role; // update
             podSnap.ref.update({ rolesMap: currRoleArray });
           }
         }
@@ -186,7 +172,7 @@ exports.replyRoleInvitation = async (
       }
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> inviteRole(): ", err);
+    console.log('Error in controllers/podController -> inviteRole(): ', err);
     res.send({ success: false });
   }
 };
@@ -206,8 +192,8 @@ exports.inviteView = async (req: express.Request, res: express.Response) => {
     const isPodFT: boolean = body.isPodFT;
     const userSnap = await db.collection(collections.user).doc(userId).get();
     if (userSnap.exists) {
-      let url = "https://privibeta.web.app/#/FTPod/" + podId;
-      if (!isPodFT) url = "https://privibeta.web.app/#/NFTPod/" + podId;
+      let url = 'https://privibeta.web.app/#/FTPod/' + podId;
+      if (!isPodFT) url = 'https://privibeta.web.app/#/NFTPod/' + podId;
       userSnap.ref.collection(collections.podViewInvitation).add({
         inviter: inviterId,
         podId: podId,
@@ -217,13 +203,11 @@ exports.inviteView = async (req: express.Request, res: express.Response) => {
       });
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/podController -> inviteView(): invited user doesnt exists"
-      );
+      console.log('Error in controllers/podController -> inviteView(): invited user doesnt exists');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> inviteView(): ", err);
+    console.log('Error in controllers/podController -> inviteView(): ', err);
     res.send({ success: false });
   }
 };
@@ -233,22 +217,51 @@ exports.inviteView = async (req: express.Request, res: express.Response) => {
  * @param req file, the file to upload to server's disk
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.changePodPhoto = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.changeFTPodPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
+      const podRef = db.collection(collections.podsFT).doc(req.file.originalname);
+
+      const podGet = await podRef.get();
+      const pod: any = await podGet.data();
+
+      if (pod.HasPhoto) {
+        await podRef.update({
+          HasPhoto: true,
+        });
+      }
+
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/podController -> changePodPhoto()",
-        "There's no file..."
-      );
+      console.log('Error in controllers/podController -> changePodPhoto()', "There's no file...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> changePodPhoto()", err);
+    console.log('Error in controllers/podController -> changePodPhoto()', err);
+    res.send({ success: false });
+  }
+};
+exports.changeNFTPodPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const podRef = db.collection(collections.podsNFT).doc(req.file.originalname);
+
+      const podGet = await podRef.get();
+      const pod: any = await podGet.data();
+
+      if (pod.HasPhoto) {
+        await podRef.update({
+          HasPhoto: true,
+        });
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/podController -> changePodPhoto()', "There's no file...");
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> changePodPhoto()', err);
     res.send({ success: false });
   }
 };
@@ -263,11 +276,11 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
     let podId = req.params.podId;
     console.log(podId);
     if (podId) {
-      const directoryPath = path.join("uploads", "pods");
+      const directoryPath = path.join('uploads', 'pods');
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
-          return console.log("Unable to scan directory: " + err);
+          return console.log('Unable to scan directory: ' + err);
         }
         //listing all files using forEach
         files.forEach(function (file) {
@@ -277,24 +290,19 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
       });
 
       // stream the image back by loading the file
-      res.setHeader("Content-Type", "image");
-      let raw = fs.createReadStream(
-        path.join("uploads", "pods", podId + ".png")
-      );
-      raw.on("error", function (err) {
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'pods', podId + '.png'));
+      raw.on('error', function (err) {
         console.log(err);
         res.sendStatus(400);
       });
       raw.pipe(res);
     } else {
-      console.log(
-        "Error in controllers/podController -> getPhotoId()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
       res.send({ success: false, error: "There's no pod id..." });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> getPhotoId()", err);
+    console.log('Error in controllers/podController -> getPhotoId()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -314,23 +322,21 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
     // update user
     const userSnap = await db.collection(collections.user).doc(userId).get();
     let podRef = collections.podsFT;
-    if (podType == "NFT") podRef = collections.podsNFT;
+    if (podType == 'NFT') podRef = collections.podsNFT;
 
-    let followingPodsFieldName = "followingFTPods";
-    let numFollowingPodsFieldName = "numFollowingFTPods";
-    if (podType == "NFT") {
-      followingPodsFieldName = "followingNFTPods";
-      numFollowingPodsFieldName = "numFollowingNFTPods";
+    let followingPodsFieldName = 'followingFTPods';
+    let numFollowingPodsFieldName = 'numFollowingFTPods';
+    if (podType == 'NFT') {
+      followingPodsFieldName = 'followingNFTPods';
+      numFollowingPodsFieldName = 'numFollowingNFTPods';
     }
 
     let followingPods: string[] = [];
     let numFollowingPods = 0;
     const userData: any = userSnap.data();
 
-    if (userData && userData[followingPodsFieldName])
-      followingPods = userData[followingPodsFieldName];
-    if (userData && userData[numFollowingPodsFieldName])
-      numFollowingPods = userData[numFollowingPodsFieldName];
+    if (userData && userData[followingPodsFieldName]) followingPods = userData[followingPodsFieldName];
+    if (userData && userData[numFollowingPodsFieldName]) numFollowingPods = userData[numFollowingPodsFieldName];
     followingPods.push(podId);
     numFollowingPods += 1;
 
@@ -358,15 +364,15 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
       userId: userId,
       notification: {
         type: 13,
-        typeItemId: "Pod",
+        typeItemId: 'Pod',
         itemId: podId,
         follower: userData.firstName,
         pod: podData.Name,
-        comment: "",
-        token: "",
-        amount: "",
+        comment: '',
+        token: '',
+        amount: '',
         onlyInformation: false,
-        otherItemId: "",
+        otherItemId: '',
       },
     });
 
@@ -374,13 +380,13 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
       userId: podData.Creator,
       notification: {
         type: 32,
-        typeItemId: "user",
+        typeItemId: 'user',
         itemId: userId,
         follower: userData.firstName,
         pod: podData.Name,
-        comment: "",
-        token: "",
-        amount: "",
+        comment: '',
+        token: '',
+        amount: '',
         onlyInformation: false,
         otherItemId: podId,
       },
@@ -388,7 +394,7 @@ exports.followPod = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true });
   } catch (err) {
-    console.log("Error in controllers/podController -> followPod(): ", err);
+    console.log('Error in controllers/podController -> followPod(): ', err);
     res.send({ success: false });
   }
 };
@@ -408,23 +414,21 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
     // update user
     const userSnap = await db.collection(collections.user).doc(userId).get();
     let podRef = collections.podsFT;
-    if (podType == "NFT") podRef = collections.podsNFT;
+    if (podType == 'NFT') podRef = collections.podsNFT;
 
-    let followingPodsFieldName = "followingFTPods";
-    let numFollowingPodsFieldName = "numFollowingFTPods";
-    if (podType == "NFT") {
-      followingPodsFieldName = "followingNFTPods";
-      numFollowingPodsFieldName = "numFollowingNFTPods";
+    let followingPodsFieldName = 'followingFTPods';
+    let numFollowingPodsFieldName = 'numFollowingFTPods';
+    if (podType == 'NFT') {
+      followingPodsFieldName = 'followingNFTPods';
+      numFollowingPodsFieldName = 'numFollowingNFTPods';
     }
 
     let followingPods: string[] = [];
     let numFollowingPods = 0;
     const userData = userSnap.data();
 
-    if (userData && userData[followingPodsFieldName])
-      followingPods = userData[followingPodsFieldName];
-    if (userData && userData[numFollowingPodsFieldName])
-      numFollowingPods = userData[numFollowingPodsFieldName];
+    if (userData && userData[followingPodsFieldName]) followingPods = userData[followingPodsFieldName];
+    if (userData && userData[numFollowingPodsFieldName]) numFollowingPods = userData[numFollowingPodsFieldName];
     followingPods = followingPods.filter((val, index, arr) => {
       return val !== podId;
     });
@@ -454,21 +458,21 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
       userId: userId,
       notification: {
         type: 14,
-        typeItemId: "Pod",
+        typeItemId: 'Pod',
         itemId: podId,
-        follower: "",
+        follower: '',
         pod: podData.Name,
-        comment: "",
-        token: "",
-        amount: "",
+        comment: '',
+        token: '',
+        amount: '',
         onlyInformation: false,
-        otherItemId: "",
+        otherItemId: '',
       },
     });
 
     res.send({ success: true });
   } catch (err) {
-    console.log("Error in controllers/podController -> unfollowPod(): ", err);
+    console.log('Error in controllers/podController -> unfollowPod(): ', err);
     res.send({ success: false });
   }
 };
@@ -478,7 +482,7 @@ exports.unFollowPod = async (req: express.Request, res: express.Response) => {
 exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    console.log("initiateFTPOD", body);
+    console.log('initiateFTPOD', body);
     const creator = body.PodInfo.Creator;
     const fundingToken = body.PodInfo.FundingToken;
     const interestDue = body.InterestDue;
@@ -486,8 +490,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
     let rateOfChangeBody: any = {};
     const rateOfChange = await getRateOfChangeAsMap();
     for (let key in body.RateChange) {
-      rateOfChangeBody[body.RateChange[key]] =
-        rateOfChange[body.RateChange[key]];
+      rateOfChangeBody[body.RateChange[key]] = rateOfChange[body.RateChange[key]];
     }
 
     const blockchainRes = await podFTProtocol.initiatePOD(
@@ -510,8 +513,24 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
       const user: any = userGet.data();
 
       const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(discordChatCreation.id, "Discussions", creator, user.firstName, "general", false, []);
-      await chatController.createDiscordRoom(discordChatCreation.id, "Information", creator, user.firstName, "announcements", false, []);
+      await chatController.createDiscordRoom(
+        discordChatCreation.id,
+        'Discussions',
+        creator,
+        user.firstName,
+        'general',
+        false,
+        []
+      );
+      await chatController.createDiscordRoom(
+        discordChatCreation.id,
+        'Information',
+        creator,
+        user.firstName,
+        'announcements',
+        false,
+        []
+      );
 
       await db.collection(collections.podsFT).doc(podId).set(
         {
@@ -529,15 +548,15 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
         userId: creator,
         notification: {
           type: 10,
-          typeItemId: "pod",
+          typeItemId: 'pod',
           itemId: podId,
           follower: creator,
           pod: body.PodInfo.TokenSymbol,
-          comment: "",
+          comment: '',
           token: fundingToken,
-          amount: "",
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
 
@@ -546,13 +565,13 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
           userId: item.user,
           notification: {
             type: 56,
-            typeItemId: "user",
+            typeItemId: 'user',
             itemId: creator,
             follower: userData.firstName,
             pod: podId,
-            comment: "",
-            token: "",
-            amount: "",
+            comment: '',
+            token: '',
+            amount: '',
             onlyInformation: false,
             otherItemId: podId,
           },
@@ -574,14 +593,11 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: podId });
     } else {
-      console.log(
-        "Error in controllers/podController -> initiatePOD(): success = false.",
-        blockchainRes.message
-      );
+      console.log('Error in controllers/podController -> initiatePOD(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> initiateFTPOD(): ", err);
+    console.log('Error in controllers/podController -> initiateFTPOD(): ', err);
     res.send({ success: false, error: err });
   }
 };
@@ -593,20 +609,11 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
     const podId = body.PodAddress;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await podFTProtocol.deletePod(
-      publicId,
-      podId,
-      hash,
-      signature,
-      apiKey
-    );
+    const blockchainRes = await podFTProtocol.deletePod(publicId, podId, hash, signature, apiKey);
 
     const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
     const podData: any = podSnap.data();
-    const userSnap = await db
-      .collection(collections.user)
-      .doc(podData.Creator)
-      .get();
+    const userSnap = await db.collection(collections.user).doc(podData.Creator).get();
     const userData: any = userSnap.data();
 
     if (blockchainRes && blockchainRes.success) {
@@ -619,15 +626,15 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
         userId: podData.Creator,
         notification: {
           type: 11,
-          typeItemId: "pod",
+          typeItemId: 'pod',
           itemId: podId,
           follower: podData.Creator,
           pod: podData.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
 
@@ -636,15 +643,15 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
           userId: item.id,
           notification: {
             type: 57,
-            typeItemId: "user",
+            typeItemId: 'user',
             itemId: podData.Creator,
             follower: podData.Creator,
             pod: podData.Name,
-            comment: "",
-            token: "",
-            amount: "",
+            comment: '',
+            token: '',
+            amount: '',
             onlyInformation: false,
-            otherItemId: "",
+            otherItemId: '',
           },
         });
       });
@@ -653,28 +660,25 @@ exports.deleteFTPOD = async (req: express.Request, res: express.Response) => {
           userId: item.user,
           notification: {
             type: 57,
-            typeItemId: "user",
+            typeItemId: 'user',
             itemId: podData.Creator,
             follower: podData.Creator,
             pod: podData.Name,
-            comment: "",
-            token: "",
-            amount: "",
+            comment: '',
+            token: '',
+            amount: '',
             onlyInformation: false,
-            otherItemId: "",
+            otherItemId: '',
           },
         });
       });
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/podController -> deletePOD(): success = false.",
-        blockchainRes.message
-      );
+      console.log('Error in controllers/podController -> deletePOD(): success = false.', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> deletePOD(): ", err);
+    console.log('Error in controllers/podController -> deletePOD(): ', err);
     res.send({ success: false });
   }
 };
@@ -689,14 +693,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
     const hash = body.Hash;
     const signature = body.Signature;
 
-    const blockchainRes = await podFTProtocol.investPOD(
-      investorId,
-      podId,
-      amount,
-      hash,
-      signature,
-      apiKey
-    );
+    const blockchainRes = await podFTProtocol.investPOD(investorId, podId, amount, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
 
@@ -705,17 +702,13 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
       const data: any = podSnap.data();
       const supplyReleased = data.SupplyReleased;
       const amm = data.AMM;
-      const podTokenToReceive = getBuyTokenAmountPod(
-        amm,
-        supplyReleased,
-        amount
-      );
+      const podTokenToReceive = getBuyTokenAmountPod(amm, supplyReleased, amount);
       const fundingTokenPerPodToken = amount / podTokenToReceive;
 
       // add txn to pod
       const output = blockchainRes.output;
       const transactions = output.Transactions;
-      let key = "";
+      let key = '';
       let obj: any = null;
       for ([key, obj] of Object.entries(transactions)) {
         if (obj.From == podId || obj.To == podId) {
@@ -755,25 +748,22 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
                 notificationTypes.podInvestment
             );*/
       const podData: any = podSnap.data();
-      const investorSnap = await db
-        .collection(collections.user)
-        .doc(investorId)
-        .get();
+      const investorSnap = await db.collection(collections.user).doc(investorId).get();
       const investorData: any = investorSnap.data();
 
       await notificationsController.addNotification({
         userId: investorId,
         notification: {
           type: 12,
-          typeItemId: "user",
+          typeItemId: 'user',
           itemId: podId,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: podData.TokenSymbol,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
 
@@ -781,11 +771,11 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         userId: podData.Creator,
         notification: {
           type: 15,
-          typeItemId: "user",
+          typeItemId: 'user',
           itemId: investorId,
           follower: investorData.firstName,
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: podData.TokenSymbol,
           amount: amount,
           onlyInformation: false,
@@ -799,15 +789,15 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
               userId: item.id,
               notification: {
                 type: 60,
-                typeItemId: "user",
+                typeItemId: 'user',
                 itemId: investorId,
                 follower: investorData.firstName,
                 pod: podData.Name,
-                comment: "",
-                token: "",
+                comment: '',
+                token: '',
                 amount: amount,
                 onlyInformation: false,
-                otherItemId: "",
+                otherItemId: '',
               },
             });
           }
@@ -815,14 +805,11 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
       }
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/podController -> investPOD(): success = false.",
-        blockchainRes.message
-      );
+      console.log('Error in controllers/podController -> investPOD(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> investPOD(): ", err);
+    console.log('Error in controllers/podController -> investPOD(): ', err);
     res.send({ success: false, error: err });
   }
 };
@@ -837,36 +824,23 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
     const hash = body.Hash;
     const signature = body.Signature;
 
-    const blockchainRes = await podFTProtocol.sellPOD(
-      investorId,
-      podId,
-      amount,
-      hash,
-      signature,
-      apiKey
-    );
+    const blockchainRes = await podFTProtocol.sellPOD(investorId, podId, amount, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
 
       // calculate funding token to receive
       const podSnap = await db.collection(collections.podsFT).doc(podId).get();
       const data: any = podSnap.data();
-      const fundingTokenToReceive = getSellTokenAmountPod(
-        data.AMM,
-        data.SupplyReleased,
-        amount,
-        data.RegimePoint
-      );
+      const fundingTokenToReceive = getSellTokenAmountPod(data.AMM, data.SupplyReleased, amount, data.RegimePoint);
       const fundingTokenPerPodToken = fundingTokenToReceive / amount;
 
       // add txn to pod
       const output = blockchainRes.output;
       const transactions = output.Transactions;
-      let key = "";
+      let key = '';
       let obj: any = null;
       for ([key, obj] of Object.entries(transactions)) {
-        if (obj.From == podId || obj.To == podId)
-          podSnap.ref.collection(collections.podTransactions).add(obj);
+        if (obj.From == podId || obj.To == podId) podSnap.ref.collection(collections.podTransactions).add(obj);
       }
       // add to PriceOf the day
       podSnap.ref.collection(collections.priceOfTheDay).add({
@@ -889,14 +863,11 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
             );*/
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/podController -> sellFTPOD(): success = false.",
-        blockchainRes.message
-      );
+      console.log('Error in controllers/podController -> sellFTPOD(): success = false.', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> sellFTPOD(): ", err);
+    console.log('Error in controllers/podController -> sellFTPOD(): ', err);
     res.send({ success: false });
   }
 };
@@ -909,13 +880,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
     const podId = body.podId;
     const amount = body.amount;
     const rateOfChange = await getRateOfChangeAsMap();
-    const blockchainRes = await podFTProtocol.swapPOD(
-      investorId,
-      liquidityPoolId,
-      podId,
-      amount,
-      rateOfChange
-    );
+    const blockchainRes = await podFTProtocol.swapPOD(investorId, liquidityPoolId, podId, amount, rateOfChange);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       console.log(blockchainRes);
@@ -925,39 +890,36 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
             );*/
       const podSnap = await db.collection(collections.PodsFT).doc(podId).get();
       const podData: any = podSnap.data();
-      const investorSnap = await db
-        .collection(collections.user)
-        .doc(investorId)
-        .get();
+      const investorSnap = await db.collection(collections.user).doc(investorId).get();
       const investorData: any = investorSnap.data();
       await notificationsController.addNotification({
         userId: investorId,
         notification: {
           type: 17,
-          typeItemId: "user",
+          typeItemId: 'user',
           itemId: podId,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: podData.TokenSymbol,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       await notificationsController.addNotification({
         userId: podData.Creator,
         notification: {
           type: 16,
-          typeItemId: "user",
+          typeItemId: 'user',
           itemId: investorId,
           follower: investorData.firstName,
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: podData.TokenSymbol,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       if (podData.Investors && podData.size !== 0) {
@@ -967,15 +929,15 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
             userId: item,
             notification: {
               type: 19,
-              typeItemId: "user",
+              typeItemId: 'user',
               itemId: podId,
               follower: investorData.firstName,
               pod: podData.Name,
-              comment: "",
-              token: "",
+              comment: '',
+              token: '',
               amount: amount,
               onlyInformation: false,
-              otherItemId: "",
+              otherItemId: '',
             },
           });
         });
@@ -985,29 +947,26 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
           userId: item.user,
           notification: {
             type: 18,
-            typeItemId: "user",
+            typeItemId: 'user',
             itemId: podId,
             follower: investorData.firstName,
             pod: podData.Name,
-            comment: "",
-            token: "",
+            comment: '',
+            token: '',
             amount: amount,
             onlyInformation: false,
-            otherItemId: "",
+            otherItemId: '',
           },
         });
       });
 
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/podController -> swapPod(): success = false.",
-        blockchainRes.message
-      );
+      console.log('Error in controllers/podController -> swapPod(): success = false.', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> swapPod(): ", err);
+    console.log('Error in controllers/podController -> swapPod(): ', err);
     res.send({ success: false });
   }
 };
@@ -1015,10 +974,7 @@ exports.swapFTPod = async (req: express.Request, res: express.Response) => {
 // ------------------------ Price Calculations -----------------------------
 
 // get pod price for API
-exports.getBuyTokenAmount = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getBuyTokenAmount = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const podId = body.podId;
@@ -1028,46 +984,29 @@ exports.getBuyTokenAmount = async (
     const price = getBuyTokenAmountPod(data.AMM, data.SupplyReleased, amount);
     res.send({ success: true, data: price });
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getBuyTokenAmount(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> getBuyTokenAmount(): ', err);
     res.send({ success: false });
   }
 };
 
 // get funding tokens for API
-exports.getSellTokenAmount = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getSellTokenAmount = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const podId = body.podId;
     const amount = body.amount;
     const podSnap = await db.collection(collections.podsFT).doc(podId).get();
     const data: any = podSnap.data();
-    const price = getSellTokenAmountPod(
-      data.AMM,
-      data.SupplyReleased,
-      amount,
-      data.RegimePoint
-    );
+    const price = getSellTokenAmountPod(data.AMM, data.SupplyReleased, amount, data.RegimePoint);
     res.send({ success: true, data: price });
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getSellTokenAmount(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> getSellTokenAmount(): ', err);
     res.send({ success: false });
   }
 };
 
 // get funding tokens for API
-exports.getMarketPrice = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getMarketPrice = async (req: express.Request, res: express.Response) => {
   try {
     const podId = req.params.podId;
     const podSnap = await db.collection(collections.podsFT).doc(podId).get();
@@ -1080,10 +1019,7 @@ exports.getMarketPrice = async (
     }
     res.send({ success: true, data: price });
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getSellTokenAmount(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> getSellTokenAmount(): ', err);
     res.send({ success: false });
   }
 };
@@ -1097,7 +1033,7 @@ exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: user.myFTPods });
   } catch (err) {
-    console.log("Error in controllers/podController -> getMyPods()", err);
+    console.log('Error in controllers/podController -> getMyPods()', err);
     res.send({ success: false });
   }
 };
@@ -1121,11 +1057,7 @@ const countLastWeekPods = (allPodsArray): Promise<any[]> => {
         }
         if (allPodsArray.length === i + 1) {
           let sortedArray = allPodsArray.sort((a, b) =>
-            a.lastWeekFollowers > b.lastWeekFollowers
-              ? 1
-              : b.lastWeekFollowers > a.lastWeekFollowers
-              ? -1
-              : 0
+            a.lastWeekFollowers > b.lastWeekFollowers ? 1 : b.lastWeekFollowers > a.lastWeekFollowers ? -1 : 0
           );
           let trendingArray = sortedArray.slice(0, 10);
           resolve(trendingArray);
@@ -1137,10 +1069,7 @@ const countLastWeekPods = (allPodsArray): Promise<any[]> => {
   });
 };
 
-exports.getOtherPodsFT = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getOtherPodsFT = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
 
@@ -1150,9 +1079,7 @@ exports.getOtherPodsFT = async (
 
     let query;
     for (const pod of user.myFTPods) {
-      query = db
-        .collection(collections.podsFT)
-        .where("PodAddress", "!=", pod.PodAddress);
+      query = db.collection(collections.podsFT).where('PodAddress', '!=', pod.PodAddress);
     }
     if (!query) {
       query = db.collection(collections.podsFT);
@@ -1166,7 +1093,7 @@ exports.getOtherPodsFT = async (
 
     res.send({ success: true, data: podsFT });
   } catch (err) {
-    console.log("Error in controllers/podController -> getOtherPods()", err);
+    console.log('Error in controllers/podController -> getOtherPods()', err);
     res.send({ success: false });
   }
 };
@@ -1174,7 +1101,7 @@ exports.getOtherPodsFT = async (
 exports.getAllFTPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
     const lastCommunity = +req.params.pagination;
-    const lastId : string = req.params.lastId;
+    const lastId: string = req.params.lastId;
 
     let allFTPods = await getFTPods(lastCommunity, lastId);
 
@@ -1185,15 +1112,12 @@ exports.getAllFTPodsInfo = async (req: express.Request, res: express.Response) =
       },
     });
   } catch (err) {
-    console.log("Error in controllers/podController -> getOtherPods()", err);
+    console.log('Error in controllers/podController -> getOtherPods()', err);
     res.send({ success: false });
   }
 };
 
-exports.getTrendingPodsFT = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) => {
   try {
     const trendingFTPods: any[] = [];
     const ftPodsSnap = await db.collection(collections.trendingPodsFT).get();
@@ -1202,12 +1126,12 @@ exports.getTrendingPodsFT = async (
     });
     res.send({ success: true, data: { trending: trendingFTPods } });
   } catch (e) {
-    console.log("Error in controllers/podController -> getTrendingFTPods()", e);
+    console.log('Error in controllers/podController -> getTrendingFTPods()', e);
     res.send({ success: false, message: e });
   }
 };
 
-exports.setTrendingPodsFT = cron.schedule("0 2 * * *", async () => {
+exports.setTrendingPodsFT = cron.schedule('0 2 * * *', async () => {
   try {
     let allFTPods: any[] = [];
     let podsFT = await db.collection(collections.podsFT).get();
@@ -1232,10 +1156,7 @@ exports.setTrendingPodsFT = cron.schedule("0 2 * * *", async () => {
     });
     await batch.commit();
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> setTrendingFTPods()",
-      err
-    );
+    console.log('Error in controllers/podController -> setTrendingFTPods()', err);
   }
 });
 
@@ -1243,9 +1164,7 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
   return new Promise<any[]>(async (resolve, reject) => {
     if (arrayToRemove && arrayToRemove.length !== 0) {
       arrayToRemove.forEach((item, i) => {
-        let index = fullArray.findIndex(
-          (itemFullArray) => itemFullArray.id === item.id
-        );
+        let index = fullArray.findIndex((itemFullArray) => itemFullArray.id === item.id);
 
         if (index && index === -1) {
           fullArray = fullArray.slice(index, 1);
@@ -1261,21 +1180,18 @@ const removeSomePodsFromArray = (fullArray, arrayToRemove): Promise<any[]> => {
   });
 };
 
-const getFTPods = exports.getFTPods = (pagination, lastId): Promise<any[]> => {
+const getFTPods = (exports.getFTPods = (pagination, lastId): Promise<any[]> => {
   return new Promise<any[]>(async (resolve, reject) => {
-    let podsFT : any;
+    let podsFT: any;
 
     if (lastId && lastId !== 'null') {
-      const podFTRef = db.collection(collections.podsFT)
-        .doc(lastId);
+      const podFTRef = db.collection(collections.podsFT).doc(lastId);
       const podFTGet = await podFTRef.get();
       const podFT: any = podFTGet.data();
 
-      podsFT = await db.collection(collections.podsFT).orderBy('Date')
-        .startAfter(podFT.Date).limit(6).get();
+      podsFT = await db.collection(collections.podsFT).orderBy('Date').startAfter(podFT.Date).limit(6).get();
     } else {
-      podsFT = await db.collection(collections.podsFT).orderBy('Date')
-        .limit(6).get();
+      podsFT = await db.collection(collections.podsFT).orderBy('Date').limit(6).get();
     }
 
     let array: any[] = [];
@@ -1286,7 +1202,7 @@ const getFTPods = exports.getFTPods = (pagination, lastId): Promise<any[]> => {
     });
     resolve(array);
   });
-};
+});
 
 exports.getFTPod = async (req: express.Request, res: express.Response) => {
   try {
@@ -1314,10 +1230,7 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
       pod.PostsArray = [];
       if (pod.Posts && pod.Posts.length > 0) {
         for (const post of pod.Posts) {
-          const podWallPostSnap = await db
-            .collection(collections.podWallPost)
-            .doc(post)
-            .get();
+          const podWallPostSnap = await db.collection(collections.podWallPost).doc(post).get();
           const podWallPostData: any = podWallPostSnap.data();
           podWallPostData.id = podWallPostSnap.id;
           pod.PostsArray.push(podWallPostData);
@@ -1327,20 +1240,14 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
       pod.VotingsArray = [];
       if (pod.Votings && pod.Votings.length > 0) {
         for (const voting of pod.Votings) {
-          const votingSnap = await db
-            .collection(collections.voting)
-            .doc(voting)
-            .get();
+          const votingSnap = await db.collection(collections.voting).doc(voting).get();
           const votingData: any = votingSnap.data();
           votingData.id = votingSnap.id;
           pod.VotingsArray.push(votingData);
         }
       }
 
-      const discordChatSnap = await db
-        .collection(collections.discordChat)
-        .doc(pod.DiscordId)
-        .get();
+      const discordChatSnap = await db.collection(collections.discordChat).doc(pod.DiscordId).get();
       const discordChatData: any = discordChatSnap.data();
       if (discordChatData && discordChatData.admin) {
         pod.DiscordAdminId = discordChatData.admin.id;
@@ -1348,22 +1255,16 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: pod });
     } else {
-      console.log(
-        "Error in controllers/podController -> getFTPod()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getFTPod()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> getFTPod()", err);
+    console.log('Error in controllers/podController -> getFTPod()', err);
     res.send({ success: false });
   }
 };
 
-exports.getFTPodTransactions = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getFTPodTransactions = async (req: express.Request, res: express.Response) => {
   try {
     let podId = req.params.podId;
     const txns: any[] = [];
@@ -1388,26 +1289,17 @@ exports.getFTPodTransactions = async (
       });
       res.send({ success: true, data: txns });
     } else {
-      console.log(
-        "Error in controllers/podController -> getNFTPodTransactions()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getNFTPodTransactions()",
-      err
-    );
+    console.log('Error in controllers/podController -> getNFTPodTransactions()', err);
     res.send({ success: false });
   }
 };
 
 // get price history and today prices, merged and sorted (by ascending date)
-exports.getFTPodPriceHistory = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getFTPodPriceHistory = async (req: express.Request, res: express.Response) => {
   try {
     // comparator function used to sort by ascending date
     const comparator = (a, b) => {
@@ -1438,25 +1330,16 @@ exports.getFTPodPriceHistory = async (
       data.sort(comparator);
       res.send({ success: true, data: data });
     } else {
-      console.log(
-        "Error in controllers/podController -> getFTPodTransactions()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getFTPodTransactions()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getFTPodTransactions()",
-      err
-    );
+    console.log('Error in controllers/podController -> getFTPodTransactions()', err);
     res.send({ success: false });
   }
 };
 // get supply history merged sorted by ascending date
-exports.getFTPodSupplyHistory = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getFTPodSupplyHistory = async (req: express.Request, res: express.Response) => {
   try {
     // comparator function used to sort by ascending date
     const comparator = (a, b) => {
@@ -1479,17 +1362,11 @@ exports.getFTPodSupplyHistory = async (
       data.sort(comparator);
       res.send({ success: true, data: data });
     } else {
-      console.log(
-        "Error in controllers/podController -> getFTPodSupplyHistory()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getFTPodSupplyHistory()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getFTPodSupplyHistory()",
-      err
-    );
+    console.log('Error in controllers/podController -> getFTPodSupplyHistory()', err);
     res.send({ success: false });
   }
 };
@@ -1503,10 +1380,7 @@ exports.getFTPodSupplyHistory = async (
  * @param req {userId as params}.
  * @param res {success, data{myNFTPods, otherNFTPods, trendingNFTPods} }. success: boolean that indicates if the opreaction is performed, data: containing the requested data
  */
-exports.getAllNFTPodsInfo = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
     const lastNFTPod = req.query.lastNFTPod;
     let allNFTPods: any[] = await getNFTPods(lastNFTPod);
@@ -1518,7 +1392,7 @@ exports.getAllNFTPodsInfo = async (
       },
     });
   } catch (err) {
-    console.log("Error in controllers/podController -> getOtherPods()", err);
+    console.log('Error in controllers/podController -> getOtherPods()', err);
     res.send({ success: false });
   }
 };
@@ -1532,7 +1406,7 @@ exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: user.myNFTPods });
   } catch (err) {
-    console.log("Error in controllers/podController -> getMyPods()", err);
+    console.log('Error in controllers/podController -> getMyPods()', err);
     res.send({ success: false });
   }
 };
@@ -1542,10 +1416,7 @@ exports.getMyPodsNFT = async (req: express.Request, res: express.Response) => {
  * @param req {userId as params}.
  * @param res {success, otherNFTPods}. success: boolean that indicates if the opreaction is performed, otherNFTPods contains the requested others pods
  */
-exports.getOtherPodsNFT = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getOtherPodsNFT = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
 
@@ -1555,9 +1426,7 @@ exports.getOtherPodsNFT = async (
 
     let query;
     for (const pod of user.myNFTPods) {
-      query = db
-        .collection(collections.podsNFT)
-        .where("PodAddress", "!=", pod.PodAddress);
+      query = db.collection(collections.podsNFT).where('PodAddress', '!=', pod.PodAddress);
     }
     if (!query) {
       query = db.collection(collections.podsNFT);
@@ -1571,7 +1440,7 @@ exports.getOtherPodsNFT = async (
 
     res.send({ success: true, data: podsNFT });
   } catch (err) {
-    console.log("Error in controllers/podController -> getOtherPodsNFT()", err);
+    console.log('Error in controllers/podController -> getOtherPodsNFT()', err);
     res.send({ success: false });
   }
 };
@@ -1581,10 +1450,7 @@ exports.getOtherPodsNFT = async (
  * @param req
  * @param res {success, data }. success: boolean that indicates if the opreaction is performed, data: containing the requested trending pods
  */
-exports.getTrendingPodsNFT = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response) => {
   try {
     const trendingNFTPods: any[] = [];
     const nftPodsSnap = await db.collection(collections.trendingPodsNFT).get();
@@ -1594,12 +1460,12 @@ exports.getTrendingPodsNFT = async (
 
     res.send({ success: true, data: trendingNFTPods });
   } catch (err) {
-    console.log("Error in controllers/podController -> getTrendingPods()", err);
+    console.log('Error in controllers/podController -> getTrendingPods()', err);
     res.send({ success: false });
   }
 };
 
-exports.setTrendingPodsNFT = cron.schedule("0 2 * * *", async () => {
+exports.setTrendingPodsNFT = cron.schedule('0 2 * * *', async () => {
   try {
     let allNFTPods: any[] = [];
     let podsNFT = await db.collection(collections.podsNFT).get();
@@ -1624,10 +1490,7 @@ exports.setTrendingPodsNFT = cron.schedule("0 2 * * *", async () => {
     });
     await batch.commit();
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> setTrendingNFTPods()",
-      err
-    );
+    console.log('Error in controllers/podController -> setTrendingNFTPods()', err);
   }
 });
 
@@ -1636,11 +1499,7 @@ const getNFTPods = (exports.getNFTPods = (lastNFTPod): Promise<any[]> => {
   return new Promise<any[]>(async (resolve, reject) => {
     let podsNFT;
     if (lastNFTPod) {
-      podsNFT = await db
-        .collection(collections.podsNFT)
-        .startAfter(lastNFTPod)
-        .limit(5)
-        .get();
+      podsNFT = await db.collection(collections.podsNFT).startAfter(lastNFTPod).limit(5).get();
     } else {
       podsNFT = await db.collection(collections.podsNFT).limit(5).get();
     }
@@ -1665,15 +1524,11 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
       const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
       // add selling orders
       const sellingOffers: any[] = [];
-      const sellingSnap = await podSnap.ref
-        .collection(collections.sellingOffers)
-        .get();
+      const sellingSnap = await podSnap.ref.collection(collections.sellingOffers).get();
       sellingSnap.forEach((doc) => sellingOffers.push(doc.data()));
       // add buying orders
       const buyingOffers: any[] = [];
-      const buyingSnap = await podSnap.ref
-        .collection(collections.buyingOffers)
-        .get();
+      const buyingSnap = await podSnap.ref.collection(collections.buyingOffers).get();
       buyingSnap.forEach((doc) => buyingOffers.push(doc.data()));
       res.send({
         success: true,
@@ -1684,14 +1539,11 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
         },
       });
     } else {
-      console.log(
-        "Error in controllers/podController -> getNFTPod()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getNFTPod()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> getNFTPod()", err);
+    console.log('Error in controllers/podController -> getNFTPod()', err);
     res.send({ success: false });
   }
 };
@@ -1703,10 +1555,7 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
  * royalty: [0,1] number, offers: object {amount: price} that represent the initial token supply
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.initiateNFTPod = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.initiateNFTPod = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const creator = body.Creator;
@@ -1738,14 +1587,8 @@ exports.initiateNFTPod = async (
       updateCommonFields(body, podAddress, false); // update common fields
       const podDocRef = db.collection(collections.podsNFT).doc(podAddress);
       // add zeros to graph
-      addZerosToHistory(
-        podDocRef.collection(collections.supplyHistory),
-        "supply"
-      );
-      addZerosToHistory(
-        podDocRef.collection(collections.priceHistory),
-        "price"
-      );
+      addZerosToHistory(podDocRef.collection(collections.supplyHistory), 'supply');
+      addZerosToHistory(podDocRef.collection(collections.priceHistory), 'price');
 
       // Update fields that only NFT Pods have
       const isDigital: boolean = body.IsDigital;
@@ -1769,10 +1612,7 @@ exports.initiateNFTPod = async (
                     otherItemId: ''
                 }
             });*/
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
       let myNFTPods: any[] = userData.myNFTPods || [];
       myNFTPods.push(podSnap.data());
 
@@ -1785,31 +1625,28 @@ exports.initiateNFTPod = async (
           userId: item.user,
           notification: {
             type: 56,
-            typeItemId: "user",
+            typeItemId: 'user',
             itemId: creator,
             follower: creator,
             pod: name,
-            comment: "",
-            token: "",
-            amount: "",
+            comment: '',
+            token: '',
+            amount: '',
             onlyInformation: false,
-            otherItemId: "",
+            otherItemId: '',
           },
         });
       });
       res.send({ data: podAddress, success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> initiateNFTPod(), blockchain success = false, ",
+        'Error in controllers/podController -> initiateNFTPod(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> initiateNFTPod(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> initiateNFTPod(): ', err);
     res.send({ success: false });
   }
 };
@@ -1845,51 +1682,48 @@ exports.newBuyOrder = async (req: express.Request, res: express.Response) => {
     );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
       const podData: any = podSnap.data();
       await notificationsController.addNotification({
         userId: buyerAddress,
         notification: {
           type: 20,
-          typeItemId: "user",
+          typeItemId: 'user',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: token,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       await notificationsController.addNotification({
         userId: podData.Creator,
         notification: {
           type: 21,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: token,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       res.send({ success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> newBuyOrder(), blockchain success = false, ",
+        'Error in controllers/podController -> newBuyOrder(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> newBuyOrder(): ", err);
+    console.log('Error in controllers/podController -> newBuyOrder(): ', err);
     res.send({ success: false });
   }
 };
@@ -1925,51 +1759,48 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
     );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
       const podData: any = podSnap.data();
       await notificationsController.addNotification({
         userId: sellerAddress,
         notification: {
           type: 22,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: token,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       await notificationsController.addNotification({
         userId: podData.Creator,
         notification: {
           type: 23,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
+          comment: '',
           token: token,
           amount: amount,
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       res.send({ success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> newSellOrder(), blockchain success = false, ",
+        'Error in controllers/podController -> newSellOrder(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> newSellOrder(): ", err);
+    console.log('Error in controllers/podController -> newSellOrder(): ', err);
     res.send({ success: false });
   }
 };
@@ -1979,10 +1810,7 @@ exports.newSellOrder = async (req: express.Request, res: express.Response) => {
  * @param req {podId, trader, orderId, amount}.
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.deleteBuyOrder = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.deleteBuyOrder = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const requesterAddress = body.RequesterAddress;
@@ -2003,60 +1831,50 @@ exports.deleteBuyOrder = async (
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // manually delete order
-      db.collection(collections.podsNFT)
-        .doc(podAddress)
-        .collection(collections.buyingOffers)
-        .doc(orderId)
-        .delete();
+      db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId).delete();
 
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
       const podData: any = podSnap.data();
       await notificationsController.addNotification({
         userId: requesterAddress,
         notification: {
           type: 24,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       await notificationsController.addNotification({
         userId: podData.Creator,
         notification: {
           type: 25,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       res.send({ success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> deleteBuyOrder(), blockchain success = false, ",
+        'Error in controllers/podController -> deleteBuyOrder(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> deleteBuyOrder(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> deleteBuyOrder(): ', err);
     res.send({ success: false });
   }
 };
@@ -2066,10 +1884,7 @@ exports.deleteBuyOrder = async (
  * @param req {podId, trader, orderId, amount}.
  * @param res {success}. success: boolean that indicates if the opreaction is performed.
  */
-exports.deleteSellOrder = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.deleteSellOrder = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const requesterAddress = body.RequesterAddress;
@@ -2090,60 +1905,50 @@ exports.deleteSellOrder = async (
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // manually delete order
-      db.collection(collections.podsNFT)
-        .doc(podAddress)
-        .collection(collections.sellingOffers)
-        .doc(orderId)
-        .delete();
+      db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId).delete();
 
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
       const podData: any = podSnap.data();
       await notificationsController.addNotification({
         userId: requesterAddress,
         notification: {
           type: 26,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       await notificationsController.addNotification({
         userId: podData.Creator,
         notification: {
           type: 27,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: podData.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       res.send({ success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ",
+        'Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> deleteSellOrder(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> deleteSellOrder(): ', err);
     res.send({ success: false });
   }
 };
@@ -2177,10 +1982,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
     );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
 
       let price = 0;
       const data: any = podSnap.data();
@@ -2197,13 +1999,10 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
       // add txn to pod
       const output = blockchainRes.output;
       const transactions = output.Transactions;
-      let tid = "";
+      let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        podSnap.ref
-          .collection(collections.podTransactions)
-          .doc(tid)
-          .set({ Transcations: txnArray });
+        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transcations: txnArray });
       }
       // add to PriceOf the day
       if (price) {
@@ -2217,30 +2016,27 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
         userId: sellerAddress,
         notification: {
           type: 28,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: data.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       res.send({ success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ",
+        'Error in controllers/podController -> deleteSellOrder(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> deleteSellOrder(): ",
-      err
-    );
+    console.log('Error in controllers/podController -> deleteSellOrder(): ', err);
     res.send({ success: false });
   }
 };
@@ -2273,10 +2069,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
     );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
-      const podSnap = await db
-        .collection(collections.podsNFT)
-        .doc(podAddress)
-        .get();
+      const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
 
       let price = 0;
       const data: any = podSnap.data();
@@ -2293,13 +2086,10 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
       // add txn to pod
       const output = blockchainRes.output;
       const transactions = output.Transactions;
-      let tid = "";
+      let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        podSnap.ref
-          .collection(collections.podTransactions)
-          .doc(tid)
-          .set({ Transcations: txnArray });
+        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transcations: txnArray });
       }
       // add to PriceOf the day
       if (price) {
@@ -2313,27 +2103,27 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
         userId: buyerAddress,
         notification: {
           type: 29,
-          typeItemId: "NFTPod",
+          typeItemId: 'NFTPod',
           itemId: podAddress,
-          follower: "",
+          follower: '',
           pod: data.Name,
-          comment: "",
-          token: "",
-          amount: "",
+          comment: '',
+          token: '',
+          amount: '',
           onlyInformation: false,
-          otherItemId: "",
+          otherItemId: '',
         },
       });
       res.send({ success: true });
     } else {
       console.log(
-        "Error in controllers/podController -> buyPodTokens(), blockchain success = false, ",
+        'Error in controllers/podController -> buyPodTokens(), blockchain success = false, ',
         blockchainRes.message
       );
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/podController -> buyPodTokens(): ", err);
+    console.log('Error in controllers/podController -> buyPodTokens(): ', err);
     res.send({ success: false });
   }
 };
@@ -2343,10 +2133,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
  * @param req {podId}. podId: identifier of the pod
  * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: transaction array
  */
-exports.getNFTPodTransactions = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getNFTPodTransactions = async (req: express.Request, res: express.Response) => {
   try {
     let podId = req.params.podId;
     const txns: any[] = [];
@@ -2361,17 +2148,11 @@ exports.getNFTPodTransactions = async (
       });
       res.send({ success: true, data: txns });
     } else {
-      console.log(
-        "Error in controllers/podController -> getNFTPodTransactions()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getNFTPodTransactions()",
-      err
-    );
+    console.log('Error in controllers/podController -> getNFTPodTransactions()', err);
     res.send({ success: false });
   }
 };
@@ -2381,10 +2162,7 @@ exports.getNFTPodTransactions = async (
  * @param req {podId}. podId: identifier of the pod
  * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: price and supply history arrays
  */
-exports.getNFTPodHistories = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.getNFTPodHistories = async (req: express.Request, res: express.Response) => {
   try {
     // comparator function used to sort by ascending date
     const comparator = (a, b) => {
@@ -2434,17 +2212,11 @@ exports.getNFTPodHistories = async (
         },
       });
     } else {
-      console.log(
-        "Error in controllers/podController -> getNFTPodHistories()",
-        "There's no pod id..."
-      );
+      console.log('Error in controllers/podController -> getNFTPodHistories()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> getNFTPodHistories()",
-      err
-    );
+    console.log('Error in controllers/podController -> getNFTPodHistories()', err);
     res.send({ success: false });
   }
 };
@@ -2457,10 +2229,7 @@ exports.getNFTPodHistories = async (
 exports.checkPodInfo = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
-    const podSnap = await db
-      .collection(collections.podsFT)
-      .where("Name", "==", body.podName)
-      .get();
+    const podSnap = await db.collection(collections.podsFT).where('Name', '==', body.podName).get();
     const podCheckSize: number = podSnap.size;
     let podExists: boolean = podCheckSize === 1 ? true : false;
 
@@ -2469,7 +2238,7 @@ exports.checkPodInfo = async (req: express.Request, res: express.Response) => {
       data: { podExists: podExists },
     });
   } catch (e) {
-    return "Error in controllers/podController -> checkPodInfo(): " + e;
+    return 'Error in controllers/podController -> checkPodInfo(): ' + e;
   }
 };
 
@@ -2624,11 +2393,9 @@ exports.checkPodInfo = async (req: express.Request, res: express.Response) => {
  * NFT-FT cron job, scheduled every day at 00:00. For each pod, this function gets the lowest sale price of the day from the "SalesOfTheDay" colection
  * and add this to "PriceHistory" colection. Then resets (clearing) "SalesOfTheDay".
  */
-exports.managePriceHistory = cron.schedule("0 0 * * *", async () => {
+exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
   try {
-    console.log(
-      "********* Pod managePriceHistory() cron job started *********"
-    );
+    console.log('********* Pod managePriceHistory() cron job started *********');
     let podsSnap = await db.collection(collections.podsFT).get();
     // FT
     podsSnap.forEach(async (pod) => {
@@ -2650,9 +2417,7 @@ exports.managePriceHistory = cron.schedule("0 0 * * *", async () => {
         });
       }
       // reset (empty) PriceOfTheDay
-      const priceOfTheDaySnap = await pod.ref
-        .collection(collections.priceOfTheDay)
-        .get();
+      const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get();
       priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
     });
     // NFT
@@ -2662,20 +2427,17 @@ exports.managePriceHistory = cron.schedule("0 0 * * *", async () => {
       let lowestPrice = Infinity;
       let date = Date.now();
       // get lowest price from Sales Book
-      const sellingOffersSnap = await pod.ref
-        .collection(collections.sellingOffers)
-        .get();
+      const sellingOffersSnap = await pod.ref.collection(collections.sellingOffers).get();
       sellingOffersSnap.forEach((sellingOffer) => {
         const offerData: any = sellingOffer.data();
-        if (offerData.Price && offerData.Price < lowestPrice)
-          lowestPrice = offerData.Price;
+        if (offerData.Price && offerData.Price < lowestPrice) lowestPrice = offerData.Price;
       });
 
       // get price for nearest (date) price history, to use in case that have no active sale offers.
       if (lowestPrice == Infinity) {
         const priceHistorySnap = await pod.ref
           .collection(collections.priceHistory)
-          .orderBy("date", "desc")
+          .orderBy('date', 'desc')
           .limit(1)
           .get();
         if (priceHistorySnap.docs.length) {
@@ -2692,9 +2454,7 @@ exports.managePriceHistory = cron.schedule("0 0 * * *", async () => {
         });
       }
       // reset (empty) PriceOfTheDay
-      const priceOfTheDaySnap = await pod.ref
-        .collection(collections.priceOfTheDay)
-        .get();
+      const priceOfTheDaySnap = await pod.ref.collection(collections.priceOfTheDay).get();
       priceOfTheDaySnap.forEach((doc) => doc.ref.delete());
 
       // --- add to supply history ---
@@ -2705,11 +2465,8 @@ exports.managePriceHistory = cron.schedule("0 0 * * *", async () => {
         date: date,
       });
     });
-    console.log("--------- Pod managePriceHistory() finished ---------");
+    console.log('--------- Pod managePriceHistory() finished ---------');
   } catch (err) {
-    console.log(
-      "Error in controllers/podController -> managePriceHistory()",
-      err
-    );
+    console.log('Error in controllers/podController -> managePriceHistory()', err);
   }
 });
