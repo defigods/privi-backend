@@ -49,21 +49,12 @@ let upload2 = multer({
 
 // COMMON
 
-router.post(
-  "/changePodPhoto",
-  authenticateJWT,
-  upload.single("image"),
-  podController.changePodPhoto
-);
+router.post("/changePodPhoto", authenticateJWT, upload.single("image"), podController.changePodPhoto);
 router.get("/FT/getPhoto/:podId", podController.getPhotoById);
 router.post("/followPod", authenticateJWT, podController.followPod);
 router.post("/unFollowPod", authenticateJWT, podController.unFollowPod);
 router.post("/inviteRole", authenticateJWT, podController.inviteRole);
-router.post(
-  "/replyRoleInvitation",
-  authenticateJWT,
-  podController.replyRoleInvitation
-);
+router.post("/replyRoleInvitation", authenticateJWT, podController.replyRoleInvitation);
 router.post("/inviteView", authenticateJWT, podController.inviteView);
 
 // FT
