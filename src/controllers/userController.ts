@@ -487,6 +487,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
           awards: [],
           creds: 0,
           badges: [],
+          points: 0,
           followings: [],
           numFollowings: 0,
           followers: [],
@@ -681,6 +682,7 @@ interface BasicInfo {
   name: string;
   trustScore: number;
   endorsementScore: number;
+  points: number;
   awards: any[];
   creds: number;
   badges: any[];
@@ -712,6 +714,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       awards: [],
       creds: 0,
       badges: [],
+      points: 0,
       numFollowings: 0,
       followings: [],
       bio: "",
@@ -744,6 +747,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.creds = userData.creds || 0;
       basicInfo.awards = userData.awards || [];
       basicInfo.badges = userData.badges || [];
+      basicInfo.points = userData.points || 0;
       basicInfo.numFollowers = userData.numFollowers || 0;
       basicInfo.numFollowings = userData.numFollowings || 0;
       basicInfo.followers = userData.followers || [];
@@ -2228,6 +2232,222 @@ const getBadgePhotoById = async (
   }
 };
 
+// Points and Levels
+const getUserScores = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+
+    if (userId) {
+      const userRef = db.collection(collections.user).doc(userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+      
+      // Scores:
+      let pointsHour = 0;
+      let pointsWonToday = 0;
+      let level = user.level || 1;
+      let points = user.points || 0;
+      let badges = user.badges;
+      let badgesToday:any = [];
+      let today = new Date();
+      let hour = new Date();
+      let yesterday = new Date(today);
+      hour.setHours(hour.getHours() - 1);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const levelPoints =  [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
+      
+      function diff_hours(dt2, dt1)  {
+        var diff =(dt2.getTime() - dt1.getTime()) / 1000;
+        diff /= (60 * 60);
+        return Math.abs(Math.round(diff));
+      }
+
+      // Points
+      if(points && points.length > 0){
+        points.forEach(function(point){
+          let pointDate = new Date(point.date);
+          // Points earned today
+          if(diff_hours(pointDate, today) < 24)
+            pointsWonToday = pointsWonToday + point
+          // Points earned last hour
+          if(diff_hours(pointDate, today) < 1)
+            pointsHour = pointsHour + point
+        })
+      }
+
+      // Badges earned today
+      if(badges && badges.length > 0){
+        badges.forEach(function(badge){
+          if(badge.date > yesterday)
+            badgesToday.push(badge);
+        })
+      }
+
+      let response: any = {
+        level: level,
+        badges: badges,
+        points: points,
+        levelPoints: levelPoints,
+        badgesToday: badgesToday,
+        pointsWonToday: pointsWonToday,
+        pointsHour: pointsHour
+      };
+
+      res.send({ success: true, data: response });
+    } else {
+      console.log(
+        "Error in controllers/userController -> getUserScores()",
+        "Missing Information"
+      );
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userController -> getUserScoress()", err);
+    res.send({ success: false });
+  }
+};
+
+const getStatistics = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+
+    if (userId) {
+      const userRef = db.collection(collections.user).doc(userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+      const userLevel: number = user.level;
+
+      // Statistics:
+      let today = new Date();
+      let yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const levelPoints =  [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
+
+      // totalPointsToday
+      let pointsGet = await db.collection(collections.points).where("date", ">", yesterday).get();
+      let totalPointsToday = pointsGet.size;
+      // totalBadgesToday
+      let badgesGet = await db.collection(collections.badgeToken).where("date", ">", yesterday).get();
+      let totalBadgesToday = badgesGet.size;
+
+      // totalUsersLevels userLevel
+      const userCollection = db.collection(collections.user);
+      const usersLevelGet = await userCollection.where("level", "==", userLevel).get()
+      let totalLevelUsers = usersLevelGet.size;
+      
+      // totalUsersLevels1
+      const users1Get = await userCollection.where("level", "==", 1).get()
+      let totalUsersLevel1 = users1Get.size;
+      // totalUsersLevel1
+      const users2Get = await userCollection.where("level", "==", 2).get()
+      let totalUsersLevel2 = users2Get.size;
+      // totalUsersLevel3
+      const users3Get = await userCollection.where("level", "==", 3).get()
+      let totalUsersLevel3 = users3Get.size;
+      // totalUsersLevel4
+      const users4Get = await userCollection.where("level", "==", 4).get()
+      let totalUsersLevel4 = users4Get.size;
+      // totalUsersLevel5
+      const users5Get = await userCollection.where("level", "==", 5).get()
+      let totalUsersLevel5 = users5Get.size;
+      // totalUsersLevel6
+      const users6Get = await userCollection.where("level", "==", 6).get()
+      let totalUsersLevel6 = users6Get.size;
+      // totalUsersLevel7
+      const users7Get = await userCollection.where("level", "==", 7).get()
+      let totalUsersLevel7 = users7Get.size;
+      // totalUsersLevel8
+      const users8Get = await userCollection.where("level", "==", 8).get()
+      let totalUsersLevel8 = users8Get.size;
+
+      // ranking
+      let usersSnap = await db
+      .collection(collections.user)
+      .orderBy("points") // todo fix this order by total points user
+      .limit(12)
+      .get();
+
+      let ranking:any = [];
+      const docs = usersSnap.docs;
+      for (let i = 0; i < docs.length; i++) {
+          const doc = docs[i];
+          const data: any = doc.data();
+          const user: any = {
+            user: data.id,
+            points: data.points[0].currentPoints,
+            level: data.level
+          }
+          ranking.push(user);
+      }
+
+      // history
+      let historySnap = await db
+      .collection(collections.points)
+      .orderBy("date")
+      .limit(12)
+      .get();
+
+      let history:any = [];
+      const docs2 = historySnap.docs;
+      for (let i = 0; i < docs2.length; i++) {
+          const doc2 = docs2[i];
+          const data2: any = doc2.data();
+          // adapt to Points document in fb!
+          const record: any = {
+            user: data2.id, 
+            name: data2.name, 
+            date: data2.date,
+            points: data2.points,
+          }
+          history.push(record);
+      }
+      
+      let usersLevelData = [
+        { x: 1, y: totalUsersLevel1 },
+        { x: 2, y: totalUsersLevel2 },
+        { x: 3, y: totalUsersLevel3 },
+        { x: 4, y: totalUsersLevel4 },
+        { x: 5, y: totalUsersLevel5 },
+        { x: 6, y: totalUsersLevel6 },
+        { x: 7, y: totalUsersLevel7 },
+        { x: 8, y: totalUsersLevel8 },
+    ]
+
+      let response: any = {
+        levelPoints: levelPoints,
+        totalLevelUsers: totalLevelUsers,
+        totalPointsToday: totalPointsToday,
+        totalBadgesToday: totalBadgesToday,
+        usersLevelData: usersLevelData,
+        ranking: ranking,
+        history: history
+      };
+
+      res.send({ success: true, data: response });
+    } else {
+      console.log(
+        "Error in controllers/userController -> getStatistics()",
+        "Missing Information"
+      );
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userController -> getStatistics()", err);
+    // res.send({ success: false });
+    let response: any = {
+      levelPoints: 0,
+      totalLevelUsers: 0,
+      totalPointsToday: 0,
+      totalBadgesToday: 0,
+      usersLevelData: [],
+      ranking: [],
+      history: []
+    };
+
+    res.send({ success: true, data: response });
+  }
+};
+
 const getIssuesAndProposals = async (
   req: express.Request,
   res: express.Response
@@ -2956,5 +3176,7 @@ module.exports = {
   removeNotification,
   inviteUserToPod,
   getAllInfoProfile,
-  getSuggestedUsers
+  getSuggestedUsers,
+  getUserScores,
+  getStatistics
 };
