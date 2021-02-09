@@ -2764,8 +2764,8 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
 async function getRandomForSuggestedUser() {
   let weights = [0.35, 0.3, 0.2, 0.15]; // probabilities
   let results = [0, 1, 2, 3]; // values to return
-  let probArr: any[] = [];
-  let res: any[] = [];
+  let probArr: number[] = [];
+  let res: number[] = [];
   let num = Math.random(),
     s = 0,
     lastIndex = weights.length - 1;
@@ -2784,9 +2784,13 @@ async function getRandomForSuggestedUser() {
       probArr.push(results[lastIndex]);
     }
   }
+
   for (let i = 0; i < lastIndex; i++) {
-    res[probArr[i]] = ++res[probArr[i]];
-    console.log(res, probArr, ++res[probArr[i]]);
+    if (!res[probArr[i]]) {
+      res[probArr[i]] = 1
+    } else {
+      res[probArr[i]] = ++res[probArr[i]];
+    }
   }
 
   return res;
