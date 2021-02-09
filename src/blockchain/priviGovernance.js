@@ -30,10 +30,9 @@ module.exports.getUserStaking = async (userAddress, token, caller) => {
         method: 'get',
         headers: { 'Content-Type': 'application/json' },
         url: api.blockchainPriviGovernanceAPI + "/getUserStaking",
-        data: {
-            UserAddress: userAddress,
+        params: {
+            Address: userAddress,
             Token: token,
-            Caller: caller
         }
     }
     let blockchainRes = await axios(config);
