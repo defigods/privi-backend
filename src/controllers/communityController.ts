@@ -563,6 +563,7 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
     const amount = body.Amount;
     const tokenType = body.TokenType;
 
+
     let price;
     if (tokenType && tokenType == 'Ethereum') {
       const commSnap = await db.collection(collections.community).doc(communityAddress).get();
@@ -578,14 +579,16 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
     }
     const hash = body.Hash;
     const signature = body.Signature;
+    const externalPrice = 0.
 
     const blockchainRes = await community.buyCommunityToken(
       investor,
       communityAddress,
       amount,
+      externalPrice,
       hash,
       signature,
-      'PRIVI'
+      apiKey
     );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
