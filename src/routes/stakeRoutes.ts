@@ -17,12 +17,8 @@ router.post(
   stakeController.verifyPodStaking
 );
 
-router.get("/getStakedAmounts", stakeController.getStakedAmounts);
-router.get(
-  "/getStakingAmount/:userId",
-  authenticateJWT,
-  stakeController.getStakingAmount
-);
+router.get("/getUserStakedInfo", authenticateJWT, stakeController.getUserStakedInfo);
+
 router.get(
   "/getTotalMembers/:token",
   authenticateJWT,
