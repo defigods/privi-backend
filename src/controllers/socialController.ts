@@ -81,12 +81,13 @@ exports.getSocialTokens = async (req: express.Request, res: express.Response) =>
         const { address } = req.query;
         const retData: any[] = [];
         // get those social tokens which the user is the creator or has some balance
-        const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, apiKey);
+        const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, 'PRIVI');
         if (blockchainRes && blockchainRes.success) {
             const balances = blockchainRes.output;
             const socialSnap = await db.collection(collections.socialPools).get();
             socialSnap.forEach((doc) => {
                 const data: any = doc.data();
+                data.id = doc.id;
                 if (balances[data.TokenSymbol]) {
                     let marketPrice = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TragetPrice, data.TargetSupply);
                     retData.push({
