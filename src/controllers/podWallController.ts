@@ -6,6 +6,7 @@ import fs from "fs";
 
 const blogController = require('./blogController');
 const notificationsController = require('./notificationsController');
+const tasks = require("./tasksController");
 
 exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -310,7 +311,12 @@ exports.makeResponsePodWallPost = async (req: express.Request, res: express.Resp
         }
       });
 
-      res.send({ success: true, data: responses });
+      if (responses.length == 1) {
+        let task = await tasks.updateTask(body.userId, "Make your first comment")
+        res.send({success: true, data: responses, task: task});
+      }
+
+      res.send({success: true, data: responses});
 
     } else {
       console.log('Error in controllers/podWallController -> makeResponsePodWallPost()', "Missing data provided");

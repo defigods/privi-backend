@@ -21,6 +21,7 @@ import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
 import { sockets } from './serverController';
 
+const tasks = require("./tasksController");
 const bcrypt = require('bcrypt');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const jwt = require('jsonwebtoken');
@@ -1259,25 +1260,34 @@ const followUser = async (req: express.Request, res: express.Response) => {
     const userToFollowData: any = userToFollowGet.data();
 
     let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
+    let userFollowersLength = userToFollowData.followers.length;
     if (!alreadyFollower) {
       userToFollowData.followers.push({
         user: body.user.id,
         accepted: false,
       });
     }
-
+    let task;
+    let userFollowersLengthAfter = user.followings.length;
+    if (userFollowersLength == 4 && userFollowersLengthAfter == 5) {
+      task = await tasks.updateTask(userToFollowData.user, "Follow 5 people");
+    }
     await userToFollowRef.update({
       followers: userToFollowData.followers,
     });
 
     let alreadyFollowing = user.followings.find((item) => item.user === body.user.id);
+    let userFollowingsLength = user.followings.length;
     if (!alreadyFollowing) {
       user.followings.push({
         user: body.userToFollow.id,
         accepted: false,
       });
     }
-
+    let userFollowingsLengthAfter = user.followings.length;
+    if (userFollowingsLength == 4 && userFollowingsLengthAfter == 5) {
+      task = tasks.updateTask(body.user.id, "Follow 5 people")
+    }
     await userRef.update({
       followings: user.followings,
     });
@@ -1297,7 +1307,10 @@ const followUser = async (req: express.Request, res: express.Response) => {
         otherItemId: '',
       },
     });
-    res.send({ success: true, data: userToFollowData });
+    if (task) {
+      res.send({success: true, data: userToFollowData, task: task});
+    }
+    res.send({success: true, data: userToFollowData});
   } catch (err) {
     console.log('Error in controllers/followUser -> followUser()', err);
     res.send({ success: false, error: err });
@@ -1864,6 +1877,36 @@ const getBadgesFunction = (userId: string) => {
   });
 };
 
+const getBadgeBySymbol = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const badgeSymbol = body.badgeSymbol;
+    console.log("BADGEEEEEE: " + badgeSymbol)
+    if (badgeSymbol) {
+      const badgeRef = await db.collection(collections.badges).where('Symbol', '==', badgeSymbol).get();
+
+      console.log("REFFFF: " + JSON.stringify(badgeRef))
+      badgeRef.forEach((doc) => {
+        let badge = doc.data();
+        if (badge) {
+
+          console.log("OKKKKKKKK: " + badgeSymbol)
+          res.send({ success: true, data: badge });
+        }
+        else {
+
+          console.log("NOOOOO: " + badgeSymbol)
+          console.log('Error in controllers/userController -> getBadgeBySymbol()', "Badge not found...");
+          res.send({ success: false });
+        }
+      });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userController -> getBadgeBySymbol()', err);
+    res.send({ success: false });
+  }
+};
+
 const createBadge = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -1997,7 +2040,7 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
       let pointsHour = 0;
       let pointsWonToday = 0;
       let level = user.level || 1;
-      let points = user.points || 0;
+      let points = user.Points || 0;
       let badges = user.badges;
       let badgesToday:any = [];
       let today = new Date();
@@ -2066,7 +2109,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       const userRef = db.collection(collections.user).doc(userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
-      const userLevel: number = user.level;
+      const userLevel: number = user.level || 1;
 
       // Statistics:
       let today = new Date();
@@ -2075,17 +2118,18 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       const levelPoints =  [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
 
       // totalPointsToday
-      let pointsGet = await db.collection(collections.points).where("date", ">", yesterday).get();
-      let totalPointsToday = pointsGet.size;
-      // totalBadgesToday
-      let badgesGet = await db.collection(collections.badges).where("date", ">", yesterday).get();
-      let totalBadgesToday = badgesGet.size;
+      // let pointsGet = await db.collection(collections.points).where("date", ">", yesterday).get();
+      // let totalPointsToday = pointsGet.size;
+         let totalPointsToday = 0
+      // let badgesGet = await db.collection(collections.badges).where("date", ">", yesterday).get();
+      // let totalBadgesToday = badgesGet.size;
+      let totalBadgesToday = 0
 
       // totalUsersLevels userLevel
       const userCollection = db.collection(collections.user);
       const usersLevelGet = await userCollection.where("level", "==", userLevel).get()
       let totalLevelUsers = usersLevelGet.size;
-
+      
       // totalUsersLevels1
       const users1Get = await userCollection.where("level", "==", 1).get()
       let totalUsersLevel1 = users1Get.size;
@@ -2111,32 +2155,33 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       const users8Get = await userCollection.where("level", "==", 8).get()
       let totalUsersLevel8 = users8Get.size;
 
+      console.log("222: " + totalUsersLevel1 + totalUsersLevel2)
       // ranking
-      let usersSnap = await db
-      .collection(collections.user)
-      .orderBy("points")
-      .limit(12)
-      .get();
+      // let usersSnap = await db
+      // .collection(collections.user)
+      // .orderBy("points")
+      // .limit(12)
+      // .get();
 
       let ranking:any = [];
-      const docs = usersSnap.docs;
-      for (let i = 0; i < docs.length; i++) {
-          const doc = docs[i];
-          const data: any = doc.data();
-          const user: any = {
-            user: data.id,
-            points: data.points[0].currentPoints,
-            level: data.level
-          }
-          ranking.push(user);
-      }
+      // const docs = usersSnap.docs;
+      // for (let i = 0; i < docs.length; i++) {
+      //     const doc = docs[i];
+      //     const data: any = doc.data();
+      //     const user: any = {
+      //       user: data.id,
+      //       points: data.points[0].currentPoints,
+      //       level: data.level
+      //     }
+      //     ranking.push(user);
+      // }
 
       // history
       let historySnap = await db
-      .collection(collections.points)
-      .orderBy("date")
-      .limit(12)
-      .get();
+        .collection(collections.points)
+        .orderBy("date")
+        .limit(12)
+        .get();
 
       let history:any = [];
       const docs2 = historySnap.docs;
@@ -2279,6 +2324,7 @@ const createProposal = async (req: express.Request, res: express.Response) => {
           item: body.item,
           itemType: body.itemType,
           itemId: body.itemId,
+          isReachResponses: false,
           responses: [],
         });
       });
@@ -2357,7 +2403,13 @@ const responseProposal = async (req: express.Request, res: express.Response) => 
       await proposalRef.update({
         responses: proposal.responses,
       });
-      res.send({ success: true, data: proposal });
+
+      if (proposal.responses.length >= 10 && proposal.isReachResponses) {
+        let task = await tasks.updateTask(proposal.userId, "Create 1 Proposal in Governance that receives 10 or more responses");
+        await proposalRef.update({isReachResponses: true});
+        res.send({success: true, data: proposal, task: task})
+      }
+      res.send({success: true, data: proposal});
     } else {
       console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
       res.send({ success: false });
@@ -2508,15 +2560,28 @@ const updateUserCred = (userId, sum) => {
       const user: any = userGet.data();
 
       let creds = user.creds;
+      let credsForTask = user.credsForTask;
+
       if (sum) {
         creds = creds + 1;
       } else {
         creds = creds - 1;
       }
+      if (creds >= 15 && !credsForTask) {
+        credsForTask = true
+        await userRef.update({
+          creds: creds,
+          credsForTask: credsForTask
+        });
 
-      await userRef.update({
-        creds: creds,
-      });
+        let task = await tasks.updateTask(userId, "Receive 15 creds")
+        user.task = task;
+        resolve(user);
+      } else {
+        await userRef.update({
+          creds: creds,
+        });
+      }
 
       user.creds = creds;
 
@@ -2647,7 +2712,6 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
           const userRef = db.collection(collections.user).doc(usr.user);
           const userGet = await userRef.get();
           const user: any = userGet.data();
-
           sugUsers.add(user);
           count--;
         }
@@ -2754,7 +2818,7 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
         }
       }
     }
-    res.send({ success: true, data: sugUsers });
+    res.send({success: true, data: Array.from(sugUsers)});
   } catch (e) {
     console.log('Error in controllers/userController -> getSuggestedUsers()', e);
     res.send({ success: false, error: e });
@@ -2767,8 +2831,8 @@ async function getRandomForSuggestedUser() {
   let probArr: number[] = [];
   let res: number[] = [];
   let num = Math.random(),
-    s = 0,
-    lastIndex = weights.length - 1;
+      s = 0,
+      lastIndex = weights.length - 1;
 
   for (let i = 0; i < 5; ++i) {
     let notAdded = true;
@@ -2823,6 +2887,7 @@ module.exports = {
   getPhotoById,
   getUserList,
   getBadges,
+  getBadgeBySymbol,
   createBadge,
   changeBadgePhoto,
   getIssuesAndProposals,
