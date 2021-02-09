@@ -1,12 +1,12 @@
-import express from "express";
+import express from 'express';
 // import * as fs from 'fs';
 // import * as path from 'path';
 // import { stringify } from 'querystring';
-import collections from "../firebase/collections";
-import dataProtocol from "../blockchain/dataProtocol";
-import coinBalance from "../blockchain/coinBalance";
-import { db } from "../firebase/firebase";
-import badge from "../blockchain/badge";
+import collections from '../firebase/collections';
+import dataProtocol from '../blockchain/dataProtocol';
+import coinBalance from '../blockchain/coinBalance';
+import { db } from '../firebase/firebase';
+import badge from '../blockchain/badge';
 import {
   getUidFromEmail,
   generateUniqueId,
@@ -14,43 +14,37 @@ import {
   getRateOfChangeAsMap,
   singTransaction,
   updateFirebase,
-} from "../functions/functions";
-import path from "path";
-import fs from "fs";
-import configuration from "../constants/configuration";
-import {sendEmailValidation, sendForgotPasswordEmail,} from "../email_templates/emailTemplates";
-import {sockets} from "./serverController";
+} from '../functions/functions';
+import path from 'path';
+import fs from 'fs';
+import configuration from '../constants/configuration';
+import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
+import { sockets } from './serverController';
 
-const bcrypt = require("bcrypt");
-const FieldValue = require("firebase-admin").firestore.FieldValue;
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-const bip39 = require("bip39");
-const hdkey = require("hdkey");
-const {
-  privateToPublic,
-  publicToAddress,
-  toChecksumAddress,
-} = require("ethereumjs-util");
-const { PRIVI_WALLET_PATH } = require("../constants/configuration");
+const bcrypt = require('bcrypt');
+const FieldValue = require('firebase-admin').firestore.FieldValue;
+const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
+const bip39 = require('bip39');
+const hdkey = require('hdkey');
+const { privateToPublic, publicToAddress, toChecksumAddress } = require('ethereumjs-util');
+const { PRIVI_WALLET_PATH } = require('../constants/configuration');
 
 // require('dotenv').config();
 //const apiKey = process.env.API_KEY;
-const notificationsController = require("./notificationsController");
+const notificationsController = require('./notificationsController');
 
-const apiKey = "PRIVI"; // just for now
+const apiKey = 'PRIVI'; // just for now
 
 const emailValidation = async (req: express.Request, res: express.Response) => {
   let success = false;
-  let message = "";
+  let message = '';
   // let message_key = "";
 
   const validation_slug = req.params.validation_slug;
 
-  const decodeValidationSlug = Buffer.from(validation_slug, "base64").toString(
-    "ascii"
-  );
-  const split = decodeValidationSlug.split("_");
+  const decodeValidationSlug = Buffer.from(validation_slug, 'base64').toString('ascii');
+  const split = decodeValidationSlug.split('_');
   if (split.length == 2) {
     const uid = split[0];
     const validationSecret = split[1];
@@ -61,37 +55,36 @@ const emailValidation = async (req: express.Request, res: express.Response) => {
     const user: any = userGet.data();
 
     if (user == null) {
-      message = "user not found";
+      message = 'user not found';
       // message_key = "USER_NOT_FOUND";
     } else {
       if (user.isEmailValidated) {
-        message = "user already validated";
+        message = 'user already validated';
         // message_key = "USER_ALREADY_VALIDATED";
       } else {
         if (user.validationSecret == validationSecret) {
           // update user
           user.isEmailValidated = true;
-          user.validationSecret = "";
+          user.validationSecret = '';
 
           db.collection(collections.user).doc(uid).update(user);
 
-          message =
-            "We have successfully verified your email address, please log in here https://privibeta.web.app/";
+          message = 'We have successfully verified your email address, please log in here https://privibeta.web.app/';
           // message_key = "VALIDATION_SUCCESS";
 
           success = true;
         } else {
-          message = "failed to validate user";
+          message = 'failed to validate user';
           // message_key = "INVALID_VALIDATION_SECRET";
         }
       }
     }
   } else {
-    message = "invalid validation link";
+    message = 'invalid validation link';
     // message_key = "INVALID_VALIDATION_LINK";
   }
 
-  res.setHeader("Content-Type", "text/html");
+  res.setHeader('Content-Type', 'text/html');
   res.send(message);
 }; // emailValidation
 
@@ -100,32 +93,27 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
 
   const email = body.email;
   if (email) {
-    const user = await db
-      .collection(collections.user)
-      .where("email", "==", email)
-      .get();
+    const user = await db.collection(collections.user).where('email', '==', email).get();
 
     if (user.empty) {
-      console.log("not found");
-      res.send({ success: false, message: "user not found" });
+      console.log('not found');
+      res.send({ success: false, message: 'user not found' });
     } else {
       // create a temporary password
-      let tempPassword = crypto.randomBytes(8).toString("hex");
+      let tempPassword = crypto.randomBytes(8).toString('hex');
       // console.log("temporary password:", tempPassword);
 
       const data = user.docs[0].data();
 
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash(tempPassword, salt);
-      data["temp_password"] = hash;
+      data['temp_password'] = hash;
 
       let expiryDate = new Date();
-      expiryDate.setDate(
-        new Date().getDate() + configuration.FORGOT_PASSWORD_EXPIRY_DAYS
-      );
-      data["temp_password_expiry"] = expiryDate.getTime(); // 1 day temporary password expiry
+      expiryDate.setDate(new Date().getDate() + configuration.FORGOT_PASSWORD_EXPIRY_DAYS);
+      data['temp_password_expiry'] = expiryDate.getTime(); // 1 day temporary password expiry
 
-      data["lastUpdate"] = Date.now();
+      data['lastUpdate'] = Date.now();
 
       // save to db
       db.collection(collections.user).doc(user.docs[0].id).update(data);
@@ -134,46 +122,40 @@ const forgotPassword = async (req: express.Request, res: express.Response) => {
       if (successEmail) {
         res.send({
           success: true,
-          message: "Temporary password sent to email.",
+          message: 'Temporary password sent to email.',
         });
       } else {
         res.send({
           success: false,
-          message: "Failed to send temporary password email.",
+          message: 'Failed to send temporary password email.',
         });
       }
     }
   } else {
-    console.log("email required");
-    res.send({ success: false, message: "email required" });
+    console.log('email required');
+    res.send({ success: false, message: 'email required' });
   }
 }; // forgotPassword
 
-const resendEmailValidation = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const resendEmailValidation = async (req: express.Request, res: express.Response) => {
   const body = req.body;
 
   const email = body.email;
   if (email) {
-    const user = await db
-      .collection(collections.user)
-      .where("email", "==", email)
-      .get();
+    const user = await db.collection(collections.user).where('email', '==', email).get();
 
     if (user.empty) {
-      console.log("not found");
-      res.send({ success: false, message: "user not found" });
+      console.log('not found');
+      res.send({ success: false, message: 'user not found' });
     } else {
       const data = user.docs[0].data();
 
       if (data.isEmailValidated) {
-        res.send({ success: false, message: "user already validated" });
+        res.send({ success: false, message: 'user already validated' });
       } else {
         if (!data.validationSecret) {
           // no validation secret field
-          data.validationSecret = crypto.randomBytes(8).toString("hex");
+          data.validationSecret = crypto.randomBytes(8).toString('hex');
           data.isEmailValidated = false;
 
           // save to db
@@ -183,15 +165,15 @@ const resendEmailValidation = async (
         data.id = user.docs[0].id;
         let successEmail = await sendEmailValidation(data, true);
         if (!successEmail) {
-          console.log("failed to resend email validation");
+          console.log('failed to resend email validation');
         }
 
-        res.send({ success: true, message: "email validation resent" });
+        res.send({ success: true, message: 'email validation resent' });
       }
     }
   } else {
-    console.log("email required");
-    res.send({ success: false, message: "email required" });
+    console.log('email required');
+    res.send({ success: false, message: 'email required' });
   }
 }; // resendEmailValidation
 
@@ -202,16 +184,13 @@ const signIn = async (req: express.Request, res: express.Response) => {
     const password = body.password;
     if (email && password) {
       // Compare user & passwd between login input and DB
-      const user = await db
-        .collection(collections.user)
-        .where("email", "==", email)
-        .get();
+      const user = await db.collection(collections.user).where('email', '==', email).get();
       // Return result
       if (user.empty) {
-        console.log("not found");
+        console.log('not found');
         res.send({ isSignedIn: false, userData: {} });
       } else {
-        console.log("found from email");
+        console.log('found from email');
         const data = user.docs[0].data();
         /*const allWallPost: any[] = [];
                 const wallPostSnap = await db.collection(collections.wallPost)
@@ -231,8 +210,8 @@ const signIn = async (req: express.Request, res: express.Response) => {
           res.send({
             isSignedIn: false,
             userData: {},
-            message: "please validate your email",
-            message_key: "EMAIL_VALIDATION_REQUIRED",
+            message: 'please validate your email',
+            message_key: 'EMAIL_VALIDATION_REQUIRED',
           });
         } else {
           let success = false;
@@ -241,21 +220,17 @@ const signIn = async (req: express.Request, res: express.Response) => {
             // unencrypted so let's encrypt this password
             const salt = await bcrypt.genSalt(10);
             const hash = await bcrypt.hash(password, salt);
-            data["password"] = hash;
+            data['password'] = hash;
 
             db.collection(collections.user).doc(user.docs[0].id).update(data);
 
             success = true;
-            console.log("password encrypted");
+            console.log('password encrypted');
           } else {
             let isSame = await bcrypt.compare(password, data.password);
             success = isSame;
 
-            if (
-              !isSame &&
-              data.temp_password &&
-              data.temp_password_expiry > Date.now()
-            ) {
+            if (!isSame && data.temp_password && data.temp_password_expiry > Date.now()) {
               // has temporary password that is not yet expired
               isSame = await bcrypt.compare(password, data.temp_password);
               success = isSame;
@@ -264,32 +239,28 @@ const signIn = async (req: express.Request, res: express.Response) => {
                 // let's use the temporary password going forward
                 const salt = await bcrypt.genSalt(10);
                 const hash = await bcrypt.hash(password, salt);
-                data["password"] = hash;
+                data['password'] = hash;
 
                 // delete temp fields
-                data["temp_password"] = FieldValue.delete();
+                data['temp_password'] = FieldValue.delete();
                 // data["temp_password_expiry"] = FieldValue.delete(); // retain so we know the last forgot request
 
-                data["lastUpdate"] = Date.now();
+                data['lastUpdate'] = Date.now();
 
-                db.collection(collections.user)
-                  .doc(user.docs[0].id)
-                  .update(data);
+                db.collection(collections.user).doc(user.docs[0].id).update(data);
 
-                console.log("temporary password used");
+                console.log('temporary password used');
               }
             }
           }
 
           data.id = user.docs[0].id;
           if (success) {
-            console.log("Login successful");
+            console.log('Login successful');
 
             // Generate an access token
             let expiryDate = new Date();
-            expiryDate.setDate(
-              new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS
-            );
+            expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
 
             const accessToken = jwt.sign(
               {
@@ -308,27 +279,27 @@ const signIn = async (req: express.Request, res: express.Response) => {
               accessToken: accessToken,
             });
           } else {
-            console.log("wrong password");
+            console.log('wrong password');
             res.send({ isSignedIn: false, userData: {} });
             return;
           }
         }
       }
     } else {
-      console.log("email and password required");
+      console.log('email and password required');
       res.send({ isSignedIn: false, userData: {} });
     }
   } catch (err) {
-    console.log("Error in controllers/user.ts -> signIn(): ", err);
+    console.log('Error in controllers/user.ts -> signIn(): ', err);
   }
 };
 
 const attachAddress = async (userPublicId: string) => {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log("got call from", userPublicId);
+      console.log('got call from', userPublicId);
       // const role = body.role; // role should not be coming from user input?
-      const role = "USER";
+      const role = 'USER';
       const caller = apiKey;
       const lastUpdate = Date.now();
 
@@ -344,29 +315,22 @@ const attachAddress = async (userPublicId: string) => {
       const wallet = hdwallet.derive(path);
       //    const privateKey = '0x' + wallet._privateKey.toString('hex');
       const pubKey = await privateToPublic(wallet._privateKey);
-      const publicKey = "0x04" + pubKey.toString("hex");
-      const address = "0x" + (await publicToAddress(pubKey).toString("hex"));
+      const publicKey = '0x04' + pubKey.toString('hex');
+      const address = '0x' + (await publicToAddress(pubKey).toString('hex'));
       // const addressCheckSum = await toChecksumAddress(address);
 
-      const blockchainRes = await dataProtocol.attachAddress(
-        userPublicId,
-        address,
-        caller
-      );
+      const blockchainRes = await dataProtocol.attachAddress(userPublicId, address, caller);
 
       if (blockchainRes && blockchainRes.success) {
         // set address and mnemonic in User DB
         await db.runTransaction(async (transaction) => {
           // userData - no check if firestore insert works? TODO
-          transaction.update(
-            db.collection(collections.user).doc(userPublicId),
-            {
-              mnemonic: mnemonic,
-              pubKey: publicKey,
-              address: address,
-              lastUpdate: lastUpdate,
-            }
-          );
+          transaction.update(db.collection(collections.user).doc(userPublicId), {
+            mnemonic: mnemonic,
+            pubKey: publicKey,
+            address: address,
+            lastUpdate: lastUpdate,
+          });
         });
 
         resolve({
@@ -376,14 +340,11 @@ const attachAddress = async (userPublicId: string) => {
           lastUpdate: lastUpdate,
         });
       } else {
-        console.log(
-          "Warning in controllers/user.ts -> attachaddress():",
-          blockchainRes
-        );
+        console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
         reject({ success: false });
       }
     } catch (err) {
-      console.log("Error in controllers/user.ts -> attachaddress(): ", err);
+      console.log('Error in controllers/user.ts -> attachaddress(): ', err);
       reject({ success: false });
     }
   });
@@ -418,12 +379,12 @@ const signUp = async (req: express.Request, res: express.Response) => {
     const password = body.password;
 
     // const role = body.role; // role should not be coming from user input?
-    const role = "USER";
+    const role = 'USER';
 
-    if (email == "" || password == "") {
+    if (email == '' || password == '') {
       // basic requirement validation
-      console.log("email and password required");
-      res.send({ success: false, message: "email and password required" });
+      console.log('email and password required');
+      res.send({ success: false, message: 'email and password required' });
       return;
     }
 
@@ -438,7 +399,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
                 const phone = body.phone;
         */
 
-    let uid: string = "";
+    let uid: string = '';
     const lastUpdate = Date.now();
 
     // check if email is in database
@@ -446,19 +407,14 @@ const signUp = async (req: express.Request, res: express.Response) => {
     let toUid = emailUidMap[email!.toString()];
 
     if (toUid) {
-      res.send({ success: false, message: "email is already in database" });
+      res.send({ success: false, message: 'email is already in database' });
       return;
     }
 
-    const orgName = "companies"; // hardcoded for now
+    const orgName = 'companies'; // hardcoded for now
     const userPublicId = generateUniqueId(); // now we generate it
     const caller = apiKey;
-    const blockchainRes = await dataProtocol.registerUser(
-      orgName,
-      userPublicId,
-      role,
-      caller
-    );
+    const blockchainRes = await dataProtocol.registerUser(orgName, userPublicId, role, caller);
 
     if (blockchainRes && blockchainRes.success) {
       // Get IDs from blockchain response
@@ -467,7 +423,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
       const salt = await bcrypt.genSalt(10);
       const hash = await bcrypt.hash(password, salt);
 
-      const validationSecret = crypto.randomBytes(8).toString("hex");
+      const validationSecret = crypto.randomBytes(8).toString('hex');
 
       // Creates User in DB
       await db.runTransaction(async (transaction) => {
@@ -497,19 +453,19 @@ const signUp = async (req: express.Request, res: express.Response) => {
           myFTPods: [],
           investedNFTPods: [],
           investedFTPods: [],
-          twitter: "",
-          instagram: "",
-          facebook: "",
+          twitter: '',
+          instagram: '',
+          facebook: '',
           level: 1,
           notifications: [],
           verified: false,
           anon: false,
-          anonAvatar: "ToyFaces_Colored_BG_111.jpg",
+          anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
           hasPhoto: false,
-          mnemonic: "",
-          pubKey: "",
-          address: "",
-          userAddress: "",
+          mnemonic: '',
+          pubKey: '',
+          address: '',
+          userAddress: '',
           dob: 0,
           tutorialsSeen: {
             communities: false,
@@ -533,63 +489,29 @@ const signUp = async (req: express.Request, res: express.Response) => {
       await attachAddress(userPublicId);
 
       // ------------------------- add zero to balance history to make graph prettier ----------------------------
-      addZerosToHistory(
-        db
-          .collection(collections.wallet)
-          .doc(uid)
-          .collection(collections.cryptoHistory),
-        "balance"
-      );
-      addZerosToHistory(
-        db
-          .collection(collections.wallet)
-          .doc(uid)
-          .collection(collections.ftHistory),
-        "balance"
-      );
-      addZerosToHistory(
-        db
-          .collection(collections.wallet)
-          .doc(uid)
-          .collection(collections.nftHistory),
-        "balance"
-      );
-      addZerosToHistory(
-        db
-          .collection(collections.wallet)
-          .doc(uid)
-          .collection(collections.socialHistory),
-        "balance"
-      );
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.cryptoHistory), 'balance');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.ftHistory), 'balance');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.nftHistory), 'balance');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.socialHistory), 'balance');
 
       // ------------------------- Provisional for TestNet ---------------------------------
       // give user some balance in each tokens (50/tokenRate).
-      const updatedUserSnap = await db
-        .collection(collections.user)
-        .doc(uid)
-        .get();
+      const updatedUserSnap = await db.collection(collections.user).doc(uid).get();
       const updatedUserData: any = updatedUserSnap.data();
       const userAddress = updatedUserData.address;
       const coinsVal = 100; // value in USD to be sent
-      const blockchainRes2 = await coinBalance.getTokenListByType(
-        "CRYPTO",
-        apiKey
-      );
+      const blockchainRes2 = await coinBalance.getTokenListByType('CRYPTO', apiKey);
       const registeredCryptoTokens: string[] = blockchainRes2.output ?? [];
       const rateOfChange: any = await getRateOfChangeAsMap(); // get rate of tokens
       registeredCryptoTokens.forEach((token) => {
         const rate = rateOfChange[token] ?? 1;
         const amount = coinsVal / rate;
-        coinBalance
-          .mint("transfer", "", userAddress, amount, token, apiKey)
-          .then((blockchainRes3) => {
-            console.log(blockchainRes3);
-            if (!blockchainRes3.success) {
-              console.log(
-                `user ${uid} dindt get ${token}, ${blockchainRes3.message}`
-              );
-            }
-          });
+        coinBalance.mint('transfer', '', userAddress, amount, token, apiKey).then((blockchainRes3) => {
+          console.log(blockchainRes3);
+          if (!blockchainRes3.success) {
+            console.log(`user ${uid} dindt get ${token}, ${blockchainRes3.message}`);
+          }
+        });
       });
 
       // ------------------------------------------------------------------------------------
@@ -604,16 +526,16 @@ const signUp = async (req: express.Request, res: express.Response) => {
 
       let successEmail = await sendEmailValidation(userData, false);
       if (!successEmail) {
-        console.log("failed to send email validation");
+        console.log('failed to send email validation');
       }
 
       res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
     } else {
-      console.log("Warning in controllers/user.ts -> signUp():", blockchainRes);
+      console.log('Warning in controllers/user.ts -> signUp():', blockchainRes);
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/user.ts -> signUp(): ", err);
+    console.log('Error in controllers/user.ts -> signUp(): ', err);
     res.send({ success: false });
   }
 };
@@ -697,6 +619,7 @@ interface BasicInfo {
   anon: boolean;
   anonAvatar: string;
   hasPhoto: boolean;
+  verified: boolean;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -704,7 +627,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
 
     let basicInfo: BasicInfo = {
-      name: "",
+      name: '',
       trustScore: 0.5,
       endorsementScore: 0.5,
       numFollowers: 0,
@@ -714,15 +637,16 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       badges: [],
       numFollowings: 0,
       followings: [],
-      bio: "",
+      bio: '',
       level: 1,
-      twitter: "",
-      instagram: "",
-      facebook: "",
+      twitter: '',
+      instagram: '',
+      facebook: '',
       notifications: [],
       anon: false,
-      anonAvatar: "ToyFaces_Colored_BG_111.jpg",
+      anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
       hasPhoto: false,
+      verified: false,
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -737,8 +661,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
                 allWallPost.push(data)
             });*/
       // update return data
-      basicInfo.name =
-        userData.firstName + (userData.lastName ? " " + userData.lastName : "");
+      basicInfo.name = userData.firstName + (userData.lastName ? ' ' + userData.lastName : '');
       basicInfo.trustScore = userData.trustScore;
       basicInfo.endorsementScore = userData.endorsementScore;
       basicInfo.creds = userData.creds || 0;
@@ -748,25 +671,23 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.numFollowings = userData.numFollowings || 0;
       basicInfo.followers = userData.followers || [];
       basicInfo.followings = userData.followings || [];
-      basicInfo.bio = userData.bio || "";
+      basicInfo.bio = userData.bio || '';
       basicInfo.level = userData.level || 1;
-      basicInfo.twitter = userData.twitter || "";
-      basicInfo.instagram = userData.instagram || "";
-      basicInfo.facebook = userData.facebook || "";
+      basicInfo.twitter = userData.twitter || '';
+      basicInfo.instagram = userData.instagram || '';
+      basicInfo.facebook = userData.facebook || '';
       basicInfo.notifications = userData.notifications || [];
       // basicInfo.notifications = basicInfo.notifications.concat(allWallPost);
-      basicInfo.notifications.sort((a, b) =>
-        b.date > a.date ? 1 : a.date > b.date ? -1 : 0
-      );
+      basicInfo.notifications.sort((a, b) => (b.date > a.date ? 1 : a.date > b.date ? -1 : 0));
       basicInfo.anon = userData.anon || false;
-      basicInfo.anonAvatar =
-        userData.anonAvatar || "ToyFaces_Colored_BG_111.jpg";
+      basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
+      basicInfo.verified = userData.verified || '';
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
   } catch (err) {
-    console.log("Error in controllers/profile -> getBasicInfo()", err);
+    console.log('Error in controllers/profile -> getBasicInfo()', err);
     res.send({ success: false });
   }
 };
@@ -794,23 +715,18 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
       }
 
       // userData.notifications = userData.notifications.concat(allWallPost);
-      userData.notifications.sort((a, b) =>
-        b.date > a.date ? 1 : a.date > b.date ? -1 : 0
-      );
+      userData.notifications.sort((a, b) => (b.date > a.date ? 1 : a.date > b.date ? -1 : 0));
       res.send({ success: true, data: userData });
     } else {
-      res.send({ success: false, error: "User not found" });
+      res.send({ success: false, error: 'User not found' });
     }
   } catch (err) {
-    console.log("Error in controllers/profile -> getBasicInfo()", err);
+    console.log('Error in controllers/profile -> getBasicInfo()', err);
     res.send({ success: false, error: err });
   }
 };
 
-const getAllInfoProfile = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
 
@@ -834,10 +750,10 @@ const getAllInfoProfile = async (
         },
       });
     } else {
-      res.send({ success: false, error: "User not found" });
+      res.send({ success: false, error: 'User not found' });
     }
   } catch (err) {
-    console.log("Error in controllers/profile -> getBasicInfo()", err);
+    console.log('Error in controllers/profile -> getBasicInfo()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -862,10 +778,7 @@ interface Action {
   date: number;
 }
 
-const getFollowPodsInfo = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getFollowPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     console.log(userId);
@@ -874,7 +787,7 @@ const getFollowPodsInfo = async (
 
     res.send({ success: true, data: actions });
   } catch (err) {
-    console.log("Error in controllers/profile -> getFollowPodsInfo()", err);
+    console.log('Error in controllers/profile -> getFollowPodsInfo()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -884,9 +797,9 @@ const getFollowPodsInfoFunction = (userId) => {
     try {
       const actions = [];
       let action: Action = {
-        name: "",
-        profilePhoto: "",
-        description: "",
+        name: '',
+        profilePhoto: '',
+        description: '',
         date: Date.now(),
       };
       const userSnap = await db.collection(collections.user).doc(userId).get();
@@ -895,16 +808,13 @@ const getFollowPodsInfoFunction = (userId) => {
         const followingFTPods = userData.followingFTPods;
         const followingNFTPods = userData.followingNFTPods;
         for (let i = 0; i < followingFTPods.length; i++) {
-          const podSnap = await db
-            .collection(collections.podsFT)
-            .doc(followingFTPods[i])
-            .get();
+          const podSnap = await db.collection(collections.podsFT).doc(followingFTPods[i]).get();
           const podData = podSnap.data();
           // create action and fill actions (to be specified)
         }
         resolve(actions);
       } else {
-        reject("User not found");
+        reject('User not found');
       }
     } catch (e) {
       reject(e);
@@ -912,18 +822,15 @@ const getFollowPodsInfoFunction = (userId) => {
   });
 };
 
-const getFollowingUserInfo = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getFollowingUserInfo = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     console.log(userId);
     const actions = [];
     let action: Action = {
-      name: "",
-      profilePhoto: "",
-      description: "",
+      name: '',
+      profilePhoto: '',
+      description: '',
       date: Date.now(),
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
@@ -931,10 +838,7 @@ const getFollowingUserInfo = async (
     if (userData !== undefined) {
       const followings = userData.followings;
       for (let i = 0; i < followings.length; i++) {
-        const followUserSnap = await db
-          .collection(collections.user)
-          .doc(followings[i])
-          .get();
+        const followUserSnap = await db.collection(collections.user).doc(followings[i]).get();
         const followUserData = followUserSnap.data();
         // create action and fill actions (to be specified)
       }
@@ -943,7 +847,7 @@ const getFollowingUserInfo = async (
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/profile -> getFollowingUserInfo()", err);
+    console.log('Error in controllers/profile -> getFollowingUserInfo()', err);
     res.send({ success: false });
   }
 };
@@ -954,9 +858,9 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
     console.log(userId);
     const actions = [];
     let action: Action = {
-      name: "",
-      profilePhoto: "",
-      description: "",
+      name: '',
+      profilePhoto: '',
+      description: '',
       date: Date.now(),
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
@@ -964,14 +868,11 @@ const getOwnInfo = async (req: express.Request, res: express.Response) => {
     // create action and fill actions (to be specified)
     res.send({ success: true, data: actions });
   } catch (err) {
-    console.log("Error in controllers/profile -> getOwnInfo()", err);
+    console.log('Error in controllers/profile -> getOwnInfo()', err);
     res.send({ success: false });
   }
 };
-const getNotifications = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getNotifications = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     const userSnap = await db.collection(collections.user).doc(userId).get();
@@ -981,16 +882,14 @@ const getNotifications = async (
       if (!userData || !userData.notifications) {
         userData.notifications = [];
       }
-      userData.notifications.sort((a, b) =>
-        b.date > a.date ? 1 : a.date > b.date ? -1 : 0
-      );
+      userData.notifications.sort((a, b) => (b.date > a.date ? 1 : a.date > b.date ? -1 : 0));
 
       res.send({ success: true, data: userData.notifications });
     } else {
       res.send({ success: true, data: [] });
     }
   } catch (err) {
-    console.log("Error in controllers/profile -> getNotifications()", err);
+    console.log('Error in controllers/profile -> getNotifications()', err);
     res.send({ success: false });
   }
 };
@@ -1041,14 +940,14 @@ const postToWall = async (req: express.Request, res: express.Response) => {
 
       // send message back to socket
       if (sockets[req.body.priviUser.id]) {
-        sockets[req.body.priviUser.id].emit("new wall post", data);
+        sockets[req.body.priviUser.id].emit('new wall post', data);
       }
     } else {
-      console.log("parameters required");
-      res.send({ success: false, message: "parameters required" });
+      console.log('parameters required');
+      res.send({ success: false, message: 'parameters required' });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> postToWall()", err);
+    console.log('Error in controllers/userController -> postToWall()', err);
     res.send({ success: false });
   }
 };
@@ -1056,9 +955,7 @@ const postToWall = async (req: express.Request, res: express.Response) => {
 const changePostPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-      const wallPostRef = db
-        .collection(collections.wallPost)
-        .doc(req.file.originalname);
+      const wallPostRef = db.collection(collections.wallPost).doc(req.file.originalname);
       const wallPostGet = await wallPostRef.get();
       const wallPost: any = wallPostGet.data();
       if (wallPost.HasPhoto) {
@@ -1068,17 +965,11 @@ const changePostPhoto = async (req: express.Request, res: express.Response) => {
       }
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> changePostPhoto()",
-        "There's no file..."
-      );
+      console.log('Error in controllers/userController -> changePostPhoto()', "There's no file...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> changePostPhoto()",
-      err
-    );
+    console.log('Error in controllers/userController -> changePostPhoto()', err);
     res.send({ success: false });
   }
 };
@@ -1087,9 +978,7 @@ const likePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    const wallPostRef = db
-      .collection(collections.wallPost)
-      .doc(body.wallPostId);
+    const wallPostRef = db.collection(collections.wallPost).doc(body.wallPostId);
     const wallPostGet = await wallPostRef.get();
     const wallPost: any = wallPostGet.data();
 
@@ -1131,7 +1020,7 @@ const likePost = async (req: express.Request, res: express.Response) => {
       data: wallPost,
     });
   } catch (err) {
-    console.log("Error in controllers/userController -> likePost()", err);
+    console.log('Error in controllers/userController -> likePost()', err);
     res.send({ success: false });
   }
 };
@@ -1140,9 +1029,7 @@ const dislikePost = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    const wallPostRef = db
-      .collection(collections.wallPost)
-      .doc(body.wallPostId);
+    const wallPostRef = db.collection(collections.wallPost).doc(body.wallPostId);
     const wallPostGet = await wallPostRef.get();
     const wallPost: any = wallPostGet.data();
 
@@ -1184,24 +1071,21 @@ const dislikePost = async (req: express.Request, res: express.Response) => {
       data: wallPost,
     });
   } catch (err) {
-    console.log("Error in controllers/userController -> dislikePost()", err);
+    console.log('Error in controllers/userController -> dislikePost()', err);
     res.send({ success: false });
   }
 };
 
-const getPostPhotoById = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getPostPhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let postId = req.params.postId;
     console.log(postId);
     if (postId) {
-      const directoryPath = path.join("uploads", "wallPost");
+      const directoryPath = path.join('uploads', 'wallPost');
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
-          return console.log("Unable to scan directory: " + err);
+          return console.log('Unable to scan directory: ' + err);
         }
         //listing all files using forEach
         files.forEach(function (file) {
@@ -1211,27 +1095,19 @@ const getPostPhotoById = async (
       });
 
       // stream the image back by loading the file
-      res.setHeader("Content-Type", "image");
-      let raw = fs.createReadStream(
-        path.join("uploads", "wallPost", postId + ".png")
-      );
-      raw.on("error", function (err) {
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wallPost', postId + '.png'));
+      raw.on('error', function (err) {
         console.log(err);
         res.sendStatus(400);
       });
       raw.pipe(res);
     } else {
-      console.log(
-        "Error in controllers/userController -> getPostPhotoById()",
-        "There's no post id..."
-      );
+      console.log('Error in controllers/userController -> getPostPhotoById()', "There's no post id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> getPostPhotoById()",
-      err
-    );
+    console.log('Error in controllers/userController -> getPostPhotoById()', err);
     res.send({ success: false });
   }
 };
@@ -1258,16 +1134,12 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         let followers: any[] = [];
         user.followers.forEach(async (follower, id) => {
           if (follower.accepted) {
-            const followerInfo = await db.collection(collections.user)
-              .doc(follower.user)
-              .get();
+            const followerInfo = await db.collection(collections.user).doc(follower.user).get();
             const followerData: any = followerInfo.data();
 
             let numFollowing: number = 0;
-            if(ownUser) {
-              let isFollowing = user.followings.find(
-                (following) => following.user === follower.user
-              );
+            if (ownUser) {
+              let isFollowing = user.followings.find((following) => following.user === follower.user);
 
               if (isFollowing && isFollowing.accepted) {
                 numFollowing = 2;
@@ -1275,7 +1147,6 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
                 numFollowing = 1;
               }
             }
-
 
             let followerObj = {
               id: follower,
@@ -1301,11 +1172,11 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         });
       }
     } else {
-      console.log("Error in controllers/profile -> getFollowers()", "Error getting followers");
-      res.send({ success: false, error: "Error getting followers" });
+      console.log('Error in controllers/profile -> getFollowers()', 'Error getting followers');
+      res.send({ success: false, error: 'Error getting followers' });
     }
   } catch (err) {
-    console.log("Error in controllers/profile -> getFollowers()", err);
+    console.log('Error in controllers/profile -> getFollowers()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -1329,13 +1200,11 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
         });
       } else {
         user.followings.forEach(async (following, id) => {
-          const followingInfo = await db.collection(collections.user)
-            .doc(following.user)
-            .get();
+          const followingInfo = await db.collection(collections.user).doc(following.user).get();
           const followingData: any = followingInfo.data();
 
           let numFollowing: number = 0;
-          if(ownUser) {
+          if (ownUser) {
             if (following && following.accepted) {
               numFollowing = 2;
             } else if (following && !following.accepted) {
@@ -1367,7 +1236,7 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
       }
     }
   } catch (err) {
-    console.log("Error in controllers/profile -> getFollowing()", err);
+    console.log('Error in controllers/profile -> getFollowing()', err);
     res.send({ success: false });
   }
 };
@@ -1381,15 +1250,11 @@ const followUser = async (req: express.Request, res: express.Response) => {
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToFollowRef = db
-      .collection(collections.user)
-      .doc(userToFollow.id);
+    const userToFollowRef = db.collection(collections.user).doc(userToFollow.id);
     const userToFollowGet = await userToFollowRef.get();
     const userToFollowData: any = userToFollowGet.data();
 
-    let alreadyFollower = userToFollowData.followers.find(
-      (item) => item === body.user.id
-    );
+    let alreadyFollower = userToFollowData.followers.find((item) => item === body.user.id);
     if (!alreadyFollower) {
       userToFollowData.followers.push({
         user: body.user.id,
@@ -1401,9 +1266,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
       followers: userToFollowData.followers,
     });
 
-    let alreadyFollowing = user.followings.find(
-      (item) => item.user === body.user.id
-    );
+    let alreadyFollowing = user.followings.find((item) => item.user === body.user.id);
     if (!alreadyFollowing) {
       user.followings.push({
         user: body.userToFollow.id,
@@ -1419,28 +1282,25 @@ const followUser = async (req: express.Request, res: express.Response) => {
       userId: userToFollow.id,
       notification: {
         type: 1,
-        typeItemId: "user",
+        typeItemId: 'user',
         itemId: body.user.id,
         follower: user.firstName,
-        pod: "",
-        comment: "",
-        token: "",
+        pod: '',
+        comment: '',
+        token: '',
         amount: 0,
         onlyInformation: false,
-        otherItemId: "",
+        otherItemId: '',
       },
     });
     res.send({ success: true, data: userToFollowData });
   } catch (err) {
-    console.log("Error in controllers/followUser -> followUser()", err);
+    console.log('Error in controllers/followUser -> followUser()', err);
     res.send({ success: false, error: err });
   }
 };
 
-const acceptFollowUser = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const acceptFollowUser = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
     let userToAcceptFollow = body.userToAcceptFollow;
@@ -1449,54 +1309,38 @@ const acceptFollowUser = async (
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToAcceptRef = db
-      .collection(collections.user)
-      .doc(userToAcceptFollow.id);
+    const userToAcceptRef = db.collection(collections.user).doc(userToAcceptFollow.id);
     const userToAcceptGet = await userToAcceptRef.get();
     const userToAcceptData: any = userToAcceptGet.data();
 
-    let alreadyFollowerIndex = user.followers.findIndex(
-      (item) => item.user === userToAcceptFollow.id
-    );
+    let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToAcceptFollow.id);
     if (alreadyFollowerIndex !== -1) {
       user.followers[alreadyFollowerIndex] = {
         user: userToAcceptFollow.id,
         accepted: true,
       };
     } else {
-      console.log(
-        "Error in controllers/userController -> acceptFollowUser()",
-        "Following request not found"
-      );
-      res.send({ success: false, error: "Following request not found" });
+      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+      res.send({ success: false, error: 'Following request not found' });
       return;
     }
 
-    let followersAccepted = user.followers.filter(
-      (item) => item.accepted === true
-    );
+    let followersAccepted = user.followers.filter((item) => item.accepted === true);
     user.numFollowers = followersAccepted.length;
 
-    let alreadyFollowingIndex = userToAcceptData.followings.findIndex(
-      (item) => item.user === body.user.id
-    );
+    let alreadyFollowingIndex = userToAcceptData.followings.findIndex((item) => item.user === body.user.id);
     if (alreadyFollowingIndex !== -1) {
       userToAcceptData.followings[alreadyFollowingIndex] = {
         user: body.user.id,
         accepted: true,
       };
     } else {
-      console.log(
-        "Error in controllers/userController -> acceptFollowUser()",
-        "Following request not found"
-      );
-      res.send({ success: false, error: "Following request not found" });
+      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+      res.send({ success: false, error: 'Following request not found' });
       return;
     }
 
-    let followingAccepted = userToAcceptData.followings.filter(
-      (item) => item.accepted === true
-    );
+    let followingAccepted = userToAcceptData.followings.filter((item) => item.accepted === true);
     userToAcceptData.numFollowings = followingAccepted.length;
 
     await userRef.update({
@@ -1520,32 +1364,26 @@ const acceptFollowUser = async (
       userId: userToAcceptFollow.id,
       notification: {
         type: 2,
-        typeItemId: "user",
+        typeItemId: 'user',
         itemId: body.user.id,
         follower: user.firstName,
-        pod: "",
-        comment: "",
-        token: "",
+        pod: '',
+        comment: '',
+        token: '',
         amount: 0,
         onlyInformation: false,
-        otherItemId: "",
+        otherItemId: '',
       },
     });
 
     res.send({ success: true });
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> acceptFollowUser()",
-      err
-    );
+    console.log('Error in controllers/userController -> acceptFollowUser()', err);
     res.send({ success: false, error: err });
   }
 };
 
-const declineFollowUser = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const declineFollowUser = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
     let userToDeclineFollow = body.userToDeclineFollow;
@@ -1554,48 +1392,32 @@ const declineFollowUser = async (
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToDeclineRef = db
-      .collection(collections.user)
-      .doc(userToDeclineFollow.id);
+    const userToDeclineRef = db.collection(collections.user).doc(userToDeclineFollow.id);
     const userToDeclineGet = await userToDeclineRef.get();
     const userToDeclineData: any = userToDeclineGet.data();
 
-    let alreadyFollowerIndex = user.followers.findIndex(
-      (item) => item.user === userToDeclineFollow.id
-    );
+    let alreadyFollowerIndex = user.followers.findIndex((item) => item.user === userToDeclineFollow.id);
     if (alreadyFollowerIndex !== -1) {
       user.followers.splice(alreadyFollowerIndex, 1);
     } else {
-      console.log(
-        "Error in controllers/userController -> acceptFollowUser()",
-        "Following request not found"
-      );
-      res.send({ success: false, error: "Following request not found" });
+      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+      res.send({ success: false, error: 'Following request not found' });
       return;
     }
 
-    let followersAccepted = user.followers.filter(
-      (item) => item.accepted === true
-    );
+    let followersAccepted = user.followers.filter((item) => item.accepted === true);
     user.numFollowers = followersAccepted.length;
 
-    let alreadyFollowingIndex = userToDeclineData.followings.findIndex(
-      (item) => item.user === body.user.id
-    );
+    let alreadyFollowingIndex = userToDeclineData.followings.findIndex((item) => item.user === body.user.id);
     if (alreadyFollowingIndex !== -1) {
       userToDeclineData.followings.splice(alreadyFollowingIndex, 1);
     } else {
-      console.log(
-        "Error in controllers/userController -> acceptFollowUser()",
-        "Following request not found"
-      );
-      res.send({ success: false, error: "Following request not found" });
+      console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
+      res.send({ success: false, error: 'Following request not found' });
       return;
     }
 
-    let followingAccepted = userToDeclineData.followings.filter(
-      (item) => item.accepted === true
-    );
+    let followingAccepted = userToDeclineData.followings.filter((item) => item.accepted === true);
     userToDeclineData.numFollowings = followingAccepted.length;
 
     await userRef.update({
@@ -1617,10 +1439,7 @@ const declineFollowUser = async (
 
     res.send({ success: true });
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> declineFollowUser()",
-      err
-    );
+    console.log('Error in controllers/userController -> declineFollowUser()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -1634,22 +1453,14 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
     const userGet = await userRef.get();
     const user: any = userGet.data();
 
-    const userToUnFollowRef = db
-      .collection(collections.user)
-      .doc(userToUnFollow.id);
+    const userToUnFollowRef = db.collection(collections.user).doc(userToUnFollow.id);
     const userToUnFollowGet = await userToUnFollowRef.get();
     const userToUnFollowData: any = userToUnFollowGet.data();
 
-    let newFollowings = user.followings.filter(
-      (item) => item.user != userToUnFollow.id
-    );
-    let newFollowingNum = user.followings.filter(
-      (item) => item.user != userToUnFollow.id && item.accepted === true
-    );
+    let newFollowings = user.followings.filter((item) => item.user != userToUnFollow.id);
+    let newFollowingNum = user.followings.filter((item) => item.user != userToUnFollow.id && item.accepted === true);
 
-    let newFollowers = userToUnFollowData.followers.filter(
-      (item) => item.user !== body.user.id
-    );
+    let newFollowers = userToUnFollowData.followers.filter((item) => item.user !== body.user.id);
     let newFollowersNum = userToUnFollowData.followers.filter(
       (item) => item.user !== body.user.id && item.accepted === true
     );
@@ -1665,7 +1476,7 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true });
   } catch (err) {
-    console.log("Error in controllers/userController -> unFollowUser()", err);
+    console.log('Error in controllers/userController -> unFollowUser()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -1679,7 +1490,7 @@ const getMyPods = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: myPods });
   } catch (err) {
-    console.log("Error in controllers/profile -> getMyPods()", err);
+    console.log('Error in controllers/profile -> getMyPods()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -1710,10 +1521,7 @@ const getMyPodsFunction = (userId) => {
   });
 };
 
-const getPodsInvestments = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getPodsInvestments = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   try {
     let pods = await getPodsInvestmentsFunction(userId);
@@ -1723,7 +1531,7 @@ const getPodsInvestments = async (
       data: pods,
     });
   } catch (err) {
-    console.log("Error in controllers/profile -> getPodsInvestments()", err);
+    console.log('Error in controllers/profile -> getPodsInvestments()', err);
     res.send({ success: false });
   }
 };
@@ -1761,7 +1569,7 @@ const getPodsFollowed = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: pods });
   } catch (err) {
-    console.log("Error in controllers/profile -> getPodsFollowed()", err);
+    console.log('Error in controllers/profile -> getPodsFollowed()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -1798,8 +1606,8 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
     arrayPods.forEach(async (item, i) => {
       const podRef = await db.collection(collection).doc(item).get();
 
-      if(podRef.exists) {
-        let podData : any = podRef.data();
+      if (podRef.exists) {
+        let podData: any = podRef.data();
         podData.type = type;
         podInfo.push(podData);
       }
@@ -1830,7 +1638,7 @@ const getSocialTokens = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: [] });
   } catch (err) {
-    console.log("Error in controllers/editUser -> editUser()", err);
+    console.log('Error in controllers/editUser -> editUser()', err);
     res.send({ success: false });
   }
 };
@@ -1875,20 +1683,15 @@ const editUser = async (req: express.Request, res: express.Response) => {
       },
     });
   } catch (err) {
-    console.log("Error in controllers/editUser -> editUser()", err);
+    console.log('Error in controllers/editUser -> editUser()', err);
     res.send({ success: false });
   }
 };
 
-const changeUserProfilePhoto = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-      const userRef = db
-        .collection(collections.user)
-        .doc(req.file.originalname);
+      const userRef = db.collection(collections.user).doc(req.file.originalname);
       const userGet = await userRef.get();
       const user: any = userGet.data();
       if (user.hasPhoto !== undefined) {
@@ -1903,14 +1706,11 @@ const changeUserProfilePhoto = async (
       }
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> changeUserProfilePhoto()",
-        "There's no file..."
-      );
+      console.log('Error in controllers/userController -> changeUserProfilePhoto()', "There's no file...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> changePodPhoto()", err);
+    console.log('Error in controllers/userController -> changePodPhoto()', err);
     res.send({ success: false });
   }
 };
@@ -1920,11 +1720,11 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
     let userId = req.params.userId;
     console.log(userId);
     if (userId) {
-      const directoryPath = path.join("uploads", "users");
+      const directoryPath = path.join('uploads', 'users');
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
-          return console.log("Unable to scan directory: " + err);
+          return console.log('Unable to scan directory: ' + err);
         }
         //listing all files using forEach
         files.forEach(function (file) {
@@ -1934,25 +1734,20 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
       });
 
       // stream the image back by loading the file
-      res.setHeader("Content-Type", "image");
-      let raw = fs.createReadStream(
-        path.join("uploads", "users", userId + ".png")
-      );
-      raw.on("error", function (err) {
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'users', userId + '.png'));
+      raw.on('error', function (err) {
         console.log(err);
         res.sendStatus(400);
       });
       raw.pipe(res);
     } else {
-      console.log(
-        "Error in controllers/userController -> getPhotoById()",
-        "There's no id..."
-      );
+      console.log('Error in controllers/userController -> getPhotoById()', "There's no id...");
       res.sendStatus(400); // bad request
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> getPhotoById()", err);
+    console.log('Error in controllers/userController -> getPhotoById()', err);
     res.send({ success: false });
   }
 };
@@ -1968,12 +1763,12 @@ const getUserList = async (req: express.Request, res: express.Response) => {
 
       const usersRef = db.collection(collections.user);
       usersRef
-        .where("endorsementScore", ">", filters.endorsementScore[0] / 100)
-        .where("trustScore", ">", filters.trustScore[0] / 100);
+        .where('endorsementScore', '>', filters.endorsementScore[0] / 100)
+        .where('trustScore', '>', filters.trustScore[0] / 100);
       usersRef
-        .where("endorsementScore", "<", filters.endorsementScore[1] / 100)
-        .where("trustScore", "<", filters.trustScore[1] / 100)
-        .orderBy("Followers", "desc");
+        .where('endorsementScore', '<', filters.endorsementScore[1] / 100)
+        .where('trustScore', '<', filters.trustScore[1] / 100)
+        .orderBy('Followers', 'desc');
 
       const usersGet = await usersRef.get();
 
@@ -1981,22 +1776,21 @@ const getUserList = async (req: express.Request, res: express.Response) => {
       usersGet.docs.map((doc, i) => {
         let data = doc.data();
         data.id = doc.id;
-        let name = "";
-        if (data.lastName && data.lastName !== "") {
-          name = data.firstName + " " + data.lastName;
+        let name = '';
+        if (data.lastName && data.lastName !== '') {
+          name = data.firstName + ' ' + data.lastName;
         } else {
           name = data.firstName;
         }
 
-        if (filters.name === "" || name.startsWith(filters.name)) {
+        if (filters.name === '' || name.startsWith(filters.name)) {
           arrayUsers.push(data);
         }
         if (usersGet.docs.length === i + 1) {
           if (arrayUsers.length !== 0) {
             arrayUsers.forEach((item, i) => {
               if (user.followings && user.followings.length !== 0) {
-                item.isFollowing =
-                  user.followings.findIndex((usr) => usr === item.id) !== -1;
+                item.isFollowing = user.followings.findIndex((usr) => usr === item.id) !== -1;
               } else {
                 item.isFollowing = false;
               }
@@ -2010,14 +1804,11 @@ const getUserList = async (req: express.Request, res: express.Response) => {
         }
       });
     } else {
-      console.log(
-        "Error in controllers/userController -> getUserList()",
-        "There's no filters"
-      );
+      console.log('Error in controllers/userController -> getUserList()', "There's no filters");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> getUserList()", err);
+    console.log('Error in controllers/userController -> getUserList()', err);
     res.send({ success: false });
   }
 };
@@ -2031,7 +1822,7 @@ const getBadges = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: retData });
   } catch (e) {
-    console.log("Error in controllers/userController -> getBadges()" + e);
+    console.log('Error in controllers/userController -> getBadges()' + e);
     res.send({ success: false, error: e });
   }
 };
@@ -2044,11 +1835,7 @@ const getBadgesFunction = (userId: string) => {
       const user: any = userGet.data();
 
       const retData: any[] = [];
-      const blockchainRes = await coinBalance.getBalancesByType(
-        user.address,
-        collections.badgeToken,
-        apiKey
-      );
+      const blockchainRes = await coinBalance.getBalancesByType(user.address, collections.badgeToken, apiKey);
       if (blockchainRes && blockchainRes.success) {
         const badgesBalance = blockchainRes.output;
         const badgeSnap = await db.collection(collections.badges).get();
@@ -2064,10 +1851,7 @@ const getBadgesFunction = (userId: string) => {
         });
         resolve(retData);
       } else {
-        console.log(
-          "Error in controllers/userController -> getBadges()",
-          blockchainRes.message
-        );
+        console.log('Error in controllers/userController -> getBadges()', blockchainRes.message);
         reject(blockchainRes.message);
       }
     } catch (e) {
@@ -2125,26 +1909,18 @@ const createBadge = async (req: express.Request, res: express.Response) => {
       // });
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> createBadge(): success = false.",
-        blockchainRes.message
-      );
+      console.log('Error in controllers/userController -> createBadge(): success = false.', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (e) {
-    return "Error in controllers/userController -> createBadge()" + e;
+    return 'Error in controllers/userController -> createBadge()' + e;
   }
 };
 
-const changeBadgePhoto = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-      const badgeRef = db
-        .collection(collections.badges)
-        .doc(req.file.originalname);
+      const badgeRef = db.collection(collections.badges).doc(req.file.originalname);
 
       const badgeGet = await badgeRef.get();
       const badge: any = await badgeGet.data();
@@ -2157,34 +1933,25 @@ const changeBadgePhoto = async (
 
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> changeBadgePhoto()",
-        "There's no file..."
-      );
+      console.log('Error in controllers/userController -> changeBadgePhoto()', "There's no file...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> changeBadgePhoto()",
-      err
-    );
+    console.log('Error in controllers/userController -> changeBadgePhoto()', err);
     res.send({ success: false });
   }
 };
 
-const getBadgePhotoById = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getBadgePhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let badgeId = req.params.badgeId;
     console.log(badgeId);
     if (badgeId) {
-      const directoryPath = path.join("uploads", "badges");
+      const directoryPath = path.join('uploads', 'badges');
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
-          return console.log("Unable to scan directory: " + err);
+          return console.log('Unable to scan directory: ' + err);
         }
         //listing all files using forEach
         files.forEach(function (file) {
@@ -2194,36 +1961,25 @@ const getBadgePhotoById = async (
       });
 
       // stream the image back by loading the file
-      res.setHeader("Content-Type", "image");
-      let raw = fs.createReadStream(
-        path.join("uploads", "badges", badgeId + ".png")
-      );
-      raw.on("error", function (err) {
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'badges', badgeId + '.png'));
+      raw.on('error', function (err) {
         console.log(err);
         res.sendStatus(400);
       });
       raw.pipe(res);
     } else {
-      console.log(
-        "Error in controllers/userController -> getBadgePhotoById()",
-        "There's no id..."
-      );
+      console.log('Error in controllers/userController -> getBadgePhotoById()', "There's no id...");
       res.sendStatus(400); // bad request
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> getBadgePhotoById()",
-      err
-    );
+    console.log('Error in controllers/userController -> getBadgePhotoById()', err);
     res.send({ success: false });
   }
 };
 
-const getIssuesAndProposals = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   console.log(userId);
 };
@@ -2247,7 +2003,7 @@ const createIssue = async (req: express.Request, res: express.Response) => {
       body.description
     ) {
       await db.runTransaction(async (transaction) => {
-        transaction.set(db.collection(collections.issues).doc("" + (id + 1)), {
+        transaction.set(db.collection(collections.issues).doc('' + (id + 1)), {
           issue: body.issue,
           userId: body.userId,
           date: new Date(),
@@ -2279,14 +2035,11 @@ const createIssue = async (req: express.Request, res: express.Response) => {
         },
       });
     } else {
-      console.log(
-        "Error in controllers/userController -> createIssue()",
-        "Missing Information"
-      );
+      console.log('Error in controllers/userController -> createIssue()', 'Missing Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> createIssue()", err);
+    console.log('Error in controllers/userController -> createIssue()', err);
     res.send({ success: false });
   }
 };
@@ -2298,27 +2051,17 @@ const createProposal = async (req: express.Request, res: express.Response) => {
     let proposalsGet = await db.collection(collections.proposals).get();
     let id = proposalsGet.size;
 
-    if (
-      body &&
-      body.proposal &&
-      body.userId &&
-      body.item &&
-      body.itemType &&
-      body.itemId
-    ) {
+    if (body && body.proposal && body.userId && body.item && body.itemType && body.itemId) {
       await db.runTransaction(async (transaction) => {
-        transaction.set(
-          db.collection(collections.proposals).doc("" + (id + 1)),
-          {
-            proposal: body.proposal,
-            userId: body.userId,
-            date: new Date(),
-            item: body.item,
-            itemType: body.itemType,
-            itemId: body.itemId,
-            responses: [],
-          }
-        );
+        transaction.set(db.collection(collections.proposals).doc('' + (id + 1)), {
+          proposal: body.proposal,
+          userId: body.userId,
+          date: new Date(),
+          item: body.item,
+          itemType: body.itemType,
+          itemId: body.itemId,
+          responses: [],
+        });
       });
       res.send({
         success: true,
@@ -2334,14 +2077,11 @@ const createProposal = async (req: express.Request, res: express.Response) => {
         },
       });
     } else {
-      console.log(
-        "Error in controllers/userController -> createIssue()",
-        "No Information"
-      );
+      console.log('Error in controllers/userController -> createIssue()', 'No Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> createIssue()", err);
+    console.log('Error in controllers/userController -> createIssue()', err);
     res.send({ success: false });
   }
 };
@@ -2369,34 +2109,20 @@ const responseIssue = async (req: express.Request, res: express.Response) => {
       });
       res.send({ success: true, data: issue });
     } else {
-      console.log(
-        "Error in controllers/userController -> responseIssue()",
-        "Missing Information"
-      );
+      console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> responseIssue()", err);
+    console.log('Error in controllers/userController -> responseIssue()', err);
     res.send({ success: false });
   }
 };
-const responseProposal = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const responseProposal = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (
-      body &&
-      body.userId &&
-      body.userName &&
-      body.response &&
-      body.proposalId
-    ) {
-      const proposalRef = db
-        .collection(collections.proposals)
-        .doc(body.proposalId);
+    if (body && body.userId && body.userName && body.response && body.proposalId) {
+      const proposalRef = db.collection(collections.proposals).doc(body.proposalId);
       const proposalGet = await proposalRef.get();
       const proposal: any = proposalGet.data();
 
@@ -2414,14 +2140,11 @@ const responseProposal = async (
       });
       res.send({ success: true, data: proposal });
     } else {
-      console.log(
-        "Error in controllers/userController -> responseIssue()",
-        "Missing Information"
-      );
+      console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> responseIssue()", err);
+    console.log('Error in controllers/userController -> responseIssue()', err);
     res.send({ success: false });
   }
 };
@@ -2442,14 +2165,11 @@ const voteIssue = async (req: express.Request, res: express.Response) => {
       });
       res.send({ success: true, data: issue });
     } else {
-      console.log(
-        "Error in controllers/userController -> responseIssue()",
-        "No Information"
-      );
+      console.log('Error in controllers/userController -> responseIssue()', 'No Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> responseIssue()", err);
+    console.log('Error in controllers/userController -> responseIssue()', err);
     res.send({ success: false });
   }
 };
@@ -2469,24 +2189,18 @@ const changeAnonMode = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> changeAnonMode()",
-        "No Information"
-      );
+      console.log('Error in controllers/userController -> changeAnonMode()', 'No Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> changeAnonMode()", err);
+    console.log('Error in controllers/userController -> changeAnonMode()', err);
     res.send({ success: false });
   }
 };
 
 //CHANGE ANON AVATAR
 
-const changeAnonAvatar = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const changeAnonAvatar = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
@@ -2499,17 +2213,11 @@ const changeAnonAvatar = async (
 
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> changeAnonAvatar()",
-        "No Information"
-      );
+      console.log('Error in controllers/userController -> changeAnonAvatar()', 'No Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> changeAnonAvatar()",
-      err
-    );
+    console.log('Error in controllers/userController -> changeAnonAvatar()', err);
     res.send({ success: false });
   }
 };
@@ -2518,7 +2226,7 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body && body.userId && body.userSearch && body.userSearch !== "") {
+    if (body && body.userId && body.userSearch && body.userSearch !== '') {
       const userRef = db.collection(collections.user).doc(body.userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
@@ -2527,9 +2235,9 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
 
       const userQuery = await db
         .collection(collections.user)
-        .orderBy("firstName")
+        .orderBy('firstName')
         .startAt(body.userSearch)
-        .endAt(body.userSearch + "\uf8ff")
+        .endAt(body.userSearch + '\uf8ff')
         .get();
       if (!userQuery.empty) {
         for (const doc of userQuery.docs) {
@@ -2540,9 +2248,7 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
             // 1 -> Requested
             // 2 -> Following
             if (user.followings && user.followings.length > 0) {
-              let followingUser = user.followings.find(
-                (usr) => usr.user === doc.id
-              );
+              let followingUser = user.followings.find((usr) => usr.user === doc.id);
               if (followingUser && followingUser !== {}) {
                 if (followingUser.accepted) {
                   isFollowing = 2;
@@ -2566,14 +2272,11 @@ const searchUsers = async (req: express.Request, res: express.Response) => {
         res.send({ success: true, data: [] });
       }
     } else {
-      console.log(
-        "Error in controllers/userController -> searchUsers()",
-        "No Information"
-      );
-      res.send({ success: false, error: "No Information" });
+      console.log('Error in controllers/userController -> searchUsers()', 'No Information');
+      res.send({ success: false, error: 'No Information' });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> searchUsers()", err);
+    console.log('Error in controllers/userController -> searchUsers()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -2600,16 +2303,13 @@ const updateUserCred = (userId, sum) => {
 
       resolve(user);
     } catch (e) {
-      console.log("Error sumCredUser(): " + e);
-      resolve("Error sumCredUser(): " + e);
+      console.log('Error sumCredUser(): ' + e);
+      resolve('Error sumCredUser(): ' + e);
     }
   });
 };
 
-const updateTutorialsSeen = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const updateTutorialsSeen = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
@@ -2622,25 +2322,16 @@ const updateTutorialsSeen = async (
 
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> updateTutorialsSeen()",
-        "No Information"
-      );
+      console.log('Error in controllers/userController -> updateTutorialsSeen()', 'No Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> updateTutorialsSeen()",
-      err
-    );
+    console.log('Error in controllers/userController -> updateTutorialsSeen()', err);
     res.send({ success: false });
   }
 };
 
-const removeNotification = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const removeNotification = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
@@ -2652,17 +2343,11 @@ const removeNotification = async (
 
       res.send({ success: true });
     } else {
-      console.log(
-        "Error in controllers/userController -> removeNotification()",
-        "No Information"
-      );
-      res.send({ success: false, error: "No Information" });
+      console.log('Error in controllers/userController -> removeNotification()', 'No Information');
+      res.send({ success: false, error: 'No Information' });
     }
   } catch (err) {
-    console.log(
-      "Error in controllers/userController -> removeNotification()",
-      err
-    );
+    console.log('Error in controllers/userController -> removeNotification()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -2676,26 +2361,22 @@ const inviteUserToPod = async (req: express.Request, res: express.Response) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const userCreatorRef = db
-        .collection(collections.user)
-        .doc(body.creatorId);
+      const userCreatorRef = db.collection(collections.user).doc(body.creatorId);
       const userCreatorGet = await userCreatorRef.get();
       const userCreator: any = userCreatorGet.data();
 
-      let podIndexFound = user.followingFTPods.findIndex(
-        (pod) => pod === body.podId
-      );
+      let podIndexFound = user.followingFTPods.findIndex((pod) => pod === body.podId);
       if (podIndexFound === -1) {
         await notificationsController.addNotification({
           userId: body.userId,
           notification: {
             type: 85,
-            typeItemId: "user",
+            typeItemId: 'user',
             itemId: body.creatorId,
             follower: userCreator.firstName,
             pod: body.podName,
-            comment: "",
-            token: "",
+            comment: '',
+            token: '',
             amount: 0,
             onlyInformation: false,
             otherItemId: body.podId,
@@ -2703,27 +2384,21 @@ const inviteUserToPod = async (req: express.Request, res: express.Response) => {
         });
         res.send({
           success: true,
-          data: "Notification sent to " + user.firstName,
+          data: 'Notification sent to ' + user.firstName,
         });
       } else {
         res.send({
           success: true,
-          data: user.firstName + " is already following Pod",
+          data: user.firstName + ' is already following Pod',
         });
       }
     } else {
-      console.log(
-        "Error in controllers/userController -> inviteUserToPod()",
-        "No Information"
-      );
-      res.send({success: false, error: "No Information"});
+      console.log('Error in controllers/userController -> inviteUserToPod()', 'No Information');
+      res.send({ success: false, error: 'No Information' });
     }
   } catch (err) {
-    console.log(
-        "Error in controllers/userController -> inviteUserToPod()",
-        err
-    );
-    res.send({success: false, error: err});
+    console.log('Error in controllers/userController -> inviteUserToPod()', err);
+    res.send({ success: false, error: err });
   }
 };
 
@@ -2858,12 +2533,12 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
         }
       }
     }
-    res.send({success: true, data: sugUsers});
+    res.send({ success: true, data: sugUsers });
   } catch (e) {
-    console.log("Error in controllers/userController -> getSuggestedUsers()", e);
-    res.send({success: false, error: e});
+    console.log('Error in controllers/userController -> getSuggestedUsers()', e);
+    res.send({ success: false, error: e });
   }
-}
+};
 
 async function getRandomForSuggestedUser() {
   let weights = [0.35, 0.3, 0.2, 0.15]; // probabilities
@@ -2871,8 +2546,8 @@ async function getRandomForSuggestedUser() {
   let probArr: any[] = [];
   let res: any[] = [];
   let num = Math.random(),
-      s = 0,
-      lastIndex = weights.length - 1;
+    s = 0,
+    lastIndex = weights.length - 1;
 
   for (let i = 0; i < 5; ++i) {
     let notAdded = true;
@@ -2948,5 +2623,5 @@ module.exports = {
   removeNotification,
   inviteUserToPod,
   getAllInfoProfile,
-  getSuggestedUsers
+  getSuggestedUsers,
 };
