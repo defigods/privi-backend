@@ -37,6 +37,20 @@ exports.stakeToken = async (req: express.Request, res: express.Response) => {
       else newMembers[userAddress] += amount;
       tokenSnap.ref.set({ StakedAmount: newAmount, Members: newMembers }, { merge: true });
 
+      // update user first stake timestamp (if necessary)
+      const userStakingSnap = await db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(userAddress).get();
+      const userStakingData = userStakingSnap.data();
+      let hasInitialDate = false;
+      if (userStakingData) {
+        if (userStakingData.InitialStakingDate) hasInitialDate = true;
+      }
+      if (!hasInitialDate) {
+        userStakingSnap.ref.set({
+          InitialStakingDate: Date.now()
+        }, { merge: true });
+      }
+
+
       await notificationsController.addNotification({
         userId: userAddress,
         notification: {
@@ -74,9 +88,14 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
     const hash = body.Hash;
     const signature = body.Signature;
 
-    // const txnId = generateUniqueId();
-    // const date = Date.now();;
-    const blockchainRes = await priviGovernance.unstakeToken(userAddress, token, amount, hash, signature, apiKey);
+    const blockchainRes = await priviGovernance.unstakeToken(
+      userAddress,
+      token,
+      amount,
+      hash,
+      signature,
+      apiKey
+    );
     if (blockchainRes && blockchainRes.success) {
       // updateFirebase(blockchainRes);
 
@@ -95,6 +114,16 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
         if (newMembers[userAddress] <= 0) delete newMembers[userAddress];
       }
       tokenSnap.ref.update({ StakedAmount: newAmount, Members: newMembers });
+
+      // update user first stake timestamp (if necessary)
+      const userStakingSnap = await db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(userAddress).get();
+      const userStakingData: any = userStakingSnap.data();
+      priviGovernance.getUserStaking(userAddress, token, apiKey).then((blockchainRes2) => {
+        if (blockchainRes2 && blockchainRes2.success) {
+          delete userStakingData.InitialStakingDate;
+          userStakingSnap.ref.set(userStakingData);
+        }
+      });
 
       await notificationsController.addNotification({
         userId: userAddress,
@@ -268,39 +297,6 @@ exports.verifyPodStaking = async (req: express.Request, res: express.Response) =
 
 // ----------------------------------- GET -------------------------------------------
 
-// get user staking amount of PRIVI
-exports.getStakingAmount = async (req: express.Request, res: express.Response) => {
-  try {
-    const userId = req.params.userId;
-    const blockchainRes = await priviGovernance.getUserStaking(userId, apiKey);
-    // console.log(blockchainRes)
-    if (blockchainRes && blockchainRes.success) {
-      let preparedRes: any = {};
-      const data = blockchainRes.output;
-      data.forEach((element) => {
-        preparedRes[element.Token] = element;
-      });
-      // console.log('getStakingAmount res', preparedRes)
-      res.send({ success: true, data: preparedRes });
-    } else {
-      res.send({ success: false });
-    }
-
-    // const stakingSnap = await db.collection(collections.stakingDeposit).doc(userId).get();
-    // const data = stakingSnap.data();
-    // if (data) {
-    //     const stakedAmount = data.StakedAmount + data.NewStakedAmount;
-    //     res.send({ success: true, data: stakedAmount });
-    // }
-    // else {
-    //     res.send({ success: false });
-    // }
-  } catch (err) {
-    console.log('Error in controllers/stakingController -> getStakings(): ', err);
-    res.send({ success: false });
-  }
-};
-
 // get the number of people that made some staking
 exports.getTotalMembers = async (req: express.Request, res: express.Response) => {
   try {
@@ -358,7 +354,11 @@ exports.getStakedHistory = async (req: express.Request, res: express.Response) =
   }
 };
 
-exports.getStakedAmounts = async (req: express.Request, res: express.Response) => {
+// return last day, week and month staked amount and timestamp of first stake
+exports.getUserStakedInfo = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     const token: any = req.query.token;
     const userId: any = req.query.userId;
@@ -396,17 +396,26 @@ exports.saveStakingAmountEndOfDay = cron.schedule('0 0 * * *', async () => {
     for (let doc of userSnaps.docs) {
       const uid = doc.id;
       for (let token of listTokens) {
-        priviGovernance.getUserStaking(uid, token, apiKey).then((blockchainRes) => {
-          if (blockchainRes && blockchainRes.success) {
-            const amount = blockchainRes.output;
-            db.collection(collections.stakingDeposit).doc(token).collection(collections.userStakings).doc(uid).set(
-              {
-                LastDayStakedAmount: amount,
-              },
-              { merge: true }
-            );
-          }
-        });
+        priviGovernance
+          .getUserStaking(uid, token, apiKey)
+          .then((blockchainRes) => {
+            if (blockchainRes && blockchainRes.success) {
+              const amount = blockchainRes.output;
+              console.log(amount);
+              if (amount > 0) {
+                db.collection(collections.stakingDeposit)
+                  .doc(token)
+                  .collection(collections.userStakings)
+                  .doc(uid)
+                  .set(
+                    {
+                      LastDayStakedAmount: amount,
+                    },
+                    { merge: true }
+                  );
+              }
+            }
+          });
       }
     }
   } catch (err) {

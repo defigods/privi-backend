@@ -21,7 +21,7 @@ import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
 import { sockets } from './serverController';
 
-const tasks = require("./tasksController");
+const tasks = require('./tasksController');
 const bcrypt = require('bcrypt');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
 const jwt = require('jsonwebtoken');
@@ -687,7 +687,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anon = userData.anon || false;
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
-      basicInfo.verified = userData.verified || '';
+      basicInfo.verified = userData.verified || false;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -1270,7 +1270,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
     let task;
     let userFollowersLengthAfter = user.followings.length;
     if (userFollowersLength == 4 && userFollowersLengthAfter == 5) {
-      task = await tasks.updateTask(userToFollowData.user, "Follow 5 people");
+      task = await tasks.updateTask(userToFollowData.user, 'Follow 5 people');
     }
     await userToFollowRef.update({
       followers: userToFollowData.followers,
@@ -1286,7 +1286,7 @@ const followUser = async (req: express.Request, res: express.Response) => {
     }
     let userFollowingsLengthAfter = user.followings.length;
     if (userFollowingsLength == 4 && userFollowingsLengthAfter == 5) {
-      task = tasks.updateTask(body.user.id, "Follow 5 people")
+      task = tasks.updateTask(body.user.id, 'Follow 5 people');
     }
     await userRef.update({
       followings: user.followings,
@@ -1308,9 +1308,9 @@ const followUser = async (req: express.Request, res: express.Response) => {
       },
     });
     if (task) {
-      res.send({success: true, data: userToFollowData, task: task});
+      res.send({ success: true, data: userToFollowData, task: task });
     }
-    res.send({success: true, data: userToFollowData});
+    res.send({ success: true, data: userToFollowData });
   } catch (err) {
     console.log('Error in controllers/followUser -> followUser()', err);
     res.send({ success: false, error: err });
@@ -1879,24 +1879,16 @@ const getBadgesFunction = (userId: string) => {
 
 const getBadgeBySymbol = async (req: express.Request, res: express.Response) => {
   try {
-    const body = req.body;
-    const badgeSymbol = body.badgeSymbol;
-    console.log("BADGEEEEEE: " + badgeSymbol)
+    let badgeSymbol = req.params.badgeSymbol;
     if (badgeSymbol) {
       const badgeRef = await db.collection(collections.badges).where('Symbol', '==', badgeSymbol).get();
 
-      console.log("REFFFF: " + JSON.stringify(badgeRef))
       badgeRef.forEach((doc) => {
         let badge = doc.data();
         if (badge) {
-
-          console.log("OKKKKKKKK: " + badgeSymbol)
           res.send({ success: true, data: badge });
-        }
-        else {
-
-          console.log("NOOOOO: " + badgeSymbol)
-          console.log('Error in controllers/userController -> getBadgeBySymbol()', "Badge not found...");
+        } else {
+          console.log('Error in controllers/userController -> getBadgeBySymbol()', 'Badge not found...');
           res.send({ success: false });
         }
       });
@@ -2042,39 +2034,36 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
       let level = user.level || 1;
       let points = user.Points || 0;
       let badges = user.badges;
-      let badgesToday:any = [];
+      let badgesToday: any = [];
       let today = new Date();
       let hour = new Date();
       let yesterday = new Date(today);
       hour.setHours(hour.getHours() - 1);
       yesterday.setDate(yesterday.getDate() - 1);
-      const levelPoints =  [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
+      const levelPoints = [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
 
-      function diff_hours(dt2, dt1)  {
-        var diff =(dt2.getTime() - dt1.getTime()) / 1000;
-        diff /= (60 * 60);
+      function diff_hours(dt2, dt1) {
+        var diff = (dt2.getTime() - dt1.getTime()) / 1000;
+        diff /= 60 * 60;
         return Math.abs(Math.round(diff));
       }
 
       // Points
-      if(points && points.length > 0){
-        points.forEach(function(point){
+      if (points && points.length > 0) {
+        points.forEach(function (point) {
           let pointDate = new Date(point.date);
           // Points earned today
-          if(diff_hours(pointDate, today) < 24)
-            pointsWonToday = pointsWonToday + point
+          if (diff_hours(pointDate, today) < 24) pointsWonToday = pointsWonToday + point;
           // Points earned last hour
-          if(diff_hours(pointDate, today) < 1)
-            pointsHour = pointsHour + point
-        })
+          if (diff_hours(pointDate, today) < 1) pointsHour = pointsHour + point;
+        });
       }
 
       // Badges earned today
-      if(badges && badges.length > 0){
-        badges.forEach(function(badge){
-          if(badge.date > yesterday)
-            badgesToday.push(badge);
-        })
+      if (badges && badges.length > 0) {
+        badges.forEach(function (badge) {
+          if (badge.date > yesterday) badgesToday.push(badge);
+        });
       }
 
       let response: any = {
@@ -2084,19 +2073,16 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
         levelPoints: levelPoints,
         badgesToday: badgesToday,
         pointsWonToday: pointsWonToday,
-        pointsHour: pointsHour
+        pointsHour: pointsHour,
       };
 
       res.send({ success: true, data: response });
     } else {
-      console.log(
-        "Error in controllers/userController -> getUserScores()",
-        "Missing Information"
-      );
+      console.log('Error in controllers/userController -> getUserScores()', 'Missing Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> getUserScoress()", err);
+    console.log('Error in controllers/userController -> getUserScoress()', err);
     res.send({ success: false });
   }
 };
@@ -2115,47 +2101,46 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       let today = new Date();
       let yesterday = new Date(today);
       yesterday.setDate(yesterday.getDate() - 1);
-      const levelPoints =  [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
+      const levelPoints = [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
 
       // totalPointsToday
       // let pointsGet = await db.collection(collections.points).where("date", ">", yesterday).get();
       // let totalPointsToday = pointsGet.size;
-         let totalPointsToday = 0
+      let totalPointsToday = 0;
       // let badgesGet = await db.collection(collections.badges).where("date", ">", yesterday).get();
       // let totalBadgesToday = badgesGet.size;
-      let totalBadgesToday = 0
+      let totalBadgesToday = 0;
 
       // totalUsersLevels userLevel
       const userCollection = db.collection(collections.user);
-      const usersLevelGet = await userCollection.where("level", "==", userLevel).get()
+      const usersLevelGet = await userCollection.where('level', '==', userLevel).get();
       let totalLevelUsers = usersLevelGet.size;
-      
+
       // totalUsersLevels1
-      const users1Get = await userCollection.where("level", "==", 1).get()
+      const users1Get = await userCollection.where('level', '==', 1).get();
       let totalUsersLevel1 = users1Get.size;
       // totalUsersLevel1
-      const users2Get = await userCollection.where("level", "==", 2).get()
+      const users2Get = await userCollection.where('level', '==', 2).get();
       let totalUsersLevel2 = users2Get.size;
       // totalUsersLevel3
-      const users3Get = await userCollection.where("level", "==", 3).get()
+      const users3Get = await userCollection.where('level', '==', 3).get();
       let totalUsersLevel3 = users3Get.size;
       // totalUsersLevel4
-      const users4Get = await userCollection.where("level", "==", 4).get()
+      const users4Get = await userCollection.where('level', '==', 4).get();
       let totalUsersLevel4 = users4Get.size;
       // totalUsersLevel5
-      const users5Get = await userCollection.where("level", "==", 5).get()
+      const users5Get = await userCollection.where('level', '==', 5).get();
       let totalUsersLevel5 = users5Get.size;
       // totalUsersLevel6
-      const users6Get = await userCollection.where("level", "==", 6).get()
+      const users6Get = await userCollection.where('level', '==', 6).get();
       let totalUsersLevel6 = users6Get.size;
       // totalUsersLevel7
-      const users7Get = await userCollection.where("level", "==", 7).get()
+      const users7Get = await userCollection.where('level', '==', 7).get();
       let totalUsersLevel7 = users7Get.size;
       // totalUsersLevel8
-      const users8Get = await userCollection.where("level", "==", 8).get()
+      const users8Get = await userCollection.where('level', '==', 8).get();
       let totalUsersLevel8 = users8Get.size;
 
-      console.log("222: " + totalUsersLevel1 + totalUsersLevel2)
       // ranking
       // let usersSnap = await db
       // .collection(collections.user)
@@ -2163,7 +2148,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       // .limit(12)
       // .get();
 
-      let ranking:any = [];
+      let ranking: any = [];
       // const docs = usersSnap.docs;
       // for (let i = 0; i < docs.length; i++) {
       //     const doc = docs[i];
@@ -2177,25 +2162,21 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       // }
 
       // history
-      let historySnap = await db
-        .collection(collections.points)
-        .orderBy("date")
-        .limit(12)
-        .get();
+      //let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
 
-      let history:any = [];
-      const docs2 = historySnap.docs;
-      for (let i = 0; i < docs2.length; i++) {
-          const doc2 = docs2[i];
-          const data2: any = doc2.data();
-          const record: any = {
-            user: data2.id,
-            name: data2.name,
-            date: data2.date,
-            points: data2.points,
-          }
-          history.push(record);
-      }
+      let history: any = [];
+      // const docs2 = historySnap.docs;
+      // for (let i = 0; i < docs2.length; i++) {
+      //   const doc2 = docs2[i];
+      //   const data2: any = doc2.data();
+      //   const record: any = {
+      //     user: data2.id,
+      //     name: data2.name,
+      //     date: data2.date,
+      //     points: data2.points,
+      //   };
+      //   history.push(record);
+      // }
 
       let usersLevelData = [
         { x: 1, y: totalUsersLevel1 },
@@ -2206,7 +2187,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
         { x: 6, y: totalUsersLevel6 },
         { x: 7, y: totalUsersLevel7 },
         { x: 8, y: totalUsersLevel8 },
-    ]
+      ];
 
       let response: any = {
         levelPoints: levelPoints,
@@ -2215,19 +2196,16 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
         totalBadgesToday: totalBadgesToday,
         usersLevelData: usersLevelData,
         ranking: ranking,
-        history: history
+        history: history,
       };
 
       res.send({ success: true, data: response });
     } else {
-      console.log(
-        "Error in controllers/userController -> getStatistics()",
-        "Missing Information"
-      );
+      console.log('Error in controllers/userController -> getStatistics()', 'Missing Information');
       res.send({ success: false });
     }
   } catch (err) {
-    console.log("Error in controllers/userController -> getStatistics()", err);
+    console.log('Error in controllers/userController -> getStatistics()', err);
     // res.send({ success: false });
     let response: any = {
       levelPoints: 0,
@@ -2236,7 +2214,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       totalBadgesToday: 0,
       usersLevelData: [],
       ranking: [],
-      history: []
+      history: [],
     };
 
     res.send({ success: true, data: response });
@@ -2405,11 +2383,14 @@ const responseProposal = async (req: express.Request, res: express.Response) => 
       });
 
       if (proposal.responses.length >= 10 && proposal.isReachResponses) {
-        let task = await tasks.updateTask(proposal.userId, "Create 1 Proposal in Governance that receives 10 or more responses");
-        await proposalRef.update({isReachResponses: true});
-        res.send({success: true, data: proposal, task: task})
+        let task = await tasks.updateTask(
+          proposal.userId,
+          'Create 1 Proposal in Governance that receives 10 or more responses'
+        );
+        await proposalRef.update({ isReachResponses: true });
+        res.send({ success: true, data: proposal, task: task });
       }
-      res.send({success: true, data: proposal});
+      res.send({ success: true, data: proposal });
     } else {
       console.log('Error in controllers/userController -> responseIssue()', 'Missing Information');
       res.send({ success: false });
@@ -2568,13 +2549,13 @@ const updateUserCred = (userId, sum) => {
         creds = creds - 1;
       }
       if (creds >= 15 && !credsForTask) {
-        credsForTask = true
+        credsForTask = true;
         await userRef.update({
           creds: creds,
-          credsForTask: credsForTask
+          credsForTask: credsForTask,
         });
 
-        let task = await tasks.updateTask(userId, "Receive 15 creds")
+        let task = await tasks.updateTask(userId, 'Receive 15 creds');
         user.task = task;
         resolve(user);
       } else {
@@ -2897,8 +2878,8 @@ async function getRandomForSuggestedUser() {
   let probArr: number[] = [];
   let res: number[] = [];
   let num = Math.random(),
-      s = 0,
-      lastIndex = weights.length - 1;
+    s = 0,
+    lastIndex = weights.length - 1;
 
   for (let i = 0; i < 5; ++i) {
     let notAdded = true;
@@ -2917,7 +2898,7 @@ async function getRandomForSuggestedUser() {
 
   for (let i = 0; i < lastIndex; i++) {
     if (!res[probArr[i]]) {
-      res[probArr[i]] = 1
+      res[probArr[i]] = 1;
     } else {
       res[probArr[i]] = ++res[probArr[i]];
     }
@@ -2981,5 +2962,5 @@ module.exports = {
   getAllInfoProfile,
   getSuggestedUsers,
   getUserScores,
-  getStatistics
+  getStatistics,
 };

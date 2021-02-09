@@ -30,7 +30,7 @@ exports.getTasks = async (req: express.Request, res: express.Response) => {
           (user.UserTasks &&
             !user.UserTasks.some((task) => task.Id === doc.id)))
       ) {
-        let task = { Id: doc.id, Completed: false } as any;
+        let task = { Id: doc.id, Completed: false, Level: doc.data().Level } as any;
         if (doc.data().Timed) {
           task.Timed = doc.data().Timed;
           //TODO: set timing rules ??
