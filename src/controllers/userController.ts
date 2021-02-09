@@ -1879,20 +1879,15 @@ const getBadgesFunction = (userId: string) => {
 
 const getBadgeBySymbol = async (req: express.Request, res: express.Response) => {
   try {
-    const body = req.body;
-    const badgeSymbol = body.badgeSymbol;
-    console.log('BADGEEEEEE: ' + badgeSymbol);
+    let badgeSymbol = req.params.badgeSymbol;
     if (badgeSymbol) {
       const badgeRef = await db.collection(collections.badges).where('Symbol', '==', badgeSymbol).get();
 
-      console.log('REFFFF: ' + JSON.stringify(badgeRef));
       badgeRef.forEach((doc) => {
         let badge = doc.data();
         if (badge) {
-          console.log('OKKKKKKKK: ' + badgeSymbol);
           res.send({ success: true, data: badge });
         } else {
-          console.log('NOOOOO: ' + badgeSymbol);
           console.log('Error in controllers/userController -> getBadgeBySymbol()', 'Badge not found...');
           res.send({ success: false });
         }
@@ -2146,7 +2141,6 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       const users8Get = await userCollection.where('level', '==', 8).get();
       let totalUsersLevel8 = users8Get.size;
 
-      console.log('222: ' + totalUsersLevel1 + totalUsersLevel2);
       // ranking
       // let usersSnap = await db
       // .collection(collections.user)
@@ -2168,21 +2162,21 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       // }
 
       // history
-      let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
+      //let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
 
       let history: any = [];
-      const docs2 = historySnap.docs;
-      for (let i = 0; i < docs2.length; i++) {
-        const doc2 = docs2[i];
-        const data2: any = doc2.data();
-        const record: any = {
-          user: data2.id,
-          name: data2.name,
-          date: data2.date,
-          points: data2.points,
-        };
-        history.push(record);
-      }
+      // const docs2 = historySnap.docs;
+      // for (let i = 0; i < docs2.length; i++) {
+      //   const doc2 = docs2[i];
+      //   const data2: any = doc2.data();
+      //   const record: any = {
+      //     user: data2.id,
+      //     name: data2.name,
+      //     date: data2.date,
+      //     points: data2.points,
+      //   };
+      //   history.push(record);
+      // }
 
       let usersLevelData = [
         { x: 1, y: totalUsersLevel1 },
