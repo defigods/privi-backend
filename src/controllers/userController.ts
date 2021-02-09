@@ -1884,7 +1884,7 @@ const getBadgeBySymbol = async (req: express.Request, res: express.Response) => 
     console.log("BADGEEEEEE: " + badgeSymbol)
     if (badgeSymbol) {
       const badgeRef = await db.collection(collections.badges).where('Symbol', '==', badgeSymbol).get();
-      
+
       console.log("REFFFF: " + JSON.stringify(badgeRef))
       badgeRef.forEach((doc) => {
         let badge = doc.data();
@@ -1900,7 +1900,7 @@ const getBadgeBySymbol = async (req: express.Request, res: express.Response) => 
           res.send({ success: false });
         }
       });
-    } 
+    }
   } catch (err) {
     console.log('Error in controllers/userController -> getBadgeBySymbol()', err);
     res.send({ success: false });
@@ -2035,7 +2035,7 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
       const userRef = db.collection(collections.user).doc(userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
-      
+
       // Scores:
       let pointsHour = 0;
       let pointsWonToday = 0;
@@ -2049,7 +2049,7 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
       hour.setHours(hour.getHours() - 1);
       yesterday.setDate(yesterday.getDate() - 1);
       const levelPoints =  [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
-      
+
       function diff_hours(dt2, dt1)  {
         var diff =(dt2.getTime() - dt1.getTime()) / 1000;
         diff /= (60 * 60);
@@ -2130,8 +2130,6 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       const usersLevelGet = await userCollection.where("level", "==", userLevel).get()
       let totalLevelUsers = usersLevelGet.size;
       
-      console.log("11111111111111111111totalLevelUsers: " + totalLevelUsers)
-
       // totalUsersLevels1
       const users1Get = await userCollection.where("level", "==", 1).get()
       let totalUsersLevel1 = users1Get.size;
@@ -2179,26 +2177,26 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       // }
 
       // history
-      // let historySnap = await db
-      // .collection(collections.points)
-      // .orderBy("date")
-      // .limit(12)
-      // .get();
+      let historySnap = await db
+        .collection(collections.points)
+        .orderBy("date")
+        .limit(12)
+        .get();
 
-       let history:any = [];
-      // const docs2 = historySnap.docs;
-      // for (let i = 0; i < docs2.length; i++) {
-      //     const doc2 = docs2[i];
-      //     const data2: any = doc2.data();
-      //     const record: any = {
-      //       user: data2.id, 
-      //       name: data2.name, 
-      //       date: data2.date,
-      //       points: data2.points,
-      //     }
-      //     history.push(record);
-      // }
-      
+      let history:any = [];
+      const docs2 = historySnap.docs;
+      for (let i = 0; i < docs2.length; i++) {
+          const doc2 = docs2[i];
+          const data2: any = doc2.data();
+          const record: any = {
+            user: data2.id,
+            name: data2.name,
+            date: data2.date,
+            points: data2.points,
+          }
+          history.push(record);
+      }
+
       let usersLevelData = [
         { x: 1, y: totalUsersLevel1 },
         { x: 2, y: totalUsersLevel2 },
@@ -2245,10 +2243,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const getIssuesAndProposals = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getIssuesAndProposals = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   console.log(userId);
 };

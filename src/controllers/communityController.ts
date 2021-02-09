@@ -1304,6 +1304,15 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
         }
       }
     });
+
+    res.send({
+      success: true,
+      data: {
+        commentsCounter: commentsCounter,
+        commentsMonthCounter: commentsMonthCounter,
+        conversationsMonthCounter: conversationsMonthCounter,
+      },
+    });
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);
     res.send({
