@@ -5,7 +5,7 @@ let BADGES_MAP = new Map([
     ["Vote in Governance", "B43"],
     ["Stake coins in Governance", "B27"],
     ["Verify a Pod", "B40"],
-    ["Report a bug or problem in Platform Bugs & Updates", "B42"],
+    ["Testnet Feedback", "B42"],
     ["Tweet about PRIVI and share the link on your wall in your profile", "B31"],
     ["Lend test tokens to 1 Credit Pool", "B45"],
     ["Verify your profile with test tokens", "B39"],
