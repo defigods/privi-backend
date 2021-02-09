@@ -62,7 +62,7 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
                 }
             });
 
-            res.send({ success: true, data: {id: socialAddress} });
+            res.send({ success: true, data: { id: socialAddress } });
         } else {
             console.log('Error in controllers/socialController -> createSocialToken(): success = false.', blockchainRes.message);
             res.send({ success: false, error: blockchainRes.message });
@@ -143,7 +143,7 @@ exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Respo
     try {
         if (req.file) {
             const socialPoolsRef = db.collection(collections.socialPools)
-              .doc(req.file.originalname);
+                .doc(req.file.originalname);
             const socialPoolsGet = await socialPoolsRef.get();
             const socialPool: any = socialPoolsGet.data();
 
@@ -155,7 +155,7 @@ exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Respo
 
             let dir = 'uploads/socialTokens/' + 'photos-' + req.file.originalname;
 
-            if (!fs.existsSync(dir)){
+            if (!fs.existsSync(dir)) {
                 fs.mkdirSync(dir);
             }
 
