@@ -585,7 +585,7 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
       amount,
       hash,
       signature,
-      apiKey
+      'PRIVI'
     );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
