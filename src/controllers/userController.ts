@@ -2715,7 +2715,6 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
           const userRef = db.collection(collections.user).doc(usr.user);
           const userGet = await userRef.get();
           const user: any = userGet.data();
-
           sugUsers.add(user);
           count--;
         }
@@ -2822,7 +2821,7 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
         }
       }
     }
-    res.send({ success: true, data: sugUsers });
+    res.send({success: true, data: Array.from(sugUsers)});
   } catch (e) {
     console.log('Error in controllers/userController -> getSuggestedUsers()', e);
     res.send({ success: false, error: e });
@@ -2832,11 +2831,11 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
 async function getRandomForSuggestedUser() {
   let weights = [0.35, 0.3, 0.2, 0.15]; // probabilities
   let results = [0, 1, 2, 3]; // values to return
-  let probArr: any[] = [];
-  let res: any[] = [];
+  let probArr: number[] = [];
+  let res: number[] = [];
   let num = Math.random(),
-    s = 0,
-    lastIndex = weights.length - 1;
+      s = 0,
+      lastIndex = weights.length - 1;
 
   for (let i = 0; i < 5; ++i) {
     let notAdded = true;
@@ -2854,7 +2853,11 @@ async function getRandomForSuggestedUser() {
   }
 
   for (let i = 0; i < lastIndex; i++) {
-    res[probArr[i]] = ++res[probArr[i]];
+    if (!res[probArr[i]]) {
+      res[probArr[i]] = 1
+    } else {
+      res[probArr[i]] = ++res[probArr[i]];
+    }
   }
 
   return res;

@@ -793,7 +793,7 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
         });
       });
     await trendingCredits.forEach((doc) => {
-      let docRef = db.collection(collections.trendingCommunity).doc();
+      let docRef = db.collection(collections.trendingPriviCredit).doc();
       batch.set(docRef, doc);
     });
     await batch.commit();
