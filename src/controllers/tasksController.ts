@@ -94,6 +94,7 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
     const taskQuery = await db.collection(collections.tasks).where("Title", "==", taskTitle).get();
     const user: any = userRef.data();
     const level: any = levelRef.data();
+    let userTasks = user.UserTasks || ([] as any);
 
     if (!taskQuery.empty) {
       for (const doc of taskQuery.docs) {
@@ -101,10 +102,19 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
         const userPoints: any = user.Points || 0;
         const usrLevel = level.level;
         const rewardPointsTask: any = task.RewardPoints;
+
         // update user task in db
-        // await db.collection(collections.user).doc(userId).update({
-        //   UserTasks: rewardPointsTask,
-        // });
+        let userTasksArray = [...userTasks]
+        userTasksArray.forEach(task =>{
+          if(task.Id === doc.id){
+            task.Completed = true;
+          }
+        })
+        
+        await db.collection(collections.user).doc(userId).update({
+          UserTasks: userTasksArray,
+        });
+
         // update user levels in db
         let userLevelNew = await levelsController.sumPoints(userId, rewardPointsTask, taskTitle);
 
@@ -112,6 +122,8 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
         await db.collection(collections.user).doc(userId).update({
           Points: userPoints + rewardPointsTask,
         });
+
+        // update isLevelUp in db
         let isLevelUp = false;
         const usrLevelNew = await levelsController.checkLevel(userId);
         if (usrLevel !== usrLevelNew) {
@@ -120,13 +132,13 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
             isLevelUp: isLevelUp
           });
         }
-
         if (user.isLevelUp && !isLevelUp) {
           await db.collection(collections.user).doc(userId).update({
             isLevelUp: isLevelUp
           })
         }
 
+        // Reward badges if applicable
         let badgeRes;
         let badgeSymbol = BADGES_MAP.get(taskTitle);
         if (badgeSymbol) {
