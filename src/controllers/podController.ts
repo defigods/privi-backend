@@ -1384,11 +1384,10 @@ exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) 
   try {
     const lastNFTPod = req.query.lastNFTPod;
     let allNFTPods: any[] = await getNFTPods(lastNFTPod);
-
     res.send({
       success: true,
       data: {
-        FTPods: allNFTPods ?? [],
+        NFTPods: allNFTPods ?? [],
       },
     });
   } catch (err) {
