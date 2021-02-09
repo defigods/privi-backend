@@ -27,6 +27,7 @@ import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
+const tasks = require("./tasksController");
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -275,6 +276,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
           InvitationUsers: invitedUsers,
           Posts: [],
           Votings: [],
+
+          MembersReached: false,
         });
 
       // send invitation email to admins, roles and users here
@@ -599,6 +602,21 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
           commSnap.ref.collection(collections.communityTransactions).add(obj);
         }
       }
+      let userTokens = await coinBalance.getTokensOfAddress(body.Investor);
+      if (userTokens && userTokens.success) {
+          const output = userTokens.output;
+          if (userTokens["COMMUNITY"].length >= 3) {
+              const userRef = db.collection(collections.user)
+                  .doc(investor.Investor);
+              const userGet = await userRef.get();
+              const user: any = userGet.data();
+              if (!user.Own3CommunityTokens) {
+                  let task = await tasks.updateTask(body.Investor, "Own 3 Community Tokens with test tokens ");
+                  await userRef.update({Own3CommunityTokens: true});
+                  res.send({success: true, task: task});
+              }
+          }
+      }
       res.send({ success: true });
     } else {
       console.log(
@@ -686,6 +704,7 @@ exports.join = async (req: express.Request, res: express.Response) => {
     const userData: any = userSnap.data();
 
     let joinedCommuntities = userData[fields.joinedCommunities] ?? [];
+    let jcLength = joinedCommuntities.length;
     joinedCommuntities.push(communityAddress);
     const userUpdateObj = {};
     userUpdateObj[fields.joinedCommunities] = joinedCommuntities;
@@ -716,6 +735,18 @@ exports.join = async (req: express.Request, res: express.Response) => {
           chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
         }
       }
+    }
+    if (joinedUsers.length >= 15 && !commData.MembersReached) {
+        await communitySnap.ref.update({
+            MembersReached: true,
+        })
+        let task = await tasks.updateTask(commData.Creator, "Own a community with 15 or more members");
+        res.send({success: true, task: task});
+    }
+
+    if (jcLength == 2) {
+        let task = await tasks.updateTask(userAddress, "Join 3 Communities");
+        res.send({success: true, task: task});
     }
 
     res.send({ success: true });
@@ -1272,6 +1303,15 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
           }
         }
       }
+    });
+
+    res.send({
+      success: true,
+      data: {
+        commentsCounter: commentsCounter,
+        commentsMonthCounter: commentsMonthCounter,
+        conversationsMonthCounter: conversationsMonthCounter,
+      },
     });
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);

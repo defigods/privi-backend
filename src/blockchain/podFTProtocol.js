@@ -14,7 +14,7 @@ module.exports.initiatePOD = async (podInfo, rateChange, hash, signature, caller
             "FundingToken": podInfo.FundingToken,
             "Principal": podInfo.Principal,
     
-            "DateExpiration": Date.parse(podInfo.DateExpiration),
+            "DateExpiration": parseInt(Date.parse(podInfo.DateExpiration)/1000),
             "Frequency": podInfo.Frequency,
             "Interest": podInfo.Interest,
             "LiquidationCCR": podInfo.LiquidationCCR,
