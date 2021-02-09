@@ -142,6 +142,9 @@ router.post('/badges/create', authenticateJWT, userController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 router.get('/badges/getPhoto/:badgeId', userController.getBadgePhotoById);
 
+
+router.get('/getUserScores/:userId', authenticateJWT, userController.getUserScores);
+router.get('/getStatistics/:userId', authenticateJWT, userController.getStatistics);
 //router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
 
 router.post('/governance/createIssue', userController.createIssue);
