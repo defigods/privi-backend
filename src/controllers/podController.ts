@@ -1614,7 +1614,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
             });*/
       const podSnap = await db.collection(collections.podsNFT).doc(podAddress).get();
       let myNFTPods: any[] = userData.myNFTPods || [];
-      myNFTPods.push(podSnap.data());
+      myNFTPods.push(podSnap.id);
 
       await userSnap.ref.update({
         myNFTPods: myNFTPods,
