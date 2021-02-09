@@ -807,10 +807,7 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const getAllInfoProfile = async (
-  req: express.Request,
-  res: express.Response
-) => {
+const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
 
@@ -2740,6 +2737,8 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
 
     let followings = new Set(user.followings);
 
+    console.log(randomArr);
+
     if (randomArr[0] > 0 && user.followers) {
       let count = randomArr[0];
       for (let j = 0; j < user.followers.length; ++j) {
@@ -2888,9 +2887,9 @@ async function getRandomForSuggestedUser() {
       probArr.push(results[lastIndex]);
     }
   }
-
   for (let i = 0; i < lastIndex; i++) {
     res[probArr[i]] = ++res[probArr[i]];
+    console.log(res, probArr, ++res[probArr[i]]);
   }
 
   return res;
