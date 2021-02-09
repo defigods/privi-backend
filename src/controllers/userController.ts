@@ -2688,10 +2688,25 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
         }
         let usr = user.followers[j];
         if (!followings.has(usr)) {
-          const userRef = db.collection(collections.user).doc(usr.user);
-          const userGet = await userRef.get();
-          const user: any = userGet.data();
-          sugUsers.add(user);
+          const otherUserRef = db.collection(collections.user).doc(usr.user);
+          const otherUserGet = await otherUserRef.get();
+          const otherUser: any = otherUserGet.data();
+
+          let numFollowing: number = 0;
+          if (user) {
+            let isFollowing = user.followings.find((following) => following.user === otherUserGet.id);
+
+            if (isFollowing && isFollowing.accepted) {
+              numFollowing = 2;
+            } else if (isFollowing && !isFollowing.accepted) {
+              numFollowing = 1;
+            }
+          }
+
+          otherUser.isFollowing = numFollowing;
+          otherUser.id = otherUserGet.id;
+
+          sugUsers.add(otherUser);
           count--;
         }
       }
@@ -2713,11 +2728,24 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
           }
 
           if (!followings.has(followers[i])) {
-            const userRef = db.collection(collections.user).doc(followers[i].id);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
+            const otherUserRef = db.collection(collections.user).doc(followers[i].id);
+            const otherUserGet = await otherUserRef.get();
+            const otherUser: any = otherUserGet.data();
 
-            sugUsers.add(user);
+            let numFollowing: number = 0;
+            if (user) {
+              let isFollowing = user.followings.find((following) => following.user === otherUserGet.id);
+
+              if (isFollowing && isFollowing.accepted) {
+                numFollowing = 2;
+              } else if (isFollowing && !isFollowing.accepted) {
+                numFollowing = 1;
+              }
+            }
+            otherUser.isFollowing = numFollowing;
+            otherUser.id = otherUserGet.id;
+
+            sugUsers.add(otherUser);
             count--;
           }
         }
@@ -2738,11 +2766,24 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
             break;
           }
           if (!followings.has(followers[i])) {
-            const userRef = db.collection(collections.user).doc(followers[i].id);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
+            const otherUserRef = db.collection(collections.user).doc(followers[i].id);
+            const otherUserGet = await otherUserRef.get();
+            const otherUser: any = otherUserGet.data();
 
-            sugUsers.add(user);
+            let numFollowing: number = 0;
+            if (user) {
+              let isFollowing = user.followings.find((following) => following.user === otherUserGet.id);
+
+              if (isFollowing && isFollowing.accepted) {
+                numFollowing = 2;
+              } else if (isFollowing && !isFollowing.accepted) {
+                numFollowing = 1;
+              }
+            }
+            otherUser.isFollowing = numFollowing;
+            otherUser.id = otherUserGet.id;
+
+            sugUsers.add(otherUser);
             count--;
           }
         }
@@ -2762,11 +2803,24 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
             break;
           }
           if (!followings.has(followers[i])) {
-            const userRef = db.collection(collections.user).doc(followers[i].id);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
+            const otherUserRef = db.collection(collections.user).doc(followers[i].id);
+            const otherUserGet = await otherUserRef.get();
+            const otherUser: any = otherUserGet.data();
 
-            sugUsers.add(user);
+            let numFollowing: number = 0;
+            if (user) {
+              let isFollowing = user.followings.find((following) => following.user === otherUserGet.id);
+
+              if (isFollowing && isFollowing.accepted) {
+                numFollowing = 2;
+              } else if (isFollowing && !isFollowing.accepted) {
+                numFollowing = 1;
+              }
+            }
+            otherUser.isFollowing = numFollowing;
+            otherUser.id = otherUserGet.id;
+
+            sugUsers.add(otherUser);
             count--;
           }
         }
@@ -2787,17 +2841,31 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
             break;
           }
           if (!followings.has(followers[i])) {
-            const userRef = db.collection(collections.user).doc(followers[i].id);
-            const userGet = await userRef.get();
-            const user: any = userGet.data();
+            const otherUserRef = db.collection(collections.user).doc(followers[i].id);
+            const otherUserGet = await otherUserRef.get();
+            const otherUser: any = otherUserGet.data();
 
-            sugUsers.add(user);
+            let numFollowing: number = 0;
+            if (user) {
+              let isFollowing = user.followings.find((following) => following.user === otherUserGet.id);
+
+              if (isFollowing && isFollowing.accepted) {
+                numFollowing = 2;
+              } else if (isFollowing && !isFollowing.accepted) {
+                numFollowing = 1;
+              }
+            }
+            otherUser.isFollowing = numFollowing;
+            otherUser.id = otherUserGet.id;
+
+            sugUsers.add(otherUser);
             count--;
           }
         }
       }
     }
-    res.send({ success: true, data: Array.from(sugUsers) });
+
+    res.send({success: true, data: Array.from(sugUsers)});
   } catch (e) {
     console.log('Error in controllers/userController -> getSuggestedUsers()', e);
     res.send({ success: false, error: e });

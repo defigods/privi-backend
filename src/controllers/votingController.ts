@@ -44,6 +44,16 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             isAdmin = await checkIfUserIsAdmin(community.Creator, body.userId);
             console.log(isAdmin, community.Creator, body.userId)
 
+        } else if(body.itemType === 'CommunityTreasury') {
+            const communityRef = db.collection(collections.community).doc(body.itemId);
+            const communityGet = await communityRef.get();
+            const community: any = communityGet.data();
+
+            checkUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, false, ['Treasurer'])
+
+            isAdmin = await checkIfUserIsAdmin(community.Creator, body.userId);
+            console.log(isAdmin, community.Creator, body.userId)
+
         } else if(body.itemType === 'CreditPool') {
             const priviCreditsRef = db.collection(collections.priviCredits).doc(body.itemId);
             const priviCreditsGet = await priviCreditsRef.get();
@@ -56,7 +66,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             res.send({success: false, error: 'Voting ItemType is unknown'})
         }
 
-        if(isAdmin || checkUserRole.checked) {
+        if(isAdmin || (checkUserRole && checkUserRole.checked)) {
             let voting: any = {
                 VotationId: uid,
                 Type: body.type,
@@ -157,6 +167,24 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     const community: any = communityGet.data();
 
                     await updateItemTypeVoting(communityRef, communityGet, community, uid, voting);
+
+                } else if(voting.ItemType === 'CommunityTreasury') {
+                    const communityRef = db.collection(collections.community).doc(voting.ItemId);
+                    const communityGet = await communityRef.get();
+                    const community: any = communityGet.data();
+
+                    let votingsIdArray: any[] = [];
+                    if (community && community.TreasuryVoting) {
+                        let communityTreasuryVoting = [...community.TreasuryVoting];
+                        communityTreasuryVoting.push(uid);
+                        votingsIdArray = communityTreasuryVoting;
+                    } else {
+                        votingsIdArray.push(voting.VotationId)
+                    }
+
+                    await communityRef.update({
+                        TreasuryVoting: votingsIdArray
+                    });
 
                 } else if(voting.ItemType === 'CreditPool') {
                     const priviCreditsRef = db.collection(collections.priviCredits).doc(voting.ItemId);
