@@ -87,7 +87,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
       const admins = body.Admins; // string[]
       const insurers = body.Insurers; // string[]
       const userRoles = body.UserRoles; // {name, role, status}[]
-      const hasPhoto = body.HasPhoto;
+      const hasPhoto = body.HasPhoto || false;
 
       const userSnap = await db.collection(collections.user).doc(creator).get();
       const userData: any = userSnap.data();
@@ -208,11 +208,9 @@ exports.changeCreditPoolPhoto = async (req: express.Request, res: express.Respon
       const creditPoolGet = await creditPoolRef.get();
       const creditPool: any = await creditPoolGet.data();
 
-      if (creditPool.HasPhoto) {
-        await creditPoolRef.update({
-          HasPhoto: true,
-        });
-      }
+      await creditPoolRef.update({
+        HasPhoto: true,
+      });
 
       res.send({ success: true });
     } else {
@@ -227,7 +225,7 @@ exports.changeCreditPoolPhoto = async (req: express.Request, res: express.Respon
 
 exports.getCreditPoolPhotoById = async (req: express.Request, res: express.Response) => {
   try {
-    let creditPoolId = req.params.creditPoolId;
+    let creditPoolId = req.params.creditId;
     console.log(creditPoolId);
     if (creditPoolId) {
       const directoryPath = path.join('uploads', 'creditPools');
