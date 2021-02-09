@@ -122,8 +122,8 @@ exports.changePostPhoto = async (
       const userWallPost: any = userWallPostGet.data();
 
       if (userWallPost.hasPhoto) {
-        await userWallPost.update({
-          hasPhoto: true,
+        await userWallPostRef.update({
+          hasPhoto: true
         });
       }
 
