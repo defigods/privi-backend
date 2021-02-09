@@ -19,6 +19,7 @@ import fields from '../firebase/fields';
 import path from 'path';
 import fs from 'fs';
 
+const tasks = require("./tasksController");
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
 
@@ -536,6 +537,14 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
           });
         }
       }
+      const userBorrows = await priviCredit.getUserBorrowings(address, apiKey);
+      if (userBorrows && userBorrows.success && userBorrows.output.length >= 3 && !userData.borrowedFromThree) {
+          let task = await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
+          await userSnap.ref.update({
+              borrowedFromThree: true,
+          });
+          res.send({success: true, task: task});
+      }
       res.send({ success: true });
     } else {
       console.log('Error in controllers/priviCredit -> borrowFunds(): success = false', blockchainRes.message);
@@ -784,7 +793,7 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
         });
       });
     await trendingCredits.forEach((doc) => {
-      let docRef = db.collection(collections.trendingCommunity).doc();
+      let docRef = db.collection(collections.trendingPriviCredit).doc();
       batch.set(docRef, doc);
     });
     await batch.commit();
