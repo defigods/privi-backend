@@ -311,6 +311,47 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
 };
 
 /**
+ * Function used to retrieve a pod's photo from server, if the pod has image then this image is stored with name = podId
+ * @param req podId as params
+ * @param res {success}. success: boolean that indicates if the opreaction is performed. And the image is transferred to client with pipe
+ */
+exports.getNFTPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let podId = req.params.podId;
+    console.log(podId);
+    if (podId) {
+      const directoryPath = path.join('uploads', 'pods');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'pods', podId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoId()', "There's no pod id...");
+      res.send({ success: false, error: "There's no pod id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoId()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+/**
  * Function called when a user request to follow a pod (FT/NFT), updating both user and firebase docs
  * @param req {userId, podId, podType} podType in [FT, NFT]
  * @param res {success}. success: boolean that indicates if the opreaction is performed.

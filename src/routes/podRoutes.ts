@@ -50,6 +50,7 @@ let upload2 = multer({
 // COMMON
 
 router.get('/FT/getPhoto/:podId', podController.getPhotoById);
+router.get('/NFT/getPhoto/:podId', podController.getNFTPhotoById);
 router.post('/followPod', authenticateJWT, podController.followPod);
 router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 router.post('/inviteRole', authenticateJWT, podController.inviteRole);
