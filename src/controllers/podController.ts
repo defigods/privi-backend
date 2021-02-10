@@ -1142,7 +1142,7 @@ exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) 
   }
 };
 
-exports.setTrendingPodsFT = cron.schedule('20 0 * * *', async () => {
+exports.setTrendingPodsFT = cron.schedule('0 0 * * *', async () => {
   try {
     let allFTPods: any[] = [];
     let podsFT = await db.collection(collections.podsFT).get();
@@ -1475,7 +1475,7 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
   }
 };
 
-exports.setTrendingPodsNFT = cron.schedule('20 0 * * *', async () => {
+exports.setTrendingPodsNFT = cron.schedule('0 0 * * *', async () => {
   try {
     let allNFTPods: any[] = [];
     let podsNFT = await db.collection(collections.podsNFT).get();
