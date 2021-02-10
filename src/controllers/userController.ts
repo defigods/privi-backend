@@ -1867,7 +1867,7 @@ const getBadgesFunction = (userId: string) => {
             });
           }
         });
-        console.log(retData)
+        // console.log(retData)
         resolve(retData);
       } else {
         console.log('Error in controllers/userController -> getBadges()', blockchainRes.message);
