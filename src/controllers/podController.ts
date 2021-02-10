@@ -1581,10 +1581,22 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
       const buyingOffers: any[] = [];
       const buyingSnap = await podSnap.ref.collection(collections.buyingOffers).get();
       buyingSnap.forEach((doc) => buyingOffers.push(doc.data()));
+
+      let pod : any = podSnap.data();
+      pod.PostsArray = [];
+      if (pod.Posts && pod.Posts.length > 0) {
+        for (const post of pod.Posts) {
+          const podWallPostSnap = await db.collection(collections.podNFTWallPost).doc(post).get();
+          const podWallPostData: any = podWallPostSnap.data();
+          podWallPostData.id = podWallPostSnap.id;
+          pod.PostsArray.push(podWallPostData);
+        }
+      }
+
       res.send({
         success: true,
         data: {
-          pod: podSnap.data(),
+          pod: pod,
           sellingOffers: sellingOffers,
           buyingOffers: buyingOffers,
         },

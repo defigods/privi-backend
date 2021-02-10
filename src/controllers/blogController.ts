@@ -795,6 +795,14 @@ const createPost = (exports.createPost = (body, collection, userId) => {
               data
             );
           });
+        } else if (collection === "podNFTWallPost") {
+          data.podId = body.podId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(
+              db.collection(collections.podNFTWallPost).doc("" + uid),
+              data
+            );
+          });
         } else if (collection === "creditWallPost") {
           data.creditPoolId = body.creditPoolId;
           await db.runTransaction(async (transaction) => {

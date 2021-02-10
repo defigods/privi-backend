@@ -106,6 +106,7 @@ module.exports = {
   wallPost: "WallPost",
 
   podWallPost: "PodWallPost",
+  podNFTWallPost: "PodNFTWallPost",
   creditWallPost: "CreditWallPost",
   insuranceWallPost: "InsuranceWallPost",
   communityWallPost: "CommunityWallPost",
