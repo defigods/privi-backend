@@ -1,7 +1,7 @@
 import express from "express";
 import collections from "../firebase/collections";
 import {db} from "../firebase/firebase";
-import {LEVELS, ONE_DAY} from '../constants/userLevels'
+import {LEVELS, ONE_DAY, ONE_HOUR} from '../constants/userLevels'
 
 const getLevelsInfo = async (req: express.Request, res: express.Response) => {
     try {
@@ -31,12 +31,15 @@ const sumPoints = (userId, numberOfPoints, reason) => {
             const userLevelGet = await userLevelRef.get();
             const userLevel: any = userLevelGet.data();
 
-            const historyPoint = {
+            const historyPoint: any = {
                 points: numberOfPoints,
                 date: Date.now(),
                 reason: reason
             }
             if (userLevel) {
+                if (!userLevel.points) {
+                    userLevel.points = 0;
+                }
                 userLevel.points += numberOfPoints;
                 let updatedULHistoryPointsArray: any[] = [];
                 if (userLevel.historyPoints) {
@@ -62,6 +65,9 @@ const sumPoints = (userId, numberOfPoints, reason) => {
                     historyPoints: updatedULHistoryPointsArray
                 });
 
+                historyPoint.userId = userId;
+                await db.collection(collections.points).add(historyPoint);
+
                 resolve(userLevel);
             } else {
                 let curLevel = LEVELS.length;
@@ -82,6 +88,9 @@ const sumPoints = (userId, numberOfPoints, reason) => {
                 await db.runTransaction(async (transaction) => {
                     transaction.set(db.collection(collections.levels).doc('' + userId), userLevelNew)
                 })
+
+                historyPoint.userId = userId;
+                await db.collection(collections.points).add(historyPoint);
 
                 resolve(userLevelNew);
             }
@@ -126,18 +135,25 @@ const checkLevel = (userId) => {
     });
 }
 
-const pointsWonToday = (userId) => {
+const pointsWonTodayAndHour = (userId) => {
     return new Promise(async (resolve, reject) => {
         try {
             const userLevelRef = db.collection(collections.levels).doc(userId);
             const userLevelGet = await userLevelRef.get();
             const userLevel: any = userLevelGet.data();
-            const oneDay = Date.now() + ONE_DAY;
-            const pointsSum = userLevel.historyPoints
-                .filter(hp => hp.date < oneDay)
+            const dateNow = Date.now();
+            const yesterday = Date.now() - ONE_DAY;
+            const oneHourBack = Date.now() - ONE_HOUR;
+            const pointsSumLastDay = userLevel.historyPoints
+                .filter(hp => hp.date >= yesterday && hp.date < dateNow)
+            const pointsSumDay = pointsSumLastDay
                 .map(hp => hp.points)
                 .reduce((acc, points) => acc + points, 0);
-            resolve({pointsWon: pointsSum});
+            const pointsSumHour = pointsSumLastDay
+                .filter(hp => hp.date >= oneHourBack && hp.date < dateNow)
+                .map(hp => hp.points)
+                .reduce((acc, points) => acc + points, 0);
+            resolve({pointsSumDay: pointsSumDay, pointsSumHour: pointsSumHour});
         } catch (e) {
             console.log('Error in controllers/userLevelsController -> pointsWonToday()', e);
             reject({success: false, message: e})
@@ -186,7 +202,7 @@ module.exports = {
     getLevelsInfo,
     sumPoints,
     checkLevel,
-    pointsWonToday,
+    pointsWonTodayAndHour,
     getUserRank,
     getNumberOfUsersPerLevel
 }
