@@ -105,8 +105,8 @@ router.get('/FT/getAllPodsInfo/:pagination/:lastId', authenticateJWT, podControl
 router.post('/FT/checkPodInfo', authenticateJWT, podController.checkPodInfo);
 
 router.post('/changeFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeFTPodPhoto);
-// NFT
 
+// NFT
 router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);
 router.post('/NFT/newBuyOrder', authenticateJWT, podController.newBuyOrder);
 router.post('/NFT/newSellOrder', authenticateJWT, podController.newSellOrder);
