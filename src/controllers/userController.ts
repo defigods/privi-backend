@@ -1735,7 +1735,7 @@ const changeUserProfilePhoto = async (req: express.Request, res: express.Respons
 const getPhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
-    console.log(userId);
+    // console.log(userId);
     if (userId) {
       const directoryPath = path.join('uploads', 'users');
       fs.readdir(directoryPath, function (err, files) {
@@ -1746,7 +1746,7 @@ const getPhotoById = async (req: express.Request, res: express.Response) => {
         //listing all files using forEach
         files.forEach(function (file) {
           // Do whatever you want to do with the file
-          console.log(file);
+          // console.log(file);
         });
       });
 
@@ -1986,7 +1986,7 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
 const getBadgePhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let badgeId = req.params.badgeId;
-    console.log(badgeId);
+    // console.log(badgeId);
     if (badgeId) {
       const directoryPath = path.join('uploads', 'badges');
       fs.readdir(directoryPath, function (err, files) {
@@ -1997,7 +1997,7 @@ const getBadgePhotoById = async (req: express.Request, res: express.Response) =>
         //listing all files using forEach
         files.forEach(function (file) {
           // Do whatever you want to do with the file
-          console.log(file);
+          //console.log(file);
         });
       });
 
