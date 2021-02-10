@@ -1858,7 +1858,8 @@ const getBadgesFunction = (userId: string) => {
         const badgeSnap = await db.collection(collections.badges).get();
         badgeSnap.forEach((doc) => {
           let amount = 0;
-          if (badgesBalance[doc.id]) amount = badgesBalance[doc.id].Amount;
+          let data = doc.data()
+          if (badgesBalance[data.Symbol]) amount = badgesBalance[data.Symbol].Amount;
           if (amount > 0) {
             retData.push({
               ...doc.data(),
@@ -1866,6 +1867,7 @@ const getBadgesFunction = (userId: string) => {
             });
           }
         });
+        console.log(retData)
         resolve(retData);
       } else {
         console.log('Error in controllers/userController -> getBadges()', blockchainRes.message);
