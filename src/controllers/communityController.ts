@@ -27,7 +27,7 @@ import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
-const tasks = require("./tasksController");
+const tasks = require('./tasksController');
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -563,7 +563,6 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
     const amount = body.Amount;
     const tokenType = body.TokenType;
 
-
     let price;
     if (tokenType && tokenType == 'Ethereum') {
       const commSnap = await db.collection(collections.community).doc(communityAddress).get();
@@ -579,7 +578,7 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
     }
     const hash = body.Hash;
     const signature = body.Signature;
-    const externalPrice = 0.
+    const externalPrice = 0;
 
     const blockchainRes = await community.buyCommunityToken(
       investor,
@@ -607,18 +606,17 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
       }
       let userTokens = await coinBalance.getTokensOfAddress(body.Investor);
       if (userTokens && userTokens.success) {
-          const output = userTokens.output;
-          if (userTokens["COMMUNITY"].length >= 3) {
-              const userRef = db.collection(collections.user)
-                  .doc(investor.Investor);
-              const userGet = await userRef.get();
-              const user: any = userGet.data();
-              if (!user.Own3CommunityTokens) {
-                  let task = await tasks.updateTask(body.Investor, "Own 3 Community Tokens with test tokens ");
-                  await userRef.update({Own3CommunityTokens: true});
-                  res.send({success: true, task: task});
-              }
+        const output = userTokens.output;
+        if (userTokens['COMMUNITY'].length >= 3) {
+          const userRef = db.collection(collections.user).doc(investor.Investor);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+          if (!user.Own3CommunityTokens) {
+            let task = await tasks.updateTask(body.Investor, 'Own 3 Community Tokens with test tokens ');
+            await userRef.update({ Own3CommunityTokens: true });
+            res.send({ success: true, task: task });
           }
+        }
       }
       res.send({ success: true });
     } else {
@@ -740,16 +738,16 @@ exports.join = async (req: express.Request, res: express.Response) => {
       }
     }
     if (joinedUsers.length >= 15 && !commData.MembersReached) {
-        await communitySnap.ref.update({
-            MembersReached: true,
-        })
-        let task = await tasks.updateTask(commData.Creator, "Own a community with 15 or more members");
-        res.send({success: true, task: task});
+      await communitySnap.ref.update({
+        MembersReached: true,
+      });
+      let task = await tasks.updateTask(commData.Creator, 'Own a community with 15 or more members');
+      res.send({ success: true, task: task });
     }
 
     if (jcLength == 2) {
-        let task = await tasks.updateTask(userAddress, "Join 3 Communities");
-        res.send({success: true, task: task});
+      let task = await tasks.updateTask(userAddress, 'Join 3 Communities');
+      res.send({ success: true, task: task });
     }
 
     res.send({ success: true });
@@ -864,7 +862,7 @@ exports.changeCommunityPhoto = async (req: express.Request, res: express.Respons
       const communityGet = await communityRef.get();
       const community: any = await communityGet.data();
 
-      if (community.HasPhoto) {
+      if (community.HasPhoto !== undefined) {
         await communityRef.update({
           HasPhoto: true,
         });

@@ -20,11 +20,11 @@ import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 import priviGovernance from '../blockchain/priviGovernance';
-import coinBalance from "../blockchain/coinBalance.js";
+import coinBalance from '../blockchain/coinBalance.js';
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
-const tasks = require("./tasksController");
+const tasks = require('./tasksController');
 require('dotenv').config();
 const apiKey = 'PRIVI'; // process.env.API_KEY;
 
@@ -228,7 +228,7 @@ exports.changeFTPodPhoto = async (req: express.Request, res: express.Response) =
       const podGet = await podRef.get();
       const pod: any = await podGet.data();
 
-      if (pod.HasPhoto) {
+      if (pod.HasPhoto !== undefined) {
         await podRef.update({
           HasPhoto: true,
         });
@@ -252,7 +252,7 @@ exports.changeNFTPodPhoto = async (req: express.Request, res: express.Response) 
       const podGet = await podRef.get();
       const pod: any = await podGet.data();
 
-      if (pod.HasPhoto) {
+      if (pod.HasPhoto !== undefined) {
         await podRef.update({
           HasPhoto: true,
         });
@@ -850,12 +850,15 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
       }
 
       if (!podData.PodReachInvestors && Object.keys(newInvestors).length >= 5) {
-        let task = await tasks.updateTask(podData.Creator, "Your Pod has at least 5 investors who invested test tokens")
-        await podSnap.ref.update({PodReachInvestors: true});
-        res.send({success: true});
+        let task = await tasks.updateTask(
+          podData.Creator,
+          'Your Pod has at least 5 investors who invested test tokens'
+        );
+        await podSnap.ref.update({ PodReachInvestors: true });
+        res.send({ success: true });
       }
 
-      res.send({success: true});
+      res.send({ success: true });
     } else {
       console.log('Error in controllers/podController -> investPOD(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
@@ -1582,7 +1585,7 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
       const buyingSnap = await podSnap.ref.collection(collections.buyingOffers).get();
       buyingSnap.forEach((doc) => buyingOffers.push(doc.data()));
 
-      let pod : any = podSnap.data();
+      let pod: any = podSnap.data();
       pod.PostsArray = [];
       if (pod.Posts && pod.Posts.length > 0) {
         for (const post of pod.Posts) {
@@ -2180,20 +2183,19 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
 
       let userTokens = await coinBalance.getTokensOfAddress(buyerAddress);
       if (userTokens && userTokens.success) {
-          const output = userTokens.output;
-          if (userTokens["NFTPOD"].length >= 5) {
-              const userRef = db.collection(collections.user)
-                  .doc(buyerAddress);
-              const userGet = await userRef.get();
-              const user: any = userGet.data();
-              if (!user.boughtFiveTokens) {
-                let task = await tasks.updateTask(buyerAddress, "Own 5 different NFT Pod Tokens");
-                await userRef.update({boughtFiveTokens: true});
-                res.send({success: true});
-              }
+        const output = userTokens.output;
+        if (userTokens['NFTPOD'].length >= 5) {
+          const userRef = db.collection(collections.user).doc(buyerAddress);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+          if (!user.boughtFiveTokens) {
+            let task = await tasks.updateTask(buyerAddress, 'Own 5 different NFT Pod Tokens');
+            await userRef.update({ boughtFiveTokens: true });
+            res.send({ success: true });
           }
         }
-        res.send({ success: true });
+      }
+      res.send({ success: true });
     } else {
       console.log(
         'Error in controllers/podController -> buyPodTokens(), blockchain success = false, ',
