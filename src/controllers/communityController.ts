@@ -1053,23 +1053,35 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         });
         // create retData array from userDataMap extracting the necessary info
         const userRoles = communityData.UserRoles;
-        members.forEach((memberObj) => {
-          const uid = memberObj.id;
-          const roleObj = userRoles[uid];
-          let role;
-          if (roleObj) role = roleObj.role;
-          if (roleObj && roleObj.status == 'PENDING') role += ' (Pending)';
-          retData.push({
-            AnonAvatar: userDataMap[uid].anonAvatar,
-            Anon: userDataMap[uid].anon,
-            UserId: uid,
-            Name: userDataMap[uid].firstName,
-            SupplyProportion: userDataMap[uid].SupplyProportion,
-            Role: role,
-            Level: userDataMap[uid].level ?? 1, // TODO: get correct level from somewhere
-            Activity: '', // TODO: get correct activity from somewhere
-            NumFollowers: userDataMap[uid].followers ? userDataMap[uid].followers.length : 0,
-          });
+
+        Object.keys(userRoles).map((key) => {
+
+          console.log(key);
+          let idUserRole = '';
+          if(userRoles[key]) {
+            idUserRole = userRoles[key].userId;
+            let roleUserRole = userRoles[key].roles;
+
+            Object.keys(roleUserRole).map((key) => {
+              let role = roleUserRole[key];
+
+              if(role && role === 'Accepted') {
+                retData.push({
+                  AnonAvatar: userDataMap[idUserRole].anonAvatar,
+                  Anon: userDataMap[idUserRole].anon,
+                  UserId: idUserRole,
+                  Name: userDataMap[idUserRole].firstName,
+                  SupplyProportion: userDataMap[idUserRole].SupplyProportion,
+                  Role: key,
+                  Level: userDataMap[idUserRole].level ?? 1, // TODO: get correct level from somewhere
+                  Activity: '', // TODO: get correct activity from somewhere
+                  NumFollowers: userDataMap[idUserRole].followers ? userDataMap[idUserRole].followers.length : 0,
+                });
+              }
+
+
+            });
+          }
         });
       }
       res.send({ success: true, data: retData });
