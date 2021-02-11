@@ -2085,6 +2085,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       let today = Date.now();
       let yesterday = today - ONE_DAY;
 
+      // TODO: this doesnt work (collections missing)
       // totalPointsToday
       let pointsGet = await db.collection(collections.points)
           .where("date", ">", yesterday)
@@ -2140,14 +2141,15 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
         const doc = docs[i];
         const data: any = doc.data();
         const user: any = {
-          user: data.userId,
+          user: doc.id,
+          name: data.firstName,
           points: data.points,
           level: data.level
         }
         ranking.push(user);
       }
-
-      let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
+      // TODO: this doesnt work (collections missing)
+      let historySnap = await db.collection(collections.user).orderBy('date').limit(12).get();
 
       let history: any = [];
       const docs2 = historySnap.docs;
@@ -2164,14 +2166,14 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       }
 
       let usersLevelData = [
-        {level: 1, totalUsers: totalUsersLevel1},
-        {level: 2, totalUsers: totalUsersLevel2},
-        {level: 3, totalUsers: totalUsersLevel3},
-        {level: 4, totalUsers: totalUsersLevel4},
-        {level: 5, totalUsers: totalUsersLevel5},
-        {level: 6, totalUsers: totalUsersLevel6},
-        {level: 7, totalUsers: totalUsersLevel7},
-        {level: 8, totalUsers: totalUsersLevel8},
+        {x: 1, y: totalUsersLevel1},
+        {x: 2, y: totalUsersLevel2},
+        {x: 3, y: totalUsersLevel3},
+        {x: 4, y: totalUsersLevel4},
+        {x: 5, y: totalUsersLevel5},
+        {x: 6, y: totalUsersLevel6},
+        {x: 7, y: totalUsersLevel7},
+        {x: 8, y: totalUsersLevel8},
       ];
 
       let response: any = {
