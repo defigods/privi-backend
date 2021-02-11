@@ -1149,7 +1149,8 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const rateOfChange = await getRateOfChangeAsMap();
     const data: any = communitySnap.data();
     const id: any = communitySnap.id;
-    const extraData = getExtraData(data, rateOfChange);
+    const extraData = await getExtraData(data, rateOfChange);
+    console.log(extraData);
 
     const ads: any[] = [];
     if (data.GeneralAd && data.GeneralAd !== '') {
