@@ -112,6 +112,9 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                         return;
                     }
                 } else if (voting.Type === 'regular') {
+                    if(body.itemType === 'CommunityTreasury') {
+                        voting.RequiredAnswers = +body.requiredAnswers
+                    }
                     voting.PossibleAnswers = body.possibleAnswers;
                     await db.runTransaction(async (transaction) => {
                         transaction.set(db.collection(collections.voting).doc('' + voting.VotationId), voting)
@@ -267,6 +270,13 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
 
                 isCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.itemId);
                 isUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, true, ['Moderator', 'Treasurer']);
+            } else if(body.itemType === 'CommunityTreasury') {
+                const userRef = db.collection(collections.user).doc(body.userId);
+                const userGet = await userRef.get();
+                const user: any = userGet.data();
+
+                isCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.itemId);
+                isUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, true, ['Moderator', 'Treasurer']);
             } else {
                 foundUser = true;
             }
@@ -316,7 +326,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     const voting: any = votingGet.data();
 
                     let answers: any[] = [];
-                    if (!(voting && voting.OpenVotation && voting.StartingDate < Date.now() && voting.EndingDate > Date.now())) {
+                    if (!(voting && voting.OpenVotation && voting.StartingDate < Math.trunc(Date.now()/1000) && voting.EndingDate > Math.trunc(Date.now()/1000))) {
                         console.log('Error in controllers/votingController -> makeVote()', 'Voting is closed or missing')
                         res.send({success: false, error: 'Voting is closed or missing'});
                         return;
@@ -324,10 +334,12 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
 
                     if (voting.Answers && voting.Answers.length > 0) {
                         let foundVote = voting.Answers.findIndex(item => item.UserId === body.userId);
-                        if(foundVote !== -1) {
+
+                        if(foundVote === -1) {
                             let votingAnswers = [...voting.Answers];
                             votingAnswers.push(vote);
                             answers = votingAnswers;
+
                             if (body.type === 'multisignature') {
                                 let isRightRole = await checkIfUserHasRightRole(vote.VoterAddress, treasurer);
                                 if (!isRightRole) {
@@ -360,9 +372,18 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     } else {
                         answers.push(vote);
                     }
+
+                    let open = voting.OpenVotation;
+                    if(body.itemType === 'CommunityTreasury') {
+                        console.log(voting.RequiredAnswers, answers.length, answers.length === voting.RequiredAnswers)
+                        if(voting.RequiredAnswers && answers.length === voting.RequiredAnswers) {
+                            open = false;
+                        }
+                    }
                     await votingRef.update({
-                        Answers: answers
-                    })
+                        Answers: answers,
+                        OpenVotation: open
+                    });
                 }
                 res.send({success: true, data: vote});
             } else {

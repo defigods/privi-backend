@@ -1190,6 +1190,25 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
       }
     }
 
+    data.TreasuryVotingsArray = [];
+    if (data.TreasuryVoting && data.TreasuryVoting.length > 0) {
+      for (const voting of data.TreasuryVoting) {
+        const votingSnap = await db.collection(collections.voting).doc(voting).get();
+        const votingData: any = votingSnap.data();
+        if (votingSnap.exists) {
+          votingData.id = votingSnap.id;
+
+          const userRef = db.collection(collections.user).doc(votingData.CreatorId);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+
+          votingData.CreatorName = user.firstName;
+
+          data.TreasuryVotingsArray.push(votingData);
+        }
+      }
+    }
+
     data.TreasuryHistory = [];
     const addressUidMap = await getAddresUidMap();
     const communityTransactions = await communitySnap.ref.collection(collections.communityTransactions).get();
