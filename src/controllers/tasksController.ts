@@ -213,7 +213,7 @@ exports.updateTask = (userId, title) => {
               isLevelUp: isLevelUp
             })
           }
-          let badgeRes;
+          let badgeRes: any;
           let badgeSymbol = BADGES_MAP.get(title);
           if (badgeSymbol) {
             const blockchainRes = await badge.rewardBadge({
@@ -225,14 +225,18 @@ exports.updateTask = (userId, title) => {
               await updateFirebase(blockchainRes);
               badgeRes = {
                 isNew: true,
-                badgeId: badgeSymbol
+                badgeId: badgeSymbol,
+                date: new Date()
               }
 
               let badges = user.badges;
               badges = badges.push(badgeRes);
               await db.collection(collections.user).doc(userId).update({
                 badges: badges
-              })
+              });
+
+              badgeRes.userId = userId;
+              await db.collection(collections.badgesHistory).add(badgeRes);
             }
           }
 

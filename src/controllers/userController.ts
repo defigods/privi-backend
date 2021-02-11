@@ -19,8 +19,10 @@ import path from 'path';
 import fs from 'fs';
 import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
-import { sockets } from './serverController';
+import {sockets} from './serverController';
+import {LEVELS, ONE_DAY} from '../constants/userLevels';
 
+const levels = require('./userLevelsController');
 const tasks = require('./tasksController');
 const bcrypt = require('bcrypt');
 const FieldValue = require('firebase-admin').firestore.FieldValue;
@@ -2031,51 +2033,31 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
       const user: any = userGet.data();
 
       // Scores:
-      let pointsHour = 0;
-      let pointsWonToday = 0;
       let level = user.level || 1;
-      let points = user.Points || 0;
+      let userPoints = user.Points || 0;
       let badges = user.badges;
-      let badgesToday: any = [];
-      let today = new Date();
-      let hour = new Date();
-      let yesterday = new Date(today);
-      hour.setHours(hour.getHours() - 1);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const levelPoints = [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
+      let badgesToday: any[] = [];
+      let today = Date.now();
+      let yesterday = today - ONE_DAY;
 
-      function diff_hours(dt2, dt1) {
-        var diff = (dt2.getTime() - dt1.getTime()) / 1000;
-        diff /= 60 * 60;
-        return Math.abs(Math.round(diff));
-      }
-
-      // Points
-      if (points && points.length > 0) {
-        points.forEach(function (point) {
-          let pointDate = new Date(point.date);
-          // Points earned today
-          if (diff_hours(pointDate, today) < 24) pointsWonToday = pointsWonToday + point;
-          // Points earned last hour
-          if (diff_hours(pointDate, today) < 1) pointsHour = pointsHour + point;
-        });
-      }
+      // points
+      let points = levels.pointsWonTodayAndHour(userId);
+      let pointsWonToday = points.pointsSumHour;
+      let pointsWonHour = points.pointsSumHour;
 
       // Badges earned today
       if (badges && badges.length > 0) {
-        badges.forEach(function (badge) {
-          if (badge.date > yesterday) badgesToday.push(badge);
-        });
+        badgesToday = badges.filter(badge => badge.date >= yesterday && badge.date < today);
       }
 
       let response: any = {
         level: level,
         badges: badges,
-        points: points,
-        levelPoints: levelPoints,
+        points: userPoints,
+        levelPoints: LEVELS,
         badgesToday: badgesToday,
         pointsWonToday: pointsWonToday,
-        pointsHour: pointsHour,
+        pointsHour: pointsWonHour,
       };
 
       res.send({ success: true, data: response });
@@ -2100,18 +2082,19 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       const userLevel: number = user.level || 1;
 
       // Statistics:
-      let today = new Date();
-      let yesterday = new Date(today);
-      yesterday.setDate(yesterday.getDate() - 1);
-      const levelPoints = [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
+      let today = Date.now();
+      let yesterday = today - ONE_DAY;
 
       // totalPointsToday
-      // let pointsGet = await db.collection(collections.points).where("date", ">", yesterday).get();
-      // let totalPointsToday = pointsGet.size;
-      let totalPointsToday = 0;
-      // let badgesGet = await db.collection(collections.badges).where("date", ">", yesterday).get();
-      // let totalBadgesToday = badgesGet.size;
-      let totalBadgesToday = 0;
+      let pointsGet = await db.collection(collections.points)
+          .where("date", ">", yesterday)
+          .where("date", "<", today)
+          .get();
+      let totalPointsToday = pointsGet.size;
+      let badgesGet = await db.collection(collections.badgesHistory)
+          .where("date", ">", yesterday)
+          .where("date", "<", today).get();
+      let totalBadgesToday = badgesGet.size;
 
       // totalUsersLevels userLevel
       const userCollection = db.collection(collections.user);
@@ -2144,59 +2127,60 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       let totalUsersLevel8 = users8Get.size;
 
       // ranking
-      // let usersSnap = await db
-      // .collection(collections.user)
-      // .orderBy("points")
-      // .limit(12)
-      // .get();
+      let userRank = await levels.getUserRank(userId);
+      let usersSnap = await db
+          .collection(collections.levels)
+          .orderBy("points")
+          .limit(12)
+          .get();
 
       let ranking: any = [];
-      // const docs = usersSnap.docs;
-      // for (let i = 0; i < docs.length; i++) {
-      //     const doc = docs[i];
-      //     const data: any = doc.data();
-      //     const user: any = {
-      //       user: data.id,
-      //       points: data.points[0].currentPoints,
-      //       level: data.level
-      //     }
-      //     ranking.push(user);
-      // }
+      const docs = usersSnap.docs;
+      for (let i = 0; i < docs.length; i++) {
+        const doc = docs[i];
+        const data: any = doc.data();
+        const user: any = {
+          user: data.userId,
+          points: data.points,
+          level: data.level
+        }
+        ranking.push(user);
+      }
 
-      // history
-      //let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
+      let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
 
       let history: any = [];
-      // const docs2 = historySnap.docs;
-      // for (let i = 0; i < docs2.length; i++) {
-      //   const doc2 = docs2[i];
-      //   const data2: any = doc2.data();
-      //   const record: any = {
-      //     user: data2.id,
-      //     name: data2.name,
-      //     date: data2.date,
-      //     points: data2.points,
-      //   };
-      //   history.push(record);
-      // }
+      const docs2 = historySnap.docs;
+      for (let i = 0; i < docs2.length; i++) {
+        const doc2 = docs2[i];
+        const data2: any = doc2.data();
+        const record: any = {
+          user: data2.userId,
+          reason: data2.reason,
+          date: data2.date,
+          points: data2.points,
+        };
+        history.push(record);
+      }
 
       let usersLevelData = [
-        { x: 1, y: totalUsersLevel1 },
-        { x: 2, y: totalUsersLevel2 },
-        { x: 3, y: totalUsersLevel3 },
-        { x: 4, y: totalUsersLevel4 },
-        { x: 5, y: totalUsersLevel5 },
-        { x: 6, y: totalUsersLevel6 },
-        { x: 7, y: totalUsersLevel7 },
-        { x: 8, y: totalUsersLevel8 },
+        {level: 1, totalUsers: totalUsersLevel1},
+        {level: 2, totalUsers: totalUsersLevel2},
+        {level: 3, totalUsers: totalUsersLevel3},
+        {level: 4, totalUsers: totalUsersLevel4},
+        {level: 5, totalUsers: totalUsersLevel5},
+        {level: 6, totalUsers: totalUsersLevel6},
+        {level: 7, totalUsers: totalUsersLevel7},
+        {level: 8, totalUsers: totalUsersLevel8},
       ];
 
       let response: any = {
-        levelPoints: levelPoints,
+        levelPoints: LEVELS,
         totalLevelUsers: totalLevelUsers,
         totalPointsToday: totalPointsToday,
         totalBadgesToday: totalBadgesToday,
         usersLevelData: usersLevelData,
+        userRank: userRank.rank,
         ranking: ranking,
         history: history,
       };
