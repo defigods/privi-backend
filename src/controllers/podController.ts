@@ -752,13 +752,12 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
 
       // add txn to pod
       const output = blockchainRes.output;
+      console.log("investFT:", JSON.stringify(output, null, 4))
       const transactions = output.Transactions;
-      let key = '';
-      let obj: any = null;
-      for ([key, obj] of Object.entries(transactions)) {
-        if (obj.From == podId || obj.To == podId) {
-          podSnap.ref.collection(collections.podTransactions).add(obj);
-        }
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transactions: txnArray });
       }
       // add to PriceOf the day
       podSnap.ref.collection(collections.priceOfTheDay).add({
@@ -892,10 +891,10 @@ exports.sellFTPOD = async (req: express.Request, res: express.Response) => {
       // add txn to pod
       const output = blockchainRes.output;
       const transactions = output.Transactions;
-      let key = '';
-      let obj: any = null;
-      for ([key, obj] of Object.entries(transactions)) {
-        if (obj.From == podId || obj.To == podId) podSnap.ref.collection(collections.podTransactions).add(obj);
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transactions: txnArray });
       }
       // add to PriceOf the day
       podSnap.ref.collection(collections.priceOfTheDay).add({
@@ -1324,7 +1323,6 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
     let podId = req.params.podId;
     const txns: any[] = [];
     if (podId) {
-      const uidNameMap = await getUidNameMap();
       const podTxnSnapshot = await db
         .collection(collections.podsFT)
         .doc(podId)
@@ -1332,23 +1330,18 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
         .get();
       podTxnSnapshot.forEach((doc) => {
         const data = doc.data();
-        const txn = data;
-        let from = data.from;
-        let to = data.to;
-        // find name of "from" and "to"
-        if (uidNameMap[from]) from = uidNameMap[from];
-        if (uidNameMap[to]) to = uidNameMap[to];
-        txn.from = from;
-        txn.to = to;
-        txns.push(txn);
+        const transactions: any[] = data.Transactions ?? [];
+        transactions.forEach((txn) => {
+          txns.push(txn);
+        })
       });
       res.send({ success: true, data: txns });
     } else {
-      console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
+      console.log('Error in controllers/podController -> getFTPodTransactions()', "There's no pod id...");
       res.send({ success: false });
     }
   } catch (err) {
-    console.log('Error in controllers/podController -> getNFTPodTransactions()', err);
+    console.log('Error in controllers/podController -> getFTPodTransactions()', err);
     res.send({ success: false });
   }
 };
@@ -2068,7 +2061,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transcations: txnArray });
+        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transactions: txnArray });
       }
       // add to PriceOf the day
       if (price) {
@@ -2155,7 +2148,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transcations: txnArray });
+        podSnap.ref.collection(collections.podTransactions).doc(tid).set({ Transactions: txnArray });
       }
       // add to PriceOf the day
       if (price) {
@@ -2225,8 +2218,13 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
         .collection(collections.podTransactions)
         .get();
       podTxnSnapshot.forEach((doc) => {
-        txns.push(doc.data());
+        const data = doc.data();
+        const transactions: any[] = data.Transactions ?? [];
+        transactions.forEach((txn) => {
+          txns.push(txn);
+        })
       });
+      console.log(txns);
       res.send({ success: true, data: txns });
     } else {
       console.log('Error in controllers/podController -> getNFTPodTransactions()', "There's no pod id...");
