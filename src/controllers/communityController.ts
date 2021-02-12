@@ -174,9 +174,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         }
       }
       const userRolkeys = Object.keys(userRolesObj);
-      console.log('userRolkeys', userRolkeys);
       for (const [index, userRole] of userRolkeys.entries()) {
-        console.log('userRole', userRole);
         const user = await db.collection(collections.user).where('email', '==', userRole).get();
         if (user.empty) {
           userRolesArray[index].userId = null;
@@ -1624,6 +1622,90 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
   }
 });
 
+exports.roleInvitation = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body.userId && body.communityId && body.role && body.creator) {
+      const communityRef = db.collection(collections.community).doc(body.communityId);
+      const communityGet = await communityRef.get();
+      const community: any = communityGet.data();
+
+      const creatorUserRef = db.collection(collections.user).doc(body.creator);
+      const creatorUserGet = await creatorUserRef.get();
+      const creator: any = creatorUserGet.data();
+
+      if(body.role === 'Admin') {
+        let admins : any[] = [...community.Admins];
+
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        admins.push({
+          name: user.email,
+          userId: body.userId,
+          status: 'Pending'
+        });
+        await communityRef.update({
+          Admins: admins
+        });
+      } else if(body.role === 'Moderator' && body.role === 'Treasurer') {
+        let userRoles : any = community.UserRoles;
+
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        userRoles[user.email].roles[body.role] = 'Pending';
+        userRoles[user.email].userId = body.userId;
+
+        await communityRef.update({
+          UserRoles: userRoles
+        });
+      } else if(body.role === 'Member') {
+        let members : any[] = [...community.Members];
+
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        members.push({
+          id: body.userId,
+          date: Date.now()
+        });
+        await communityRef.update({
+          Members: members
+        });
+      }
+      await notificationsController.addNotification({
+        userId: body.userId,
+        notification: {
+          type: 86,
+          typeItemId: 'user',
+          itemId: body.creator,
+          follower: creator.firstName,
+          pod: community.Name, // community name
+          comment: body.role,
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: body.communityId,
+        },
+      });
+
+      res.send({ success: true, message: 'Invitation sent' });
+
+    } else {
+      console.log('Error in controllers/communityController -> roleInvitation()', 'Info missing');
+      res.send({ success: false, message: 'Info missing' });
+    }
+  } catch (e) {
+    console.log('Error in controllers/communityController -> roleInvitation()', e);
+    res.send({ success: false, message: e });
+  }
+};
+
 exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
@@ -1637,6 +1719,7 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
           if (community.Admins && community.Admins.length > 0) {
             let adminIndex = community.Admins.findIndex((admin) => admin.userId === body.userId);
 
+            console.log(adminIndex, community.Admins, body.userId)
             if (adminIndex !== -1) {
               let copyAdmins = [...community.Admins];
               copyAdmins[adminIndex].status = 'Accepted';
