@@ -194,6 +194,8 @@ router.post('/wall/pinPost', authenticateJWT, communityWallController.pinPost);
 
 router.post('/acceptRoleInvitation', authenticateJWT, communityController.acceptRoleInvitation);
 router.post('/declineRoleInvitation', authenticateJWT, communityController.declineRoleInvitation);
+router.post('/roleInvitation', authenticateJWT, communityController.roleInvitation);
+router.post('/removeRoleUser', authenticateJWT, communityController.removeRoleUser);
 
 /*router.post('/ad/create', authenticateJWT, blogController.adCreate);
 router.post('/ad/changePhoto', authenticateJWT, upload4.single('image'), blogController.changeAdPhoto);
