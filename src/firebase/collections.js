@@ -4,6 +4,7 @@ module.exports = {
   wallet: "Wallet",
   walletNFT: "WalletNFT",
   walletFT: "WalletFT",
+  points: "Points",
 
   // token types
   tokens: "Tokens",
@@ -92,6 +93,7 @@ module.exports = {
   retunHistory: "ReturnHistory",
   stakedHistory: "StakedHistory",
 
+  badgesHistory: "BadgesHistory",
   badges: "Badges",
   issues: "Issues",
   proposals: "Proposals",
@@ -120,8 +122,6 @@ module.exports = {
   discordRoom: "DiscordRoom",
   discordMessage: "DiscordMessage",
   discordMessageReplies: "DiscordMessageReplies",
-
-  socialPools: "SocialPools",
 
   levels: "Levels",
 

@@ -6,6 +6,7 @@ import badge from "../blockchain/badge";
 import {updateFirebase} from "../functions/functions";
 
 const levelsController = require("./userLevelsController");
+const notificationsController = require("./notificationsController");
 const apiKey = "PRIVI";
 /**
  * Function to get user tasks
@@ -136,6 +137,21 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
           await db.collection(collections.user).doc(userId).update({
             isLevelUp: isLevelUp
           })
+          await notificationsController.addNotification({
+            userId: userId,
+            notification: {
+              type: 71,
+              typeItemId: "levelUp",
+              itemId: body.userId,
+              follower: "",
+              pod: "",
+              comment: "",
+              token: usrLevelNew,
+              amount: 0,
+              onlyInformation: false,
+              otherItemId: "",
+            },
+          });
         }
 
         // Reward badges if applicable
@@ -163,6 +179,21 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
             await db.collection(collections.user).doc(userId).update({
               badges: badges
             })
+            await notificationsController.addNotification({
+              userId: userId,
+              notification: {
+                type: 77,
+                typeItemId: "taskBadge",
+                itemId: body.userId,
+                follower: "",
+                pod: "",
+                comment: "",
+                token: badgeRes.badgeId,
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: "",
+              },
+            });
           }
         }
 
@@ -212,8 +243,23 @@ exports.updateTask = (userId, title) => {
             await db.collection(collections.user).doc(userId).update({
               isLevelUp: isLevelUp
             })
+            await notificationsController.addNotification({
+              userId: userId,
+              notification: {
+                type: 71,
+                typeItemId: "levelUp",
+                itemId: userId,
+                follower: "",
+                pod: "",
+                comment: "",
+                token: usrLevelNew,
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: "",
+              },
+            });
           }
-          let badgeRes;
+          let badgeRes: any;
           let badgeSymbol = BADGES_MAP.get(title);
           if (badgeSymbol) {
             const blockchainRes = await badge.rewardBadge({
@@ -225,14 +271,34 @@ exports.updateTask = (userId, title) => {
               await updateFirebase(blockchainRes);
               badgeRes = {
                 isNew: true,
-                badgeId: badgeSymbol
+                badgeId: badgeSymbol,
+                date: new Date()
               }
 
               let badges = user.badges;
               badges = badges.push(badgeRes);
               await db.collection(collections.user).doc(userId).update({
                 badges: badges
-              })
+              });
+
+              badgeRes.userId = userId;
+              await db.collection(collections.badgesHistory).add(badgeRes);
+
+              await notificationsController.addNotification({
+                userId: userId,
+                notification: {
+                  type: 72,
+                  typeItemId: "taskBadge",
+                  itemId: userId,
+                  follower: "",
+                  pod: "",
+                  comment: "",
+                  token: badgeRes.badgeId,
+                  amount: 0,
+                  onlyInformation: false,
+                  otherItemId: "",
+                },
+              });
             }
           }
 
