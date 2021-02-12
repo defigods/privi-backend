@@ -140,13 +140,13 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
           await notificationsController.addNotification({
             userId: userId,
             notification: {
-              type: 71,
-              typeItemId: "levelUp",
+              type: 91,
+              typeItemId: "user",
               itemId: body.userId,
               follower: "",
               pod: "",
-              comment: "",
-              token: usrLevelNew,
+              comment: usrLevelNew,
+              token: "",
               amount: 0,
               onlyInformation: false,
               otherItemId: "",
@@ -246,13 +246,13 @@ exports.updateTask = (userId, title) => {
             await notificationsController.addNotification({
               userId: userId,
               notification: {
-                type: 71,
+                type: 91,
                 typeItemId: "levelUp",
                 itemId: userId,
                 follower: "",
                 pod: "",
-                comment: "",
-                token: usrLevelNew,
+                comment: usrLevelNew,
+                token: "",
                 amount: 0,
                 onlyInformation: false,
                 otherItemId: "",
@@ -287,16 +287,16 @@ exports.updateTask = (userId, title) => {
               await notificationsController.addNotification({
                 userId: userId,
                 notification: {
-                  type: 72,
-                  typeItemId: "taskBadge",
+                  type: 92,
+                  typeItemId: "user",
                   itemId: userId,
                   follower: "",
                   pod: "",
-                  comment: "",
-                  token: badgeRes.badgeId,
+                  comment: badgeSymbol,
+                  token: "",
                   amount: 0,
                   onlyInformation: false,
-                  otherItemId: "",
+                  otherItemId: badgeRes.badgeId,
                 },
               });
             }
