@@ -163,26 +163,30 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      for (const [index, admin] of admins.entries()) {
-        const user = await db.collection(collections.user).where('email', '==', admin.name).get();
-        if (user.empty) {
-          admins[index].userId = null;
-        } else {
-          for (const doc of user.docs) {
-            admins[index].userId = doc.id;
+      if (admins && admins.length > 0) {
+        for (const [index, admin] of admins.entries()) {
+          const user = await db.collection(collections.user).where('email', '==', admin.name).get();
+          if (user.empty) {
+            admins[index].userId = null;
+          } else {
+            for (const doc of user.docs) {
+              admins[index].userId = doc.id;
+            }
           }
         }
       }
-      const userRolkeys = Object.keys(userRolesObj);
-      console.log('userRolkeys', userRolkeys);
-      for (const [index, userRole] of userRolkeys.entries()) {
-        console.log('userRole', userRole);
-        const user = await db.collection(collections.user).where('email', '==', userRole).get();
-        if (user.empty) {
-          userRolesArray[index].userId = null;
-        } else {
-          for (const doc of user.docs) {
-            userRolesArray[index].userId = doc.id;
+      if (userRolesObj && Object.keys(userRolesObj).length === 0 && userRolesObj.constructor === Object) {
+        const userRolkeys = Object.keys(userRolesObj);
+        console.log('userRolkeys', userRolkeys);
+        for (const [index, userRole] of userRolkeys.entries()) {
+          console.log('userRole', userRole);
+          const user = await db.collection(collections.user).where('email', '==', userRole).get();
+          if (user.empty) {
+            userRolesArray[index].userId = null;
+          } else {
+            for (const doc of user.docs) {
+              userRolesArray[index].userId = doc.id;
+            }
           }
         }
       }
@@ -241,6 +245,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
           DiscordId: discordChatCreation.id || '',
           JarrId: discordChatJarrCreation.id || '',
           TwitterId: twitterId || '',
+          Date: new Date().getTime(),
 
           EthereumContractAddress: EthereumContractAddress || '',
           EthChainId: EthChainId || '',
@@ -271,9 +276,9 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
           AppsEnabled: appsEnabled,
           Apps: apps,
 
-          UserRoles: userRolesObj,
+          UserRoles: userRolesObj || {},
           Admins: admins || [],
-          InvitationUsers: invitedUsers,
+          InvitationUsers: invitedUsers || [],
           Posts: [],
           Votings: [],
 
@@ -292,34 +297,21 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
-      if (!invitationEmails) {
-        console.log('failed to send invitation e-mails.');
+      if (
+        (admins && admins.length > 0) ||
+        (userRolesArray && userRolesArray.length > 0) ||
+        (invitedUsers && invitedUsers.length > 0)
+      ) {
+        let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
+        if (!invitationEmails) {
+          console.log('failed to send invitation e-mails.');
+        }
       }
-
-      for (const admin of admins) {
-        if (admin.userId) {
-          await notificationsController.addNotification({
-            userId: userGet.id,
-            notification: {
-              type: 86,
-              typeItemId: 'user',
-              itemId: creator,
-              follower: user.firstName,
-              pod: name, // community name
-              comment: 'Admin',
-              token: '',
-              amount: 0,
-              onlyInformation: false,
-              otherItemId: communityAddress,
-            },
-          });
-        } else {
-          let id = generateUniqueId();
-
-          await db.runTransaction(async (transaction) => {
-            transaction.set(db.collection(collections.pendingNotifications).doc(id), {
-              email: admin.name,
+      if (admins && admins.length > 0) {
+        for (const admin of admins) {
+          if (admin.userId) {
+            await notificationsController.addNotification({
+              userId: userGet.id,
               notification: {
                 type: 86,
                 typeItemId: 'user',
@@ -333,32 +325,35 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 otherItemId: communityAddress,
               },
             });
-          });
+          } else {
+            let id = generateUniqueId();
+
+            await db.runTransaction(async (transaction) => {
+              transaction.set(db.collection(collections.pendingNotifications).doc(id), {
+                email: admin.name,
+                notification: {
+                  type: 86,
+                  typeItemId: 'user',
+                  itemId: creator,
+                  follower: user.firstName,
+                  pod: name, // community name
+                  comment: 'Admin',
+                  token: '',
+                  amount: 0,
+                  onlyInformation: false,
+                  otherItemId: communityAddress,
+                },
+              });
+            });
+          }
         }
       }
 
-      for (const userRole of userRolesArray) {
-        if (userRole.userId) {
-          await notificationsController.addNotification({
-            userId: userGet.id,
-            notification: {
-              type: 86,
-              typeItemId: 'user',
-              itemId: creator,
-              follower: user.firstName,
-              pod: name, // community name
-              comment: userRole.role,
-              token: '',
-              amount: 0,
-              onlyInformation: false,
-              otherItemId: communityAddress,
-            },
-          });
-        } else {
-          let id = generateUniqueId();
-          await db.runTransaction(async (transaction) => {
-            transaction.set(db.collection(collections.pendingNotifications).doc(id), {
-              email: userRole.name,
+      if (userRolesArray && userRolesArray.length > 0) {
+        for (const userRole of userRolesArray) {
+          if (userRole.userId) {
+            await notificationsController.addNotification({
+              userId: userGet.id,
               notification: {
                 type: 86,
                 typeItemId: 'user',
@@ -372,7 +367,26 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 otherItemId: communityAddress,
               },
             });
-          });
+          } else {
+            let id = generateUniqueId();
+            await db.runTransaction(async (transaction) => {
+              transaction.set(db.collection(collections.pendingNotifications).doc(id), {
+                email: userRole.name,
+                notification: {
+                  type: 86,
+                  typeItemId: 'user',
+                  itemId: creator,
+                  follower: user.firstName,
+                  pod: name, // community name
+                  comment: userRole.role,
+                  token: '',
+                  amount: 0,
+                  onlyInformation: false,
+                  otherItemId: communityAddress,
+                },
+              });
+            });
+          }
         }
       }
 
@@ -419,7 +433,7 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
       FundingTokenAddress: body.FundingTokenAddress,
       CommunityTokenAddress: body.CommunityTokenAddress,
       FundingToken: body.FundingToken,
-      TokenType: body.TokenType,
+      TokenType: body.TokenType ?? 'COMMUNITY',
       TokenSymbol: body.TokenSymbol,
       TokenName: body.TokenName,
       AMM: body.AMM,
@@ -469,6 +483,17 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
           .update({ EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId });
       }
 
+      //add taxation info
+      if (body.VestingTaxation && body.VestingTaxation === true) {
+        db.collection(collections.community)
+          .doc(data.CommunityAddress)
+          .update({
+            VestingPeriod: body.VestingPeriod ?? 0,
+            ImmediateAllocation: body.ImmediateAllocation ?? 0,
+            VestedAllocation: body.VestedAllocation ?? 0,
+          });
+      }
+
       // add txn to community
       const output = blockchainRes.output;
       const transactions = output.Transactions;
@@ -481,6 +506,7 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
           .doc(tid)
           .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
       }
+
       res.send({ success: true });
     } else {
       console.log(
@@ -1060,8 +1086,8 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
           if (address) {
             let balance = await coinBalance.balanceOf(address, communityToken);
 
-            let proportion : number = 0;
-            if(balance && balance.output && balance.output.Amount) {
+            let proportion: number = 0;
+            if (balance && balance.output && balance.output.Amount) {
               const amount = balance.output.Amount;
               proportion = amount / totalSupply ?? 0;
             }
@@ -1080,9 +1106,9 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
           }
         }
 
-        const admins = [...communityData.Admins || []];
+        const admins = [...(communityData.Admins || [])];
 
-        for(let admin of admins) {
+        for (let admin of admins) {
           if (admin && admin.status && admin.status === 'Accepted') {
             const userSnap = await db.collection(collections.user).doc(admin.userId).get();
             const userData: any = userSnap.data();
@@ -1092,17 +1118,17 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
               if (address) {
                 let balance = await coinBalance.balanceOf(address, communityToken);
 
-                let proportion : number = 0;
-                if(balance && balance.output && balance.output.Amount) {
+                let proportion: number = 0;
+                if (balance && balance.output && balance.output.Amount) {
                   const amount = balance.output.Amount;
                   proportion = amount / totalSupply ?? 0;
                 }
 
                 let alreadyFoundIndex = retData.findIndex((user) => user.UserId === admin.userId);
 
-                if(alreadyFoundIndex !== -1) {
-                  if(retData[alreadyFoundIndex].Role) {
-                    retData[alreadyFoundIndex].Role.push('Admin')
+                if (alreadyFoundIndex !== -1) {
+                  if (retData[alreadyFoundIndex].Role) {
+                    retData[alreadyFoundIndex].Role.push('Admin');
                   }
                 } else {
                   retData.push({
@@ -1126,30 +1152,30 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
 
         Object.keys(userRoles).map((key) => {
           let idUserRole = '';
-          if(userRoles[key]) {
+          if (userRoles[key]) {
             idUserRole = userRoles[key].userId;
             let roleUserRole = userRoles[key].roles;
 
             Object.keys(roleUserRole).map(async (key) => {
               let role = roleUserRole[key];
 
-              if(role && role === 'Accepted') {
+              if (role && role === 'Accepted') {
                 const userSnap = await db.collection(collections.user).doc(idUserRole).get();
                 const userData: any = userSnap.data();
 
                 let balance = await coinBalance.balanceOf(userData.address, communityToken);
 
-                let proportion : number = 0;
-                if(balance && balance.output && balance.output.Amount) {
+                let proportion: number = 0;
+                if (balance && balance.output && balance.output.Amount) {
                   const amount = balance.output.Amount;
                   proportion = amount / totalSupply ?? 0;
                 }
 
                 let alreadyFoundIndex = retData.findIndex((user) => user.UserId === idUserRole);
 
-                if(alreadyFoundIndex !== -1) {
-                  if(retData[alreadyFoundIndex].Role) {
-                    retData[alreadyFoundIndex].Role.push(key)
+                if (alreadyFoundIndex !== -1) {
+                  if (retData[alreadyFoundIndex].Role) {
+                    retData[alreadyFoundIndex].Role.push(key);
                   }
                 } else {
                   retData.push({
@@ -1169,9 +1195,9 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
           }
         });
 
-        const membersArray = [...communityData.Members || []];
+        const membersArray = [...(communityData.Members || [])];
 
-        for(let member of membersArray) {
+        for (let member of membersArray) {
           const userSnap = await db.collection(collections.user).doc(member.id).get();
           const userData: any = userSnap.data();
 
@@ -1180,17 +1206,17 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
             if (address) {
               let balance = await coinBalance.balanceOf(address, communityToken);
 
-              let proportion : number = 0;
-              if(balance && balance.output && balance.output.Amount) {
+              let proportion: number = 0;
+              if (balance && balance.output && balance.output.Amount) {
                 const amount = balance.output.Amount;
                 proportion = amount / totalSupply ?? 0;
               }
 
               let alreadyFoundIndex = retData.findIndex((user) => user.UserId === member.id);
 
-              if(alreadyFoundIndex !== -1) {
-                if(retData[alreadyFoundIndex].Role) {
-                  retData[alreadyFoundIndex].Role.push('Member')
+              if (alreadyFoundIndex !== -1) {
+                if (retData[alreadyFoundIndex].Role) {
+                  retData[alreadyFoundIndex].Role.push('Member');
                 }
               } else {
                 retData.push({
@@ -1208,7 +1234,6 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
             }
           }
         }
-
       }
       res.send({ success: true, data: retData });
     } else {
