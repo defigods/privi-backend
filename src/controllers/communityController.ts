@@ -24,6 +24,7 @@ import path from 'path';
 import fs from 'fs';
 import { sendNewCommunityUsersEmail } from '../email_templates/emailTemplates';
 import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
+import {user} from "firebase-functions/lib/providers/auth";
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
@@ -1065,6 +1066,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
             }
 
             retData.push({
+              id: communityData.Creator,
               AnonAvatar: userData.anonAvatar,
               Anon: userData.anon,
               UserId: communityData.Creator,
@@ -1104,6 +1106,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
                   }
                 } else {
                   retData.push({
+                    id: admin.userId,
                     AnonAvatar: userData.anonAvatar,
                     Anon: userData.anon,
                     UserId: admin.userId,
@@ -1151,6 +1154,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
                   }
                 } else {
                   retData.push({
+                    id: idUserRole,
                     AnonAvatar: userData.anonAvatar,
                     Anon: userData.anon,
                     UserId: idUserRole,
@@ -1192,6 +1196,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
                 }
               } else {
                 retData.push({
+                  id: member.id,
                   AnonAvatar: userData.anonAvatar,
                   Anon: userData.anon,
                   UserId: member.userId,
@@ -1626,6 +1631,8 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
   try {
     let body = req.body;
 
+    console.log(body.role)
+
     if (body.userId && body.communityId && body.role && body.creator) {
       const communityRef = db.collection(collections.community).doc(body.communityId);
       const communityGet = await communityRef.get();
@@ -1650,15 +1657,22 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
         await communityRef.update({
           Admins: admins
         });
-      } else if(body.role === 'Moderator' && body.role === 'Treasurer') {
+      } else if(body.role === 'Moderator' || body.role === 'Treasurer') {
         let userRoles : any = community.UserRoles;
 
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
-        userRoles[user.email].roles[body.role] = 'Pending';
-        userRoles[user.email].userId = body.userId;
+        if(userRoles && userRoles[user.email] && userRoles[user.email].roles) {
+          userRoles[user.email].roles[body.role] = 'Pending';
+        } else {
+          userRoles[user.email] = {
+            roles: {},
+            userId: body.userId
+          }
+          userRoles[user.email].roles[body.role] = 'Pending';
+        }
 
         await communityRef.update({
           UserRoles: userRoles
@@ -1677,6 +1691,10 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
         await communityRef.update({
           Members: members
         });
+      } else {
+        console.log('Error in controllers/communityController -> removeRoleUser()', "Role doesn't exists");
+        res.send({ success: false, message: "Role doesn't exists" });
+        return;
       }
       await notificationsController.addNotification({
         userId: body.userId,
@@ -1706,6 +1724,78 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
   }
 };
 
+exports.removeRoleUser = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body.userId && body.communityId && body.role && body.creator) {
+      const communityRef = db.collection(collections.community).doc(body.communityId);
+      const communityGet = await communityRef.get();
+      const community: any = communityGet.data();
+
+      if(body.role === 'Admin') {
+        let admins : any[] = [...community.Admins];
+
+        let adminFoundIndex = admins.findIndex(admin => admin.userId === body.userId);
+
+        if(adminFoundIndex !== -1) {
+          admins.splice(adminFoundIndex, 1);
+          await communityRef.update({
+            Admins: admins
+          });
+        } else {
+          console.log('Error in controllers/communityController -> removeRoleUser()', 'Admin not found');
+          res.send({ success: false, message: 'Admin not found' });
+          return;
+        }
+      } else if(body.role === 'Moderator' || body.role === 'Treasurer') {
+        let userRoles : any = community.UserRoles;
+
+        if(userRoles[body.userId] && userRoles[body.userId].roles && userRoles[body.userId].roles[body.role]) {
+
+          console.log(userRoles[body.userId].roles);
+
+          delete userRoles[body.userId].roles[body.role];
+
+          console.log(userRoles[body.userId].roles);
+          await communityRef.update({
+            UserRoles: userRoles
+          });
+        } else {
+          console.log('Error in controllers/communityController -> removeRoleUser()', 'User not found');
+          res.send({ success: false, message: 'User not found' });
+          return;
+        }
+      } else if(body.role === 'Member') {
+        let members : any[] = [...community.Members];
+
+        let memberFoundIndex = members.findIndex(member => member.id === body.userId);
+
+
+        if(memberFoundIndex !== -1) {
+          members.splice(memberFoundIndex, 1);
+          await communityRef.update({
+            Members: members
+          });
+        } else {
+          console.log('Error in controllers/communityController -> removeRoleUser()', 'Member not found');
+          res.send({ success: false, message: 'Member not found' });
+          return;
+        }
+      }
+
+      res.send({ success: true, message: 'Role User removed' });
+
+    } else {
+      console.log('Error in controllers/communityController -> removeRoleUser()', 'Info missing');
+      res.send({ success: false, message: 'Info missing' });
+    }
+  } catch (e) {
+    console.log('Error in controllers/communityController -> removeRoleUser()', e);
+    res.send({ success: false, message: e });
+  }
+};
+
 exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
@@ -1714,12 +1804,15 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
 
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
       if (communityGet.exists && community) {
         if (body.role === 'Admin') {
           if (community.Admins && community.Admins.length > 0) {
             let adminIndex = community.Admins.findIndex((admin) => admin.userId === body.userId);
 
-            console.log(adminIndex, community.Admins, body.userId)
             if (adminIndex !== -1) {
               let copyAdmins = [...community.Admins];
               copyAdmins[adminIndex].status = 'Accepted';
@@ -1749,28 +1842,24 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
               });
             }
           }
-        } else {
-          if (community.UserRoles && community.UserRoles.length > 0) {
-            let userRolesIndex = community.UserRoles.findIndex((userRole) => userRole.userId === body.userId);
+        } else if(body.role === 'Moderator' || body.role === 'Treasurer') {
+          if (community.UserRoles && community.UserRoles[user.email]) {
+            community.UserRoles[user.email].roles[body.role] = 'Accepted';
 
-            if (userRolesIndex !== -1) {
-              let copyUserRoles = [...community.UserRoles];
-              copyUserRoles[userRolesIndex].status = 'Accepted';
-
-              await communityRef.update({
-                UserRoles: copyUserRoles,
-              });
-            } else {
-              console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'You are not invited');
-              res.send({ success: false, message: 'You are not invited' });
-              return;
-            }
+            await communityRef.update({
+              UserRoles: community.UserRoles,
+            });
+          } else {
+            console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'You are not invited');
+            res.send({ success: false, message: 'You are not invited' });
+            return;
           }
+        } else {
+          console.log('Error in controllers/communityController -> acceptRoleInvitation()', "Role doesn't exists");
+          res.send({ success: false, message: "Role doesn't exists" });
+          return;
         }
 
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
         await notificationsController.addNotification({
           userId: body.userId,
           notification: {
@@ -1840,6 +1929,10 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
 
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
       if (communityGet.exists && community) {
         if (body.role === 'Admin') {
           if (community.Admins && community.Admins.length > 0) {
@@ -1853,26 +1946,32 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                 Admins: copyAdmins,
               });
             } else {
-              console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'You are not invited');
+              console.log('Error in controllers/communityController -> declineRoleInvitation()', 'You are not invited');
               res.send({ success: false, message: 'You are not invited' });
               return;
             }
           }
-        } else {
-          if (community.UserRoles && community.UserRoles.length > 0) {
-            let userRolesIndex = community.UserRoles.findIndex((userRole) => userRole.userId === body.userId);
+        } else if(body.role === 'Moderator' || body.role === 'Treasurer') {
+          if (community.UserRoles && community.UserRoles[user.email] && community.UserRoles[user.email].roles[body.role]) {
 
-            let copyUserRoles = [...community.UserRoles];
-            copyUserRoles.splice(userRolesIndex, 1);
+            delete community.UserRoles[user.email].roles[body.role];
+
+            let keysRoles = Object.keys(community.UserRoles[user.email].roles);
+            console.log(keysRoles, keysRoles.length)
+            if(keysRoles.length === 0) {
+              delete community.UserRoles[user.email];
+            }
 
             await communityRef.update({
-              UserRoles: copyUserRoles,
+              UserRoles: community.UserRoles,
             });
           }
+        } else {
+          console.log('Error in controllers/communityController -> declineRoleInvitation()', "Role doesn't exists");
+          res.send({ success: false, message: "Role doesn't exists" });
+          return;
         }
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+
         await notificationsController.addNotification({
           userId: body.userId,
           notification: {
