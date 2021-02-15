@@ -5,6 +5,7 @@ import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import express from "express";
 import fs from "fs";
+import path from 'path';
 
 exports.changeProjectPhoto = async (
   req: express.Request,
@@ -74,6 +75,44 @@ exports.getProjects = async (req: express.Request, res: express.Response) => {
     }
   } catch (err) {
     console.log("Error in controllers/projectController -> getProjects()", err);
+    res.send({ success: false });
+  }
+};
+
+//get project photo
+exports.getProjectPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let projectId = req.params.projectId;
+
+    if (projectId) {
+      const directoryPath = path.join('uploads', 'communityProject');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'communityProject', projectId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/projectController -> getProjectPhotoById()', "There's no id...");
+      res.sendStatus(400); // bad request
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/projectController -> getProjectPhotoById()', err);
     res.send({ success: false });
   }
 };

@@ -171,6 +171,7 @@ router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellT
 router.post('/projects/getProjects/:communityId', authenticateJWT, projectController.getProjects);
 router.post('/projects/createProject', authenticateJWT, projectController.createProject);
 router.post('/projects/changeProjectPhoto', authenticateJWT, upload7.single('image'), projectController.changeProjectPhoto);
+router.get('/projects/getPhoto/:projectId', projectController.getProjectPhotoById);
 
 router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
 router.post('/blog/deletePost', authenticateJWT, blogController.blogDelete);
