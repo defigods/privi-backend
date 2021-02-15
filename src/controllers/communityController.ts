@@ -1317,7 +1317,6 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const data : any = communitySnap.data();
     const id : any = communitySnap.id;
     const extraData = await getExtraData(data, rateOfChange);
-    console.log(extraData);
 
     const ads: any[] = [];
     if (data.GeneralAd && data.GeneralAd !== '') {
@@ -1328,6 +1327,15 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     }
 
     let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+    if (data.UserRoles) {
+      let userRolesKeys = Object.keys(data.UserRoles);
+      for (const userRoleEmail of userRolesKeys) {
+        const userSnap = await db.collection(collections.user).doc(data.UserRoles[userRoleEmail].userId).get();
+        const userData: any = userSnap.data();
+        data.UserRoles[userRoleEmail].name = userData.firstName;
+      }
+    }
 
     data.PostsArray = [];
     if (data.Posts && data.Posts.length > 0) {
