@@ -4,6 +4,7 @@ import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from 'multer';
 const communityController = require('../controllers/communityController');
 const blogController = require('../controllers/blogController');
+const projectController = require('../controllers/communityProjectController');
 const communityWallController = require('../controllers/communityWallController');
 
 let storage = multer.diskStorage({
@@ -72,6 +73,32 @@ let upload5 = multer({
   storage: storage5,
 });
 
+let storage6 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/community');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload6 = multer({
+  storage: storage6,
+});
+
+let storage7 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/communityProject');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload7 = multer({
+  storage: storage7,
+});
+
 /*let storage4 = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
         cb(null, 'uploads/ad')
@@ -98,19 +125,6 @@ let storage5 = multer.diskStorage({
 let upload5 = multer({
     storage: storage5
 });*/
-
-let storage6 = multer.diskStorage({
-  destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/community');
-  },
-  filename: function (req: any, file: any, cb: any) {
-    console.log(file);
-    cb(null, file.originalname + '.png');
-  },
-});
-let upload6 = multer({
-  storage: storage6,
-});
 
 /*router.post('/votation/create', authenticateJWT, communityController.createVotation);
 router.post('/votation/changeBadgePhoto', authenticateJWT, upload.single('image'), communityController.changeBadgePhoto);*/
@@ -153,6 +167,10 @@ router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCom
 
 router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
+
+router.post('/projects/getProjects/:communityId', authenticateJWT, projectController.getProjects);
+router.post('/projects/createProject', authenticateJWT, projectController.createProject);
+router.post('/projects/changeProjectPhoto', authenticateJWT, upload7.single('image'), projectController.changeProjectPhoto);
 
 router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
 router.post('/blog/deletePost', authenticateJWT, blogController.blogDelete);
