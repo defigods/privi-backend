@@ -102,7 +102,7 @@ module.exports = {
   forumCategory: "ForumCategory",
   forumPost: "ForumPost",
   forumComment: "ForumComment",
-
+  project: "Project",
   blogPost: "BlogPost",
 
   wallPost: "WallPost",
