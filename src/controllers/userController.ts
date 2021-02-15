@@ -2,6 +2,7 @@ import express from 'express';
 // import * as fs from 'fs';
 // import * as path from 'path';
 // import { stringify } from 'querystring';
+import Web3 from 'web3';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
@@ -1849,12 +1850,17 @@ const getBadges = async (req: express.Request, res: express.Response) => {
 const getBadgesFunction = (userId: string) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const userRef = db.collection(collections.user).doc(userId);
-      const userGet = await userRef.get();
-      const user: any = userGet.data();
-
+      let address = userId;
+      console.log(userId)
+      console.log(Web3.utils.isAddress(userId));
+      if (!(Web3.utils.isAddress(userId))) {
+        const userRef = db.collection(collections.user).doc(userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+        address = user.address;
+      }
       const retData: any[] = [];
-      const blockchainRes = await coinBalance.getBalancesByType(user.address, collections.badgeToken, apiKey);
+      const blockchainRes = await coinBalance.getBalancesByType(address, collections.badgeToken, apiKey);
       if (blockchainRes && blockchainRes.success) {
         const badgesBalance = blockchainRes.output;
         const badgeSnap = await db.collection(collections.badges).get();

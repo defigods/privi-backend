@@ -1,6 +1,20 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
+module.exports.setVestingConditions = async (communityAddress, vestingTime, immediateAllocationPct, vestedAllocationPct, hash, signature, caller) => {
+    let blockchainRes = await axios.post(api.blockchainCommunityAPI + "/setVestingConditions", {
+        CommunityAddress: communityAddress,
+        VestingTime: vestingTime,
+        ImmediateAllocationPct: immediateAllocationPct,
+        VestedAllocationPct: vestedAllocationPct,
+        Hash: hash,
+        Signature: signature,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
+
+
 module.exports.getCommunityTokenPrice = async (communityAddress, caller) => {
     const config = {
         method: 'get',
