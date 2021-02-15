@@ -1090,7 +1090,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         });
       }
 
-      const admins = [...(communityData.Admins || [])];
+      const admins = [...communityData.Admins || []];
 
       for (let admin of admins) {
         const userSnap = await db.collection(collections.user).doc(admin.userId).get();
@@ -1151,14 +1151,13 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         }
       });
 
-      const membersArray = [...(communityData.Members || [])];
+      const membersArray = [...communityData.Members || []];
 
       for (let member of membersArray) {
         const userSnap = await db.collection(collections.user).doc(member.id).get();
         const userData: any = userSnap.data();
 
         if (userSnap.exists && member && member.id) {
-
           let proportion: number = 0;
           if(communityHasToken) {
             const address = userData.address;
@@ -1172,11 +1171,8 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
             }
           }
 
-          if (member && member.status && member.status === 'Accepted') {
-            retData = await addMemberInArray(retData, member.id, userData, proportion, 'Member');
-          } else if (member && member.status && member.status === 'Pending') {
-            pendingData = await addMemberInArray(pendingData, member.id, userData, proportion, 'Member');
-          }
+          retData = await addMemberInArray(retData, member.id, userData, proportion, 'Member');
+
         }
       }
 
