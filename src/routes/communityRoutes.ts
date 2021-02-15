@@ -152,6 +152,9 @@ router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommun
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
 router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCommunityInfo);
 
+router.post('/allocateFunds', authenticateJWT, communityController.allocateFunds);
+router.get('/getMaxAllocatingFund', authenticateJWT, communityController.getMaxAllocatingFund);
+
 router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
 
