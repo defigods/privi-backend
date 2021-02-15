@@ -28,6 +28,7 @@ import { user } from 'firebase-functions/lib/providers/auth';
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
+const communityWallController = require('./communityWallController');
 const tasks = require('./tasksController');
 
 require('dotenv').config();
@@ -1033,212 +1034,210 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
     const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
     const communityData = communitySnap.data();
     if (communityData) {
-      // get member basic data from User colection
-      const members = communityData.Members;
-      const userDataMap = {};
-      const addressUidMap = {}; // construct it as we iterate through members
-      const userPromises: any[] = [];
-      members.forEach((memberObj) => {
-        userPromises.push(db.collection(collections.user).doc(memberObj.id).get());
-      });
-      const userResponses = await Promise.all(userPromises);
-      userResponses.forEach((response) => {
-        const uid = response.id;
-        const data = response.data();
-        userDataMap[uid] = data;
-        addressUidMap[data.address] = uid;
-      });
-      // get proportion of supply of each member
-      const communityToken = communityData.TokenSymbol;
-      const getTokenRes = await coinBalance.getToken(communityToken, apiKey);
-      const totalSupply = getTokenRes.output.Supply;
+      let communityToken : any;
+      let getTokenRes : any;
+      let totalSupply : any;
 
-      if (getTokenRes && getTokenRes.success) {
-        /*const promises: any[] = [];
-        members.forEach((memberObj) => {
-          const address = userDataMap[memberObj.id].address;
-          if (address) promises.push(coinBalance.balanceOf(address, communityToken));
-        });
-        const responses = await Promise.all(promises);
-        responses.forEach((response) => {
-          if (response && response.success) {
-            const output = response.output;
-            const address = output.Address;
-            const uid = addressUidMap[address];
-            const amount = output.Amount;
-            const proportion = amount / totalSupply ?? 0;
-            userDataMap[uid] = {
-              ...userDataMap[uid],
-              SupplyProportion: proportion,
-            };
-          }
-        });*/
+      let communityHasToken : boolean = false;
+      if(communityData.TokenName !== '' && communityData.TokenSymbol !== '') {
+        communityHasToken = true
+      }
 
-        // create retData array from userDataMap extracting the necessary info
-        const userSnap = await db.collection(collections.user).doc(communityData.Creator).get();
-        const userData: any = userSnap.data();
+      if(communityHasToken) {
+        communityToken = communityData.TokenSymbol;
+        getTokenRes = await coinBalance.getToken(communityToken, apiKey);
 
-        if (userSnap.exists) {
+        if (getTokenRes && getTokenRes.success) {
+          totalSupply = getTokenRes.output.Supply;
+
+        } else {
+          console.log('Error in controllers/communitiesControllers -> getMembersData()', 'Error getting Token info');
+          res.send({ success: false, error: 'Error getting Token info' });
+        }
+      }
+
+      // create retData array from userDataMap extracting the necessary info
+      const userSnap = await db.collection(collections.user).doc(communityData.Creator).get();
+      const userData: any = userSnap.data();
+
+      if (userSnap.exists) {
+        let proportion: number = 0;
+        if(communityHasToken) {
           const address = userData.address;
           if (address) {
             let balance = await coinBalance.balanceOf(address, communityToken);
 
-            let proportion: number = 0;
             if (balance && balance.output && balance.output.Amount) {
               const amount = balance.output.Amount;
               proportion = amount / totalSupply ?? 0;
             }
-
-            retData.push({
-              id: communityData.Creator,
-              AnonAvatar: userData.anonAvatar,
-              Anon: userData.anon,
-              UserId: communityData.Creator,
-              Name: userData.firstName,
-              SupplyProportion: proportion,
-              Role: ['Creator'],
-              Level: userData.level ?? 1, // TODO: get correct level from somewhere
-              Activity: '', // TODO: get correct activity from somewhere
-              NumFollowers: userData.followers ? userData.followers.length : 0,
-            });
           }
         }
 
-        const admins = [...(communityData.Admins || [])];
+        retData.push({
+          id: communityData.Creator,
+          AnonAvatar: userData.anonAvatar,
+          Anon: userData.anon,
+          UserId: communityData.Creator,
+          Name: userData.firstName,
+          SupplyProportion: proportion,
+          Role: ['Creator'],
+          Level: userData.level ?? 1, // TODO: get correct level from somewhere
+          Activity: '', // TODO: get correct activity from somewhere
+          NumFollowers: userData.followers ? userData.followers.length : 0,
+        });
+      }
 
-        for (let admin of admins) {
-          if (admin && admin.status && admin.status === 'Accepted') {
-            const userSnap = await db.collection(collections.user).doc(admin.userId).get();
-            const userData: any = userSnap.data();
+      const admins = [...(communityData.Admins || [])];
 
-            if (userSnap.exists && admin && admin.userId) {
+      for (let admin of admins) {
+        if (admin && admin.status && admin.status === 'Accepted') {
+          const userSnap = await db.collection(collections.user).doc(admin.userId).get();
+          const userData: any = userSnap.data();
+
+          if (userSnap.exists && admin && admin.userId) {
+            let proportion: number = 0;
+            if(communityHasToken) {
               const address = userData.address;
               if (address) {
                 let balance = await coinBalance.balanceOf(address, communityToken);
 
-                let proportion: number = 0;
                 if (balance && balance.output && balance.output.Amount) {
                   const amount = balance.output.Amount;
                   proportion = amount / totalSupply ?? 0;
-                }
-
-                let alreadyFoundIndex = retData.findIndex((user) => user.UserId === admin.userId);
-
-                if (alreadyFoundIndex !== -1) {
-                  if (retData[alreadyFoundIndex].Role) {
-                    retData[alreadyFoundIndex].Role.push('Admin');
-                  }
-                } else {
-                  retData.push({
-                    id: admin.userId,
-                    AnonAvatar: userData.anonAvatar,
-                    Anon: userData.anon,
-                    UserId: admin.userId,
-                    Name: userData.firstName,
-                    SupplyProportion: proportion,
-                    Role: ['Admin'],
-                    Level: userData.level ?? 1, // TODO: get correct level from somewhere
-                    Activity: '', // TODO: get correct activity from somewhere
-                    NumFollowers: userData.followers ? userData.followers.length : 0,
-                  });
                 }
               }
             }
+
+            let alreadyFoundIndex = retData.findIndex((user) => user.UserId === admin.userId);
+
+            if (alreadyFoundIndex !== -1) {
+              if (retData[alreadyFoundIndex].Role) {
+                retData[alreadyFoundIndex].Role.push('Admin');
+              }
+            } else {
+              retData.push({
+                id: admin.userId,
+                AnonAvatar: userData.anonAvatar,
+                Anon: userData.anon,
+                UserId: admin.userId,
+                Name: userData.firstName,
+                SupplyProportion: proportion,
+                Role: ['Admin'],
+                Level: userData.level ?? 1, // TODO: get correct level from somewhere
+                Activity: '', // TODO: get correct activity from somewhere
+                NumFollowers: userData.followers ? userData.followers.length : 0,
+              });
+            }
           }
         }
+      }
 
-        const userRoles = communityData.UserRoles;
+      const userRoles = communityData.UserRoles;
 
-        Object.keys(userRoles).map((key) => {
-          let idUserRole = '';
-          if (userRoles[key]) {
-            idUserRole = userRoles[key].userId;
-            let roleUserRole = userRoles[key].roles;
+      Object.keys(userRoles).map((key) => {
+        let idUserRole = '';
+        if (userRoles[key]) {
+          idUserRole = userRoles[key].userId;
+          let roleUserRole = userRoles[key].roles;
 
-            Object.keys(roleUserRole).map(async (key) => {
-              let role = roleUserRole[key];
+          Object.keys(roleUserRole).map(async (key) => {
+            let role = roleUserRole[key];
 
-              if (role && role === 'Accepted') {
-                const userSnap = await db.collection(collections.user).doc(idUserRole).get();
-                const userData: any = userSnap.data();
+            if (role && role === 'Accepted') {
+              const userSnap = await db.collection(collections.user).doc(idUserRole).get();
+              const userData: any = userSnap.data();
 
+              let proportion: number = 0;
+              if(communityHasToken) {
                 let balance = await coinBalance.balanceOf(userData.address, communityToken);
 
-                let proportion: number = 0;
                 if (balance && balance.output && balance.output.Amount) {
                   const amount = balance.output.Amount;
                   proportion = amount / totalSupply ?? 0;
                 }
-
-                let alreadyFoundIndex = retData.findIndex((user) => user.UserId === idUserRole);
-
-                if (alreadyFoundIndex !== -1) {
-                  if (retData[alreadyFoundIndex].Role) {
-                    retData[alreadyFoundIndex].Role.push(key);
-                  }
-                } else {
-                  retData.push({
-                    id: idUserRole,
-                    AnonAvatar: userData.anonAvatar,
-                    Anon: userData.anon,
-                    UserId: idUserRole,
-                    Name: userData.firstName,
-                    SupplyProportion: proportion,
-                    Role: key,
-                    Level: userData.level ?? 1, // TODO: get correct level from somewhere
-                    Activity: '', // TODO: get correct activity from somewhere
-                    NumFollowers: userData.followers ? userData.followers.length : 0,
-                  });
-                }
-              }
-            });
-          }
-        });
-
-        const membersArray = [...(communityData.Members || [])];
-
-        for (let member of membersArray) {
-          const userSnap = await db.collection(collections.user).doc(member.id).get();
-          const userData: any = userSnap.data();
-
-          if (userSnap.exists && member && member.id) {
-            const address = userData.address;
-            if (address) {
-              let balance = await coinBalance.balanceOf(address, communityToken);
-
-              let proportion: number = 0;
-              if (balance && balance.output && balance.output.Amount) {
-                const amount = balance.output.Amount;
-                proportion = amount / totalSupply ?? 0;
               }
 
-              let alreadyFoundIndex = retData.findIndex((user) => user.UserId === member.id);
+              let alreadyFoundIndex = retData.findIndex((user) => user.UserId === idUserRole);
 
               if (alreadyFoundIndex !== -1) {
                 if (retData[alreadyFoundIndex].Role) {
-                  retData[alreadyFoundIndex].Role.push('Member');
+                  retData[alreadyFoundIndex].Role.push(key);
                 }
               } else {
                 retData.push({
-                  id: member.id,
+                  id: idUserRole,
                   AnonAvatar: userData.anonAvatar,
                   Anon: userData.anon,
-                  UserId: member.userId,
+                  UserId: idUserRole,
                   Name: userData.firstName,
                   SupplyProportion: proportion,
-                  Role: ['Member'],
+                  Role: [key],
                   Level: userData.level ?? 1, // TODO: get correct level from somewhere
                   Activity: '', // TODO: get correct activity from somewhere
                   NumFollowers: userData.followers ? userData.followers.length : 0,
                 });
               }
             }
+          });
+        }
+      });
+
+      const membersArray = [...(communityData.Members || [])];
+
+      for (let member of membersArray) {
+        const userSnap = await db.collection(collections.user).doc(member.id).get();
+        const userData: any = userSnap.data();
+
+        if (userSnap.exists && member && member.id) {
+
+          let proportion: number = 0;
+          if(communityHasToken) {
+            const address = userData.address;
+            if (address) {
+              let balance = await coinBalance.balanceOf(address, communityToken);
+
+              if (balance && balance.output && balance.output.Amount) {
+                const amount = balance.output.Amount;
+                proportion = amount / totalSupply ?? 0;
+              }
+            }
+          }
+
+          let alreadyFoundIndex = retData.findIndex((user) => user.UserId === member.id);
+
+          if (alreadyFoundIndex !== -1) {
+            if (retData[alreadyFoundIndex].Role) {
+              retData[alreadyFoundIndex].Role.push('Member');
+            }
+          } else {
+            retData.push({
+              id: member.id,
+              AnonAvatar: userData.anonAvatar,
+              Anon: userData.anon,
+              UserId: member.userId,
+              Name: userData.firstName,
+              SupplyProportion: proportion,
+              Role: ['Member'],
+              Level: userData.level ?? 1, // TODO: get correct level from somewhere
+              Activity: '', // TODO: get correct activity from somewhere
+              NumFollowers: userData.followers ? userData.followers.length : 0,
+            });
           }
         }
       }
-      res.send({ success: true, data: retData });
+
+      res.send({
+        success: true,
+        data:  {
+          members: retData,
+          communityHasToken: communityHasToken
+        }
+      });
+
     } else {
-      res.send({ success: false });
+      console.log('Error in controllers/communitiesControllers -> getMembersData()', 'No community found');
+      res.send({ success: false, error: 'No community found' });
     }
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getMembersData()' + e);
@@ -1295,7 +1294,15 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
       const data: any = doc.data();
       const id: any = doc.id;
       const extraData = await getExtraData(data, rateOfChange);
-      allCommunities.push({ ...data, ...extraData, id: id });
+
+      let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+      allCommunities.push({
+        ...data,
+        ...extraData,
+        id: id,
+        arrayMembersId: arrayMembersId
+      });
     }
     res.send({
       success: true,
@@ -1314,10 +1321,9 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const communityAddress = req.params.communityAddress;
     const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
     const rateOfChange = await getRateOfChangeAsMap();
-    const data: any = communitySnap.data();
-    const id: any = communitySnap.id;
+    const data : any = communitySnap.data();
+    const id : any = communitySnap.id;
     const extraData = await getExtraData(data, rateOfChange);
-    console.log(extraData);
 
     const ads: any[] = [];
     if (data.GeneralAd && data.GeneralAd !== '') {
@@ -1325,6 +1331,19 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
       const adGet = await adRef.get();
       const ad: any = adGet.data();
       ads.push({ GeneralAd: ad });
+    }
+
+    let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+    if (data.UserRoles) {
+      let userRolesKeys = Object.keys(data.UserRoles);
+      for (const userRoleEmail of userRolesKeys) {
+        if(data.UserRoles[userRoleEmail] && data.UserRoles[userRoleEmail].userId) {
+          const userSnap = await db.collection(collections.user).doc(data.UserRoles[userRoleEmail].userId).get();
+          const userData: any = userSnap.data();
+          data.UserRoles[userRoleEmail].name = userData.firstName;
+        }
+      }
     }
 
     data.PostsArray = [];
@@ -1395,7 +1414,13 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 
     res.send({
       success: true,
-      data: { ...data, ...extraData, id: id, ads: ads },
+      data: {
+        ...data,
+        ...extraData,
+        id: id,
+        ads: ads,
+        membersIdArray: arrayMembersId
+      },
     });
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunity()' + e);
@@ -1607,7 +1632,14 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
       const data: any = doc.data();
       const id: any = doc.id;
       const extraData = await getExtraData(data, rateOfChange);
-      trendingCommunities.push({ ...data, ...extraData, id: id });
+      let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+      trendingCommunities.push({
+        ...data,
+        ...extraData,
+        id: id,
+        arrayMembersId: arrayMembersId
+      });
     }
     res.send({ success: true, data: { trending: trendingCommunities } });
   } catch (e) {
@@ -1654,9 +1686,14 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
   try {
     let body = req.body;
 
-    console.log(body.role);
+    const userRef = db.collection(collections.user).doc(body.userId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
 
-    if (body.userId && body.communityId && body.role && body.creator) {
+    let checkIsCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.communityId);
+    let checkIsAdmin = await communityWallController.checkUserRole(body.userId, user.email, body.communityId, true, false, []);
+
+    if (body.userId && body.communityId && body.role && body.creator && (checkIsCreator || checkIsAdmin)) {
       const communityRef = db.collection(collections.community).doc(body.communityId);
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
@@ -1666,29 +1703,42 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
       const creator: any = creatorUserGet.data();
 
       if (body.role === 'Admin') {
-        let admins: any[] = [...community.Admins];
+        let admins : any[] = [...community.Admins];
 
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+        let adminFoundIndex = admins.findIndex(admin => admin === body.userId);
+        if(adminFoundIndex !== -1) {
+          const userRef = db.collection(collections.user).doc(body.userId);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
 
-        admins.push({
-          name: user.email,
-          userId: body.userId,
-          status: 'Pending',
-        });
-        await communityRef.update({
-          Admins: admins,
-        });
+          admins.push({
+            name: user.email,
+            userId: body.userId,
+            status: 'Pending',
+          });
+          await communityRef.update({
+            Admins: admins,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> roleInvitation()', "User is already an Admin or invitation has been sent before");
+          res.send({ success: false, error: "User is already an Admin or invitation has been sent before" });
+          return;
+        }
       } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
-        let userRoles: any = community.UserRoles;
+        let userRoles : any = community.UserRoles;
 
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
         if (userRoles && userRoles[user.email] && userRoles[user.email].roles) {
-          userRoles[user.email].roles[body.role] = 'Pending';
+          if(!userRoles[user.email].roles[body.role] || userRoles[user.email].roles[body.role] !== 'Accepted') {
+            userRoles[user.email].roles[body.role] = 'Pending';
+          } else {
+            console.log('Error in controllers/communityController -> roleInvitation()', `User is already a ${body.role}`);
+            res.send({ success: false, error: `User is already a ${body.role}` });
+            return;
+          }
         } else {
           userRoles[user.email] = {
             roles: {},
@@ -1696,27 +1746,33 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
           };
           userRoles[user.email].roles[body.role] = 'Pending';
         }
-
         await communityRef.update({
           UserRoles: userRoles,
         });
       } else if (body.role === 'Member') {
         let members: any[] = [...community.Members];
 
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+        let memberFoundIndex = members.findIndex(member => member === body.id);
+        if(memberFoundIndex !== -1) {
+          const userRef = db.collection(collections.user).doc(body.userId);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
 
-        members.push({
-          id: body.userId,
-          date: Date.now(),
-        });
-        await communityRef.update({
-          Members: members,
-        });
+          members.push({
+            id: body.userId,
+            date: Date.now(),
+          });
+          await communityRef.update({
+            Members: members,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> roleInvitation()', "User is already a Member or invitation has been sent before");
+          res.send({ success: false, error: "User is already a Member or invitation has been sent before" });
+          return;
+        }
       } else {
         console.log('Error in controllers/communityController -> removeRoleUser()', "Role doesn't exists");
-        res.send({ success: false, message: "Role doesn't exists" });
+        res.send({ success: false, error: "Role doesn't exists" });
         return;
       }
       await notificationsController.addNotification({
@@ -1738,11 +1794,11 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
       res.send({ success: true, message: 'Invitation sent' });
     } else {
       console.log('Error in controllers/communityController -> roleInvitation()', 'Info missing');
-      res.send({ success: false, message: 'Info missing' });
+      res.send({ success: false, error: 'Info missing' });
     }
   } catch (e) {
     console.log('Error in controllers/communityController -> roleInvitation()', e);
-    res.send({ success: false, message: e });
+    res.send({ success: false, error: e });
   }
 };
 
@@ -1750,7 +1806,14 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
   try {
     let body = req.body;
 
-    if (body.userId && body.communityId && body.role && body.creator) {
+    const userRef = db.collection(collections.user).doc(body.userId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
+    let checkIsCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.communityId);
+    let checkIsAdmin = await communityWallController.checkUserRole(body.userId, user.email, body.communityId, true, false, []);
+
+    if (body.userId && body.communityId && body.role && body.creator && (checkIsCreator || checkIsAdmin)) {
       const communityRef = db.collection(collections.community).doc(body.communityId);
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
@@ -1767,24 +1830,26 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
           });
         } else {
           console.log('Error in controllers/communityController -> removeRoleUser()', 'Admin not found');
-          res.send({ success: false, message: 'Admin not found' });
+          res.send({ success: false, error: 'Admin not found' });
           return;
         }
       } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
         let userRoles: any = community.UserRoles;
 
-        if (userRoles[body.userId] && userRoles[body.userId].roles && userRoles[body.userId].roles[body.role]) {
-          console.log(userRoles[body.userId].roles);
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
 
-          delete userRoles[body.userId].roles[body.role];
+        if (userRoles[user.email] && userRoles[user.email].roles && userRoles[user.email].roles[body.role]) {
 
-          console.log(userRoles[body.userId].roles);
+          delete userRoles[user.email].roles[body.role];
+
           await communityRef.update({
             UserRoles: userRoles,
           });
         } else {
           console.log('Error in controllers/communityController -> removeRoleUser()', 'User not found');
-          res.send({ success: false, message: 'User not found' });
+          res.send({ success: false, error: 'User not found' });
           return;
         }
       } else if (body.role === 'Member') {
@@ -1799,19 +1864,19 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
           });
         } else {
           console.log('Error in controllers/communityController -> removeRoleUser()', 'Member not found');
-          res.send({ success: false, message: 'Member not found' });
+          res.send({ success: false, error: 'Member not found' });
           return;
         }
       }
 
-      res.send({ success: true, message: 'Role User removed' });
+      res.send({ success: true, error: 'Role User removed' });
     } else {
-      console.log('Error in controllers/communityController -> removeRoleUser()', 'Info missing');
-      res.send({ success: false, message: 'Info missing' });
+      console.log('Error in controllers/communityController -> removeRoleUser()', "Info missing or you don't have rights");
+      res.send({ success: false, error: "Info missing or you don't have rights" });
     }
   } catch (e) {
     console.log('Error in controllers/communityController -> removeRoleUser()', e);
-    res.send({ success: false, message: e });
+    res.send({ success: false, error: e });
   }
 };
 
@@ -2169,3 +2234,57 @@ exports.endVotations = cron.schedule('0 0 * * *', async () => {
     }
 });
 */
+
+const getArrayIdCommunityMembers = async (data : any) => {
+  return new Promise<any[]>((resolve, reject) => {
+    try {
+      let arrayMembersId : any[] = [];
+
+      if(data.Creator) {
+        arrayMembersId.push(data.Creator);
+      }
+      if(data.Admins && data.Admins.length > 0) {
+        for(let admin of data.Admins) {
+          if(admin.status === 'Accepted') {
+            let foundMemberIndex = arrayMembersId.findIndex((member) => member === admin.userId);
+            if(foundMemberIndex === -1) {
+              arrayMembersId.push(admin.userId);
+            }
+          }
+        }
+      }
+      if(data.Members && data.Members.length > 0) {
+        for(let member of data.Members) {
+          let foundMemberIndex = arrayMembersId.findIndex((memb) => memb === member.id);
+          if(foundMemberIndex === -1) {
+            arrayMembersId.push(member.id);
+          }
+        }
+      }
+
+      let userRolesKeys = Object.keys(data.UserRoles);
+      for(let userRole of userRolesKeys) {
+        if(data.UserRoles[userRole].userId) {
+          let foundMemberIndex = arrayMembersId.findIndex((memb) => memb === data.UserRoles[userRole].userId);
+          if(foundMemberIndex === -1) {
+            let rolesKeys = Object.keys(data.UserRoles[userRole].roles);
+            let hasRoleAccepted : boolean = false;
+            for(let role of rolesKeys) {
+              if(data.UserRoles[userRole].roles[role] && data.UserRoles[userRole].roles[role] === 'Accepted') {
+                hasRoleAccepted = true;
+              }
+            }
+            if(hasRoleAccepted) {
+              arrayMembersId.push(data.UserRoles[userRole].userId);
+            }
+          }
+        }
+      }
+
+      resolve(arrayMembersId);
+    } catch (e) {
+      console.log('');
+      reject(e)
+    }
+  });
+}
