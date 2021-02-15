@@ -190,44 +190,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       }
 
       const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        'Discussions',
-        creator,
-        user.firstName,
-        'general',
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        'Information',
-        creator,
-        user.firstName,
-        'announcements',
-        false,
-        []
-      );
+      /*await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+      await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);*/
 
       const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Discussions',
-        creator,
-        user.firstName,
-        'general',
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Information',
-        creator,
-        user.firstName,
-        'announcements',
-        false,
-        []
-      );
+      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
       db.collection(collections.community)
         .doc(communityAddress)
@@ -295,11 +263,9 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      if (
-        (admins && admins.length > 0) ||
+      if ((admins && admins.length > 0) ||
         (userRolesArray && userRolesArray.length > 0) ||
-        (invitedUsers && invitedUsers.length > 0)
-      ) {
+        (invitedUsers && invitedUsers.length > 0)) {
         let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
         if (!invitationEmails) {
           console.log('failed to send invitation e-mails.');
