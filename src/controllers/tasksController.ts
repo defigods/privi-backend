@@ -1,9 +1,9 @@
 import collections from "../firebase/collections";
-import {db} from "../firebase/firebase";
+import { db } from "../firebase/firebase";
 import express from "express";
-import {BADGES_MAP} from '../constants/badges';
+import { BADGES_MAP } from '../constants/badges';
 import badge from "../blockchain/badge";
-import {updateFirebase} from "../functions/functions";
+import { updateFirebase } from "../functions/functions";
 
 const levelsController = require("./userLevelsController");
 const notificationsController = require("./notificationsController");
@@ -75,11 +75,11 @@ exports.getTasks = async (req: express.Request, res: express.Response) => {
     });
 
     if (userTasksToDisplay.length > 0) {
-      res.send({success: true, data: userTasksToDisplay});
-    } else res.send({success: false});
+      res.send({ success: true, data: userTasksToDisplay });
+    } else res.send({ success: false });
   } catch (err) {
     console.log("Error in controllers/tasks -> getTasks()", err);
-    res.send({success: false});
+    res.send({ success: false });
   }
 };
 
@@ -101,17 +101,17 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
       for (const doc of taskQuery.docs) {
         let task = doc.data();
         const userPoints: any = user.Points || 0;
-        const usrLevel = level.level;
+        const usrLevel = level ? level.level : 0;
         const rewardPointsTask: any = task.RewardPoints;
 
         // update user task in db
         let userTasksArray = [...userTasks]
-        userTasksArray.forEach(task =>{
-          if(task.Id === doc.id){
+        userTasksArray.forEach(task => {
+          if (task.Id === doc.id) {
             task.Completed = true;
           }
         })
-        
+
         await db.collection(collections.user).doc(userId).update({
           UserTasks: userTasksArray,
         });
@@ -197,11 +197,11 @@ exports.updateTaskExternally = async (req: express.Request, res: express.Respons
           }
         }
 
-        res.send({success: true, userId: userId, isLevelUp: isLevelUp, taskId: task.Title, userLevelNew})
+        res.send({ success: true, userId: userId, isLevelUp: isLevelUp, taskId: task.Title, userLevelNew })
       }
     }
   } catch (error) {
-    res.send({success: false, message: error})
+    res.send({ success: false, message: error })
 
     console.log(error);
   }
@@ -302,7 +302,7 @@ exports.updateTask = (userId, title) => {
             }
           }
 
-          resolve({success: true, userId: userId, isLevelUp: isLevelUp, taskId: task.Title, userLevelNew, badgeRes});
+          resolve({ success: true, userId: userId, isLevelUp: isLevelUp, taskId: task.Title, userLevelNew, badgeRes });
         }
       }
     } catch (e) {

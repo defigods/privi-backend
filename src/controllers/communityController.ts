@@ -104,6 +104,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
     const signature = body.Signature;
 
     const blockchainRes = await community.createCommunity(creator, hash, signature, apiKey);
+    console.log(JSON.stringify(blockchainRes, null, 4))
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const updateCommunities = blockchainRes.output.UpdateCommunities;
@@ -423,14 +424,14 @@ async function getPriceFromUniswap(communityTokenAddress, fundingTokenPrice) {
 exports.createCommunityToken = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    let data: any = {
+    const data: any = {
       Creator: body.Creator,
       CommunityAddress: body.CommunityAddress,
       FromAddress: body.FromAddress,
       FundingTokenAddress: body.FundingTokenAddress,
       CommunityTokenAddress: body.CommunityTokenAddress,
       FundingToken: body.FundingToken,
-      TokenType: body.TokenType ?? 'COMMUNITY',
+      TokenType: body.TokenType ?? 'ETHEREUM',
       TokenSymbol: body.TokenSymbol,
       TokenName: body.TokenName,
       AMM: body.AMM,
@@ -469,28 +470,20 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
     //     res.send({ success: false });
     //   }
     // }
+    if (body.VestingTaxation && body.VestingTaxation === true) {
+      data.VestingTime = body.VestingPeriod;
+      data.ImmediateAllocationPct = body.ImmediateAllocation;
+      data.VestedAllocationPct = body.VestedAllocation;
+    }
     const blockchainRes = await community.createCommunityToken(data);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // update comunity data
       if (data.TokenType && data.TokenType === 'ETHEREUM') {
-        console.log('data.TokenType', data.TokenType);
         db.collection(collections.community)
           .doc(data.CommunityAddress)
           .update({ EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId });
       }
-
-      //add taxation info
-      if (body.VestingTaxation && body.VestingTaxation === true) {
-        db.collection(collections.community)
-          .doc(data.CommunityAddress)
-          .update({
-            VestingPeriod: body.VestingPeriod ?? 0,
-            ImmediateAllocation: body.ImmediateAllocation ?? 0,
-            VestedAllocation: body.VestedAllocation ?? 0,
-          });
-      }
-
       // add txn to community
       const output = blockchainRes.output;
       const transactions = output.Transactions;
@@ -514,6 +507,45 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
     }
   } catch (e) {
     console.log('Error in controllers/communityController -> createCommunityToken(): ', e);
+    res.send({ success: false });
+  }
+};
+
+
+exports.setVestingConditions = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const communityAddress = body.CommunityAddress
+    const vestingTime = body.VestingTime;
+    const immediateAllocationPct = body.ImmediateAllocationPct;
+    const vestedAllocationPct = body.VestedAllocationPct;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    const blockchainRes = await community.setVestingConditions(communityAddress, vestingTime, immediateAllocationPct, vestedAllocationPct, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      // add txn to community
+      const output = blockchainRes.output;
+      const transactions = output.Transactions ?? {};
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.community)
+          .doc(body.CommunityAddress)
+          .collection(collections.communityTransactions)
+          .doc(tid)
+          .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
+      }
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/communityController -> setVestingConditions(): success = false',
+        blockchainRes.message
+      );
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/communityController -> setVestingConditions(): ', e);
     res.send({ success: false });
   }
 };
@@ -1317,7 +1349,6 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const data: any = communitySnap.data();
     const id: any = communitySnap.id;
     const extraData = await getExtraData(data, rateOfChange);
-    console.log(extraData);
 
     const ads: any[] = [];
     if (data.GeneralAd && data.GeneralAd !== '') {
@@ -1379,7 +1410,7 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const addressUidMap = await getAddresUidMap();
     const communityTransactions = await communitySnap.ref.collection(collections.communityTransactions).get();
     communityTransactions.forEach((doc) => {
-      const txns = doc.data().Transactions;
+      const txns = doc.data().Transactions ?? [];
       txns.forEach((txn) => {
         if (txn.Type && txn.Type == 'transfer') {
           data.TreasuryHistory.push({
