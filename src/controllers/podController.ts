@@ -782,7 +782,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
         for (const doc of discordRoomSnap.docs) {
           let dataRoom = doc.data();
           if (!dataRoom.private) {
-            chatController.addUserToRoom(data.DiscordId, doc.id, investorId);
+            chatController.addUserToRoom(data.DiscordId, doc.id, investorId, 'Member');
           }
         }
       }
