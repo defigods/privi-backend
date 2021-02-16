@@ -941,6 +941,25 @@ exports.changeCommunityPhoto = async (req: express.Request, res: express.Respons
 };
 
 /////////////////////////// GETS /////////////////////////////
+
+exports.getCommunityAllocations = async (req: express.Request, res: express.Response) => {
+  try {
+    const params = req.query;
+    const communityAddress: any = params.communityAddress;
+    const blockchainRes = await community.getCommunityAllocations(communityAddress, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      const output = blockchainRes.output;
+      res.send({ success: true, data: output });
+    }
+    else {
+      res.send({ success: true, data: 0 });
+    }
+  } catch (e) {
+    res.send({ success: false });
+    return 'Error in controllers/communitiesControllers -> getCommunityAllocations()' + e;
+  }
+};
+
 exports.getMaxAllocatingFund = async (req: express.Request, res: express.Response) => {
   try {
     const params = req.query;
