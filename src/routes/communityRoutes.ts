@@ -203,6 +203,9 @@ router.post('/declineRoleInvitation', authenticateJWT, communityController.decli
 router.post('/roleInvitation', authenticateJWT, communityController.roleInvitation);
 router.post('/removeRoleUser', authenticateJWT, communityController.removeRoleUser);
 
+router.post('/events/createEvent', authenticateJWT, communityController.addEvent);
+
+
 /*router.post('/ad/create', authenticateJWT, blogController.adCreate);
 router.post('/ad/changePhoto', authenticateJWT, upload4.single('image'), blogController.changeAdPhoto);
 router.post('/ad/changeDescriptionPhotos/:adId', authenticateJWT, upload5.array('image'), blogController.changeAdDescriptionPhotos);

@@ -478,6 +478,41 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
   }
 };
 
+exports.addEvent = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    const data: any = {
+      Title: body.Title,
+      Date: body.Date,
+      Creator: body.Creator
+    };
+
+  const communityAddress = body.CommunityId;
+  const communityRef = db.collection(collections.community).doc(communityAddress);
+  const communityGet = await communityRef.get()
+  let community = communityGet.data();
+
+  if(community){
+    let events = community.Events;
+
+    if (events && events.length > 0) {
+      events.push(data);
+    } else {
+      events = [data];
+    }
+
+    await communityRef.update({
+      Events: events
+    });
+
+    res.send({success: true});
+  }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> addEvent()', err);
+    res.send({ success: false, error: err});
+  }
+}
 
 exports.setVestingConditions = async (req: express.Request, res: express.Response) => {
   try {
