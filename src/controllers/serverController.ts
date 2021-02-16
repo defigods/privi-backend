@@ -480,6 +480,7 @@ export const startSocket = (env: Env) => {
         numDislikes: 0,
         numReplies: 0,
         id: uid,
+        type: 'text'
       });
     });
 
@@ -490,9 +491,7 @@ export const startSocket = (env: Env) => {
       await db.runTransaction(async (transaction) => {
         // userData - no check if firestore insert works? TODO
         transaction.set(
-          db
-            .collection(collections.discordMessage)
-            .doc(message.discordMessage)
+          db.collection(collections.discordMessage).doc(message.discordMessage)
             .collection(collections.discordMessageReplies)
             .doc(uid),
           {
@@ -506,7 +505,7 @@ export const startSocket = (env: Env) => {
             dislikes: [],
             numLikes: 0,
             numDislikes: 0,
-            numReplies: 0,
+            numReplies: 0
           }
         );
       });
