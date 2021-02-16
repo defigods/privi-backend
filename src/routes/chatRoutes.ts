@@ -1,9 +1,25 @@
 import {authenticateJWT} from "../middlewares/jwtAuthMiddleware";
+import multer from "multer";
 
 let express = require('express');
 let router = express.Router();
 
 let chatController = require('../controllers/chatController');
+
+let storage = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png')
+  }
+});
+
+let upload = multer({
+  storage: storage
+});
+
 
 router.post('/getChats', authenticateJWT, chatController.getChats);
 router.post('/getUsers', authenticateJWT, chatController.getUsers);
@@ -30,5 +46,7 @@ router.post('/discord/dislikeMessage', authenticateJWT, chatController.discordDi
 router.post('/discord/reply/likeMessage', authenticateJWT, chatController.discordReplyLikeMessage);
 router.post('/discord/reply/dislikeMessage', authenticateJWT, chatController.discordReplyDislikeMessage);
 
+router.post('/discord/addMessagePhoto/:discordChatId/:discordRoomId/:fromUserId', authenticateJWT, upload.single('image'), chatController.discordUploadPhotoMessage);
+router.get('/discord/getMessagePhoto/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetPhotoMessage);
 
 module.exports = router;

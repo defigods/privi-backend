@@ -259,13 +259,8 @@ export const startSocket = (env: Env) => {
 
     socket.on("subscribe", async function (users) {
       let room;
-      if (
-        users &&
-        users.userFrom &&
-        users.userFrom.userName &&
-        users.userTo &&
-        users.userTo.userName
-      ) {
+      if (users && users.userFrom && users.userFrom.userName &&
+        users.userTo && users.userTo.userName) {
         if (users.userFrom.userName && users.userTo.userName) {
           if (
             users.userFrom.userName.toLowerCase() <
@@ -345,7 +340,7 @@ export const startSocket = (env: Env) => {
           from: message.from,
           to: message.to,
           created: Date.now(),
-          seen: false,
+          seen: false
         });
       });
       const chatQuery = await db
@@ -436,6 +431,7 @@ export const startSocket = (env: Env) => {
           numLikes: 0,
           numDislikes: 0,
           numReplies: 0,
+          type: 'text'
         });
       });
       const discordRoomRef = db

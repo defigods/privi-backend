@@ -2,6 +2,7 @@ import express from "express";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
 import { generateUniqueId } from "../functions/functions";
+import fs from "fs";
 
 const userController = require('./userController');
 const notificationsController = require('./notificationsController');
@@ -1320,5 +1321,64 @@ exports.discordReplyDislikeMessage = async (req: express.Request, res: express.R
             success: false,
             error: e
         });
+    }
+}
+
+exports.discordUploadPhotoMessage = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file && req.params && req.params.discordRoomId &&
+          req.params.fromUserId) {
+            const uid = generateUniqueId();
+            await db.runTransaction(async (transaction) => {
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.discordMessage).doc(uid), {
+                    discordRoom: req.params.discordRoomId,
+                    message: '',
+                    from: req.params.fromUserId,
+                    created: Date.now(),
+                    seen: [],
+                    likes: [],
+                    dislikes: [],
+                    numLikes: 0,
+                    numDislikes: 0,
+                    numReplies: 0,
+                    type: 'photo'
+                });
+            });
+
+            const discordRoomRef = db.collection(collections.discordChat).doc(req.params.discordChatId)
+              .collection(collections.discordRoom).doc(req.params.discordRoomId);
+            const discordRoomGet = await discordRoomRef.get();
+            const discordRoom: any = discordRoomGet.data();
+
+            let messages: any = discordRoom.messages;
+            messages.push(uid);
+
+            await discordRoomRef.update({
+                messages: messages,
+                lastMessage: 'photo',
+                lastMessageDate: Date.now(),
+            });
+
+            let dir = "uploads/chat/" + req.params.discordChatId + '/' + req.params.discordRoomId;
+
+            if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir);
+            }
+
+            res.send({success: true});
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordUploadPhotoMessage() ' + e)
+        res.send({success: false, error: e});
+    }
+}
+
+exports.discordGetPhotoMessage = async (req: express.Request, res: express.Response) => {
+    try {
+
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordGetPhotoMessage() ' + e)
+        res.send({success: false, error: e});
     }
 }
