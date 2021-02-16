@@ -24,9 +24,12 @@ import path from 'path';
 import fs from 'fs';
 import { sendNewCommunityUsersEmail } from '../email_templates/emailTemplates';
 import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
+import { user } from 'firebase-functions/lib/providers/auth';
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
+const communityWallController = require('./communityWallController');
+const tasks = require('./tasksController');
 
 require('dotenv').config();
 // const apiKey = process.env.API_KEY;
@@ -102,6 +105,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
     const signature = body.Signature;
 
     const blockchainRes = await community.createCommunity(creator, hash, signature, apiKey);
+    console.log(JSON.stringify(blockchainRes, null, 4))
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const updateCommunities = blockchainRes.output.UpdateCommunities;
@@ -162,20 +166,20 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      for (const [index, admin] of admins.entries()) {
-        const user = await db.collection(collections.user).where('email', '==', admin.name).get();
-        if (user.empty) {
-          admins[index].userId = null;
-        } else {
-          for (const doc of user.docs) {
-            admins[index].userId = doc.id;
+      if (admins && admins.length > 0) {
+        for (const [index, admin] of admins.entries()) {
+          const user = await db.collection(collections.user).where('email', '==', admin.name).get();
+          if (user.empty) {
+            admins[index].userId = null;
+          } else {
+            for (const doc of user.docs) {
+              admins[index].userId = doc.id;
+            }
           }
         }
       }
       const userRolkeys = Object.keys(userRolesObj);
-      console.log('userRolkeys', userRolkeys);
       for (const [index, userRole] of userRolkeys.entries()) {
-        console.log('userRole', userRole);
         const user = await db.collection(collections.user).where('email', '==', userRole).get();
         if (user.empty) {
           userRolesArray[index].userId = null;
@@ -187,44 +191,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       }
 
       const discordChatCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        'Discussions',
-        creator,
-        user.firstName,
-        'general',
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatCreation.id,
-        'Information',
-        creator,
-        user.firstName,
-        'announcements',
-        false,
-        []
-      );
+      /*await chatController.createDiscordRoom(discordChatCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+      await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);*/
 
       const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Discussions',
-        creator,
-        user.firstName,
-        'general',
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Information',
-        creator,
-        user.firstName,
-        'announcements',
-        false,
-        []
-      );
+      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
       db.collection(collections.community)
         .doc(communityAddress)
@@ -240,6 +212,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
           DiscordId: discordChatCreation.id || '',
           JarrId: discordChatJarrCreation.id || '',
           TwitterId: twitterId || '',
+          Date: new Date().getTime(),
 
           EthereumContractAddress: EthereumContractAddress || '',
           EthChainId: EthChainId || '',
@@ -270,11 +243,13 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
           AppsEnabled: appsEnabled,
           Apps: apps,
 
-          UserRoles: userRolesObj,
+          UserRoles: userRolesObj || {},
           Admins: admins || [],
-          InvitationUsers: invitedUsers,
+          InvitationUsers: invitedUsers || [],
           Posts: [],
           Votings: [],
+
+          MembersReached: false,
         });
 
       // send invitation email to admins, roles and users here
@@ -289,34 +264,19 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
-      if (!invitationEmails) {
-        console.log('failed to send invitation e-mails.');
+      if ((admins && admins.length > 0) ||
+        (userRolesArray && userRolesArray.length > 0) ||
+        (invitedUsers && invitedUsers.length > 0)) {
+        let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
+        if (!invitationEmails) {
+          console.log('failed to send invitation e-mails.');
+        }
       }
-
-      for (const admin of admins) {
-        if (admin.userId) {
-          await notificationsController.addNotification({
-            userId: userGet.id,
-            notification: {
-              type: 86,
-              typeItemId: 'user',
-              itemId: creator,
-              follower: user.firstName,
-              pod: name, // community name
-              comment: 'Admin',
-              token: '',
-              amount: 0,
-              onlyInformation: false,
-              otherItemId: communityAddress,
-            },
-          });
-        } else {
-          let id = generateUniqueId();
-
-          await db.runTransaction(async (transaction) => {
-            transaction.set(db.collection(collections.pendingNotifications).doc(id), {
-              email: admin.name,
+      if (admins && admins.length > 0) {
+        for (const admin of admins) {
+          if (admin.userId) {
+            await notificationsController.addNotification({
+              userId: userGet.id,
               notification: {
                 type: 86,
                 typeItemId: 'user',
@@ -330,32 +290,35 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 otherItemId: communityAddress,
               },
             });
-          });
+          } else {
+            let id = generateUniqueId();
+
+            await db.runTransaction(async (transaction) => {
+              transaction.set(db.collection(collections.pendingNotifications).doc(id), {
+                email: admin.name,
+                notification: {
+                  type: 86,
+                  typeItemId: 'user',
+                  itemId: creator,
+                  follower: user.firstName,
+                  pod: name, // community name
+                  comment: 'Admin',
+                  token: '',
+                  amount: 0,
+                  onlyInformation: false,
+                  otherItemId: communityAddress,
+                },
+              });
+            });
+          }
         }
       }
 
-      for (const userRole of userRolesArray) {
-        if (userRole.userId) {
-          await notificationsController.addNotification({
-            userId: userGet.id,
-            notification: {
-              type: 86,
-              typeItemId: 'user',
-              itemId: creator,
-              follower: user.firstName,
-              pod: name, // community name
-              comment: userRole.role,
-              token: '',
-              amount: 0,
-              onlyInformation: false,
-              otherItemId: communityAddress,
-            },
-          });
-        } else {
-          let id = generateUniqueId();
-          await db.runTransaction(async (transaction) => {
-            transaction.set(db.collection(collections.pendingNotifications).doc(id), {
-              email: userRole.name,
+      if (userRolesArray && userRolesArray.length > 0) {
+        for (const userRole of userRolesArray) {
+          if (userRole.userId) {
+            await notificationsController.addNotification({
+              userId: userGet.id,
               notification: {
                 type: 86,
                 typeItemId: 'user',
@@ -369,7 +332,26 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 otherItemId: communityAddress,
               },
             });
-          });
+          } else {
+            let id = generateUniqueId();
+            await db.runTransaction(async (transaction) => {
+              transaction.set(db.collection(collections.pendingNotifications).doc(id), {
+                email: userRole.name,
+                notification: {
+                  type: 86,
+                  typeItemId: 'user',
+                  itemId: creator,
+                  follower: user.firstName,
+                  pod: name, // community name
+                  comment: userRole.role,
+                  token: '',
+                  amount: 0,
+                  onlyInformation: false,
+                  otherItemId: communityAddress,
+                },
+              });
+            });
+          }
         }
       }
 
@@ -409,14 +391,14 @@ async function getPriceFromUniswap(communityTokenAddress, fundingTokenPrice) {
 exports.createCommunityToken = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    let data: any = {
+    const data: any = {
       Creator: body.Creator,
       CommunityAddress: body.CommunityAddress,
       FromAddress: body.FromAddress,
       FundingTokenAddress: body.FundingTokenAddress,
       CommunityTokenAddress: body.CommunityTokenAddress,
       FundingToken: body.FundingToken,
-      TokenType: body.TokenType,
+      TokenType: body.TokenType ?? 'ETHEREUM',
       TokenSymbol: body.TokenSymbol,
       TokenName: body.TokenName,
       AMM: body.AMM,
@@ -455,17 +437,20 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
     //     res.send({ success: false });
     //   }
     // }
+    if (body.VestingTaxation && body.VestingTaxation === true) {
+      data.VestingTime = body.VestingPeriod;
+      data.ImmediateAllocationPct = body.ImmediateAllocation;
+      data.VestedAllocationPct = body.VestedAllocation;
+    }
     const blockchainRes = await community.createCommunityToken(data);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // update comunity data
       if (data.TokenType && data.TokenType === 'ETHEREUM') {
-        console.log('data.TokenType', data.TokenType);
         db.collection(collections.community)
           .doc(data.CommunityAddress)
           .update({ EthereumContractAddress: data.EthereumContractAddress, EthChainId: data.EthChainId });
       }
-
       // add txn to community
       const output = blockchainRes.output;
       const transactions = output.Transactions;
@@ -478,6 +463,7 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
           .doc(tid)
           .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
       }
+
       res.send({ success: true });
     } else {
       console.log(
@@ -488,6 +474,45 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
     }
   } catch (e) {
     console.log('Error in controllers/communityController -> createCommunityToken(): ', e);
+    res.send({ success: false });
+  }
+};
+
+
+exports.setVestingConditions = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const communityAddress = body.CommunityAddress
+    const vestingTime = body.VestingTime;
+    const immediateAllocationPct = body.ImmediateAllocationPct;
+    const vestedAllocationPct = body.VestedAllocationPct;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    const blockchainRes = await community.setVestingConditions(communityAddress, vestingTime, immediateAllocationPct, vestedAllocationPct, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      // add txn to community
+      const output = blockchainRes.output;
+      const transactions = output.Transactions ?? {};
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.community)
+          .doc(body.CommunityAddress)
+          .collection(collections.communityTransactions)
+          .doc(tid)
+          .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
+      }
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/communityController -> setVestingConditions(): success = false',
+        blockchainRes.message
+      );
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/communityController -> setVestingConditions(): ', e);
     res.send({ success: false });
   }
 };
@@ -575,11 +600,13 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
     }
     const hash = body.Hash;
     const signature = body.Signature;
+    const externalPrice = 0;
 
     const blockchainRes = await community.buyCommunityToken(
       investor,
       communityAddress,
       amount,
+      externalPrice,
       hash,
       signature,
       apiKey
@@ -597,6 +624,20 @@ exports.buyCommunityToken = async (req: express.Request, res: express.Response) 
       for ([key, obj] of Object.entries(transactions)) {
         if (obj.From == ammAddr || obj.To == ammAddr) {
           commSnap.ref.collection(collections.communityTransactions).add(obj);
+        }
+      }
+      let userTokens = await coinBalance.getTokensOfAddress(body.Investor);
+      if (userTokens && userTokens.success) {
+        const output = userTokens.output;
+        if (userTokens['COMMUNITY'].length >= 3) {
+          const userRef = db.collection(collections.user).doc(investor.Investor);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+          if (!user.Own3CommunityTokens) {
+            let task = await tasks.updateTask(body.Investor, 'Own 3 Community Tokens with test tokens ');
+            await userRef.update({ Own3CommunityTokens: true });
+            res.send({ success: true, task: task });
+          }
         }
       }
       res.send({ success: true });
@@ -686,6 +727,7 @@ exports.join = async (req: express.Request, res: express.Response) => {
     const userData: any = userSnap.data();
 
     let joinedCommuntities = userData[fields.joinedCommunities] ?? [];
+    let jcLength = joinedCommuntities.length;
     joinedCommuntities.push(communityAddress);
     const userUpdateObj = {};
     userUpdateObj[fields.joinedCommunities] = joinedCommuntities;
@@ -716,6 +758,18 @@ exports.join = async (req: express.Request, res: express.Response) => {
           chatController.addUserToRoom(commData.DiscordId, doc.id, userSnap.id);
         }
       }
+    }
+    if (joinedUsers.length >= 15 && !commData.MembersReached) {
+      await communitySnap.ref.update({
+        MembersReached: true,
+      });
+      let task = await tasks.updateTask(commData.Creator, 'Own a community with 15 or more members');
+      res.send({ success: true, task: task });
+    }
+
+    if (jcLength == 2) {
+      let task = await tasks.updateTask(userAddress, 'Join 3 Communities');
+      res.send({ success: true, task: task });
     }
 
     res.send({ success: true });
@@ -830,7 +884,7 @@ exports.changeCommunityPhoto = async (req: express.Request, res: express.Respons
       const communityGet = await communityRef.get();
       const community: any = await communityGet.data();
 
-      if (community.HasPhoto) {
+      if (community.HasPhoto !== undefined) {
         await communityRef.update({
           HasPhoto: true,
         });
@@ -973,79 +1027,202 @@ exports.getCommunityPhotoById = async (req: express.Request, res: express.Respon
 // get members data needed for Member tab
 exports.getMembersData = async (req: express.Request, res: express.Response) => {
   try {
-    const retData: any[] = [];
+    let retData: any[] = [];
+    let pendingData: any[] = [];
     const communityAddress: any = req.query.communityAddress;
     const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
     const communityData = communitySnap.data();
+
     if (communityData) {
-      // get member basic data from User colection
-      const members = communityData.Members;
-      const userDataMap = {};
-      const addressUidMap = {}; // construct it as we iterate through members
-      const userPromises: any[] = [];
-      members.forEach((memberObj) => {
-        userPromises.push(db.collection(collections.user).doc(memberObj.id).get());
-      });
-      const userResponses = await Promise.all(userPromises);
-      userResponses.forEach((response) => {
-        const uid = response.id;
-        const data = response.data();
-        userDataMap[uid] = data;
-        addressUidMap[data.address] = uid;
-      });
-      // get proportion of supply of each member
-      const communityToken = communityData.TokenSymbol;
-      const getTokenRes = await coinBalance.getToken(communityToken, apiKey);
-      if (getTokenRes && getTokenRes.success) {
-        const totalSupply = getTokenRes.output.Supply;
-        const promises: any[] = [];
-        members.forEach((memberObj) => {
-          const address = userDataMap[memberObj.id].address;
-          if (address) promises.push(coinBalance.balanceOf(address, communityToken));
-        });
-        const responses = await Promise.all(promises);
-        responses.forEach((response) => {
-          if (response && response.success) {
-            const output = response.output;
-            const address = output.Address;
-            const uid = addressUidMap[address];
-            const amount = output.Amount;
-            const proportion = amount / totalSupply ?? 0;
-            userDataMap[uid] = {
-              ...userDataMap[uid],
-              SupplyProportion: proportion,
-            };
+      let communityToken : any;
+      let getTokenRes : any;
+      let totalSupply : any;
+
+      let communityHasToken : boolean = false;
+      if(communityData.TokenName !== '' && communityData.TokenSymbol !== '') {
+        communityHasToken = true
+      }
+
+      if(communityHasToken) {
+        communityToken = communityData.TokenSymbol;
+        getTokenRes = await coinBalance.getToken(communityToken, apiKey);
+
+        if (getTokenRes && getTokenRes.success) {
+          totalSupply = getTokenRes.output.Supply;
+
+        } else {
+          console.log('Error in controllers/communitiesControllers -> getMembersData()', 'Error getting Token info');
+          res.send({ success: false, error: 'Error getting Token info' });
+        }
+      }
+
+      // create retData array from userDataMap extracting the necessary info
+      const userSnap = await db.collection(collections.user).doc(communityData.Creator).get();
+      const userData: any = userSnap.data();
+
+      if (userSnap.exists) {
+        let proportion: number = 0;
+        if(communityHasToken) {
+          const address = userData.address;
+          if (address) {
+            let balance = await coinBalance.balanceOf(address, communityToken);
+
+            if (balance && balance.output && balance.output.Amount) {
+              const amount = balance.output.Amount;
+              proportion = amount / totalSupply ?? 0;
+            }
           }
-        });
-        // create retData array from userDataMap extracting the necessary info
-        const userRoles = communityData.UserRoles;
-        members.forEach((memberObj) => {
-          const uid = memberObj.id;
-          const roleObj = userRoles[uid];
-          let role;
-          if (roleObj) role = roleObj.role;
-          if (roleObj && roleObj.status == 'PENDING') role += ' (Pending)';
-          retData.push({
-            AnonAvatar: userDataMap[uid].anonAvatar,
-            Anon: userDataMap[uid].anon,
-            UserId: uid,
-            Name: userDataMap[uid].firstName,
-            SupplyProportion: userDataMap[uid].SupplyProportion,
-            Role: role,
-            Level: userDataMap[uid].level ?? 1, // TODO: get correct level from somewhere
-            Activity: '', // TODO: get correct activity from somewhere
-            NumFollowers: userDataMap[uid].followers ? userDataMap[uid].followers.length : 0,
-          });
+        }
+
+        retData.push({
+          id: communityData.Creator,
+          AnonAvatar: userData.anonAvatar,
+          Anon: userData.anon,
+          UserId: communityData.Creator,
+          Name: userData.firstName,
+          SupplyProportion: proportion,
+          Role: ['Creator'],
+          Level: userData.level ?? 1, // TODO: get correct level from somewhere
+          Activity: '', // TODO: get correct activity from somewhere
+          NumFollowers: userData.followers ? userData.followers.length : 0,
         });
       }
-      res.send({ success: true, data: retData });
+
+      const admins = [...communityData.Admins || []];
+
+      for (let admin of admins) {
+        const userSnap = await db.collection(collections.user).doc(admin.userId).get();
+        const userData: any = userSnap.data();
+
+        if (userSnap.exists && admin && admin.userId) {
+          let proportion: number = 0;
+          if(communityHasToken) {
+            const address = userData.address;
+            if (address) {
+              let balance = await coinBalance.balanceOf(address, communityToken);
+
+              if (balance && balance.output && balance.output.Amount) {
+                const amount = balance.output.Amount;
+                proportion = amount / totalSupply ?? 0;
+              }
+            }
+          }
+
+          if (admin && admin.status && admin.status === 'Accepted') {
+            retData = await addMemberInArray(retData, admin.userId, userData, proportion, 'Admin');
+          } else if (admin && admin.status && admin.status === 'Pending') {
+            pendingData = await addMemberInArray(pendingData, admin.userId, userData, proportion, 'Admin');
+          }
+        }
+      }
+
+      const userRoles = communityData.UserRoles;
+
+      Object.keys(userRoles).map((key) => {
+        let idUserRole = '';
+        if (userRoles[key]) {
+          idUserRole = userRoles[key].userId;
+          let roleUserRole = userRoles[key].roles;
+
+          Object.keys(roleUserRole).map(async (key) => {
+            let role = roleUserRole[key];
+
+            const userSnap = await db.collection(collections.user).doc(idUserRole).get();
+            const userData: any = userSnap.data();
+
+            let proportion: number = 0;
+            if(communityHasToken) {
+              let balance = await coinBalance.balanceOf(userData.address, communityToken);
+
+              if (balance && balance.output && balance.output.Amount) {
+                const amount = balance.output.Amount;
+                proportion = amount / totalSupply ?? 0;
+              }
+            }
+
+            if (role && role === 'Accepted') {
+              retData = await addMemberInArray(retData, idUserRole, userData, proportion, key);
+            } else if (role && role === 'Pending') {
+              pendingData = await addMemberInArray(pendingData, idUserRole, userData, proportion, key);
+            }
+          });
+        }
+      });
+
+      const membersArray = [...communityData.Members || []];
+
+      for (let member of membersArray) {
+        const userSnap = await db.collection(collections.user).doc(member.id).get();
+        const userData: any = userSnap.data();
+
+        if (userSnap.exists && member && member.id) {
+          let proportion: number = 0;
+          if(communityHasToken) {
+            const address = userData.address;
+            if (address) {
+              let balance = await coinBalance.balanceOf(address, communityToken);
+
+              if (balance && balance.output && balance.output.Amount) {
+                const amount = balance.output.Amount;
+                proportion = amount / totalSupply ?? 0;
+              }
+            }
+          }
+
+          retData = await addMemberInArray(retData, member.id, userData, proportion, 'Member');
+
+        }
+      }
+
+      res.send({
+        success: true,
+        data:  {
+          members: retData,
+          pendingMembers: pendingData,
+          communityHasToken: communityHasToken
+        }
+      });
+
     } else {
-      res.send({ success: false });
+      console.log('Error in controllers/communitiesControllers -> getMembersData()', 'No community found');
+      res.send({ success: false, error: 'No community found' });
     }
   } catch (e) {
-    return 'Error in controllers/communitiesControllers -> getMemberData()' + e;
+    console.log('Error in controllers/communitiesControllers -> getMembersData()' + e);
+    res.send({ success: false, error: e });
   }
 };
+
+const addMemberInArray = async (array, userId, userData, proportion, role) : Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    try {
+      let alreadyFoundIndex = array.findIndex((user) => user.UserId === userId);
+
+      if (alreadyFoundIndex !== -1) {
+        if (array[alreadyFoundIndex].Role) {
+          array[alreadyFoundIndex].Role.push('Member');
+        }
+      } else {
+        array.push({
+          id: userId,
+          AnonAvatar: userData.anonAvatar,
+          Anon: userData.anon,
+          UserId: userId,
+          Name: userData.firstName,
+          SupplyProportion: proportion,
+          Role: [role],
+          Level: userData.level ?? 1, // TODO: get correct level from somewhere
+          Activity: '', // TODO: get correct activity from somewhere
+          NumFollowers: userData.followers ? userData.followers.length : 0,
+        });
+      }
+      resolve(array);
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
 
 // get some extra data needed for FE, they are not stored at firebase
 const getExtraData = async (data, rateOfChange) => {
@@ -1096,7 +1273,15 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
       const data: any = doc.data();
       const id: any = doc.id;
       const extraData = await getExtraData(data, rateOfChange);
-      allCommunities.push({ ...data, ...extraData, id: id });
+
+      let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+      allCommunities.push({
+        ...data,
+        ...extraData,
+        id: id,
+        arrayMembersId: arrayMembersId
+      });
     }
     res.send({
       success: true,
@@ -1115,9 +1300,9 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const communityAddress = req.params.communityAddress;
     const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
     const rateOfChange = await getRateOfChangeAsMap();
-    const data: any = communitySnap.data();
-    const id: any = communitySnap.id;
-    const extraData = getExtraData(data, rateOfChange);
+    const data : any = communitySnap.data();
+    const id : any = communitySnap.id;
+    const extraData = await getExtraData(data, rateOfChange);
 
     const ads: any[] = [];
     if (data.GeneralAd && data.GeneralAd !== '') {
@@ -1125,6 +1310,19 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
       const adGet = await adRef.get();
       const ad: any = adGet.data();
       ads.push({ GeneralAd: ad });
+    }
+
+    let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+    if (data.UserRoles) {
+      let userRolesKeys = Object.keys(data.UserRoles);
+      for (const userRoleEmail of userRolesKeys) {
+        if(data.UserRoles[userRoleEmail] && data.UserRoles[userRoleEmail].userId) {
+          const userSnap = await db.collection(collections.user).doc(data.UserRoles[userRoleEmail].userId).get();
+          const userData: any = userSnap.data();
+          data.UserRoles[userRoleEmail].name = userData.firstName;
+        }
+      }
     }
 
     data.PostsArray = [];
@@ -1156,11 +1354,30 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
       }
     }
 
+    data.TreasuryVotingsArray = [];
+    if (data.TreasuryVoting && data.TreasuryVoting.length > 0) {
+      for (const voting of data.TreasuryVoting) {
+        const votingSnap = await db.collection(collections.voting).doc(voting).get();
+        const votingData: any = votingSnap.data();
+        if (votingSnap.exists) {
+          votingData.id = votingSnap.id;
+
+          const userRef = db.collection(collections.user).doc(votingData.CreatorId);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+
+          votingData.CreatorName = user.firstName;
+
+          data.TreasuryVotingsArray.push(votingData);
+        }
+      }
+    }
+
     data.TreasuryHistory = [];
     const addressUidMap = await getAddresUidMap();
     const communityTransactions = await communitySnap.ref.collection(collections.communityTransactions).get();
     communityTransactions.forEach((doc) => {
-      const txns = doc.data().Transactions;
+      const txns = doc.data().Transactions ?? [];
       txns.forEach((txn) => {
         if (txn.Type && txn.Type == 'transfer') {
           data.TreasuryHistory.push({
@@ -1176,7 +1393,13 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 
     res.send({
       success: true,
-      data: { ...data, ...extraData, id: id, ads: ads },
+      data: {
+        ...data,
+        ...extraData,
+        id: id,
+        ads: ads,
+        membersIdArray: arrayMembersId
+      },
     });
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunity()' + e);
@@ -1272,6 +1495,15 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
           }
         }
       }
+    });
+
+    res.send({
+      success: true,
+      data: {
+        commentsCounter: commentsCounter,
+        commentsMonthCounter: commentsMonthCounter,
+        conversationsMonthCounter: conversationsMonthCounter,
+      },
     });
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);
@@ -1379,7 +1611,14 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
       const data: any = doc.data();
       const id: any = doc.id;
       const extraData = await getExtraData(data, rateOfChange);
-      trendingCommunities.push({ ...data, ...extraData, id: id });
+      let arrayMembersId : any[] = await getArrayIdCommunityMembers(data);
+
+      trendingCommunities.push({
+        ...data,
+        ...extraData,
+        id: id,
+        arrayMembersId: arrayMembersId
+      });
     }
     res.send({ success: true, data: { trending: trendingCommunities } });
   } catch (e) {
@@ -1422,6 +1661,204 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
   }
 });
 
+exports.roleInvitation = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const userRef = db.collection(collections.user).doc(body.userId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
+    let checkIsCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.communityId);
+    let checkIsAdmin = await communityWallController.checkUserRole(body.userId, user.email, body.communityId, true, false, []);
+
+    if (body.userId && body.communityId && body.role && body.creator && (checkIsCreator || checkIsAdmin)) {
+      const communityRef = db.collection(collections.community).doc(body.communityId);
+      const communityGet = await communityRef.get();
+      const community: any = communityGet.data();
+
+      const creatorUserRef = db.collection(collections.user).doc(body.creator);
+      const creatorUserGet = await creatorUserRef.get();
+      const creator: any = creatorUserGet.data();
+
+      if (body.role === 'Admin') {
+        let admins : any[] = [...community.Admins];
+
+        let adminFoundIndex = admins.findIndex(admin => admin === body.userId);
+        if(adminFoundIndex !== -1) {
+          const userRef = db.collection(collections.user).doc(body.userId);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+
+          admins.push({
+            name: user.email,
+            userId: body.userId,
+            status: 'Pending',
+          });
+          await communityRef.update({
+            Admins: admins,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> roleInvitation()', "User is already an Admin or invitation has been sent before");
+          res.send({ success: false, error: "User is already an Admin or invitation has been sent before" });
+          return;
+        }
+      } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
+        let userRoles : any = community.UserRoles;
+
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        if (userRoles && userRoles[user.email] && userRoles[user.email].roles) {
+          if(!userRoles[user.email].roles[body.role] || userRoles[user.email].roles[body.role] !== 'Accepted') {
+            userRoles[user.email].roles[body.role] = 'Pending';
+          } else {
+            console.log('Error in controllers/communityController -> roleInvitation()', `User is already a ${body.role}`);
+            res.send({ success: false, error: `User is already a ${body.role}` });
+            return;
+          }
+        } else {
+          userRoles[user.email] = {
+            roles: {},
+            userId: body.userId,
+          };
+          userRoles[user.email].roles[body.role] = 'Pending';
+        }
+        await communityRef.update({
+          UserRoles: userRoles,
+        });
+      } else if (body.role === 'Member') {
+        let members: any[] = [...community.Members];
+
+        let memberFoundIndex = members.findIndex(member => member === body.id);
+        if(memberFoundIndex !== -1) {
+          const userRef = db.collection(collections.user).doc(body.userId);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
+
+          members.push({
+            id: body.userId,
+            date: Date.now(),
+          });
+          await communityRef.update({
+            Members: members,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> roleInvitation()', "User is already a Member or invitation has been sent before");
+          res.send({ success: false, error: "User is already a Member or invitation has been sent before" });
+          return;
+        }
+      } else {
+        console.log('Error in controllers/communityController -> removeRoleUser()', "Role doesn't exists");
+        res.send({ success: false, error: "Role doesn't exists" });
+        return;
+      }
+      await notificationsController.addNotification({
+        userId: body.userId,
+        notification: {
+          type: 86,
+          typeItemId: 'user',
+          itemId: body.creator,
+          follower: creator.firstName,
+          pod: community.Name, // community name
+          comment: body.role,
+          token: '',
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: body.communityId,
+        },
+      });
+
+      res.send({ success: true, message: 'Invitation sent' });
+    } else {
+      console.log('Error in controllers/communityController -> roleInvitation()', 'Info missing');
+      res.send({ success: false, error: 'Info missing' });
+    }
+  } catch (e) {
+    console.log('Error in controllers/communityController -> roleInvitation()', e);
+    res.send({ success: false, error: e });
+  }
+};
+
+exports.removeRoleUser = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const userRef = db.collection(collections.user).doc(body.userId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
+    let checkIsCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.communityId);
+    let checkIsAdmin = await communityWallController.checkUserRole(body.userId, user.email, body.communityId, true, false, []);
+
+    if (body.userId && body.communityId && body.role && body.creator && (checkIsCreator || checkIsAdmin)) {
+      const communityRef = db.collection(collections.community).doc(body.communityId);
+      const communityGet = await communityRef.get();
+      const community: any = communityGet.data();
+
+      if (body.role === 'Admin') {
+        let admins: any[] = [...community.Admins];
+
+        let adminFoundIndex = admins.findIndex((admin) => admin.userId === body.userId);
+
+        if (adminFoundIndex !== -1) {
+          admins.splice(adminFoundIndex, 1);
+          await communityRef.update({
+            Admins: admins,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> removeRoleUser()', 'Admin not found');
+          res.send({ success: false, error: 'Admin not found' });
+          return;
+        }
+      } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
+        let userRoles: any = community.UserRoles;
+
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        if (userRoles[user.email] && userRoles[user.email].roles && userRoles[user.email].roles[body.role]) {
+
+          delete userRoles[user.email].roles[body.role];
+
+          await communityRef.update({
+            UserRoles: userRoles,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> removeRoleUser()', 'User not found');
+          res.send({ success: false, error: 'User not found' });
+          return;
+        }
+      } else if (body.role === 'Member') {
+        let members: any[] = [...community.Members];
+
+        let memberFoundIndex = members.findIndex((member) => member.id === body.userId);
+
+        if (memberFoundIndex !== -1) {
+          members.splice(memberFoundIndex, 1);
+          await communityRef.update({
+            Members: members,
+          });
+        } else {
+          console.log('Error in controllers/communityController -> removeRoleUser()', 'Member not found');
+          res.send({ success: false, error: 'Member not found' });
+          return;
+        }
+      }
+
+      res.send({ success: true, error: 'Role User removed' });
+    } else {
+      console.log('Error in controllers/communityController -> removeRoleUser()', "Info missing or you don't have rights");
+      res.send({ success: false, error: "Info missing or you don't have rights" });
+    }
+  } catch (e) {
+    console.log('Error in controllers/communityController -> removeRoleUser()', e);
+    res.send({ success: false, error: e });
+  }
+};
+
 exports.acceptRoleInvitation = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
@@ -1429,6 +1866,10 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
       const communityRef = db.collection(collections.community).doc(body.communityId);
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
+
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
 
       if (communityGet.exists && community) {
         if (body.role === 'Admin') {
@@ -1464,28 +1905,24 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
               });
             }
           }
-        } else {
-          if (community.UserRoles && community.UserRoles.length > 0) {
-            let userRolesIndex = community.UserRoles.findIndex((userRole) => userRole.userId === body.userId);
+        } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
+          if (community.UserRoles && community.UserRoles[user.email]) {
+            community.UserRoles[user.email].roles[body.role] = 'Accepted';
 
-            if (userRolesIndex !== -1) {
-              let copyUserRoles = [...community.UserRoles];
-              copyUserRoles[userRolesIndex].status = 'Accepted';
-
-              await communityRef.update({
-                UserRoles: copyUserRoles,
-              });
-            } else {
-              console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'You are not invited');
-              res.send({ success: false, message: 'You are not invited' });
-              return;
-            }
+            await communityRef.update({
+              UserRoles: community.UserRoles,
+            });
+          } else {
+            console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'You are not invited');
+            res.send({ success: false, message: 'You are not invited' });
+            return;
           }
+        } else {
+          console.log('Error in controllers/communityController -> acceptRoleInvitation()', "Role doesn't exists");
+          res.send({ success: false, message: "Role doesn't exists" });
+          return;
         }
 
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
         await notificationsController.addNotification({
           userId: body.userId,
           notification: {
@@ -1555,6 +1992,10 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
 
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
       if (communityGet.exists && community) {
         if (body.role === 'Admin') {
           if (community.Admins && community.Admins.length > 0) {
@@ -1568,26 +2009,35 @@ exports.declineRoleInvitation = async (req: express.Request, res: express.Respon
                 Admins: copyAdmins,
               });
             } else {
-              console.log('Error in controllers/communityController -> acceptRoleInvitation()', 'You are not invited');
+              console.log('Error in controllers/communityController -> declineRoleInvitation()', 'You are not invited');
               res.send({ success: false, message: 'You are not invited' });
               return;
             }
           }
-        } else {
-          if (community.UserRoles && community.UserRoles.length > 0) {
-            let userRolesIndex = community.UserRoles.findIndex((userRole) => userRole.userId === body.userId);
+        } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
+          if (
+            community.UserRoles &&
+            community.UserRoles[user.email] &&
+            community.UserRoles[user.email].roles[body.role]
+          ) {
+            delete community.UserRoles[user.email].roles[body.role];
 
-            let copyUserRoles = [...community.UserRoles];
-            copyUserRoles.splice(userRolesIndex, 1);
+            let keysRoles = Object.keys(community.UserRoles[user.email].roles);
+            console.log(keysRoles, keysRoles.length);
+            if (keysRoles.length === 0) {
+              delete community.UserRoles[user.email];
+            }
 
             await communityRef.update({
-              UserRoles: copyUserRoles,
+              UserRoles: community.UserRoles,
             });
           }
+        } else {
+          console.log('Error in controllers/communityController -> declineRoleInvitation()', "Role doesn't exists");
+          res.send({ success: false, message: "Role doesn't exists" });
+          return;
         }
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+
         await notificationsController.addNotification({
           userId: body.userId,
           notification: {
@@ -1763,3 +2213,57 @@ exports.endVotations = cron.schedule('0 0 * * *', async () => {
     }
 });
 */
+
+const getArrayIdCommunityMembers = async (data : any) => {
+  return new Promise<any[]>((resolve, reject) => {
+    try {
+      let arrayMembersId : any[] = [];
+
+      if(data.Creator) {
+        arrayMembersId.push(data.Creator);
+      }
+      if(data.Admins && data.Admins.length > 0) {
+        for(let admin of data.Admins) {
+          if(admin.status === 'Accepted') {
+            let foundMemberIndex = arrayMembersId.findIndex((member) => member === admin.userId);
+            if(foundMemberIndex === -1) {
+              arrayMembersId.push(admin.userId);
+            }
+          }
+        }
+      }
+      if(data.Members && data.Members.length > 0) {
+        for(let member of data.Members) {
+          let foundMemberIndex = arrayMembersId.findIndex((memb) => memb === member.id);
+          if(foundMemberIndex === -1) {
+            arrayMembersId.push(member.id);
+          }
+        }
+      }
+
+      let userRolesKeys = Object.keys(data.UserRoles);
+      for(let userRole of userRolesKeys) {
+        if(data.UserRoles[userRole].userId) {
+          let foundMemberIndex = arrayMembersId.findIndex((memb) => memb === data.UserRoles[userRole].userId);
+          if(foundMemberIndex === -1) {
+            let rolesKeys = Object.keys(data.UserRoles[userRole].roles);
+            let hasRoleAccepted : boolean = false;
+            for(let role of rolesKeys) {
+              if(data.UserRoles[userRole].roles[role] && data.UserRoles[userRole].roles[role] === 'Accepted') {
+                hasRoleAccepted = true;
+              }
+            }
+            if(hasRoleAccepted) {
+              arrayMembersId.push(data.UserRoles[userRole].userId);
+            }
+          }
+        }
+      }
+
+      resolve(arrayMembersId);
+    } catch (e) {
+      console.log('');
+      reject(e)
+    }
+  });
+}

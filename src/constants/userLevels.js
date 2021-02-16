@@ -6,11 +6,13 @@ let LEVELS_MAP = new Map([
     [100000, 5]
 ]);
 
-const LEVELS = [0, 100, 1000, 10000, 100000]
+const LEVELS = [0, 250, 500, 1000, 1500, 2000, 2500, 3000];
 
 const ONE_DAY = 60 * 60 * 24 * 1000;
+const ONE_HOUR = 60 * 60 * 1000;
 
 module.exports = {
     LEVELS,
-    ONE_DAY
+    ONE_DAY,
+    ONE_HOUR
 }

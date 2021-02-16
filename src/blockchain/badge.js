@@ -16,3 +16,8 @@ module.exports.createBadge = async (creator, name, symbol, type, totalSupply, ro
     });
     return blockchainRes.data;
 };
+
+module.exports.rewardBadge = async (data) => {
+    let blockchainRes = await axios.post(api.blockchainBadgesAPI + "/rewardBadge", data)
+    return blockchainRes.data;
+}

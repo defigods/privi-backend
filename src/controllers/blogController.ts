@@ -16,6 +16,7 @@ import fs from "fs";
 import cron from "node-cron";
 
 const userController = require("./userController");
+const tasks = require("./tasksController");
 const notificationsController = require("./notificationsController");
 
 exports.blogCreate = async (req: express.Request, res: express.Response) => {
@@ -371,7 +372,12 @@ exports.makeResponseBlogPost = async (
       await blogPostRef.update({
         responses: responses,
       });
-      res.send({ success: true, data: responses });
+
+      if (responses.length == 1) {
+        let task = await tasks.updateTask(body.userId, "Make your first comment");
+        res.send({success: true, data: responses, task});
+      }
+      res.send({success: true, data: responses});
     } else {
       console.log(
         "Error in controllers/blogController -> makeResponseBlogPost()",
@@ -766,6 +772,7 @@ const createPost = (exports.createPost = (body, collection, userId) => {
           createdBy: userId,
           createdAt: Date.now(),
           updatedAt: null,
+          got10creds: false,
           likes: [],
           dislikes: [],
           numLikes: 0,
@@ -785,6 +792,14 @@ const createPost = (exports.createPost = (body, collection, userId) => {
           await db.runTransaction(async (transaction) => {
             transaction.set(
               db.collection(collections.podWallPost).doc("" + uid),
+              data
+            );
+          });
+        } else if (collection === "podNFTWallPost") {
+          data.podId = body.podId;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(
+              db.collection(collections.podNFTWallPost).doc("" + uid),
               data
             );
           });
@@ -911,6 +926,13 @@ const likeItemPost = (exports.likeItemPost = (
         await userController.updateUserCred(creator, true);
       }
 
+      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
+        let res = await tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
+        await dbRef.update({got10creds: true});
+        dbItem.task = res;
+        resolve(dbItem);
+      }
+
       resolve(dbItem);
     } catch (e) {
       console.log("Error in controllers/blogController -> likeItemPost()", e);
@@ -965,6 +987,13 @@ const dislikeItemPost = (exports.dislikeItemPost = (
 
       if (creator !== userId) {
         await userController.updateUserCred(creator, true);
+      }
+
+      if (!dbItem.got10creds && (numDislikes + numLikes) >= 10) {
+        let res = tasks.updateTask(dbItem.createdBy, "Create 1 Blog Post that receives 10 creds");
+        await dbRef.update({got10creds: true});
+        dbItem.task = res;
+        resolve(dbItem);
       }
 
       resolve(dbItem);

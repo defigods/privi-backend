@@ -19,6 +19,7 @@ import fields from '../firebase/fields';
 import path from 'path';
 import fs from 'fs';
 
+const tasks = require("./tasksController");
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
 
@@ -87,7 +88,7 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
       const admins = body.Admins; // string[]
       const insurers = body.Insurers; // string[]
       const userRoles = body.UserRoles; // {name, role, status}[]
-      const hasPhoto = body.HasPhoto;
+      const hasPhoto = body.HasPhoto || false;
 
       const userSnap = await db.collection(collections.user).doc(creator).get();
       const userData: any = userSnap.data();
@@ -208,11 +209,9 @@ exports.changeCreditPoolPhoto = async (req: express.Request, res: express.Respon
       const creditPoolGet = await creditPoolRef.get();
       const creditPool: any = await creditPoolGet.data();
 
-      if (creditPool.HasPhoto) {
-        await creditPoolRef.update({
-          HasPhoto: true,
-        });
-      }
+      await creditPoolRef.update({
+        HasPhoto: true,
+      });
 
       res.send({ success: true });
     } else {
@@ -227,7 +226,7 @@ exports.changeCreditPoolPhoto = async (req: express.Request, res: express.Respon
 
 exports.getCreditPoolPhotoById = async (req: express.Request, res: express.Response) => {
   try {
-    let creditPoolId = req.params.creditPoolId;
+    let creditPoolId = req.params.creditId;
     console.log(creditPoolId);
     if (creditPoolId) {
       const directoryPath = path.join('uploads', 'creditPools');
@@ -538,6 +537,14 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
           });
         }
       }
+      const userBorrows = await priviCredit.getUserBorrowings(address, apiKey);
+      if (userBorrows && userBorrows.success && userBorrows.output.length >= 3 && !userData.borrowedFromThree) {
+          let task = await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
+          await userSnap.ref.update({
+              borrowedFromThree: true,
+          });
+          res.send({success: true, task: task});
+      }
       res.send({ success: true });
     } else {
       console.log('Error in controllers/priviCredit -> borrowFunds(): success = false', blockchainRes.message);
@@ -786,7 +793,7 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
         });
       });
     await trendingCredits.forEach((doc) => {
-      let docRef = db.collection(collections.trendingCommunity).doc();
+      let docRef = db.collection(collections.trendingPriviCredit).doc();
       batch.set(docRef, doc);
     });
     await batch.commit();

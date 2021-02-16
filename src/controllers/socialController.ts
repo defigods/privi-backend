@@ -8,6 +8,7 @@ import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import fs from "fs";
 import path from "path";
+import { blockchainCoinBalanceAPI } from '../blockchain/blockchainApi';
 const notificationsController = require('./notificationsController');
 
 const apiKey = process.env.API_KEY;
@@ -78,20 +79,22 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
 // get social pools
 exports.getSocialTokens = async (req: express.Request, res: express.Response) => {
     try {
-        const { address } = req.query;
+        const { address, userId } = req.query;
         const retData: any[] = [];
         // get those social tokens which the user is the creator or has some balance
-        const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, apiKey);
+        const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, 'PRIVI');
         if (blockchainRes && blockchainRes.success) {
             const balances = blockchainRes.output;
             const socialSnap = await db.collection(collections.socialPools).get();
             socialSnap.forEach((doc) => {
                 const data: any = doc.data();
-                if (balances[data.TokenSymbol]) {
-                    let marketPrice = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TragetPrice, data.TargetSupply);
+                const balance = balances[data.TokenSymbol] ? balances[data.TokenSymbol].Amount : 0;
+                if (balance || data.Creator == userId) {
+                    let marketPrice = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
                     retData.push({
                         ...data,
-                        MarketPrice: marketPrice
+                        MarketPrice: marketPrice,
+                        UserBalance: balance
                     });
                 }
             });
@@ -206,108 +209,3 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
         res.send({ success: false, error: err });
     }
 };
-
-// exports.sellSocialToken = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const body = req.body;
-//         let data = {
-//             Investor: body.Investor,
-//             PoolAddress: body.PoolAddress,
-//             Amount: body.Amount,
-//             Hash: body.Hash,
-//             Signature: body.Signature,
-//             Caller: apiKey
-//         }
-//         const blockchainRes = await socialToken.sellSocialToken(data);
-//         if (blockchainRes && blockchainRes.success) {
-//             updateFirebase(blockchainRes);
-
-//             res.send({success: true});
-//         } else {
-//             console.log('Error in controllers/socialTokenController -> sellSocialToken(): success = false.', blockchainRes.message);
-//             res.send({success: false});
-//         }
-//     } catch (err) {
-//         console.log('Error in controllers/socialTokenController -> sellSocialToken(): success = false.', err);
-//         res.send({success: false});
-//     }
-// }
-
-// exports.buySocialToken = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const body = req.body;
-//         let data = {
-//             Investor: body.Investor,
-//             PoolAddress: body.PoolAddress,
-//             Amount: body.Amount,
-//             Hash: body.Hash,
-//             Signature: body.Signature,
-//             Caller: apiKey
-//         }
-//         const blockchainRes = await socialToken.buySocialToken(data);
-//         if (blockchainRes && blockchainRes.success) {
-//             updateFirebase(blockchainRes);
-//             res.send({success: true});
-//         } else {
-//             console.log('Error in controllers/socialTokenController -> buySocialToken(): success = false.', blockchainRes.message);
-//             res.send({success: false});
-//         }
-//     } catch (err) {
-//         console.log('Error in controllers/socialTokenController -> buySocialToken(): success = false.', err);
-//         res.send({success: false});
-//     }
-// }
-
-// exports.getSocialPool = async (req: express.Request, res: express.Response) => {
-//     try {
-//         let poolId = req.params.poolId;
-//         if (poolId) {
-//             const poolSnap = await db.collection(collections.socialPools).doc(poolId).get();
-//             const data: any = poolSnap.data();
-//             if (data) {
-//                 res.send({
-//                     success: true,
-//                     data: data
-//                 })
-//             } else {
-//                 console.log('Error in controllers/socialTokenController -> getSocialPool(): ', 'Social pool not found');
-//                 res.send({success: false})
-//             }
-//         } else {
-//             console.log('Error in controllers/socialTokenController -> getSocialPool(): ', 'poolId is missing');
-//             res.send({success: false})
-//         }
-//     } catch (err) {
-//         console.log('Error in controllers/socialTokenController -> getSocialPool(): ', err);
-//         res.send({success: false});
-//     }
-// }
-
-// exports.getBuyTokenAmount = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const body = req.body;
-//         const poolId = body.poolId;
-//         const amount = body.amount;
-//         const poolSnap = await db.collection(collections.socialPools).doc(poolId).get();
-//         const data: any = poolSnap.data();
-//         const poolTokens = getBuyTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.TargetPrice, data.TargetSupply);
-//         res.send({success: true, data: poolTokens});
-//     } catch (err) {
-//         console.log('Error in controllers/socialTokenController -> getBuyTokenAmount(): ', err);
-//         res.send({success: false});
-//     }
-// }
-
-// exports.getSellTokenAmount = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const body = req.body;
-//         const poolId = body.poolId;
-//         const amount = body.amount;
-//         const poolSnap = await db.collection(collections.socialPools).doc(poolId).get();
-//         const data: any = poolSnap.data();
-//         const poolTokens = getSellTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.SpreadDividend, data.TargetPrice, data.TargetSupply);
-//         res.send({success: true, data: poolTokens});
-//     } catch (err) {
-//         console.log('Error in controllers/socialTokenController -> getSellTokenAmount(): ', err);
-//     }
-// }
