@@ -1754,8 +1754,8 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
       if (body.role === 'Admin') {
         let admins: any[] = [...community.Admins];
 
-        let adminFoundIndex = admins.findIndex(admin => admin === body.userId);
-        if (adminFoundIndex !== -1) {
+        let adminFoundIndex = admins.findIndex(admin => admin.userId === body.userId);
+        if(adminFoundIndex === -1) {
           const userRef = db.collection(collections.user).doc(body.userId);
           const userGet = await userRef.get();
           const user: any = userGet.data();
@@ -1801,8 +1801,8 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
       } else if (body.role === 'Member') {
         let members: any[] = [...community.Members];
 
-        let memberFoundIndex = members.findIndex(member => member === body.id);
-        if (memberFoundIndex !== -1) {
+        let memberFoundIndex = members.findIndex(member => member.id === body.userId);
+        if(memberFoundIndex === -1) {
           const userRef = db.collection(collections.user).doc(body.userId);
           const userGet = await userRef.get();
           const user: any = userGet.data();
@@ -1918,6 +1918,15 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
         }
       }
 
+      const discordRoomSnap = await db.collection(collections.discordChat).doc(community.JarrId)
+        .collection(collections.discordRoom).get();
+      for (const doc of discordRoomSnap.docs) {
+        let data = doc.data();
+        if (!data.private) {
+          chatController.removeUserToRoom(community.DiscordId, doc.id, body.userId);
+        }
+      }
+
       res.send({ success: true, error: 'Role User removed' });
     } else {
       console.log('Error in controllers/communityController -> removeRoleUser()', "Info missing or you don't have rights");
@@ -1991,6 +2000,15 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
           console.log('Error in controllers/communityController -> acceptRoleInvitation()', "Role doesn't exists");
           res.send({ success: false, message: "Role doesn't exists" });
           return;
+        }
+
+        const discordRoomSnap = await db.collection(collections.discordChat).doc(community.JarrId)
+          .collection(collections.discordRoom).get();
+        for (const doc of discordRoomSnap.docs) {
+          let data = doc.data();
+          if (!data.private) {
+            chatController.addUserToRoom(community.JarrId, doc.id, body.userId, body.role);
+          }
         }
 
         await notificationsController.addNotification({
