@@ -580,7 +580,7 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
         }
 
         if (checkIsAdmin) {
-            let discordRoom = await addUserToRoom(body.discordChatId, body.discordRoomId, body.userId);
+            let discordRoom = await addUserToRoom(body.discordChatId, body.discordRoomId, body.userId, 'Member');
 
             res.send({
                 success: true,
@@ -601,7 +601,7 @@ exports.discordAddUserToRoom = async (req: express.Request, res: express.Respons
     }
 }
 
-const addUserToRoom = exports.addUserToRoom = (discordChatId, discordRoomId, userId) => {
+const addUserToRoom = exports.addUserToRoom = (discordChatId, discordRoomId, userId, typeUser) => {
     return new Promise(async (resolve, reject) => {
         try {
             console.log(discordChatId, discordRoomId, userId);
@@ -620,7 +620,7 @@ const addUserToRoom = exports.addUserToRoom = (discordChatId, discordRoomId, use
                 let data: any = userSnap.data();
 
                 users.push({
-                    type: 'Members',
+                    type: typeUser,
                     userId: userId,
                     userName: data.firstName,
                     userConnected: false,
