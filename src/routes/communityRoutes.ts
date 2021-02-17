@@ -162,6 +162,10 @@ router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommun
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
 router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCommunityInfo);
 
+router.post('/allocateFunds', authenticateJWT, communityController.allocateFunds);
+router.get('/getMaxAllocatingFund', authenticateJWT, communityController.getMaxAllocatingFund);
+router.get('/getCommunityAllocations', authenticateJWT, communityController.getCommunityAllocations)
+
 router.post('/getBuyTokenAmount', authenticateJWT, communityController.getBuyTokenAmount);
 router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellTokenAmount);
 
@@ -199,6 +203,9 @@ router.post('/acceptRoleInvitation', authenticateJWT, communityController.accept
 router.post('/declineRoleInvitation', authenticateJWT, communityController.declineRoleInvitation);
 router.post('/roleInvitation', authenticateJWT, communityController.roleInvitation);
 router.post('/removeRoleUser', authenticateJWT, communityController.removeRoleUser);
+
+router.post('/events/createEvent', authenticateJWT, communityController.addEvent);
+
 
 /*router.post('/ad/create', authenticateJWT, blogController.adCreate);
 router.post('/ad/changePhoto', authenticateJWT, upload4.single('image'), blogController.changeAdPhoto);
