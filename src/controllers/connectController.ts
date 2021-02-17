@@ -618,51 +618,51 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     }
 }
 
-const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: express.Response) => {
-    const { symbol, tokenAddress, chainId, comunityAddress } = req.body;
-    console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId, comunityAddress)
-    const _chain: any = chainId?.toString();
-    const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
-    const web3 = getWeb3forChain(_chainId);
+// const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: express.Response) => {
+//     const { symbol, tokenAddress, chainId, comunityAddress } = req.body;
+//     console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId, comunityAddress)
+//     const _chain: any = chainId?.toString();
+//     const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
+//     const web3 = getWeb3forChain(_chainId);
 
-    const swapManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
-    // Get SwapManager contract code
-    const swapManagerContract = new web3.eth.Contract(swapManagerJson.abi, swapManagerJson.networks[_chainId]["address"]);
+//     const swapManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
+//     // Get SwapManager contract code
+//     const swapManagerContract = new web3.eth.Contract(swapManagerJson.abi, swapManagerJson.networks[_chainId]["address"]);
 
-    // Choose method from SwapManager to be called
-    const method = swapManagerContract.methods.registerTokenERC20(symbol, tokenAddress).encodeABI();
+//     // Choose method from SwapManager to be called
+//     const method = swapManagerContract.methods.registerTokenERC20(symbol, tokenAddress).encodeABI();
 
-    // Transaction parameters
-    const paramsTX = {
-        chainId: chainId,
-        fromAddress: ETH_PRIVI_ADDRESS,
-        fromAddressKey: ETH_PRIVI_KEY,
-        encodedABI: method,
-        toAddress: swapManagerContract.options.address,
-    };
+//     // Transaction parameters
+//     const paramsTX = {
+//         chainId: chainId,
+//         fromAddress: ETH_PRIVI_ADDRESS,
+//         fromAddressKey: ETH_PRIVI_KEY,
+//         encodedABI: method,
+//         toAddress: swapManagerContract.options.address,
+//     };
 
-    const balance = await getEthBalanceOf(ETH_PRIVI_ADDRESS, _chainId)
-    console.log('getBridgeRegisteredToken ETH_PRIVI_ADDRESS, balance', balance)
-    if (balance > 0.25) {
+//     const balance = await getEthBalanceOf(ETH_PRIVI_ADDRESS, _chainId)
+//     console.log('getBridgeRegisteredToken ETH_PRIVI_ADDRESS, balance', balance)
+//     if (balance > 0.25) {
 
-        // Execute transaction to withdraw in Ethereum
-        const { success, error, data } = await executeTX(paramsTX);
+//         // Execute transaction to withdraw in Ethereum
+//         const { success, error, data } = await executeTX(paramsTX);
 
-        if (success) {
-            if (typeof comunityAddress !== 'undefined' && comunityAddress !== '' && comunityAddress !== null) {
-                // update comunity data
-                db.collection(collections.community).doc(comunityAddress).update({registeredOnSwapManager: true})
-            }
-            res.send({ success: true, data: data });
-        } else {
-            res.send({ success: false, data: error });
-        }
+//         if (success) {
+//             if (typeof comunityAddress !== 'undefined' && comunityAddress !== '' && comunityAddress !== null) {
+//                 // update comunity data
+//                 db.collection(collections.community).doc(comunityAddress).update({registeredOnSwapManager: true})
+//             }
+//             res.send({ success: true, data: data });
+//         } else {
+//             res.send({ success: false, data: error });
+//         }
 
-    } else {
-        res.send({ success: false, data: 'Not Enough Blance in ETH_PRIVI_ADDRESS, ask admin to address this issue' });
-    }
+//     } else {
+//         res.send({ success: false, data: 'Not Enough Blance in ETH_PRIVI_ADDRESS, ask admin to address this issue' });
+//     }
     
-}
+// }
 
 const getBridgeRegisteredToken = async (req: express.Request, res: express.Response) => {
     const { chainId } = req.query;
@@ -693,7 +693,7 @@ const getBridgeRegisteredToken = async (req: express.Request, res: express.Respo
 }
 
 module.exports = {
-    registerNewERC20TokenOnSwapManager, 
+    // registerNewERC20TokenOnSwapManager, 
     getBridgeRegisteredToken,
     send,
     checkTx,
