@@ -626,6 +626,7 @@ interface BasicInfo {
   anonAvatar: string;
   hasPhoto: boolean;
   verified: boolean;
+  userSlug: string;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -654,6 +655,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
       hasPhoto: false,
       verified: false,
+      userSlug: ""
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -691,6 +693,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
+      basicInfo.userSlug = userData.userSlug || "";
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -1683,6 +1686,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
       instagram: body.instagram,
       twitter: body.twitter,
       facebook: body.facebook,
+      userSlug: body.userSlug,
     });
 
     res.send({
@@ -1700,6 +1704,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
         instagram: body.instagram,
         twitter: body.twitter,
         facebook: body.facebook,
+        userSlug: body.userSlug
       },
     });
   } catch (err) {
