@@ -1330,9 +1330,12 @@ exports.discordUploadPhotoMessage = async (req: express.Request, res: express.Re
         if (req.file && req.params && req.params.discordRoomId &&
           req.params.fromUserId) {
 
-            addMediaMessageDiscord(req.params.discordChatId, req.params.discordRoomId, req.params.fromUserId, 'photo', req.file, '.png');
+            let message : any = await addMediaMessageDiscord(req.params.discordChatId, req.params.discordRoomId, req.params.fromUserId, 'photo', req.file, '.png');
 
-            res.send({success: true});
+            res.send({
+                success: true,
+                data: message
+            });
         }
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordUploadPhotoMessage() ' + e)
@@ -1345,9 +1348,12 @@ exports.discordUploadAudioMessage = async (req: express.Request, res: express.Re
         if (req.file && req.params && req.params.discordRoomId &&
           req.params.fromUserId) {
 
-            addMediaMessageDiscord(req.params.discordChatId, req.params.discordRoomId, req.params.fromUserId, 'audio', req.file, '.mp3');
+            let message : any = await addMediaMessageDiscord(req.params.discordChatId, req.params.discordRoomId, req.params.fromUserId, 'audio', req.file, '.mp3');
 
-            res.send({success: true});
+            res.send({
+                success: true,
+                data: message
+            });
         }
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordUploadAudioMessage() ' + e)
@@ -1360,9 +1366,12 @@ exports.discordUploadVideoMessage = async (req: express.Request, res: express.Re
         if (req.file && req.params && req.params.discordRoomId &&
           req.params.fromUserId) {
 
-            addMediaMessageDiscord(req.params.discordChatId, req.params.discordRoomId, req.params.fromUserId, 'video', req.file, '.mp4');
+            let message : any = await addMediaMessageDiscord(req.params.discordChatId, req.params.discordRoomId, req.params.fromUserId, 'video', req.file, '.mp4');
 
-            res.send({success: true});
+            res.send({
+                success: true,
+                data: message
+            });
         }
     } catch (e) {
         console.log('Error in controllers/chatRoutes -> discordUploadVideoMessage() ' + e)
@@ -1374,6 +1383,10 @@ const addMediaMessageDiscord = (discordChatId : string, discordRoomId : string, 
     return new Promise(async (resolve, reject) => {
        try {
            const uid = generateUniqueId();
+
+           const userSnap = await db.collection(collections.user).doc(fromUserId).get();
+           const user : any = userSnap.data();
+
            await db.runTransaction(async (transaction) => {
                // userData - no check if firestore insert works? TODO
                transaction.set(db.collection(collections.discordMessage).doc(uid), {
@@ -1410,10 +1423,31 @@ const addMediaMessageDiscord = (discordChatId : string, discordRoomId : string, 
            if (!fs.existsSync(dir)) {
                fs.mkdirSync(dir);
            } else {
-               fs.rename(dir + '/' + file.originalName + extension, dir + '/' + uid + extension, function(err) {
+               fs.rename(file.path, dir + '/' + uid + extension, function(err) {
                    if ( err ) console.log('ERROR: ' + err);
                });
            }
+
+           resolve({
+                 discordRoom: discordRoomId,
+                 message: '',
+                 user: {
+                   name: user.firstName,
+                   level: user.level || 1,
+                   cred: user.cred || 0,
+                   salutes: user.salutes || 0,
+                 },
+                 from: fromUserId,
+                 created: Date.now(),
+                 seen: [],
+                 likes: [],
+                 dislikes: [],
+                 numLikes: 0,
+                 numDislikes: 0,
+                 numReplies: 0,
+                 type: type,
+                 id: uid
+           })
        } catch (e) {
            console.log(e);
            reject(e)
@@ -1426,9 +1460,10 @@ exports.discordGetPhotoMessage = async (req: express.Request, res: express.Respo
         let discordChatId = req.params.discordChatId;
         let discordRoomId = req.params.discordRoomId;
         let discordMessageId = req.params.discordMessageId;
+        console.log(req.params, discordChatId && discordRoomId && discordMessageId);
 
         if (discordChatId && discordRoomId && discordMessageId) {
-            await discordGetMediaMessage(discordChatId, discordRoomId, discordMessageId, '.png', res);
+            await discordGetMediaMessage(discordChatId, discordRoomId, discordMessageId, '.png', 'image', res);
         } else {
             console.log('Error in controllers/chatRoutes -> discordGetPhotoMessage()', "There's no id...");
             res.sendStatus(400); // bad request
@@ -1447,7 +1482,7 @@ exports.discordGetAudioMessage = async (req: express.Request, res: express.Respo
         let discordMessageId = req.params.discordMessageId;
 
         if (discordChatId && discordRoomId && discordMessageId) {
-            await discordGetMediaMessage(discordChatId, discordRoomId, discordMessageId, '.mp3', res);
+            await discordGetMediaMessage(discordChatId, discordRoomId, discordMessageId, '.mp3', 'audio', res);
         } else {
             console.log('Error in controllers/chatRoutes -> discordGetAudioMessage()', "There's no id...");
             res.sendStatus(400); // bad request
@@ -1466,7 +1501,7 @@ exports.discordGetVideoMessage = async (req: express.Request, res: express.Respo
         let discordMessageId = req.params.discordMessageId;
 
         if (discordChatId && discordRoomId && discordMessageId) {
-            await discordGetMediaMessage(discordChatId, discordRoomId, discordMessageId, '.mp4', res);
+            await discordGetMediaMessage(discordChatId, discordRoomId, discordMessageId, '.mp4', 'video', res);
         } else {
             console.log('Error in controllers/chatRoutes -> discordGetVideoMessage()', "There's no id...");
             res.sendStatus(400); // bad request
@@ -1478,10 +1513,11 @@ exports.discordGetVideoMessage = async (req: express.Request, res: express.Respo
     }
 }
 
-const discordGetMediaMessage = (discordChatId : string, discordRoomId : string, discordMessageId : string, extension : string, res: express.Response) => {
+const discordGetMediaMessage = (discordChatId : string, discordRoomId : string, discordMessageId : string,
+                                extension : string, type : string, res: express.Response) => {
     return new Promise((resolve, reject) => {
         try {
-            const directoryPath = path.join('uploads', discordChatId, discordRoomId);
+            const directoryPath = path.join('uploads', 'chat', discordChatId, discordRoomId);
             fs.readdir(directoryPath, function (err, files) {
                 //handling error
                 if (err) {
@@ -1495,8 +1531,8 @@ const discordGetMediaMessage = (discordChatId : string, discordRoomId : string, 
             });
 
             // stream the image back by loading the file
-            res.setHeader('Content-Type', 'image');
-            let raw = fs.createReadStream(path.join('uploads', discordChatId, discordRoomId, discordMessageId + extension));
+            res.setHeader('Content-Type', type);
+            let raw = fs.createReadStream(path.join('uploads', 'chat', discordChatId, discordRoomId, discordMessageId + extension));
             raw.on('error', function (err) {
                 console.log(err);
                 res.sendStatus(400);
