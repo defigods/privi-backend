@@ -15,13 +15,14 @@ import {
   getRateOfChangeAsMap,
   singTransaction,
   updateFirebase,
+  getMarketPrice,
 } from '../functions/functions';
 import path from 'path';
 import fs from 'fs';
 import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
-import {sockets} from './serverController';
-import {LEVELS, ONE_DAY} from '../constants/userLevels';
+import { sockets } from './serverController';
+import { LEVELS, ONE_DAY } from '../constants/userLevels';
 
 const levels = require('./userLevelsController');
 const tasks = require('./tasksController');
@@ -737,24 +738,31 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
 const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
+    let userAddress = req.params.address;
 
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
     if (userData !== undefined) {
       let badges = await getBadgesFunction(userId);
       let myPods = await getMyPodsFunction(userId);
-      let podsFollowed = await getPodsFollowedFunction(userId);
-      let podsInvestments = await getPodsInvestmentsFunction(userId);
-      let followPodsInfo = await getFollowPodsInfoFunction(userId);
+      //let podsFollowed = await getPodsFollowedFunction(userId);
+      //let podsInvestments = await getPodsInvestmentsFunction(userId);
+      //let followPodsInfo = await getFollowPodsInfoFunction(userId);
+      let myCommunities = await getMyCommunitiesFunction(userId);
+      let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
+      let myCreditPools = await getMyCreditPools(userId);
 
       res.send({
         success: true,
         data: {
           badges: badges,
           myPods: myPods,
-          podsFollowed: podsFollowed,
-          podsInvestments: podsInvestments,
-          followPodsInfo: followPodsInfo,
+          //podsFollowed: podsFollowed,
+          //podsInvestments: podsInvestments,
+          //followPodsInfo: followPodsInfo,
+          myCommunities: myCommunities,
+          mySocialTokens: mySocialTokens,
+          myCreditPools: myCreditPools,
         },
       });
     } else {
@@ -1639,6 +1647,134 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
   });
 };
 
+//get communities
+const getMyCommunitiesFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      const user: any = userRef.data();
+      let myCommunities: any[] = [];
+
+      myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
+
+      resolve(myCommunities);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getCommunitiesArray = (arrayCommunities: any[], collection: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    let communityInfo: any[] = [];
+    arrayCommunities.forEach(async (item, i) => {
+      const communityRef = await db.collection(collection).doc(item).get();
+
+      if (communityRef.exists) {
+        let communityData: any = communityRef.data();
+
+        console.log(item, communityData.CommunityAddress);
+
+        if (!communityInfo.some((community) => community.CommunityAddress === item)) {
+          communityInfo.push(communityData);
+        }
+      }
+
+      if (arrayCommunities.length === i + 1) {
+        resolve(communityInfo);
+      }
+    });
+  });
+};
+
+//get social tokens
+const getMySocialTokensFunction = (userId, address) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const retData: any[] = [];
+      // get those social tokens which the user is the creator or has some balance
+      const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, 'PRIVI');
+      if (blockchainRes && blockchainRes.success) {
+        const balances = blockchainRes.output;
+        const socialSnap = await db.collection(collections.socialPools).get();
+        socialSnap.forEach((doc) => {
+          const data: any = doc.data();
+          const balance = balances[data.TokenSymbol] ? balances[data.TokenSymbol].Amount : 0;
+          if (balance || data.Creator == userId) {
+            let marketPrice = getMarketPrice(
+              data.AMM,
+              data.SupplyReleased,
+              data.InitialSupply,
+              data.TargetPrice,
+              data.TargetSupply
+            );
+            retData.push({
+              ...data,
+              MarketPrice: marketPrice,
+              UserBalance: balance,
+            });
+          }
+        });
+        resolve(retData);
+      } else {
+        console.log(
+          'Error in controllers/socialController -> getSocialPools(): blockchain = false ',
+          blockchainRes.message
+        );
+      }
+    } catch (err) {
+      console.log('Error in controllers/socialController -> getSocialPools(): ', err);
+    }
+  });
+};
+
+//get credit pools
+const getMyCreditPools = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      let myBorrowingPriviCredits: any[] = [];
+      let myLendingPriviCredits: any[] = [];
+
+      const borrowingSnap = await db.collection(collections.user).doc(userId).collection('PriviCreditsBorrowing').get();
+      const lendingSnap = await db.collection(collections.user).doc(userId).collection('PriviCreditsLending').get();
+
+      if (!borrowingSnap.empty) {
+        myBorrowingPriviCredits = await getCreditPoolsArray(borrowingSnap, collections.priviCredits);
+      }
+      if (!lendingSnap.empty) {
+        myLendingPriviCredits = await getCreditPoolsArray(lendingSnap, collections.priviCredits);
+      }
+
+      resolve({ myBorrowingPriviCredits: myBorrowingPriviCredits, myLendingPriviCredits: myLendingPriviCredits });
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    let creditPools: any[] = [];
+    let counter = 0;
+    const size = arrayCreditPools.size;
+    arrayCreditPools.forEach(async (item) => {
+      const creditPoolRef = await db.collection(collection).doc(item.id).get();
+
+      if (creditPoolRef.exists) {
+        let creditPoolData: any = creditPoolRef.data();
+        creditPools.push(creditPoolData);
+      }
+
+      counter++;
+
+      if (counter === size) {
+        resolve(creditPools);
+      }
+    });
+  });
+};
+
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   console.log(userId);
@@ -1851,9 +1987,9 @@ const getBadgesFunction = (userId: string) => {
   return new Promise(async (resolve, reject) => {
     try {
       let address = userId;
-      console.log(userId)
+      console.log(userId);
       console.log(Web3.utils.isAddress(userId));
-      if (!(Web3.utils.isAddress(userId))) {
+      if (!Web3.utils.isAddress(userId)) {
         const userRef = db.collection(collections.user).doc(userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
@@ -1866,7 +2002,7 @@ const getBadgesFunction = (userId: string) => {
         const badgeSnap = await db.collection(collections.badges).get();
         badgeSnap.forEach((doc) => {
           let amount = 0;
-          let data = doc.data()
+          let data = doc.data();
           if (badgesBalance[data.Symbol]) amount = badgesBalance[data.Symbol].Amount;
           if (amount > 0) {
             retData.push({
@@ -2053,7 +2189,7 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
 
       // Badges earned today
       if (badges && badges.length > 0) {
-        badgesToday = badges.filter(badge => badge.date >= yesterday && badge.date < today);
+        badgesToday = badges.filter((badge) => badge.date >= yesterday && badge.date < today);
       }
 
       let response: any = {
@@ -2093,14 +2229,17 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
 
       // TODO: this doesnt work (collections missing)
       // totalPointsToday
-      let pointsGet = await db.collection(collections.points)
-          .where("date", ">", yesterday)
-          .where("date", "<", today)
-          .get();
+      let pointsGet = await db
+        .collection(collections.points)
+        .where('date', '>', yesterday)
+        .where('date', '<', today)
+        .get();
       let totalPointsToday = pointsGet.size;
-      let badgesGet = await db.collection(collections.badgesHistory)
-          .where("date", ">", yesterday)
-          .where("date", "<", today).get();
+      let badgesGet = await db
+        .collection(collections.badgesHistory)
+        .where('date', '>', yesterday)
+        .where('date', '<', today)
+        .get();
       let totalBadgesToday = badgesGet.size;
 
       // totalUsersLevels userLevel
@@ -2135,11 +2274,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
 
       // ranking
       let userRank = await levels.getUserRank(userId);
-      let usersSnap = await db
-          .collection(collections.levels)
-          .orderBy("points")
-          .limit(12)
-          .get();
+      let usersSnap = await db.collection(collections.levels).orderBy('points').limit(12).get();
 
       let ranking: any = [];
       const docs = usersSnap.docs;
@@ -2150,8 +2285,8 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
           user: doc.id,
           name: data.firstName,
           points: data.points,
-          level: data.level
-        }
+          level: data.level,
+        };
         ranking.push(user);
       }
       // TODO: this doesnt work (collections missing)
@@ -2172,14 +2307,14 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       }
 
       let usersLevelData = [
-        {x: 1, y: totalUsersLevel1},
-        {x: 2, y: totalUsersLevel2},
-        {x: 3, y: totalUsersLevel3},
-        {x: 4, y: totalUsersLevel4},
-        {x: 5, y: totalUsersLevel5},
-        {x: 6, y: totalUsersLevel6},
-        {x: 7, y: totalUsersLevel7},
-        {x: 8, y: totalUsersLevel8},
+        { x: 1, y: totalUsersLevel1 },
+        { x: 2, y: totalUsersLevel2 },
+        { x: 3, y: totalUsersLevel3 },
+        { x: 4, y: totalUsersLevel4 },
+        { x: 5, y: totalUsersLevel5 },
+        { x: 6, y: totalUsersLevel6 },
+        { x: 7, y: totalUsersLevel7 },
+        { x: 8, y: totalUsersLevel8 },
       ];
 
       let response: any = {
@@ -2859,7 +2994,7 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
       }
     }
 
-    res.send({success: true, data: Array.from(sugUsers)});
+    res.send({ success: true, data: Array.from(sugUsers) });
   } catch (e) {
     console.log('Error in controllers/userController -> getSuggestedUsers()', e);
     res.send({ success: false, error: e });

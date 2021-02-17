@@ -11,69 +11,68 @@ const userControllerJS = require('../controllers/userControllerJS');
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
 let storage = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/users')
-    },
-    filename: function (req: any, file: any, cb: any) {
-        console.log(file);
-        cb(null, file.originalname + '.png')
-    }
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/users');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
 });
 let upload = multer({
-    storage: storage
+  storage: storage,
 });
 
 let storage2 = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/badges')
-    },
-    filename: function (req: any, file: any, cb: any) {
-        console.log(file);
-        cb(null, file.originalname + '.png')
-    }
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/badges');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
 });
 let upload2 = multer({
-    storage: storage2
+  storage: storage2,
 });
 let storage3 = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/wallPost')
-    },
-    filename: function (req: any, file: any, cb: any) {
-        console.log(file);
-        cb(null, file.originalname + '.png')
-    }
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/wallPost');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
 });
 let upload3 = multer({
-    storage: storage3
+  storage: storage3,
 });
 
-
 let storage4 = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/userWallPost/' + 'photos-' + req.params.userWallPostId)
-    },
-    filename: function (req: any, file: any, cb: any) {
-        console.log(file);
-        cb(null, file.originalname + '.png')
-    }
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/userWallPost/' + 'photos-' + req.params.userWallPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
 });
 
 let upload4 = multer({
-    storage: storage4
+  storage: storage4,
 });
 
 let storage5 = multer.diskStorage({
-    destination: function (req: any, file: any, cb: any) {
-        cb(null, 'uploads/userWallPost')
-    },
-    filename: function (req: any, file: any, cb: any) {
-        console.log(file);
-        cb(null, file.originalname + '.png')
-    }
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/userWallPost');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
 });
 let upload5 = multer({
-    storage: storage5
+  storage: storage5,
 });
 
 // AUTHENTICATION
@@ -87,7 +86,7 @@ router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
 router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
-router.get('/getAllInfoProfile/:userId', authenticateJWT, userController.getAllInfoProfile);
+router.get('/getAllInfoProfile/:userId/:address', authenticateJWT, userController.getAllInfoProfile);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
@@ -116,7 +115,7 @@ router.get('/governance/getIssuesAndProposals/:userId', authenticateJWT, userCon
 
 // POST
 /*router.post('/addToWaitlist', authenticateJWT, userController.addToWaitlist);
-*/
+ */
 
 // CONNECTIONS - POST
 router.post('/connections/followUser', authenticateJWT, userController.followUser);
@@ -158,15 +157,22 @@ router.post('/governance/responseProposal', userController.responseProposal);
 router.post('/changeAnonMode', userController.changeAnonMode);
 router.post('/changeAnonAvatar', userController.changeAnonAvatar);
 
-
 router.post('/wall/createPost', authenticateJWT, userWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, userWallController.postDelete);
 router.get('/wall/getUserPosts/:userId', authenticateJWT, userWallController.getUserPosts);
 router.get('/wall/getUserPost/:postId', authenticateJWT, userWallController.getUserPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), userWallController.changePostPhoto);
-router.post('/wall/changePostDescriptionPhotos/:userWallPostId', authenticateJWT, upload4.array('image'), userWallController.changePostDescriptionPhotos);
+router.post(
+  '/wall/changePostDescriptionPhotos/:userWallPostId',
+  authenticateJWT,
+  upload4.array('image'),
+  userWallController.changePostDescriptionPhotos
+);
 router.get('/wall/getPostPhoto/:userWallPostId', userWallController.getUserWallPostPhotoById);
-router.get('/wall/getDescriptionPostPhoto/:userWallPostId/:photoId', userWallController.getUserWallPostDescriptionPhotoById);
+router.get(
+  '/wall/getDescriptionPostPhoto/:userWallPostId/:photoId',
+  userWallController.getUserWallPostDescriptionPhotoById
+);
 router.post('/wall/makeResponse', authenticateJWT, userWallController.makeResponseUserWallPost);
 router.post('/wall/likePost', authenticateJWT, userWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userWallController.dislikePost);
