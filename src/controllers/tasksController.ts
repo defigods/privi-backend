@@ -269,43 +269,46 @@ exports.updateTask = (userId, title) => {
           let badgeRes: any;
           let badgeSymbol = BADGES_MAP.get(title);
           if (badgeSymbol) {
-            const blockchainRes = await badge.rewardBadge({
-              UserId: userId,
-              Symbol: badgeSymbol,
-              Caller: apiKey
-            });
-            if (blockchainRes && blockchainRes.success) {
-              await updateFirebase(blockchainRes);
-              badgeRes = {
-                isNew: true,
-                badgeId: badgeSymbol,
-                date: new Date()
+            let badges = user.badges;
+            let isFind = badges.find(b => b.badgeId == badgeSymbol)
+            if (!isFind) {
+              const blockchainRes = await badge.rewardBadge({
+                UserId: userId,
+                Symbol: badgeSymbol,
+                Caller: apiKey
+              });
+              if (blockchainRes && blockchainRes.success) {
+                await updateFirebase(blockchainRes);
+                badgeRes = {
+                  isNew: true,
+                  badgeId: badgeSymbol,
+                  date: new Date()
+                }
+
+                badges = badges.push(badgeRes);
+                await db.collection(collections.user).doc(userId).update({
+                  badges: badges
+                });
+
+                badgeRes.userId = userId;
+                await db.collection(collections.badgesHistory).add(badgeRes);
+
+                await notificationsController.addNotification({
+                  userId: userId,
+                  notification: {
+                    type: 92,
+                    typeItemId: "user",
+                    itemId: userId,
+                    follower: "",
+                    pod: "",
+                    comment: badgeSymbol,
+                    token: "",
+                    amount: 0,
+                    onlyInformation: false,
+                    otherItemId: badgeRes.badgeId,
+                  },
+                });
               }
-
-              let badges = user.badges;
-              badges = badges.push(badgeRes);
-              await db.collection(collections.user).doc(userId).update({
-                badges: badges
-              });
-
-              badgeRes.userId = userId;
-              await db.collection(collections.badgesHistory).add(badgeRes);
-
-              await notificationsController.addNotification({
-                userId: userId,
-                notification: {
-                  type: 92,
-                  typeItemId: "user",
-                  itemId: userId,
-                  follower: "",
-                  pod: "",
-                  comment: badgeSymbol,
-                  token: "",
-                  amount: 0,
-                  onlyInformation: false,
-                  otherItemId: badgeRes.badgeId,
-                },
-              });
             }
           }
 
