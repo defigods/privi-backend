@@ -2159,8 +2159,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
         ranking.push(user);
       }
 
-      //TODO: fix this, doesn't work.
-      let historySnap = await db.collection(collections.user).orderBy('date').limit(12).get();
+      let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
 
       let history: any = [];
       const docs2 = historySnap.docs;
