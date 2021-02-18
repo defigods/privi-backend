@@ -147,6 +147,7 @@ router.get('/getUserPaymentData', authenticateJWT, communityController.getUserPa
 router.get('/getCommunityTransactions', authenticateJWT, communityController.getCommunityTransactions);
 router.get('/getPhoto/:communityId', communityController.getCommunityPhotoById);
 router.post('/changeCommunityPhoto', authenticateJWT, upload6.single('image'), communityController.changeCommunityPhoto);
+router.post('/editCommunity', authenticateJWT, communityController.editCommunity);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);

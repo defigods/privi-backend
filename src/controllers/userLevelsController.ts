@@ -144,15 +144,20 @@ const pointsWonTodayAndHour = (userId) => {
             const dateNow = Date.now();
             const yesterday = Date.now() - ONE_DAY;
             const oneHourBack = Date.now() - ONE_HOUR;
+            let pointsSumDay = 0;
+            let pointsSumHour = 0;
+
+            if(userLevel){
             const pointsSumLastDay = userLevel.historyPoints
                 .filter(hp => hp.date >= yesterday && hp.date < dateNow)
-            const pointsSumDay = pointsSumLastDay
+            pointsSumDay = pointsSumLastDay
                 .map(hp => hp.points)
                 .reduce((acc, points) => acc + points, 0);
-            const pointsSumHour = pointsSumLastDay
+            pointsSumHour = pointsSumLastDay
                 .filter(hp => hp.date >= oneHourBack && hp.date < dateNow)
                 .map(hp => hp.points)
                 .reduce((acc, points) => acc + points, 0);
+            }
             resolve({pointsSumDay: pointsSumDay, pointsSumHour: pointsSumHour});
         } catch (e) {
             console.log('Error in controllers/userLevelsController -> pointsWonToday()', e);
@@ -167,11 +172,14 @@ const getUserRank = (userId) => {
             const userLevelRef = db.collection(collections.levels).doc(userId);
             const userLevelGet = await userLevelRef.get();
             const userLevel: any = userLevelGet.data();
+            let userLevelRank = 0;
+            if(userLevel) {
+                let points = userLevel.points;
+                const usersLevelRef = await db.collection(collections.levels)
+                    .where("points", ">", points).get();
+                userLevelRank = usersLevelRef.docs.length + 1;
+            }
 
-            let points = userLevel.points;
-            const usersLevelRef = await db.collection(collections.levels)
-                .where("points", ">", points).get();
-            const userLevelRank = usersLevelRef.docs.length + 1;
             resolve({rank: userLevelRank});
         } catch (e) {
             console.log('Error in controllers/userLevelsController -> getUserRank()', e);
