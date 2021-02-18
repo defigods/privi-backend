@@ -185,6 +185,18 @@ router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBl
 router.post('/blog/likePost', authenticateJWT, blogController.likePost);
 router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
+router.post('/discussions/createPost', authenticateJWT, blogController.discussionsCreate);
+router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
+router.get('/discussions/getBlogPosts/:communityId', authenticateJWT, blogController.getDiscussionsPost);
+router.get('/discussions/getBlogPost/:discussionId', authenticateJWT, blogController.getDiscussionsPostById);
+router.post('/discussions/changePostPhoto', authenticateJWT, upload3.single('image'), blogController.changeDiscussionsPhoto);
+router.post('/discussions/changePostDescriptionPhotos/:discussionId', authenticateJWT, upload2.array('image'), blogController.changeDiscussionsDescriptionPhotos);
+router.get('/discussions/getPostPhoto/:discussionId', blogController.getDiscussionsPhotoById);
+router.get('/discussions/getDescriptionPostPhoto/:discussionId/:photoId', blogController.getDiscussionsDescriptionPhotoById);
+router.post('/discussions/makeResponse', authenticateJWT, blogController.makeResponseDiscussions);
+router.post('/discussions/likePost', authenticateJWT, blogController.likePostDiscussions);
+router.post('/discussions/dislikePost', authenticateJWT, blogController.dislikePostDiscussions);
+
 router.post('/wall/createPost', authenticateJWT, communityWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, communityWallController.postDelete);
 router.get('/wall/getCommunityPosts/:communityId', authenticateJWT, communityWallController.getCommunityPost);
