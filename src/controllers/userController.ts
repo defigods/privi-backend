@@ -2234,7 +2234,6 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       let today = Date.now();
       let yesterday = today - ONE_DAY;
 
-      // TODO: this doesnt work (collections missing)
       // totalPointsToday
       let pointsGet = await db
         .collection(collections.points)
@@ -2281,7 +2280,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
 
       // ranking
       let userRank = await levels.getUserRank(userId);
-      let usersSnap = await db.collection(collections.levels).orderBy('points').limit(12).get();
+      let usersSnap = await db.collection(collections.user).orderBy('Points').limit(12).get();
 
       let ranking: any = [];
       const docs = usersSnap.docs;
@@ -2291,12 +2290,13 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
         const user: any = {
           user: doc.id,
           name: data.firstName,
-          points: data.points,
+          points: data.Points,
           level: data.level,
         };
         ranking.push(user);
       }
-      // TODO: this doesnt work (collections missing)
+
+      //TODO: fix this, doesn't work.
       let historySnap = await db.collection(collections.user).orderBy('date').limit(12).get();
 
       let history: any = [];

@@ -201,6 +201,33 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
   }
 };
 
+// edit community
+exports.editPriviCredit = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const creditRef = db.collection(collections.priviCredits).doc(body.CreditAddress);
+
+    await creditRef.update({
+      CreditName: body.CreditName,
+      Description: body.Description,
+      urlSlug: body.urlSlug,
+    });
+
+    res.send({
+      success: true,
+      data: {
+        CreditName: body.CreditName,
+        Description: body.Description,
+        urlSlug: body.urlSlug,
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/priviCreditController -> editCredit()', err);
+    res.send({ success: false });
+  }
+};
+
 exports.changeCreditPoolPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
