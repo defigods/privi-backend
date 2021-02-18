@@ -1,6 +1,20 @@
 const axios = require("axios");
 const api = require("./blockchainApi");
 
+module.exports.getCommunityAllocations = async (communityAddress, caller) => {
+    const config = {
+        method: 'get',
+        headers: { 'Content-Type': 'application/json' },
+        url: api.blockchainCommunityAPI + "/getCommunityAllocations",
+        data: JSON.stringify({
+            CommunityAddress: communityAddress,
+            Caller: caller,
+        })
+    }
+    let blockchainRes = await axios(config);
+    return blockchainRes.data;
+};
+
 module.exports.getCommunityState = async (communityAddress, caller) => {
     const config = {
         method: 'get',
