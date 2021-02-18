@@ -114,6 +114,8 @@ module.exports = {
   communityWallPost: "CommunityWallPost",
   userWallPost: "UserWallPost",
 
+  communityDiscussion: "CommunityDiscussion",
+
   insurance: "Insurance",
 
   chat: "Chat",
