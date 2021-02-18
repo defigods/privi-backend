@@ -3066,6 +3066,8 @@ const checkSlugExists = async (req: express.Request, res: express.Response) => {
       collectionSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'nftpod') {
       collectionSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'credit') {
+      collectionSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
     }
 
     //check size and id
@@ -3105,6 +3107,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
       docSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'nftpod') {
       docSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'credit') {
+      docSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
     }
 
     if (!docSnap.empty) {
@@ -3146,6 +3150,8 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
       docSnap = await db.collection(collections.podsFT).doc(urlId).get();
     } else if (type === 'nftpod') {
       docSnap = await db.collection(collections.podsNFT).doc(urlId).get();
+    } else if (type === 'credit') {
+      docSnap = await db.collection(collections.priviCredits).doc(urlId).get();
     }
 
     if (docSnap && docSnap.exists && docSnap.data()) {
