@@ -478,6 +478,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
             pods: false,
             creditPools: false,
           },
+          urlSlug: uid,
         });
 
         /* // since we do not have any data for this- remove for now according to Marta
@@ -627,7 +628,7 @@ interface BasicInfo {
   anonAvatar: string;
   hasPhoto: boolean;
   verified: boolean;
-  userSlug: string;
+  urlSlug: string;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -656,7 +657,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
       hasPhoto: false,
       verified: false,
-      userSlug: ""
+      urlSlug: userId,
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -694,7 +695,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.userSlug = userData.userSlug || "";
+      basicInfo.urlSlug = userData.urlSlug || userId;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -1797,7 +1798,7 @@ const getSocialTokens = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: [] });
   } catch (err) {
-    console.log('Error in controllers/editUser -> editUser()', err);
+    console.log('Error in controllers/getSocialTokens -> getSocialTokens()', err);
     res.send({ success: false });
   }
 };
@@ -1808,7 +1809,8 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
     const userRef = db.collection(collections.user).doc(body.id);
     const userGet = await userRef.get();
-    const user: any = userGet.data();
+
+    //console.log(body);
 
     await userRef.update({
       firstName: body.firstName,
@@ -1822,7 +1824,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
       instagram: body.instagram,
       twitter: body.twitter,
       facebook: body.facebook,
-      userSlug: body.userSlug,
+      urlSlug: body.urlSlug,
     });
 
     res.send({
@@ -1840,7 +1842,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
         instagram: body.instagram,
         twitter: body.twitter,
         facebook: body.facebook,
-        userSlug: body.userSlug
+        urlSlug: body.urlSlug,
       },
     });
   } catch (err) {
@@ -3041,6 +3043,129 @@ async function getRandomForSuggestedUser() {
   return res;
 }
 
+/**
+ * Function to check slug before changing it.
+ * @param req {urlSlug, type}. urlSlug : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: boolean confirming if it exists or not
+ */
+const checkSlugExists = async (req: express.Request, res: express.Response) => {
+  try {
+    let urlSlug = req.params.urlSlug;
+    let id = req.params.id;
+    let type = req.params.type;
+
+    let urlSlugExists: boolean = false;
+    let collectionSnap;
+
+    //get collection and size
+    if (type === 'user') {
+      collectionSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'community') {
+      collectionSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'ftpod') {
+      collectionSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'nftpod') {
+      collectionSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    }
+
+    //check size and id
+    if (collectionSnap && collectionSnap.size === 1) {
+      if (id === collectionSnap.docs[0].id) {
+        urlSlugExists = false; //same id, didn't change the urlSlug
+      } else urlSlugExists = true;
+    } else urlSlugExists = false;
+
+    res.send({
+      success: true,
+      data: { urlSlugExists: urlSlugExists },
+    });
+  } catch (e) {
+    return 'Error in controllers/userController -> checkSlugExists(): ' + e;
+  }
+};
+
+/**
+ * Function get the id from a slug.
+ * @param req {urlSlug, type}. urlSlug : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: the id
+ */
+const getIdFromSlug = async (req: express.Request, res: express.Response) => {
+  try {
+    let urlSlug = req.params.urlSlug;
+    let type = req.params.type;
+
+    let docSnap;
+    let id: string = '';
+
+    if (type === 'user') {
+      docSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'community') {
+      docSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'ftpod') {
+      docSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'nftpod') {
+      docSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    }
+
+    if (!docSnap.empty) {
+      id = docSnap.docs[0].id;
+    }
+
+    if (id && id.length > 0) {
+      res.send({
+        success: true,
+        data: { id: id },
+      });
+    } else {
+      console.log(`${type} id not found`);
+      res.send({ succes: false, message: `${type} id not found` });
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> getIdFromSlug(): ' + e;
+  }
+};
+
+/**
+ * Function get the slug from an id (for re-routing).
+ * @param req {urlId, type}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: the id
+ */
+const getSlugFromId = async (req: express.Request, res: express.Response) => {
+  try {
+    let urlId = req.params.urlId;
+    let type = req.params.type;
+
+    let docSnap;
+    let urlSlug: string = '';
+
+    if (type === 'user') {
+      docSnap = await db.collection(collections.user).doc(urlId).get();
+    } else if (type === 'community') {
+      docSnap = await db.collection(collections.community).doc(urlId).get();
+    } else if (type === 'ftpod') {
+      docSnap = await db.collection(collections.podsFT).doc(urlId).get();
+    } else if (type === 'nftpod') {
+      docSnap = await db.collection(collections.podsNFT).doc(urlId).get();
+    }
+
+    if (docSnap && docSnap.exists && docSnap.data()) {
+      urlSlug = docSnap.data().urlSlug;
+    }
+
+    if (urlSlug && urlSlug.length > 0) {
+      res.send({
+        success: true,
+        data: { urlSlug: urlSlug },
+      });
+    } else {
+      console.log(`${type} urlSlug not found`);
+      res.send({ succes: false, message: `${type} urlSlug not found` });
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> getSlugFromId(): ' + e;
+  }
+};
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -3097,4 +3222,7 @@ module.exports = {
   getSuggestedUsers,
   getUserScores,
   getStatistics,
+  checkSlugExists,
+  getIdFromSlug,
+  getSlugFromId,
 };

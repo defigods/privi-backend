@@ -5,6 +5,7 @@ const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const podController = require('../controllers/podController');
 const podWallController = require('../controllers/podWallController');
+const userController = require('../controllers/userController');
 
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
@@ -131,9 +132,17 @@ router.post('/wall/deletePost', authenticateJWT, podWallController.postDelete);
 router.get('/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPosts);
 router.get('/wall/getPodPost/:postId', authenticateJWT, podWallController.getPodPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), podWallController.changePostPhoto);
-router.post('/wall/changePostDescriptionPhotos/:podWallPostId', authenticateJWT, upload2.array('image'), podWallController.changePostDescriptionPhotos);
+router.post(
+  '/wall/changePostDescriptionPhotos/:podWallPostId',
+  authenticateJWT,
+  upload2.array('image'),
+  podWallController.changePostDescriptionPhotos
+);
 router.get('/wall/getPostPhoto/:podWallPostId', podWallController.getPodWallPostPhotoById);
-router.get('/wall/getDescriptionPostPhoto/:podWallPostId/:photoId', podWallController.getPodWallPostDescriptionPhotoById);
+router.get(
+  '/wall/getDescriptionPostPhoto/:podWallPostId/:photoId',
+  podWallController.getPodWallPostDescriptionPhotoById
+);
 router.post('/wall/makeResponse', authenticateJWT, podWallController.makeResponsePodWallPost);
 router.post('/wall/likePost', authenticateJWT, podWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, podWallController.dislikePost);
@@ -144,13 +153,31 @@ router.post('/NFT/wall/createPost', authenticateJWT, podWallController.postCreat
 router.post('/NFT/wall/deletePost', authenticateJWT, podWallController.postDeleteNFT);
 router.get('/NFT/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPostsNFT);
 router.get('/NFT/wall/getPodPost/:postId', authenticateJWT, podWallController.getPodPostByIdNFT);
-router.post('/NFT/wall/changePostPhoto', authenticateJWT, upload5.single('image'), podWallController.changePostPhotoNFT);
-router.post('/NFT/wall/changePostDescriptionPhotos/:podNFTWallPostId', authenticateJWT, upload4.array('image'), podWallController.changePostDescriptionPhotosNFT);
+router.post(
+  '/NFT/wall/changePostPhoto',
+  authenticateJWT,
+  upload5.single('image'),
+  podWallController.changePostPhotoNFT
+);
+router.post(
+  '/NFT/wall/changePostDescriptionPhotos/:podNFTWallPostId',
+  authenticateJWT,
+  upload4.array('image'),
+  podWallController.changePostDescriptionPhotosNFT
+);
 router.get('/NFT/wall/getPostPhoto/:podNFTWallPostId', podWallController.getPodWallPostPhotoByIdNFT);
-router.get('/NFT/wall/getDescriptionPostPhoto/:podNFTWallPostId/:photoId', podWallController.getPodWallPostDescriptionPhotoByIdNFT);
+router.get(
+  '/NFT/wall/getDescriptionPostPhoto/:podNFTWallPostId/:photoId',
+  podWallController.getPodWallPostDescriptionPhotoByIdNFT
+);
 router.post('/NFT/wall/makeResponse', authenticateJWT, podWallController.makeResponsePodWallPostNFT);
 router.post('/NFT/wall/likePost', authenticateJWT, podWallController.likePostNFT);
 router.post('/NFT/wall/dislikePost', authenticateJWT, podWallController.dislikePostNFT);
 router.post('/NFT/wall/pinPost', authenticateJWT, podWallController.pinPostNFT);
+
+//POD SLUG
+router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);
+router.get('/getIdFromSlug/:urlSlug/:type', userController.getIdFromSlug);
+router.get('/getSlugFromId/:urlId/:type', userController.getSlugFromId);
 
 module.exports = router;
