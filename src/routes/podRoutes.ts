@@ -82,6 +82,7 @@ router.post('/unFollowPod', authenticateJWT, podController.unFollowPod);
 router.post('/inviteRole', authenticateJWT, podController.inviteRole);
 router.post('/replyRoleInvitation', authenticateJWT, podController.replyRoleInvitation);
 router.post('/inviteView', authenticateJWT, podController.inviteView);
+router.get('/editPod', authenticateJWT, podController.editPod);
 
 // FT
 
@@ -122,7 +123,6 @@ router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT
 router.get('/NFT/getTrendingPods', authenticateJWT, podController.getTrendingPodsNFT);
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
-
 router.post('/changeNFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeNFTPodPhoto);
 
 //wall

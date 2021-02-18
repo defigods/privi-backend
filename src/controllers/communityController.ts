@@ -960,7 +960,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
     await communityRef.update({
       Name: body.Name,
       Description: body.Description,
-      // Slug: body.Slug,
+      urlSlug: body.urlSlug
     });
 
     res.send({
@@ -968,7 +968,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
       data: {
         Name: body.Name,
         Description: body.Description,
-        // Slug: body.Slug,
+        urlSlug: body.urlSlug
       },
     });
   } catch (err) {

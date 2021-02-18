@@ -64,7 +64,7 @@ router.post(
   upload4.single('image'),
   priviCreditController.changeCreditPoolPhoto
 );
-
+router.post('/editPriviCredit', authenticateJWT, priviCreditController.editPriviCredit);
 router.post('/wall/createPost', authenticateJWT, priviCreditWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, priviCreditWallController.postDelete);
 router.get('/wall/getCreditPosts/:priviCreditId', authenticateJWT, priviCreditWallController.getCreditPost);
