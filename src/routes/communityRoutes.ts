@@ -99,6 +99,31 @@ let upload7 = multer({
   storage: storage7,
 });
 
+let storage8 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/discussionCommunity/' + 'photos-' + req.params.blogPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload8 = multer({
+  storage: storage8,
+});
+
+let storage9 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/discussionCommunity');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload9 = multer({
+  storage: storage9,
+});
 /*let storage4 = multer.diskStorage({
     destination: function (req: any, file: any, cb: any) {
         cb(null, 'uploads/ad')
@@ -190,8 +215,8 @@ router.post('/discussions/createPost', authenticateJWT, blogController.discussio
 router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
 router.get('/discussions/getBlogPosts/:communityId', authenticateJWT, blogController.getDiscussionsPost);
 router.get('/discussions/getBlogPost/:discussionId', authenticateJWT, blogController.getDiscussionsPostById);
-router.post('/discussions/changePostPhoto', authenticateJWT, upload3.single('image'), blogController.changeDiscussionsPhoto);
-router.post('/discussions/changePostDescriptionPhotos/:discussionId', authenticateJWT, upload2.array('image'), blogController.changeDiscussionsDescriptionPhotos);
+router.post('/discussions/changePostPhoto', authenticateJWT, upload9.single('image'), blogController.changeDiscussionsPhoto);
+router.post('/discussions/changePostDescriptionPhotos/:discussionId', authenticateJWT, upload8.array('image'), blogController.changeDiscussionsDescriptionPhotos);
 router.get('/discussions/getPostPhoto/:discussionId', blogController.getDiscussionsPhotoById);
 router.get('/discussions/getDescriptionPostPhoto/:discussionId/:photoId', blogController.getDiscussionsDescriptionPhotoById);
 router.post('/discussions/makeResponse', authenticateJWT, blogController.makeResponseDiscussions);

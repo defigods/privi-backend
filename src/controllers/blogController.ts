@@ -115,7 +115,7 @@ exports.changePostPhoto = async (
         });
       }
 
-      let dir = "uploads/blogPost/" + "photos-" + req.file.originalname;
+      let dir = "uploads/discussionCommunity/" + "photos-" + req.file.originalname;
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
@@ -533,6 +533,8 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
     const body = req.body;
     console.log(body);
 
+    body.selectedFormat = 0;
+
     if(body && body.userId && body.communityId) {
       const userSnap = await db.collection(collections.user).doc(body.userId).get();
       const userData : any = userSnap.data();
@@ -540,7 +542,9 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
       let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
       let checkIsAdminModerator = await communityWallController.checkUserRole(body.userId, userData.email, body.communityId, true, false, ['Moderator']);
 
-      if (isCreator && checkIsAdminModerator.checked) {
+      console.log(checkIsAdminModerator);
+
+      if (isCreator || checkIsAdminModerator.checked) {
         let ret = await createPost(body, "communityDiscussion", body.userId);
         res.send({ success: true, data: ret });
       } else {
@@ -560,7 +564,7 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
 
 
   } catch (err) {
-    console.log("Error in controllers/blogController -> blogCreate()", err);
+    console.log("Error in controllers/blogController -> discussionsCreate()", err);
     res.send({ success: false });
   }
 };
@@ -576,7 +580,7 @@ exports.discussionsDelete = async (req: express.Request, res: express.Response) 
       let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
       let checkIsAdminModerator = await communityWallController.checkUserRole(body.userId, userData.email, body.communityId, true, false, ['Moderator']);
 
-      if (isCreator && checkIsAdminModerator.checked) {
+      if (isCreator || checkIsAdminModerator.checked) {
         const communityRef = db.collection(collections.community).doc(body.communityId);
         const communityGet = await communityRef.get();
         const community: any = communityGet.data();
@@ -752,7 +756,7 @@ exports.getDiscussionsPhotoById = async (req: express.Request, res: express.Resp
   try {
     let discussionId = req.params.discussionId;
     if (discussionId) {
-      const directoryPath = path.join("uploads", "communityDiscussion");
+      const directoryPath = path.join("uploads", "discussionCommunity");
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
@@ -768,7 +772,7 @@ exports.getDiscussionsPhotoById = async (req: express.Request, res: express.Resp
       // stream the image back by loading the file
       res.setHeader("Content-Type", "image");
       let raw = fs.createReadStream(
-        path.join("uploads", "communityDiscussion", discussionId + ".png")
+        path.join("uploads", "discussionCommunity", discussionId + ".png")
       );
       raw.on("error", function (err) {
         console.log(err);
@@ -799,7 +803,7 @@ exports.getDiscussionsDescriptionPhotoById = async (req: express.Request, res: e
     if (discussionId && photoId) {
       const directoryPath = path.join(
         "uploads",
-        "communityDiscussion",
+        "discussionCommunity",
         "photos-" + discussionId
       );
       fs.readdir(directoryPath, function (err, files) {
@@ -817,7 +821,7 @@ exports.getDiscussionsDescriptionPhotoById = async (req: express.Request, res: e
       // stream the image back by loading the file
       res.setHeader("Content-Type", "image");
       let raw = fs.createReadStream(
-        path.join("uploads", "communityDiscussion", "photos-" + discussionId, photoId + ".png")
+        path.join("uploads", "discussionCommunity", "photos-" + discussionId, photoId + ".png")
       );
       raw.on("error", function (err) {
         console.log(err);
