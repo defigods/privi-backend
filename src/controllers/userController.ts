@@ -1808,6 +1808,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
     const userRef = db.collection(collections.user).doc(body.id);
     const userGet = await userRef.get();
+    const user : any = await userGet.data();
 
     //console.log(body);
 
