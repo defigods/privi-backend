@@ -25,6 +25,7 @@ router.post('/burn', walletController.burn);
 router.post('/mint', walletController.mint);
 router.post('/registerTokens', walletController.registerTokens);
 router.post('/updateTokensCollection', walletController.updateTokensCollection);
+router.post('/registerUserEthAccount', walletController.registerUserEthAccount);
 
 router.get('/getCryptosRateAsList', authenticateJWT, walletController.getCryptosRateAsList);
 router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosRateAsMap);
