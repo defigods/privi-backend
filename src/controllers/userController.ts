@@ -3097,7 +3097,10 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
     let type = req.params.type;
 
     let docSnap;
+
     let id: string = '';
+
+    console.log('params', req.params);
 
     if (type === 'user') {
       docSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
@@ -3113,16 +3116,35 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
 
     if (!docSnap.empty) {
       id = docSnap.docs[0].id;
-    }
-
-    if (id && id.length > 0) {
       res.send({
         success: true,
         data: { id: id },
       });
     } else {
-      console.log(`${type} id not found`);
-      res.send({ succes: false, message: `${type} id not found` });
+      let docIdSnap;
+
+      if (type === 'user') {
+        docIdSnap = await db.collection(collections.user).doc(urlSlug).get();
+      } else if (type === 'community') {
+        docIdSnap = await db.collection(collections.community).doc(urlSlug).get();
+      } else if (type === 'ftpod') {
+        docIdSnap = await db.collection(collections.podsFT).doc(urlSlug).get();
+      } else if (type === 'nftpod') {
+        docIdSnap = await db.collection(collections.podsNFT).doc(urlSlug).get();
+      } else if (type === 'credit') {
+        docIdSnap = await db.collection(collections.priviCredits).doc(urlSlug).get();
+      }
+
+      //return id if slug === id
+      if (docIdSnap && docIdSnap.exists && docIdSnap.data()) {
+        res.send({
+          success: true,
+          data: { id: urlSlug },
+        });
+      } else {
+        console.log(`${type} id not found`);
+        res.send({ succes: false, message: `${type} id not found` });
+      }
     }
   } catch (e) {
     return 'Error in controllers/userController -> getIdFromSlug(): ' + e;
@@ -3142,12 +3164,15 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
     let docSnap;
     let urlSlug: string = '';
 
+    console.log('req.params', req.params);
+
     if (type === 'user') {
       docSnap = await db.collection(collections.user).doc(urlId).get();
     } else if (type === 'community') {
       docSnap = await db.collection(collections.community).doc(urlId).get();
     } else if (type === 'ftpod') {
       docSnap = await db.collection(collections.podsFT).doc(urlId).get();
+      console.log(docSnap);
     } else if (type === 'nftpod') {
       docSnap = await db.collection(collections.podsNFT).doc(urlId).get();
     } else if (type === 'credit') {
@@ -3164,8 +3189,31 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
         data: { urlSlug: urlSlug },
       });
     } else {
-      console.log(`${type} urlSlug not found`);
-      res.send({ succes: false, message: `${type} urlSlug not found` });
+      let docSlugSnap;
+
+      if (type === 'user') {
+        docSlugSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'community') {
+        docSlugSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'ftpod') {
+        docSlugSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'nftpod') {
+        docSlugSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'credit') {
+        docSlugSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
+      }
+
+      //return slug if id === slug
+      if (!docSlugSnap.empty) {
+        urlSlug = docSnap.docs[0].id;
+        res.send({
+          success: true,
+          data: { urlSlug: urlSlug },
+        });
+      } else {
+        console.log(`${type} urlSlug not found`);
+        res.send({ succes: false, message: `${type} urlSlug not found` });
+      }
     }
   } catch (e) {
     return 'Error in controllers/userController -> getSlugFromId(): ' + e;
