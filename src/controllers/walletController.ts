@@ -390,6 +390,38 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
 
 ///////////////////////////// gets //////////////////////////////
 
+module.exports.getUserOwnedTokens = async (req: express.Request, res: express.Response) => {
+  try {
+    let { userId } = req.query;
+    userId = userId!.toString();
+    console.log('getUserOwnedTokens query', req.query, 'userId', userId)
+
+    const walletRegisteredEthAddrSnap = userId !== '' ? await db.collection(collections.wallet)
+    .doc(userId)
+    .collection(collections.registeredEthAddress).get() : null;
+
+    if (walletRegisteredEthAddrSnap && !walletRegisteredEthAddrSnap.empty) {
+      console.log('---------------------- getUserOwnedTokens', walletRegisteredEthAddrSnap.docs.length)
+      const docs = walletRegisteredEthAddrSnap.docs;
+      let responsePromise: Promise<{ address: string; tokens: any; }[]> = Promise.all( docs.map( async (doc) => {
+        const docObject: any = await (await doc.ref.get()).data();
+        // console.log('---------------------- data', {address: doc.id, tokens: docObject.tokenList});
+        return {address: doc.id, tokens: docObject.tokenList}
+        })
+      );
+      const response = await responsePromise;
+      console.log('---------------------- data array', response)
+      res.send({ success: true, data: response });
+    } else {
+      console.log('---------------------- getUserOwnedTokens is empity');
+      res.send({ success: true, data: [] });
+    }
+  } catch (err) {
+    console.log('Error in controllers/walletController -> getUserOwnedTokens()', err);
+    res.send({ success: false });
+  }
+};
+
 module.exports.getBalanceData = async (req: express.Request, res: express.Response) => {
   try {
     const t1 = Date.now();

@@ -27,6 +27,7 @@ router.post('/registerTokens', walletController.registerTokens);
 router.post('/updateTokensCollection', walletController.updateTokensCollection);
 router.post('/registerUserEthAccount', walletController.registerUserEthAccount);
 
+router.get('/getUserOwnedTokens', authenticateJWT, walletController.getUserOwnedTokens);
 router.get('/getCryptosRateAsList', authenticateJWT, walletController.getCryptosRateAsList);
 router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosRateAsMap);
 
