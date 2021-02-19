@@ -1,9 +1,53 @@
 import {authenticateJWT} from "../middlewares/jwtAuthMiddleware";
+import multer from "multer";
 
 let express = require('express');
 let router = express.Router();
 
 let chatController = require('../controllers/chatController');
+
+let storage = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png')
+  }
+});
+
+let upload = multer({
+  storage: storage
+});
+
+let storage2 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp3')
+  }
+});
+
+let upload2 = multer({
+  storage: storage2
+});
+
+let storage3 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4')
+  }
+});
+
+let upload3 = multer({
+  storage: storage3
+});
+
 
 router.post('/getChats', authenticateJWT, chatController.getChats);
 router.post('/getUsers', authenticateJWT, chatController.getUsers);
@@ -30,5 +74,11 @@ router.post('/discord/dislikeMessage', authenticateJWT, chatController.discordDi
 router.post('/discord/reply/likeMessage', authenticateJWT, chatController.discordReplyLikeMessage);
 router.post('/discord/reply/dislikeMessage', authenticateJWT, chatController.discordReplyDislikeMessage);
 
+router.post('/discord/addMessagePhoto/:discordChatId/:discordRoomId/:fromUserId', authenticateJWT, upload.single('image'), chatController.discordUploadPhotoMessage);
+router.post('/discord/addMessageAudio/:discordChatId/:discordRoomId/:fromUserId', authenticateJWT, upload2.single('audio'), chatController.discordUploadAudioMessage);
+router.post('/discord/addMessageVideo/:discordChatId/:discordRoomId/:fromUserId', authenticateJWT, upload3.single('video'), chatController.discordUploadVideoMessage);
+router.get('/discord/getMessagePhoto/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetPhotoMessage);
+router.get('/discord/getMessageAudio/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetAudioMessage);
+router.get('/discord/getMessageVideo/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetVideoMessage);
 
 module.exports = router;

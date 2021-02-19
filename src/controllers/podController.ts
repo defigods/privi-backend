@@ -69,6 +69,35 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
   );
 }
 
+// edit community
+exports.editPod = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let collection = body.IsDigital ? "PodsNFT" : "PodsFT";
+
+    const podRef = db.collection(collection).doc(body.PodAddress);
+
+    await podRef.update({
+      Name: body.Name,
+      Description: body.Description,
+      urlSlug: body.urlSlug,
+    });
+
+    res.send({
+      success: true,
+      data: {
+        Name: body.Name,
+        Description: body.Description,
+        urlSlug: body.urlSlug,
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/podController -> editPod()', err);
+    res.send({ success: false });
+  }
+};
+
+
 /**
  * Pod creator/admin invites a list of users to assume some role // the list could be only one elem
  * @param req array (invitationlist) of object {adminId, isPodFT, podId, invitedUser, role}. isPodFT boolean, adminId is an uid and inivtedUser an email

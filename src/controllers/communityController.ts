@@ -950,6 +950,33 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
   }
 };
 
+// edit community
+exports.editCommunity = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
+
+    await communityRef.update({
+      Name: body.Name,
+      Description: body.Description,
+      urlSlug: body.urlSlug
+    });
+
+    res.send({
+      success: true,
+      data: {
+        Name: body.Name,
+        Description: body.Description,
+        urlSlug: body.urlSlug
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> editCommunity()', err);
+    res.send({ success: false });
+  }
+};
+
 exports.changeCommunityPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {

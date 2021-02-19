@@ -190,4 +190,9 @@ router.get('/getSuggestedUsers/:userId', authenticateJWT, userController.getSugg
 //UPDATE TUTORIALS SEEN
 router.post('/updateTutorialsSeen', userController.updateTutorialsSeen);
 
+//USER SLUG
+router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);
+router.get('/getIdFromSlug/:urlSlug/:type', userController.getIdFromSlug);
+router.get('/getSlugFromId/:urlId/:type', userController.getSlugFromId);
+
 module.exports = router;
