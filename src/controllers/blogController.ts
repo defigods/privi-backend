@@ -18,6 +18,7 @@ import cron from "node-cron";
 const userController = require("./userController");
 const tasks = require("./tasksController");
 const notificationsController = require("./notificationsController");
+const communityWallController = require("./communityWallController");
 
 exports.blogCreate = async (req: express.Request, res: express.Response) => {
   try {
@@ -61,13 +62,7 @@ exports.blogDelete = async (req: express.Request, res: express.Response) => {
       const communityGet = await communityRef.get();
       const community: any = communityGet.data();
 
-      let ret = await deletePost(
-        communityRef,
-        communityGet,
-        community,
-        body.postId,
-        collections.blogPost
-      );
+      let ret = await deletePost(communityRef, communityGet, community, body.postId, collections.blogPost);
 
       if (ret) {
         res.send({ success: true });
@@ -120,7 +115,7 @@ exports.changePostPhoto = async (
         });
       }
 
-      let dir = "uploads/blogPost/" + "photos-" + req.file.originalname;
+      let dir = "uploads/discussionCommunity/" + "photos-" + req.file.originalname;
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
@@ -532,6 +527,459 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   }
 };
 
+
+exports.discussionsCreate = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    console.log(body);
+
+    body.selectedFormat = 0;
+
+    if(body && body.userId && body.communityId) {
+      const userSnap = await db.collection(collections.user).doc(body.userId).get();
+      const userData : any = userSnap.data();
+
+      let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
+      let checkIsAdminModerator = await communityWallController.checkUserRole(body.userId, userData.email, body.communityId, true, false, ['Moderator']);
+
+      console.log(checkIsAdminModerator);
+
+      if (isCreator || checkIsAdminModerator.checked) {
+        let ret : any = await createPost(body, "communityDiscussion", body.userId);
+
+        let dir = "uploads/communityDiscussion/" + "photos-" + ret.id;
+
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir);
+        }
+
+        res.send({ success: true, data: ret });
+      } else {
+        console.log(
+          "Error in controllers/blogController -> discussionsCreate()",
+          "You can't create a discussion"
+        );
+        res.send({ success: false, error: "You can't create a discussion" });
+      }
+    } else {
+      console.log(
+        "Error in controllers/blogController -> discussionsCreate()",
+        "Missing User Id or Community Id"
+      );
+      res.send({ success: false, error: "Missing User Id or Community Id" });
+    }
+
+
+  } catch (err) {
+    console.log("Error in controllers/blogController -> discussionsCreate()", err);
+    res.send({ success: false });
+  }
+};
+
+exports.discussionsDelete = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.communityId) {
+      const userSnap = await db.collection(collections.user).doc(body.userId).get();
+      const userData: any = userSnap.data();
+
+      let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
+      let checkIsAdminModerator = await communityWallController.checkUserRole(body.userId, userData.email, body.communityId, true, false, ['Moderator']);
+
+      if (isCreator || checkIsAdminModerator.checked) {
+        const communityRef = db.collection(collections.community).doc(body.communityId);
+        const communityGet = await communityRef.get();
+        const community: any = communityGet.data();
+
+        let ret = await deletePost(communityRef, communityGet, community, body.postId, collections.communityDiscussion);
+
+        if (ret) {
+          res.send({ success: true });
+        } else {
+          console.log(
+            "Error in controllers/communityWallController -> discussionsDelete()",
+            "Post Delete Error"
+          );
+          res.send({
+            success: false,
+            error: "Post Delete Error",
+          });
+        }
+      } else {
+        console.log(
+          "Error in controllers/communityWallController -> discussionsDelete()",
+          "You can't delete a discussion"
+        );
+        res.send({ success: false, error: "You can't delete a discussion" });
+      }
+    } else {
+      console.log(
+        "Error in controllers/communityWallController -> discussionsDelete()",
+        "Missing User Id or Community Id"
+      );
+      res.send({ success: false, error: "Missing User Id or Community Id" });
+    }
+  } catch (err) {
+    console.log(
+      "Error in controllers/communityWallController -> discussionsDelete()",
+      err
+    );
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.changeDiscussionsPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const communityDiscussionRef = db.collection(collections.communityDiscussion).doc(req.file.originalname);
+      const communityDiscussionGet = await communityDiscussionRef.get();
+      const communityDiscussion: any = communityDiscussionGet.data();
+      if (communityDiscussion.hasPhoto) {
+        await communityDiscussionRef.update({
+          hasPhoto: true
+        });
+      }
+
+      let dir = "uploads/communityDiscussion/" + "photos-" + req.file.originalname;
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log(
+        "Error in controllers/blogController -> changeDiscussionsPhoto()",
+        "There's no file..."
+      );
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log(
+      "Error in controllers/blogController -> changeDiscussionsPhoto()",
+      err
+    );
+    res.send({ success: false });
+  }
+};
+
+exports.changeDiscussionsDescriptionPhotos = async (req: express.Request, res: express.Response) => {
+  try {
+    let discussionId = req.params.discussionId;
+    let files: any[] = [];
+    let fileKeys: any[] = Object.keys(req.files);
+
+    fileKeys.forEach(function (key) {
+      files.push(req.files[key]);
+    });
+
+    if (files) {
+      let filesName: string[] = [];
+      const communityDiscussionRef = db.collection(collections.communityDiscussion).doc(discussionId);
+      const communityDiscussionGet = await communityDiscussionRef.get();
+      const communityDiscussion: any = communityDiscussionGet.data();
+
+      for (let i = 0; i < files.length; i++) {
+        filesName.push("/" + discussionId + "/" + files[i].originalname);
+      }
+      console.log(req.params.discussionId, filesName);
+      await communityDiscussionRef.update({
+        descriptionImages: filesName,
+      });
+      res.send({ success: true });
+    } else {
+      console.log(
+        "Error in controllers/blogController -> changeDiscussionsDescriptionPhotos()",
+        "There's no file..."
+      );
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log(
+      "Error in controllers/blogController -> changeDiscussionsDescriptionPhotos()",
+      err
+    );
+    res.send({ success: false });
+  }
+};
+
+exports.getDiscussionsPost = async (req: express.Request, res: express.Response) => {
+  try {
+    let params: any = req.params;
+    let posts: any[] = [];
+
+    const communityDiscussionQuery = await db
+      .collection(collections.communityDiscussion)
+      .where("communityId", "==", params.communityId)
+      .get();
+    if (!communityDiscussionQuery.empty) {
+      for (const doc of communityDiscussionQuery.docs) {
+        let data = doc.data();
+        data.id = doc.id;
+
+        const userSnap = await db.collection(collections.user).doc(data.createdBy).get();
+        const userData : any = userSnap.data();
+
+        data.user = {};
+        data.user.name = userData.firstName;
+        posts.push(data);
+      }
+      res.status(200).send({
+        success: true,
+        data: posts,
+      });
+    } else {
+      res.status(200).send({
+        success: true,
+        data: [],
+      });
+    }
+  } catch (err) {
+    console.log("Error in controllers/blogController -> getDiscussionsPost()", err);
+    res.send({ success: false });
+  }
+};
+
+exports.getDiscussionsPostById = async (req: express.Request, res: express.Response) => {
+  try {
+    let params: any = req.params;
+
+    const communityDiscussionSnap = await db
+      .collection(collections.communityDiscussion)
+      .doc(params.discussionId)
+      .get();
+    const communityDiscussion: any = communityDiscussionSnap.data();
+    communityDiscussion.id = communityDiscussionSnap.id;
+
+    res.status(200).send({
+      success: true,
+      data: communityDiscussion,
+    });
+  } catch (err) {
+    console.log(
+      "Error in controllers/blogController -> getDiscussionsPostById()",
+      err
+    );
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getDiscussionsPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let discussionId = req.params.discussionId;
+    if (discussionId) {
+      const directoryPath = path.join("uploads", "communityDiscussion");
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log("Unable to scan directory: " + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader("Content-Type", "image");
+      let raw = fs.createReadStream(
+        path.join("uploads", "communityDiscussion", discussionId + ".png")
+      );
+      raw.on("error", function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log(
+        "Error in controllers/blogController -> getDiscussionsPhotoById()",
+        "There's no discussion id..."
+      );
+      res.send({ success: false, error: "There's no discussion id..." });
+    }
+  } catch (err) {
+    console.log(
+      "Error in controllers/blogController -> getDiscussionsPhotoById()",
+      err
+    );
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getDiscussionsDescriptionPhotoById = async (req: express.Request, res: express.Response) => {
+  try {
+    let discussionId = req.params.discussionId;
+    let photoId = req.params.photoId;
+    console.log("postId", discussionId, photoId);
+    if (discussionId && photoId) {
+      const directoryPath = path.join(
+        "uploads",
+        "communityDiscussion",
+        "photos-" + discussionId
+      );
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log("Unable to scan directory: " + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader("Content-Type", "image");
+      let raw = fs.createReadStream(
+        path.join("uploads", "communityDiscussion", "photos-" + discussionId, photoId + ".png")
+      );
+      raw.on("error", function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log(
+        "Error in controllers/blogController -> getDiscussionsDescriptionPhotoById()",
+        "There's no discussion id..."
+      );
+      res.send({ success: false, error: "There's no discussion id..." });
+    }
+  } catch (err) {
+    console.log(
+      "Error in controllers/blogController -> getDiscussionsDescriptionPhotoById()",
+      err
+    );
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.makeResponseDiscussions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.discussionId && body.response && body.userId && body.userName) {
+      const communityDiscussionRef = db.collection(collections.communityDiscussion).doc(body.discussionId);
+      const communityDiscussionGet = await communityDiscussionRef.get();
+      const communityDiscussion: any = communityDiscussionGet.data();
+
+      let responses: any[] = [...communityDiscussion.responses];
+      responses.push({
+        userId: body.userId,
+        userName: body.userName,
+        response: body.response,
+        date: Date.now(),
+      });
+      await communityDiscussionRef.update({
+        responses: responses,
+      });
+
+      if (responses.length == 1) {
+        let task = await tasks.updateTask(body.userId, "Make your first comment");
+        res.send({success: true, data: responses, task});
+      }
+      res.send({success: true, data: responses});
+    } else {
+      console.log(
+        "Error in controllers/blogController -> makeResponseDiscussions()",
+        "Missing data provided"
+      );
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log(
+      "Error in controllers/blogController -> makeResponseDiscussions()",
+      err
+    );
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.likePostDiscussions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.itemDiscussionId && body.userId) {
+      const communityDiscussionRef = db.collection(collections.communityDiscussion).doc(body.itemDiscussionId);
+      const communityDiscussionGet = await communityDiscussionRef.get();
+      const communityDiscussion: any = communityDiscussionGet.data();
+
+      let post = await likeItemPost(communityDiscussionRef, communityDiscussionGet, communityDiscussion, body.userId, communityDiscussion.createdBy);
+
+      await notificationsController.addNotification({
+        userId: communityDiscussion.createdBy,
+        notification: {
+          type: 77,
+          typeItemId: "community",
+          itemId: body.userId,
+          follower: body.userName,
+          pod: "",
+          comment: communityDiscussion.name,
+          token: "",
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: communityDiscussionGet.id,
+        },
+      });
+
+      res.send({ success: true, data: post });
+    } else {
+      console.log(
+        "Error in controllers/blogController -> likePostDiscussions()",
+        "Missing data provided"
+      );
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log("Error in controllers/blogController -> likePostDiscussions()", err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.dislikePostDiscussions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.itemDiscussionId && body.userId) {
+      const communityDiscussionRef = db.collection(collections.communityDiscussion).doc(body.itemDiscussionId);
+      const communityDiscussionGet = await communityDiscussionRef.get();
+      const communityDiscussion: any = communityDiscussionGet.data();
+
+      let post = await dislikeItemPost(communityDiscussionRef, communityDiscussionGet, communityDiscussion, body.userId, communityDiscussion.createdBy);
+
+      await notificationsController.addNotification({
+        userId: communityDiscussion.createdBy,
+        notification: {
+          type: 78,
+          typeItemId: "user",
+          itemId: body.userId,
+          follower: body.userName,
+          pod: "",
+          comment: communityDiscussion.name,
+          token: "",
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: communityDiscussionGet.id,
+        },
+      });
+
+      res.send({ success: true, data: post });
+    } else {
+      console.log(
+        "Error in controllers/blogController -> dislikePostDiscussions()",
+        "Missing data provided"
+      );
+      res.send({ success: false, error: "Missing data provided" });
+    }
+  } catch (err) {
+    console.log("Error in controllers/blogController -> dislikePostDiscussions()", err);
+    res.send({ success: false });
+  }
+};
+
 /*exports.adCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -835,6 +1283,18 @@ const createPost = (exports.createPost = (body, collection, userId) => {
               data
             );
           });
+        } else if (collection === "communityDiscussion") {
+          data.communityId = body.communityId;
+          data.comments = true;
+          await db.runTransaction(async (transaction) => {
+            transaction.set(
+              db.collection(collections.communityDiscussion).doc("" + uid),
+              data
+            );
+          });
+        } else {
+          console.log("parameters required missing");
+          reject("Error in createPost: " + "Not a valid collection");
         }
 
         let ret = { id: uid, ...data };
@@ -850,13 +1310,7 @@ const createPost = (exports.createPost = (body, collection, userId) => {
   });
 });
 
-const deletePost = (exports.deletePost = (
-  itemRef,
-  itemGet,
-  item,
-  id,
-  postCollection
-) => {
+const deletePost = (exports.deletePost = (itemRef, itemGet, item, id, postCollection) => {
   return new Promise(async (resolve, reject) => {
     try {
       if (postCollection !== "BlogPost") {
