@@ -545,7 +545,14 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
       console.log(checkIsAdminModerator);
 
       if (isCreator || checkIsAdminModerator.checked) {
-        let ret = await createPost(body, "communityDiscussion", body.userId);
+        let ret : any = await createPost(body, "communityDiscussion", body.userId);
+
+        let dir = "uploads/communityDiscussion/" + "photos-" + ret.id;
+
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir);
+        }
+
         res.send({ success: true, data: ret });
       } else {
         console.log(
@@ -710,6 +717,12 @@ exports.getDiscussionsPost = async (req: express.Request, res: express.Response)
       for (const doc of communityDiscussionQuery.docs) {
         let data = doc.data();
         data.id = doc.id;
+
+        const userSnap = await db.collection(collections.user).doc(data.createdBy).get();
+        const userData : any = userSnap.data();
+
+        data.user = {};
+        data.user.name = userData.firstName;
         posts.push(data);
       }
       res.status(200).send({
@@ -756,7 +769,7 @@ exports.getDiscussionsPhotoById = async (req: express.Request, res: express.Resp
   try {
     let discussionId = req.params.discussionId;
     if (discussionId) {
-      const directoryPath = path.join("uploads", "discussionCommunity");
+      const directoryPath = path.join("uploads", "communityDiscussion");
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
@@ -772,7 +785,7 @@ exports.getDiscussionsPhotoById = async (req: express.Request, res: express.Resp
       // stream the image back by loading the file
       res.setHeader("Content-Type", "image");
       let raw = fs.createReadStream(
-        path.join("uploads", "discussionCommunity", discussionId + ".png")
+        path.join("uploads", "communityDiscussion", discussionId + ".png")
       );
       raw.on("error", function (err) {
         console.log(err);
@@ -803,7 +816,7 @@ exports.getDiscussionsDescriptionPhotoById = async (req: express.Request, res: e
     if (discussionId && photoId) {
       const directoryPath = path.join(
         "uploads",
-        "discussionCommunity",
+        "communityDiscussion",
         "photos-" + discussionId
       );
       fs.readdir(directoryPath, function (err, files) {
@@ -821,7 +834,7 @@ exports.getDiscussionsDescriptionPhotoById = async (req: express.Request, res: e
       // stream the image back by loading the file
       res.setHeader("Content-Type", "image");
       let raw = fs.createReadStream(
-        path.join("uploads", "discussionCommunity", "photos-" + discussionId, photoId + ".png")
+        path.join("uploads", "communityDiscussion", "photos-" + discussionId, photoId + ".png")
       );
       raw.on("error", function (err) {
         console.log(err);
@@ -1272,6 +1285,7 @@ const createPost = (exports.createPost = (body, collection, userId) => {
           });
         } else if (collection === "communityDiscussion") {
           data.communityId = body.communityId;
+          data.comments = true;
           await db.runTransaction(async (transaction) => {
             transaction.set(
               db.collection(collections.communityDiscussion).doc("" + uid),

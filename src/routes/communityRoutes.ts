@@ -101,7 +101,7 @@ let upload7 = multer({
 
 let storage8 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/discussionCommunity/' + 'photos-' + req.params.blogPostId);
+    cb(null, 'uploads/communityDiscussion/' + 'photos-' + req.params.discussionId);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -114,7 +114,7 @@ let upload8 = multer({
 
 let storage9 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/discussionCommunity');
+    cb(null, 'uploads/communityDiscussion');
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -213,8 +213,8 @@ router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 
 router.post('/discussions/createPost', authenticateJWT, blogController.discussionsCreate);
 router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
-router.get('/discussions/getBlogPosts/:communityId', authenticateJWT, blogController.getDiscussionsPost);
-router.get('/discussions/getBlogPost/:discussionId', authenticateJWT, blogController.getDiscussionsPostById);
+router.get('/discussions/getDiscussions/:communityId', authenticateJWT, blogController.getDiscussionsPost);
+router.get('/discussions/getDiscussion/:discussionId', authenticateJWT, blogController.getDiscussionsPostById);
 router.post('/discussions/changePostPhoto', authenticateJWT, upload9.single('image'), blogController.changeDiscussionsPhoto);
 router.post('/discussions/changePostDescriptionPhotos/:discussionId', authenticateJWT, upload8.array('image'), blogController.changeDiscussionsDescriptionPhotos);
 router.get('/discussions/getPostPhoto/:discussionId', blogController.getDiscussionsPhotoById);
