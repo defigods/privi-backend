@@ -5,6 +5,7 @@ import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from 'multer';
 const priviCreditController = require('../controllers/priviCreditController');
 const priviCreditWallController = require('../controllers/priviCreditWallController');
+const userController = require('../controllers/userController');
 
 let storage3 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
@@ -90,5 +91,10 @@ router.post('/wall/makeResponse', authenticateJWT, priviCreditWallController.mak
 router.post('/wall/likePost', authenticateJWT, priviCreditWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, priviCreditWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, priviCreditWallController.pinPost);
+
+//CREDIT SLUG
+router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);
+router.get('/getIdFromSlug/:urlSlug/:type', userController.getIdFromSlug);
+router.get('/getSlugFromId/:urlId/:type', userController.getSlugFromId);
 
 module.exports = router;

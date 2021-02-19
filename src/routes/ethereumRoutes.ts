@@ -9,7 +9,7 @@ const connectController = require('../controllers/connectController');
 router.get('/getRecentSwaps', authenticateJWT, connectController.getRecentSwaps);
 router.get('/getBridgeRegisteredToken', authenticateJWT, connectController.getBridgeRegisteredToken);
 router.post('/send', authenticateJWT, connectController.send);
-router.post('/registerNewERC20TokenOnSwapManager', authenticateJWT, connectController.registerNewERC20TokenOnSwapManager);
+// router.post('/registerNewERC20TokenOnSwapManager', authenticateJWT, connectController.registerNewERC20TokenOnSwapManager);
 
 
 module.exports = router;

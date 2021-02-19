@@ -19,6 +19,7 @@ module.exports = {
   rates: "ratesOfChange",
 
   // histories
+  registeredEthAddress: 'RegisteredEthAddress',
   cryptoHistory: "CryptoHistory",
   nftHistory: "NftHistory",
   ftHistory: "FtHistory",
@@ -113,6 +114,8 @@ module.exports = {
   insuranceWallPost: "InsuranceWallPost",
   communityWallPost: "CommunityWallPost",
   userWallPost: "UserWallPost",
+
+  communityDiscussion: "CommunityDiscussion",
 
   insurance: "Insurance",
 

@@ -14,11 +14,12 @@ import {
   getRateOfChangeAsMap,
   getUidFromEmail,
   updateFirebase,
+  getMarketPrice,
 } from '../functions/functions';
 import path from 'path';
 import fs from 'fs';
 import configuration from '../constants/configuration';
-import {sendEmailValidation, sendForgotPasswordEmail} from '../email_templates/emailTemplates';
+import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
 import {sockets} from './serverController';
 import {LEVELS, ONE_DAY} from '../constants/userLevels';
 
@@ -476,6 +477,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
             pods: false,
             creditPools: false,
           },
+          urlSlug: uid,
         });
 
         /* // since we do not have any data for this- remove for now according to Marta
@@ -625,7 +627,7 @@ interface BasicInfo {
   anonAvatar: string;
   hasPhoto: boolean;
   verified: boolean;
-  userSlug: string;
+  urlSlug: string;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -654,7 +656,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
       hasPhoto: false,
       verified: false,
-      userSlug: ""
+      urlSlug: userId,
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -692,7 +694,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.userSlug = userData.userSlug || "";
+      basicInfo.urlSlug = userData.urlSlug || userId;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -739,24 +741,31 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
 const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
+    let userAddress = req.params.address;
 
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
     if (userData !== undefined) {
       let badges = await getBadgesFunction(userId);
       let myPods = await getMyPodsFunction(userId);
-      let podsFollowed = await getPodsFollowedFunction(userId);
-      let podsInvestments = await getPodsInvestmentsFunction(userId);
-      let followPodsInfo = await getFollowPodsInfoFunction(userId);
+      //let podsFollowed = await getPodsFollowedFunction(userId);
+      //let podsInvestments = await getPodsInvestmentsFunction(userId);
+      //let followPodsInfo = await getFollowPodsInfoFunction(userId);
+      let myCommunities = await getMyCommunitiesFunction(userId);
+      let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
+      let myCreditPools = await getMyCreditPools(userId);
 
       res.send({
         success: true,
         data: {
           badges: badges,
           myPods: myPods,
-          podsFollowed: podsFollowed,
-          podsInvestments: podsInvestments,
-          followPodsInfo: followPodsInfo,
+          //podsFollowed: podsFollowed,
+          //podsInvestments: podsInvestments,
+          //followPodsInfo: followPodsInfo,
+          myCommunities: myCommunities,
+          mySocialTokens: mySocialTokens,
+          myCreditPools: myCreditPools,
         },
       });
     } else {
@@ -1641,6 +1650,134 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
   });
 };
 
+//get communities
+const getMyCommunitiesFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      const user: any = userRef.data();
+      let myCommunities: any[] = [];
+
+      myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
+
+      resolve(myCommunities);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getCommunitiesArray = (arrayCommunities: any[], collection: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    let communityInfo: any[] = [];
+    arrayCommunities.forEach(async (item, i) => {
+      const communityRef = await db.collection(collection).doc(item).get();
+
+      if (communityRef.exists) {
+        let communityData: any = communityRef.data();
+
+        console.log(item, communityData.CommunityAddress);
+
+        if (!communityInfo.some((community) => community.CommunityAddress === item)) {
+          communityInfo.push(communityData);
+        }
+      }
+
+      if (arrayCommunities.length === i + 1) {
+        resolve(communityInfo);
+      }
+    });
+  });
+};
+
+//get social tokens
+const getMySocialTokensFunction = (userId, address) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const retData: any[] = [];
+      // get those social tokens which the user is the creator or has some balance
+      const blockchainRes = await coinBalance.getBalancesByType(address, collections.socialToken, 'PRIVI');
+      if (blockchainRes && blockchainRes.success) {
+        const balances = blockchainRes.output;
+        const socialSnap = await db.collection(collections.socialPools).get();
+        socialSnap.forEach((doc) => {
+          const data: any = doc.data();
+          const balance = balances[data.TokenSymbol] ? balances[data.TokenSymbol].Amount : 0;
+          if (balance || data.Creator == userId) {
+            let marketPrice = getMarketPrice(
+              data.AMM,
+              data.SupplyReleased,
+              data.InitialSupply,
+              data.TargetPrice,
+              data.TargetSupply
+            );
+            retData.push({
+              ...data,
+              MarketPrice: marketPrice,
+              UserBalance: balance,
+            });
+          }
+        });
+        resolve(retData);
+      } else {
+        console.log(
+          'Error in controllers/socialController -> getSocialPools(): blockchain = false ',
+          blockchainRes.message
+        );
+      }
+    } catch (err) {
+      console.log('Error in controllers/socialController -> getSocialPools(): ', err);
+    }
+  });
+};
+
+//get credit pools
+const getMyCreditPools = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      let myBorrowingPriviCredits: any[] = [];
+      let myLendingPriviCredits: any[] = [];
+
+      const borrowingSnap = await db.collection(collections.user).doc(userId).collection('PriviCreditsBorrowing').get();
+      const lendingSnap = await db.collection(collections.user).doc(userId).collection('PriviCreditsLending').get();
+
+      if (!borrowingSnap.empty) {
+        myBorrowingPriviCredits = await getCreditPoolsArray(borrowingSnap, collections.priviCredits);
+      }
+      if (!lendingSnap.empty) {
+        myLendingPriviCredits = await getCreditPoolsArray(lendingSnap, collections.priviCredits);
+      }
+
+      resolve({ myBorrowingPriviCredits: myBorrowingPriviCredits, myLendingPriviCredits: myLendingPriviCredits });
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    let creditPools: any[] = [];
+    let counter = 0;
+    const size = arrayCreditPools.size;
+    arrayCreditPools.forEach(async (item) => {
+      const creditPoolRef = await db.collection(collection).doc(item.id).get();
+
+      if (creditPoolRef.exists) {
+        let creditPoolData: any = creditPoolRef.data();
+        creditPools.push(creditPoolData);
+      }
+
+      counter++;
+
+      if (counter === size) {
+        resolve(creditPools);
+      }
+    });
+  });
+};
+
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   console.log(userId);
@@ -1660,7 +1797,7 @@ const getSocialTokens = async (req: express.Request, res: express.Response) => {
 
     res.send({ success: true, data: [] });
   } catch (err) {
-    console.log('Error in controllers/editUser -> editUser()', err);
+    console.log('Error in controllers/getSocialTokens -> getSocialTokens()', err);
     res.send({ success: false });
   }
 };
@@ -1671,7 +1808,8 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
     const userRef = db.collection(collections.user).doc(body.id);
     const userGet = await userRef.get();
-    const user: any = userGet.data();
+
+    //console.log(body);
 
     await userRef.update({
       firstName: body.firstName,
@@ -1685,7 +1823,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
       instagram: body.instagram,
       twitter: body.twitter,
       facebook: body.facebook,
-      userSlug: body.userSlug,
+      urlSlug: body.urlSlug,
     });
 
     if (!user.twitter && body.twitter) {
@@ -1868,9 +2006,9 @@ const getBadgesFunction = (userId: string) => {
   return new Promise(async (resolve, reject) => {
     try {
       let address = userId;
-      console.log(userId)
+      console.log(userId);
       console.log(Web3.utils.isAddress(userId));
-      if (!(Web3.utils.isAddress(userId))) {
+      if (!Web3.utils.isAddress(userId)) {
         const userRef = db.collection(collections.user).doc(userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
@@ -1883,7 +2021,7 @@ const getBadgesFunction = (userId: string) => {
         const badgeSnap = await db.collection(collections.badges).get();
         badgeSnap.forEach((doc) => {
           let amount = 0;
-          let data = doc.data()
+          let data = doc.data();
           if (badgesBalance[data.Symbol]) amount = badgesBalance[data.Symbol].Amount;
           if (amount > 0) {
             retData.push({
@@ -2070,7 +2208,7 @@ const getUserScores = async (req: express.Request, res: express.Response) => {
 
       // Badges earned today
       if (badges && badges.length > 0) {
-        badgesToday = badges.filter(badge => badge.date >= yesterday && badge.date < today);
+        badgesToday = badges.filter((badge) => badge.date >= yesterday && badge.date < today);
       }
 
       let response: any = {
@@ -2109,14 +2247,17 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       let yesterday = today - ONE_DAY;
 
       // totalPointsToday
-      let pointsGet = await db.collection(collections.points)
-          .where("date", ">", yesterday)
-          .where("date", "<", today)
-          .get();
+      let pointsGet = await db
+        .collection(collections.points)
+        .where('date', '>', yesterday)
+        .where('date', '<', today)
+        .get();
       let totalPointsToday = pointsGet.size;
-      let badgesGet = await db.collection(collections.badgesHistory)
-          .where("date", ">", yesterday)
-          .where("date", "<", today).get();
+      let badgesGet = await db
+        .collection(collections.badgesHistory)
+        .where('date', '>', yesterday)
+        .where('date', '<', today)
+        .get();
       let totalBadgesToday = badgesGet.size;
 
       // totalUsersLevels userLevel
@@ -2151,11 +2292,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
 
       // ranking
       let userRank = await levels.getUserRank(userId);
-      let usersSnap = await db
-          .collection(collections.user)
-          .orderBy("Points")
-          .limit(12)
-          .get();
+      let usersSnap = await db.collection(collections.user).orderBy('Points').limit(12).get();
 
       let ranking: any = [];
       const docs = usersSnap.docs;
@@ -2166,8 +2303,8 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
           user: doc.id,
           name: data.firstName,
           points: data.Points,
-          level: data.level
-        }
+          level: data.level,
+        };
         ranking.push(user);
       }
 
@@ -2188,14 +2325,14 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
       }
 
       let usersLevelData = [
-        {x: 1, y: totalUsersLevel1},
-        {x: 2, y: totalUsersLevel2},
-        {x: 3, y: totalUsersLevel3},
-        {x: 4, y: totalUsersLevel4},
-        {x: 5, y: totalUsersLevel5},
-        {x: 6, y: totalUsersLevel6},
-        {x: 7, y: totalUsersLevel7},
-        {x: 8, y: totalUsersLevel8},
+        { x: 1, y: totalUsersLevel1 },
+        { x: 2, y: totalUsersLevel2 },
+        { x: 3, y: totalUsersLevel3 },
+        { x: 4, y: totalUsersLevel4 },
+        { x: 5, y: totalUsersLevel5 },
+        { x: 6, y: totalUsersLevel6 },
+        { x: 7, y: totalUsersLevel7 },
+        { x: 8, y: totalUsersLevel8 },
       ];
 
       let response: any = {
@@ -2875,7 +3012,7 @@ const getSuggestedUsers = async (req: express.Request, res: express.Response) =>
       }
     }
 
-    res.send({success: true, data: Array.from(sugUsers)});
+    res.send({ success: true, data: Array.from(sugUsers) });
   } catch (e) {
     console.log('Error in controllers/userController -> getSuggestedUsers()', e);
     res.send({ success: false, error: e });
@@ -2916,6 +3053,183 @@ async function getRandomForSuggestedUser() {
 
   return res;
 }
+
+/**
+ * Function to check slug before changing it.
+ * @param req {urlSlug, type}. urlSlug : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: boolean confirming if it exists or not
+ */
+const checkSlugExists = async (req: express.Request, res: express.Response) => {
+  try {
+    let urlSlug = req.params.urlSlug;
+    let id = req.params.id;
+    let type = req.params.type;
+
+    let urlSlugExists: boolean = false;
+    let collectionSnap;
+
+    //get collection and size
+    if (type === 'user') {
+      collectionSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'community') {
+      collectionSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'ftpod') {
+      collectionSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'nftpod') {
+      collectionSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'credit') {
+      collectionSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
+    }
+
+    //check size and id
+    if (collectionSnap && collectionSnap.size === 1) {
+      if (id === collectionSnap.docs[0].id) {
+        urlSlugExists = false; //same id, didn't change the urlSlug
+      } else urlSlugExists = true;
+    } else urlSlugExists = false;
+
+    res.send({
+      success: true,
+      data: { urlSlugExists: urlSlugExists },
+    });
+  } catch (e) {
+    return 'Error in controllers/userController -> checkSlugExists(): ' + e;
+  }
+};
+
+/**
+ * Function get the id from a slug.
+ * @param req {urlSlug, type}. urlSlug : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: the id
+ */
+const getIdFromSlug = async (req: express.Request, res: express.Response) => {
+  try {
+    let urlSlug = req.params.urlSlug;
+    let type = req.params.type;
+
+    let docSnap;
+
+    let id: string = '';
+
+    console.log('params', req.params);
+
+    if (type === 'user') {
+      docSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'community') {
+      docSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'ftpod') {
+      docSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'nftpod') {
+      docSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'credit') {
+      docSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
+    }
+
+    if (!docSnap.empty) {
+      id = docSnap.docs[0].id;
+      res.send({
+        success: true,
+        data: { id: id },
+      });
+    } else {
+      let docIdSnap;
+
+      if (type === 'user') {
+        docIdSnap = await db.collection(collections.user).doc(urlSlug).get();
+      } else if (type === 'community') {
+        docIdSnap = await db.collection(collections.community).doc(urlSlug).get();
+      } else if (type === 'ftpod') {
+        docIdSnap = await db.collection(collections.podsFT).doc(urlSlug).get();
+      } else if (type === 'nftpod') {
+        docIdSnap = await db.collection(collections.podsNFT).doc(urlSlug).get();
+      } else if (type === 'credit') {
+        docIdSnap = await db.collection(collections.priviCredits).doc(urlSlug).get();
+      }
+
+      //return id if slug === id
+      if (docIdSnap && docIdSnap.exists && docIdSnap.data()) {
+        res.send({
+          success: true,
+          data: { id: urlSlug },
+        });
+      } else {
+        console.log(`${type} id not found`);
+        res.send({ succes: false, message: `${type} id not found` });
+      }
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> getIdFromSlug(): ' + e;
+  }
+};
+
+/**
+ * Function get the slug from an id (for re-routing).
+ * @param req {urlId, type}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: the id
+ */
+const getSlugFromId = async (req: express.Request, res: express.Response) => {
+  try {
+    let urlId = req.params.urlId;
+    let type = req.params.type;
+
+    let docSnap;
+    let urlSlug: string = '';
+
+    console.log('req.params', req.params);
+
+    if (type === 'user') {
+      docSnap = await db.collection(collections.user).doc(urlId).get();
+    } else if (type === 'community') {
+      docSnap = await db.collection(collections.community).doc(urlId).get();
+    } else if (type === 'ftpod') {
+      docSnap = await db.collection(collections.podsFT).doc(urlId).get();
+      console.log(docSnap);
+    } else if (type === 'nftpod') {
+      docSnap = await db.collection(collections.podsNFT).doc(urlId).get();
+    } else if (type === 'credit') {
+      docSnap = await db.collection(collections.priviCredits).doc(urlId).get();
+    }
+
+    if (docSnap && docSnap.exists && docSnap.data()) {
+      urlSlug = docSnap.data().urlSlug;
+    }
+
+    if (urlSlug && urlSlug.length > 0) {
+      res.send({
+        success: true,
+        data: { urlSlug: urlSlug },
+      });
+    } else {
+      let docSlugSnap;
+
+      if (type === 'user') {
+        docSlugSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'community') {
+        docSlugSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'ftpod') {
+        docSlugSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'nftpod') {
+        docSlugSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'credit') {
+        docSlugSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
+      }
+
+      //return slug if id === slug
+      if (!docSlugSnap.empty) {
+        urlSlug = docSnap.docs[0].id;
+        res.send({
+          success: true,
+          data: { urlSlug: urlSlug },
+        });
+      } else {
+        console.log(`${type} urlSlug not found`);
+        res.send({ succes: false, message: `${type} urlSlug not found` });
+      }
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> getSlugFromId(): ' + e;
+  }
+};
 
 module.exports = {
   emailValidation,
@@ -2973,4 +3287,7 @@ module.exports = {
   getSuggestedUsers,
   getUserScores,
   getStatistics,
+  checkSlugExists,
+  getIdFromSlug,
+  getSlugFromId,
 };
