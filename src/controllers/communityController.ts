@@ -950,6 +950,36 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
   }
 };
 
+exports.editRulesAndLevels = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
+
+    await communityRef.update({
+      MinimumEndorsementScore: body.MinimumEndorsementScore,
+      MinimumTrustScore: body.MinimumTrustScore,
+      MinimumUserLevel: body.MinimumUserLevel,
+      AdditionalRules : body.AdditionalRules,
+      Levels: body.Levels
+    });
+
+    res.send({
+      success: true,
+      data: {
+        MinimumEndorsementScore: body.MinimumEndorsementScore,
+        MinimumTrustScore: body.MinimumTrustScore,
+        MinimumUserLevel: body.MinimumUserLevel,
+        AdditionalRules : body.AdditionalRules,
+        Levels: body.Levels
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> editRulesAndLevels()', err);
+    res.send({ success: false });
+  }
+};
+
 // edit community
 exports.editCommunity = async (req: express.Request, res: express.Response) => {
   try {
@@ -2410,20 +2440,22 @@ const getArrayIdCommunityMembers = async (data: any) => {
         }
       }
 
-      let userRolesKeys = Object.keys(data.UserRoles);
-      for (let userRole of userRolesKeys) {
-        if (data.UserRoles[userRole].userId) {
-          let foundMemberIndex = arrayMembersId.findIndex((memb) => memb === data.UserRoles[userRole].userId);
-          if (foundMemberIndex === -1) {
-            let rolesKeys = Object.keys(data.UserRoles[userRole].roles);
-            let hasRoleAccepted: boolean = false;
-            for (let role of rolesKeys) {
-              if (data.UserRoles[userRole].roles[role] && data.UserRoles[userRole].roles[role] === 'Accepted') {
-                hasRoleAccepted = true;
+      if(data.UserRoles) {
+        let userRolesKeys = Object.keys(data.UserRoles);
+        for (let userRole of userRolesKeys) {
+          if (data.UserRoles[userRole].userId) {
+            let foundMemberIndex = arrayMembersId.findIndex((memb) => memb === data.UserRoles[userRole].userId);
+            if (foundMemberIndex === -1) {
+              let rolesKeys = Object.keys(data.UserRoles[userRole].roles);
+              let hasRoleAccepted: boolean = false;
+              for (let role of rolesKeys) {
+                if (data.UserRoles[userRole].roles[role] && data.UserRoles[userRole].roles[role] === 'Accepted') {
+                  hasRoleAccepted = true;
+                }
               }
-            }
-            if (hasRoleAccepted) {
-              arrayMembersId.push(data.UserRoles[userRole].userId);
+              if (hasRoleAccepted) {
+                arrayMembersId.push(data.UserRoles[userRole].userId);
+              }
             }
           }
         }

@@ -6,14 +6,13 @@ import Web3 from 'web3';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
-import { db } from '../firebase/firebase';
+import {db} from '../firebase/firebase';
 import badge from '../blockchain/badge';
 import {
-  getUidFromEmail,
-  generateUniqueId,
   addZerosToHistory,
+  generateUniqueId,
   getRateOfChangeAsMap,
-  singTransaction,
+  getUidFromEmail,
   updateFirebase,
   getMarketPrice,
 } from '../functions/functions';
@@ -21,8 +20,8 @@ import path from 'path';
 import fs from 'fs';
 import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
-import { sockets } from './serverController';
-import { LEVELS, ONE_DAY } from '../constants/userLevels';
+import {sockets} from './serverController';
+import {LEVELS, ONE_DAY} from '../constants/userLevels';
 
 const levels = require('./userLevelsController');
 const tasks = require('./tasksController');
@@ -1809,6 +1808,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
     const userRef = db.collection(collections.user).doc(body.id);
     const userGet = await userRef.get();
+    const user : any = await userGet.data();
 
     //console.log(body);
 
@@ -1827,6 +1827,18 @@ const editUser = async (req: express.Request, res: express.Response) => {
       urlSlug: body.urlSlug,
     });
 
+    if (!user.twitter && body.twitter) {
+      body.task = await tasks.updateTask(body.id, 'Connect your Twitter account');
+    }
+
+    if (!user.twitch && body.twitch) {
+      body.task = await tasks.updateTask(body.id, 'Connect your Twitch account');
+    }
+
+    if (!user.tiktok && body.tiktok) {
+      body.task = await tasks.updateTask(body.id, 'Connect your Tiktok account');
+    }
+
     res.send({
       success: true,
       data: {
@@ -1842,7 +1854,8 @@ const editUser = async (req: express.Request, res: express.Response) => {
         instagram: body.instagram,
         twitter: body.twitter,
         facebook: body.facebook,
-        urlSlug: body.urlSlug,
+        userSlug: body.userSlug,
+        task: body.task
       },
     });
   } catch (err) {
@@ -2296,8 +2309,7 @@ const getStatistics = async (req: express.Request, res: express.Response) => {
         ranking.push(user);
       }
 
-      //TODO: fix this, doesn't work.
-      let historySnap = await db.collection(collections.user).orderBy('date').limit(12).get();
+      let historySnap = await db.collection(collections.points).orderBy('date').limit(12).get();
 
       let history: any = [];
       const docs2 = historySnap.docs;

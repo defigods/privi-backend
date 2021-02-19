@@ -27,6 +27,7 @@ router.post(
   socialController.changeSocialTokenPhoto
 );
 router.get('/getPhoto/:socialId', socialController.getPhotoById);
+router.get('/editSocialToken', authenticateJWT, socialController.editSocialToken);
 
 router.get('/getSocialTokens', authenticateJWT, socialController.getSocialTokens);
 router.get('/getTokenInfo/:tokenSymbol', socialController.getTokenInfo);

@@ -19,6 +19,7 @@ module.exports = {
   rates: "ratesOfChange",
 
   // histories
+  registeredEthAddress: 'RegisteredEthAddress',
   cryptoHistory: "CryptoHistory",
   nftHistory: "NftHistory",
   ftHistory: "FtHistory",

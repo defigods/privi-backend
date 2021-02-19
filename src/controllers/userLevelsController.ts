@@ -176,7 +176,7 @@ const getUserRank = (userId) => {
             if(userLevel) {
                 let points = userLevel.points;
                 const usersLevelRef = await db.collection(collections.levels)
-                    .where("points", ">", points).get();
+                    .where("points", ">=", points).get();
                 userLevelRank = usersLevelRef.docs.length + 1;
             }
 

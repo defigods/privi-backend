@@ -115,7 +115,7 @@ exports.changePostPhoto = async (
         });
       }
 
-      let dir = "uploads/blogPost/" + "photos-" + req.file.originalname;
+      let dir = "uploads/discussionCommunity/" + "photos-" + req.file.originalname;
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
@@ -533,6 +533,8 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
     const body = req.body;
     console.log(body);
 
+    body.selectedFormat = 0;
+
     if(body && body.userId && body.communityId) {
       const userSnap = await db.collection(collections.user).doc(body.userId).get();
       const userData : any = userSnap.data();
@@ -540,8 +542,17 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
       let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
       let checkIsAdminModerator = await communityWallController.checkUserRole(body.userId, userData.email, body.communityId, true, false, ['Moderator']);
 
-      if (isCreator && checkIsAdminModerator.checked) {
-        let ret = await createPost(body, "communityDiscussion", body.userId);
+      console.log(checkIsAdminModerator);
+
+      if (isCreator || checkIsAdminModerator.checked) {
+        let ret : any = await createPost(body, "communityDiscussion", body.userId);
+
+        let dir = "uploads/communityDiscussion/" + "photos-" + ret.id;
+
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir);
+        }
+
         res.send({ success: true, data: ret });
       } else {
         console.log(
@@ -560,7 +571,7 @@ exports.discussionsCreate = async (req: express.Request, res: express.Response) 
 
 
   } catch (err) {
-    console.log("Error in controllers/blogController -> blogCreate()", err);
+    console.log("Error in controllers/blogController -> discussionsCreate()", err);
     res.send({ success: false });
   }
 };
@@ -576,7 +587,7 @@ exports.discussionsDelete = async (req: express.Request, res: express.Response) 
       let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
       let checkIsAdminModerator = await communityWallController.checkUserRole(body.userId, userData.email, body.communityId, true, false, ['Moderator']);
 
-      if (isCreator && checkIsAdminModerator.checked) {
+      if (isCreator || checkIsAdminModerator.checked) {
         const communityRef = db.collection(collections.community).doc(body.communityId);
         const communityGet = await communityRef.get();
         const community: any = communityGet.data();
@@ -706,6 +717,12 @@ exports.getDiscussionsPost = async (req: express.Request, res: express.Response)
       for (const doc of communityDiscussionQuery.docs) {
         let data = doc.data();
         data.id = doc.id;
+
+        const userSnap = await db.collection(collections.user).doc(data.createdBy).get();
+        const userData : any = userSnap.data();
+
+        data.user = {};
+        data.user.name = userData.firstName;
         posts.push(data);
       }
       res.status(200).send({
@@ -1268,6 +1285,7 @@ const createPost = (exports.createPost = (body, collection, userId) => {
           });
         } else if (collection === "communityDiscussion") {
           data.communityId = body.communityId;
+          data.comments = true;
           await db.runTransaction(async (transaction) => {
             transaction.set(
               db.collection(collections.communityDiscussion).doc("" + uid),
