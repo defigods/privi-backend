@@ -22,6 +22,7 @@ let upload = multer({
 router.post('/createSocialToken', authenticateJWT, socialController.createSocialToken);
 router.post('/changeSocialTokenPhoto', authenticateJWT, upload.single('image'), socialController.changeSocialTokenPhoto);
 router.get('/getPhoto/:socialId', socialController.getPhotoById);
+router.get('/editSocialToken', authenticateJWT, socialController.editSocialToken);
 
 router.get('/getSocialTokens', authenticateJWT, socialController.getSocialTokens);
 

@@ -142,6 +142,28 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
     }
 };
 
+exports.editSocialToken = async (req: express.Request, res: express.Response) => {
+    try {
+      let body = req.body;
+  
+      const tokenRef = db.collection(collections.socialPools).doc(body.PoolAddress);
+  
+      await tokenRef.update({
+        IsPrivate: body.IsPrivate
+      });
+  
+      res.send({
+        success: true,
+        data: {
+            IsPrivate: body.IsPrivate
+        },
+      });
+    } catch (err) {
+      console.log('Error in controllers/socialController -> editSocialToken()', err);
+      res.send({ success: false });
+    }
+  };
+
 exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Response) => {
     try {
         if (req.file) {
