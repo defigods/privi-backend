@@ -6,7 +6,7 @@ import Web3 from 'web3';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
-import {db} from '../firebase/firebase';
+import { db } from '../firebase/firebase';
 import badge from '../blockchain/badge';
 import {
   addZerosToHistory,
@@ -20,8 +20,8 @@ import path from 'path';
 import fs from 'fs';
 import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
-import {sockets} from './serverController';
-import {LEVELS, ONE_DAY} from '../constants/userLevels';
+import { sockets } from './serverController';
+import { LEVELS, ONE_DAY } from '../constants/userLevels';
 
 const levels = require('./userLevelsController');
 const tasks = require('./tasksController');
@@ -1808,7 +1808,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
 
     const userRef = db.collection(collections.user).doc(body.id);
     const userGet = await userRef.get();
-    const user : any = await userGet.data();
+    const user: any = await userGet.data();
 
     //console.log(body);
 
@@ -1855,7 +1855,7 @@ const editUser = async (req: express.Request, res: express.Response) => {
         twitter: body.twitter,
         facebook: body.facebook,
         userSlug: body.userSlug,
-        task: body.task
+        task: body.task,
       },
     });
   } catch (err) {
@@ -3232,6 +3232,51 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
   }
 };
 
+/**
+ * Function get user friends (followed and following) from id.
+ * @param req {userId}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: ids list
+ */
+const getFriends = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+
+    let docSnap;
+
+    docSnap = await db.collection(collections.user).doc(userId).get();
+
+    if (docSnap && docSnap.exists && docSnap.data()) {
+      let friends: string[] = [];
+      const followings = docSnap.data().followings;
+      const followers = docSnap.data().followers;
+
+      if (followings && followers) {
+        const followingsAccepted = followings.filter((following) => following.accepted === true);
+        const followersAccepted = followers.filter((following) => following.accepted === true);
+
+        followingsAccepted.forEach((following) => {
+          if (followersAccepted.some((f) => f.user === following.user)) {
+            friends.push(following.user);
+          }
+        });
+
+        res.send({
+          success: true,
+          data: { friends: friends },
+        });
+      } else {
+        console.log(`couldn't load friends list`);
+        res.send({ succes: false, message: `couldn't load friends list` });
+      }
+    } else {
+      console.log(`couldn't load friends list`);
+      res.send({ succes: false, message: `couldn't load friends list` });
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> getSlugFromId(): ' + e;
+  }
+};
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -3291,4 +3336,5 @@ module.exports = {
   checkSlugExists,
   getIdFromSlug,
   getSlugFromId,
+  getFriends,
 };

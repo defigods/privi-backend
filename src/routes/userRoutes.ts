@@ -195,4 +195,6 @@ router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists
 router.get('/getIdFromSlug/:urlSlug/:type', userController.getIdFromSlug);
 router.get('/getSlugFromId/:urlId/:type', userController.getSlugFromId);
 
+router.get('/getFriends/:userId', userController.getFriends);
+
 module.exports = router;
