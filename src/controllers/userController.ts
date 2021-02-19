@@ -748,7 +748,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
     if (userData !== undefined) {
       let badges = await getBadgesFunction(userId);
       let myPods = await getMyPodsFunction(userId);
-      //let podsFollowed = await getPodsFollowedFunction(userId);
+      let podsFollowed = await getPodsFollowedFunction(userId);
       //let podsInvestments = await getPodsInvestmentsFunction(userId);
       //let followPodsInfo = await getFollowPodsInfoFunction(userId);
       let myCommunities = await getMyCommunitiesFunction(userId);
@@ -760,7 +760,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         data: {
           badges: badges,
           myPods: myPods,
-          //podsFollowed: podsFollowed,
+          podsFollowed: podsFollowed,
           //podsInvestments: podsInvestments,
           //followPodsInfo: followPodsInfo,
           myCommunities: myCommunities,
