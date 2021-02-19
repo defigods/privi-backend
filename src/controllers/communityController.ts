@@ -950,6 +950,36 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
   }
 };
 
+exports.editRulesAndLevels = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
+
+    await communityRef.update({
+      MinimumEndorsementScore: body.MinimumEndorsementScore,
+      MinimumTrustScore: body.MinimumTrustScore,
+      MinimumUserLevel: body.MinimumUserLevel,
+      AdditionalRules : body.AdditionalRules,
+      Levels: body.Levels
+    });
+
+    res.send({
+      success: true,
+      data: {
+        MinimumEndorsementScore: body.MinimumEndorsementScore,
+        MinimumTrustScore: body.MinimumTrustScore,
+        MinimumUserLevel: body.MinimumUserLevel,
+        AdditionalRules : body.AdditionalRules,
+        Levels: body.Levels
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> editRulesAndLevels()', err);
+    res.send({ success: false });
+  }
+};
+
 // edit community
 exports.editCommunity = async (req: express.Request, res: express.Response) => {
   try {
