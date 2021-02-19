@@ -1864,6 +1864,68 @@ const editUser = async (req: express.Request, res: express.Response) => {
   }
 };
 
+const updateNewLevel = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let userId = body.userId;
+
+    const userRef = db.collection(collections.user).doc(userId);
+    const userGet = await userRef.get();
+    const user: any = await userGet.data();
+
+    await userRef.update({
+      isLevelUp: body.isLevelUp,
+    });
+
+    res.send({
+      success: true,
+      data: {
+        isLevelUp: body.isLevelUp,
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/userController -> updateNewLevel()', err);
+    res.send({ success: false });
+  }
+};
+
+const updateNewBadge = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let badgeId = body.badgeId;
+    let userId = body.userId
+
+    const userRef = db.collection(collections.user).doc(userId);
+    const userGet = await userRef.get();
+    const user: any = await userGet.data();
+
+    let badges = user.badges;
+
+    if(badges && badges.length > 0){
+      badges.forEach(function(badge){
+        if(badge.badgeId = badgeId){
+          badge.isNew = false;
+        }
+      })
+    }
+
+    await userRef.update({
+      badges: badges,
+    });
+
+    res.send({
+      success: true,
+      data: {
+        badgeId: badgeId,
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/userController -> updateNewBadge()', err);
+    res.send({ success: false });
+  }
+};
+
+
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
@@ -3297,6 +3359,8 @@ module.exports = {
   getReceivables,
   getLiabilities,
   editUser,
+  updateNewLevel,
+  updateNewBadge,
   changeUserProfilePhoto,
   getSocialTokens,
   getBasicInfo,
