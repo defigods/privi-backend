@@ -6,6 +6,7 @@ import {
   getEmailUidMap,
   getTokenToTypeMap,
   getEmailAddressMap,
+  getUidAddressMap,
 } from '../functions/functions';
 import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
@@ -111,18 +112,16 @@ module.exports.updateTokensCollection = async (req: express.Request, res: expres
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-
-    const userId = body.userId;
-    const from = body.From;
-    const to = body.To; // could be email or uid
+    const userId = body.UserId;
+    const from = body.From; //  passed as address from frontend
+    const to = body.To; // passed as address from frontend
     const amount = body.Amount;
     const token = body.Token;
     const type = body.Type;
     const hash = body.Hash;
     const signature = body.Signature;
-    // check that fromUid is same as user in jwt
     if (!req.body.priviUser.id || req.body.priviUser.id != userId) {
-      console.log('error: jwt user is not the same as fromUid ban?');
+      console.log('error: jwt user is not the same as fromUid');
       res.send({ success: false, message: 'jwt user is not the same as fromUid' });
       return;
     }
@@ -178,6 +177,90 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     }
   } catch (err) {
     console.log('Error in controllers/walletController -> send()', err);
+    res.send({ success: false });
+  }
+};
+
+module.exports.giveTip = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const from = body.From; // passed as uid from FE
+    const to = body.To; // passed as uid from FE
+    const amount = body.Amount;
+    const token = body.Token;
+    const type = body.Type;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    // check that fromUid is same as user in jwt
+    if (!req.body.priviUser.id || req.body.priviUser.id != from) {
+      console.log('error: jwt user is not the same as fromUid ban?');
+      res.send({ success: false, message: 'jwt user is not the same as fromUid' });
+      return;
+    }
+    // get address of from and to users from DB
+    const fromUserSnap = await db.collection(collections.user).doc(from).get();
+    const toUserSnap = await db.collection(collections.user).doc(to).get();
+    const fromUserData: any = fromUserSnap.data();
+    const toUserData: any = toUserSnap.data();
+
+    const fromAddress = fromUserData && fromUserData.address ? fromUserData.address : undefined;
+    const toAddress = toUserData && toUserData.address ? toUserData.address : undefined;
+    if (!fromAddress || !toAddress) {
+      console.log('error: from user or to user couldnt be found at BD');
+      res.send({ success: false, message: 'from user or to user couldnt be found at BD' });
+      return;
+    }
+    const blockchainRes = await coinBalance.transfer(fromAddress, toAddress, amount, token, type, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+
+      const fromName = fromUserData && fromUserData.firstName ? fromUserData.firstName : 'Unknown';
+      await notificationsController.addNotification({
+        userId: to,
+        notification: {
+          type: 93,
+          typeItemId: 'user',
+          itemId: from,
+          follower: fromName,
+          pod: '',
+          comment: '',
+          token: token,
+          amount: amount,
+          onlyInformation: true,
+          otherItemId: '',
+        },
+      });
+
+      // update awards field (awardsReceived)
+      const awards = toUserData.awards ?? [];
+      awards.push({
+        From: from,
+        Amount: amount,
+        Token: token,
+        Date: Date.now()
+      });
+      toUserSnap.ref.update({
+        awards: awards
+      });
+      // update awardsGiven field
+      const awardsGiven = fromUserData.awardsGiven ?? [];
+      awards.push({
+        To: to,
+        Amount: amount,
+        Token: token,
+        Date: Date.now()
+      });
+      fromUserSnap.ref.update({
+        awardsGiven: awardsGiven
+      });
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/walletController -> giveTip(), blockchain returned false', blockchainRes.message);
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/walletController -> giveTip()', err);
     res.send({ success: false });
   }
 };
@@ -280,7 +363,7 @@ module.exports.mint = async (req: express.Request, res: express.Response) => {
   }
 };
 
-async function getImageURLFromCoinGeco(symbol: string) : Promise<any> {
+async function getImageURLFromCoinGeco(symbol: string): Promise<any> {
   // get all coingeco tokens list
   const CoinGeckoClient = new CoinGecko();
   const coingecoCoinListRes = await CoinGeckoClient.coins.list();
@@ -304,10 +387,10 @@ async function getImageURLFromCoinGeco(symbol: string) : Promise<any> {
   return undefined;
 }
 
-async function getTokenListFromAmberData(address: string) : Promise<any> {
+async function getTokenListFromAmberData(address: string): Promise<any> {
   const config: AxiosRequestConfig = {
     method: 'get',
-    headers: {'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY},
+    headers: { 'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY },
     url: 'https://web3api.io/api/v2/addresses/' + address + '/token-balances/latest?page=0&size=2'
   }
 
@@ -318,15 +401,15 @@ async function getTokenListFromAmberData(address: string) : Promise<any> {
     const preparedTokenListPromise = Promise.all(records.map(async (element) => {
       const imageUrlObj = await getImageURLFromCoinGeco(element.symbol);
       return {
-          tokenContractAddress: element.address,
-          tokenName: element.name,
-          tokenSymbol: element.symbol,
-          tokenDecimal: element.decimals,
-          tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
-          balance: element.amount,
-          images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
-        }
-      })
+        tokenContractAddress: element.address,
+        tokenName: element.name,
+        tokenSymbol: element.symbol,
+        tokenDecimal: element.decimals,
+        tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
+        balance: element.amount,
+        images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
+      }
+    })
     );
     const preparedTokenList = await preparedTokenListPromise;
     return preparedTokenList;
@@ -340,13 +423,13 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
     const address = body.address;
     const userId = body.userId;
     console.log('registerUserEthAccount address/userId', address, userId)
-      
+
     // get user address registered collection
-    const walletRegisteredEthAddrSnap = await  db.collection(collections.wallet)
-    .doc(userId)
-    .collection(collections.registeredEthAddress)
-    .doc(address)
-    .get();
+    const walletRegisteredEthAddrSnap = await db.collection(collections.wallet)
+      .doc(userId)
+      .collection(collections.registeredEthAddress)
+      .doc(address)
+      .get();
 
     // check if address is already registered
     if (walletRegisteredEthAddrSnap.exists) {
@@ -355,14 +438,14 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
       console.log('existing doc', doc, (Date.now() - doc.lastUpdate), MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
       if (doc.lastUpdate && ((Date.now() - doc.lastUpdate) > MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)) {
         const preparedTokenList = await getTokenListFromAmberData(address);
-        await  db.collection(collections.wallet)
-        .doc(userId)
-        .collection(collections.registeredEthAddress)
-        .doc(address)
-        .set({
-          tokenList: preparedTokenList,
-          lastUpdate: Date.now()
-        });
+        await db.collection(collections.wallet)
+          .doc(userId)
+          .collection(collections.registeredEthAddress)
+          .doc(address)
+          .set({
+            tokenList: preparedTokenList,
+            lastUpdate: Date.now()
+          });
         res.send({ success: true });
       } else {
         console.log('No eth owned token update needed only', (Date.now() - doc.lastUpdate), 'second passed', 'min is', MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
@@ -372,14 +455,14 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
       console.log('registerUserEthAccount: address does not exist', address, 'user', userId)
       // setting address to collection
       const preparedTokenList = await getTokenListFromAmberData(address);
-      await  db.collection(collections.wallet)
-      .doc(userId)
-      .collection(collections.registeredEthAddress)
-      .doc(address)
-      .set({
-        tokenList: preparedTokenList,
-        lastUpdate: Date.now()
-      });
+      await db.collection(collections.wallet)
+        .doc(userId)
+        .collection(collections.registeredEthAddress)
+        .doc(address)
+        .set({
+          tokenList: preparedTokenList,
+          lastUpdate: Date.now()
+        });
       res.send({ success: true });
     }
   } catch (err) {
@@ -397,17 +480,17 @@ module.exports.getUserOwnedTokens = async (req: express.Request, res: express.Re
     console.log('getUserOwnedTokens query', req.query, 'userId', userId)
 
     const walletRegisteredEthAddrSnap = userId !== '' ? await db.collection(collections.wallet)
-    .doc(userId)
-    .collection(collections.registeredEthAddress).get() : null;
+      .doc(userId)
+      .collection(collections.registeredEthAddress).get() : null;
 
     if (walletRegisteredEthAddrSnap && !walletRegisteredEthAddrSnap.empty) {
       console.log('---------------------- getUserOwnedTokens', walletRegisteredEthAddrSnap.docs.length)
       const docs = walletRegisteredEthAddrSnap.docs;
-      let responsePromise: Promise<{ address: string; tokens: any; }[]> = Promise.all( docs.map( async (doc) => {
+      let responsePromise: Promise<{ address: string; tokens: any; }[]> = Promise.all(docs.map(async (doc) => {
         const docObject: any = await (await doc.ref.get()).data();
         // console.log('---------------------- data', {address: doc.id, tokens: docObject.tokenList});
-        return {address: doc.id, tokens: docObject.tokenList}
-        })
+        return { address: doc.id, tokens: docObject.tokenList }
+      })
       );
       const response = await responsePromise;
       console.log('---------------------- data array', response)

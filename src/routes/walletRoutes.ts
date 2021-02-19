@@ -19,6 +19,7 @@ let upload = multer({
 
 router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
 router.post('/transfer', authenticateJWT, walletController.transfer);
+router.post('/giveTip', authenticateJWT, walletController.giveTip);
 
 // called from Postman
 router.post('/burn', walletController.burn);
