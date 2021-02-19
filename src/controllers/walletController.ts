@@ -304,82 +304,57 @@ async function getImageURLFromCoinGeco(symbol: string) : Promise<any> {
   return undefined;
 }
 
+async function getTokenListFromAmberData(address: string) : Promise<any> {
+  const config: AxiosRequestConfig = {
+    method: 'get',
+    headers: {'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY},
+    url: 'https://web3api.io/api/v2/addresses/' + address + '/token-balances/latest?page=0&size=2'
+  }
+
+  let amberdataRes = await axios(config);
+  if (amberdataRes.data.payload && parseFloat(amberdataRes.data.payload.totalRecords) > 0) {
+    // console.log('registerUserEthAccount records', amberdataRes.data.payload.records)
+    const records = amberdataRes.data.payload.records;
+    const preparedTokenListPromise = Promise.all(records.map(async (element) => {
+      const imageUrlObj = await getImageURLFromCoinGeco(element.symbol);
+      return {
+          tokenContractAddress: element.address,
+          tokenName: element.name,
+          tokenSymbol: element.symbol,
+          tokenDecimal: element.decimals,
+          tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
+          balance: element.amount,
+          images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
+        }
+      })
+    );
+    const preparedTokenList = await preparedTokenListPromise;
+    return preparedTokenList;
+  }
+  return null;
+}
+
 module.exports.registerUserEthAccount = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const address = body.address;
     const userId = body.userId;
     console.log('registerUserEthAccount address/userId', address, userId)
-    // get owned token on mainnet
-    const config: AxiosRequestConfig = {
-        method: 'get',
-        headers: {'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY},
-        url: 'https://web3api.io/api/v2/addresses/' + address + '/token-balances/latest?page=0&size=2'
-    }
-    let amberdataRes = await axios(config);
-    // console.log('registerUserEthAccount amberdata', amberdataRes.status, amberdataRes.data)
-
-    // prepare the tokens info
-    if (amberdataRes.data.payload && parseFloat(amberdataRes.data.payload.totalRecords) > 0) {
-      // console.log('registerUserEthAccount records', amberdataRes.data.payload.records)
-      const records = amberdataRes.data.payload.records;
       
-      // get user address registered collection
-      const walletRegisteredEthAddrSnap = await  db.collection(collections.wallet)
-      .doc(userId)
-      .collection(collections.registeredEthAddress)
-      .doc(address)
-      .get();
-      // check if address is already registered
-      if (walletRegisteredEthAddrSnap.exists) {
-        const preparedTokenListPromise = Promise.all(records.map(async (element) => {
-          const imageUrlObj = await getImageURLFromCoinGeco(element.symbol);
-          return {
-              tokenContractAddress: element.address,
-              tokenName: element.name,
-              tokenSymbol: element.symbol,
-              tokenDecimal: element.decimals,
-              tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
-              balance: element.amount,
-              images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
-            }
-          })
-        );
-        console.log('registerUserEthAccount: already exist, address', address, 'user', userId, 'ownedCoins', await preparedTokenListPromise)
-        const doc: any = walletRegisteredEthAddrSnap.data();
-        console.log('existing doc', doc, (Date.now() - doc.lastUpdate), MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
-        if (doc.lastUpdate && ((Date.now() - doc.lastUpdate) > MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)) {
-          const preparedTokenList = await preparedTokenListPromise;
-          await  db.collection(collections.wallet)
-          .doc(userId)
-          .collection(collections.registeredEthAddress)
-          .doc(address)
-          .set({
-            tokenList: preparedTokenList,
-            lastUpdate: Date.now()
-          });
-          res.send({ success: true });
-        } else {
-          console.log('No eth owned token update needed only', (Date.now() - doc.lastUpdate), 'second passed')
-          res.send({ success: true });
-        }
-      } else {
-        const preparedTokenListPromise = Promise.all(records.map(async (element) => {
-          const imageUrlObj = await getImageURLFromCoinGeco(element.symbol);
-          return {
-              tokenContractAddress: element.address,
-              tokenName: element.name,
-              tokenSymbol: element.symbol,
-              tokenDecimal: element.decimals,
-              tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
-              balance: element.amount,
-              images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
-            }
-          })
-        );
-        console.log('registerUserEthAccount: address does not exist', address, 'user', userId, 'ownedCoins', await preparedTokenListPromise)
-        // setting address to collection
-        const preparedTokenList = await preparedTokenListPromise;
+    // get user address registered collection
+    const walletRegisteredEthAddrSnap = await  db.collection(collections.wallet)
+    .doc(userId)
+    .collection(collections.registeredEthAddress)
+    .doc(address)
+    .get();
+
+    // check if address is already registered
+    if (walletRegisteredEthAddrSnap.exists) {
+      console.log('registerUserEthAccount: already exist, address', address, 'user', userId)
+      const doc: any = walletRegisteredEthAddrSnap.data();
+      console.log('existing doc', doc, (Date.now() - doc.lastUpdate), MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
+      if (doc.lastUpdate && ((Date.now() - doc.lastUpdate) > MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)) {
+        const preparedTokenList = await getTokenListFromAmberData(address);
         await  db.collection(collections.wallet)
         .doc(userId)
         .collection(collections.registeredEthAddress)
@@ -389,9 +364,23 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
           lastUpdate: Date.now()
         });
         res.send({ success: true });
+      } else {
+        console.log('No eth owned token update needed only', (Date.now() - doc.lastUpdate), 'second passed', 'min is', MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
+        res.send({ success: true });
       }
     } else {
-      res.send({ success: false });
+      console.log('registerUserEthAccount: address does not exist', address, 'user', userId)
+      // setting address to collection
+      const preparedTokenList = await getTokenListFromAmberData(address);
+      await  db.collection(collections.wallet)
+      .doc(userId)
+      .collection(collections.registeredEthAddress)
+      .doc(address)
+      .set({
+        tokenList: preparedTokenList,
+        lastUpdate: Date.now()
+      });
+      res.send({ success: true });
     }
   } catch (err) {
     console.log('Error in controllers/walletController -> registerUserEthAccount()', err);
