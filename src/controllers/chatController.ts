@@ -1559,35 +1559,67 @@ const discordGetMediaMessage = (discordChatId : string, discordRoomId : string, 
 exports.checkChatFoldersExists = () => {
     return new Promise(async (resolve, reject) => {
         try {
+            // COMMUNITIES
             const communitySnap = await db.collection(collections.community).get();
             for(let community of communitySnap.docs) {
                 let communityData = community.data();
 
-                const discordChatSnap = await db.collection(collections.discordChat).doc(communityData.JarrId).get();
-
-                let dir = "uploads/chat/" + discordChatSnap.id;
-
-                if (!fs.existsSync(dir)) {
-                    fs.mkdirSync(dir);
-                    console.log(true, dir);
-                }
-
-                const discordRoomSnap = await db.collection(collections.discordChat)
-                  .doc(discordChatSnap.id).collection(collections.discordRoom).get();
-                if (!discordRoomSnap.empty) {
-                    for (const doc of discordRoomSnap.docs) {
-                        let dir = "uploads/chat/" + discordChatSnap.id + '/' + doc.id;
-
-                        if (!fs.existsSync(dir)) {
-                            fs.mkdirSync(dir);
-                            console.log(true, dir);
-                        }
-                    }
+                if(communityData && communityData.JarrId) {
+                    chatFoldersCheck(communityData.JarrId);
                 }
             }
+
+            // FTPODS
+            const podsSnap = await db.collection(collections.podsFT).get();
+            for(let pod of podsSnap.docs) {
+                let podData = pod.data();
+
+                if(podData && podData.DiscordId) {
+                    chatFoldersCheck(podData.DiscordId);
+                }
+            }
+
+            // PRIVICREDITS
+            const priviCreditsSnap = await db.collection(collections.priviCredits).get();
+            for(let priviCredit of priviCreditsSnap.docs) {
+                let priviCreditData = priviCredit.data();
+
+                if(priviCreditData && priviCreditData.JarrId) {
+                    chatFoldersCheck(priviCreditData.JarrId);
+                }
+            }
+
         } catch(e) {
             console.log(e);
             reject(e);
         }
     });
+}
+
+const chatFoldersCheck = async (id) => {
+    try {
+        const discordChatSnap = await db.collection(collections.discordChat).doc(id).get();
+
+        let dir = "uploads/chat/" + discordChatSnap.id;
+
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir);
+            console.log(true, dir);
+        }
+
+        const discordRoomSnap = await db.collection(collections.discordChat)
+          .doc(discordChatSnap.id).collection(collections.discordRoom).get();
+        if (!discordRoomSnap.empty) {
+            for (const doc of discordRoomSnap.docs) {
+                let dir = "uploads/chat/" + discordChatSnap.id + '/' + doc.id;
+
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir);
+                    console.log(true, dir);
+                }
+            }
+        }
+    } catch (e) {
+        return e;
+    }
 }
