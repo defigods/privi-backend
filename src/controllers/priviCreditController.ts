@@ -893,6 +893,13 @@ exports.getPriviCredit = async (req: express.Request, res: express.Response) => 
         }
       }
 
+      // add url is not there //
+      if (!creditData.hasOwnProperty('urlSlug') || creditData.urlSlug == "") {
+        await db.collection(collections.priviCredits).doc(creditId).update({
+          "urlSlug": creditData.CreditName.split(' ').join('')
+        })
+      }
+
       const data = {
         ...creditData,
         id: creditSnap.id,

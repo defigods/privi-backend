@@ -1336,6 +1336,13 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
         pod.DiscordAdminId = discordChatData.admin.id;
       }
 
+      // add url if empty //
+      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "")  {
+        await db.collection(collections.podsFT).doc(podId).update({
+              "urlSlug": pod.Name.split(' ').join('')
+            })
+        }
+
       res.send({ success: true, data: pod });
     } else {
       console.log('Error in controllers/podController -> getFTPod()', "There's no pod id...");
@@ -1598,6 +1605,7 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
     let podId = req.params.podId;
     if (podId) {
       const podSnap = await db.collection(collections.podsNFT).doc(podId).get();
+
       // add selling orders
       const sellingOffers: any[] = [];
       const sellingSnap = await podSnap.ref.collection(collections.sellingOffers).get();
@@ -1616,6 +1624,13 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
           podWallPostData.id = podWallPostSnap.id;
           pod.PostsArray.push(podWallPostData);
         }
+      }
+
+      // add url if empty //
+      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "")  {
+      await db.collection(collections.podsNFT).doc(podId).update({
+            "urlSlug": pod.Name.split(' ').join('')
+          })
       }
 
       res.send({

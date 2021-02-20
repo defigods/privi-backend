@@ -660,6 +660,13 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
+
+    // If not slagUrl, set name of user //
+    if (userData !== undefined && userData.urlSlug == "") {
+      await db.collection(collections.user).doc(userId).update(
+        {"urlSlug": userData.firstName + userData.lastName})
+    }
+
     if (userData !== undefined) {
       /*const allWallPost: any[] = [];
             const wallPostSnap = await db.collection(collections.wallPost)
@@ -694,7 +701,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.urlSlug = userData.urlSlug || userId;
+      basicInfo.urlSlug = userData.urlSlug || userData.firstName+userData.lastName;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -754,6 +761,8 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let myCommunities = await getMyCommunitiesFunction(userId);
       let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools = await getMyCreditPools(userId);
+
+     
 
       res.send({
         success: true,
