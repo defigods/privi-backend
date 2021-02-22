@@ -584,7 +584,7 @@ exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
       }
 
       let ourDate = new Date();
-      let pastDate = ourDate.getDate() - 7;
+      let pastDate = ourDate.getDate() - 100;
       ourDate.setDate(pastDate);
       const lastWeekTimestamp = ourDate.getTime();
 
