@@ -1496,6 +1496,7 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
     const id: any = communitySnap.id;
     const extraData = await getExtraData(data, rateOfChange);
 
+
     const ads: any[] = [];
     if (data.GeneralAd && data.GeneralAd !== '') {
       const adRef = db.collection(collections.ad).doc(data.GeneralAd);
@@ -1582,6 +1583,13 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         }
       });
     });
+
+
+    if (!data.hasOwnProperty('urlSlug')  || data.urlSlug == "") {
+      await db.collection(collections.community).doc(communityAddress).update({
+        "urlSlug": data.Name.split(' ').join('')
+      })
+    }
 
     res.send({
       success: true,
