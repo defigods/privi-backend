@@ -662,9 +662,11 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     const userData = userSnap.data();
 
     // If not slagUrl, set name of user //
-    if (userData !== undefined && userData.urlSlug == "") {
-      await db.collection(collections.user).doc(userId).update(
-        {"urlSlug": userData.firstName + userData.lastName})
+    if (userData !== undefined && userData.urlSlug == '') {
+      await db
+        .collection(collections.user)
+        .doc(userId)
+        .update({ urlSlug: userData.firstName + userData.lastName });
     }
 
     if (userData !== undefined) {
@@ -701,7 +703,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.urlSlug = userData.urlSlug || userData.firstName+userData.lastName;
+      basicInfo.urlSlug = userData.urlSlug || userData.firstName + userData.lastName;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -754,22 +756,22 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
     const userData = userSnap.data();
     if (userData !== undefined) {
       let badges = await getBadgesFunction(userId);
-      let myPods = await getMyPodsFunction(userId);
-      let podsFollowed = await getPodsFollowedFunction(userId);
+      let myPodsAndInvested = await getMyPodsAndInvestedFunction(userId);
+      //let myPods = await getMyPodsFunction(userId);
+      //let podsFollowed = await getPodsFollowedFunction(userId);
       //let podsInvestments = await getPodsInvestmentsFunction(userId);
       //let followPodsInfo = await getFollowPodsInfoFunction(userId);
       let myCommunities = await getMyCommunitiesFunction(userId);
       let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools = await getMyCreditPools(userId);
 
-     
-
       res.send({
         success: true,
         data: {
           badges: badges,
-          myPods: myPods,
-          podsFollowed: podsFollowed,
+          myPods: myPodsAndInvested,
+          //myPods: myPods,
+          //podsFollowed: podsFollowed,
           //podsInvestments: podsInvestments,
           //followPodsInfo: followPodsInfo,
           myCommunities: myCommunities,
@@ -1602,6 +1604,55 @@ const getPodsInvestmentsFunction = (userId) => {
   });
 };
 
+const getMyPodsAndInvestedFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const userRef = await db.collection(collections.user).doc(userId).get();
+      const user: any = userRef.data();
+      let myNFTPods: any[] = [];
+      let myFTPods: any[] = [];
+
+      if (user.myNFTPods && user.myNFTPods.length > 0) {
+        myNFTPods = await getPodsArray(user.myNFTPods, collections.podsNFT, 'NFT');
+      }
+
+      if (user.myFTPods && user.myFTPods.length > 0) {
+        myFTPods = await getPodsArray(user.myFTPods, collections.podsFT, 'FT');
+      }
+
+      let investedNFTPods: any[] = [];
+      let investedFTPods: any[] = [];
+
+      if (user.investedNFTPods && user.investedNFTPods.length > 0) {
+        investedNFTPods = await getPodsArray(user.investedNFTPods, collections.podsNFT, 'NFT');
+
+        investedNFTPods.forEach((nftPod) => {
+          if (myNFTPods.some((pod) => pod.PodAddress === nftPod.PodAddress)) {
+            myNFTPods.push(nftPod);
+          }
+        });
+      }
+
+      if (user.investedFTPods && user.investedFTPods.length > 0) {
+        investedFTPods = await getPodsArray(user.investedFTPods, collections.podsFT, 'FT');
+
+        investedFTPods.forEach((ftPod) => {
+          if (myFTPods.some((pod) => pod.PodAddress === ftPod.PodAddress)) {
+            myFTPods.push(ftPod);
+          }
+        });
+      }
+
+      resolve({
+        NFT: myNFTPods || [],
+        FT: myFTPods || [],
+      });
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
 const getPodsFollowed = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   try {
@@ -1649,7 +1700,13 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
       if (podRef.exists) {
         let podData: any = podRef.data();
         podData.type = type;
-        podInfo.push(podData);
+
+        if (podData.TokenSymbol) {
+          const token = await db.collection(collections.tokens).doc(podData.TokenSymbol).get();
+          podData.tokenData = token.data();
+        }
+
+        await podInfo.push(podData);
       }
 
       if (arrayPods.length === i + 1) {
@@ -1685,10 +1742,13 @@ const getCommunitiesArray = (arrayCommunities: any[], collection: any): Promise<
       if (communityRef.exists) {
         let communityData: any = communityRef.data();
 
-        console.log(item, communityData.CommunityAddress);
+        if (communityData.TokenSymbol) {
+          const token = await db.collection(collections.tokens).doc(communityData.TokenSymbol).get();
+          communityData.tokenData = token.data();
+        }
 
         if (!communityInfo.some((community) => community.CommunityAddress === item)) {
-          communityInfo.push(communityData);
+          await communityInfo.push(communityData);
         }
       }
 
@@ -1709,7 +1769,7 @@ const getMySocialTokensFunction = (userId, address) => {
       if (blockchainRes && blockchainRes.success) {
         const balances = blockchainRes.output;
         const socialSnap = await db.collection(collections.socialPools).get();
-        socialSnap.forEach((doc) => {
+        socialSnap.forEach(async (doc) => {
           const data: any = doc.data();
           const balance = balances[data.TokenSymbol] ? balances[data.TokenSymbol].Amount : 0;
           if (balance || data.Creator == userId) {
@@ -1720,10 +1780,19 @@ const getMySocialTokensFunction = (userId, address) => {
               data.TargetPrice,
               data.TargetSupply
             );
-            retData.push({
+
+            let tokenData: any = '';
+
+            if (data.TokenSymbol) {
+              const token = await db.collection(collections.tokens).doc(data.TokenSymbol).get();
+              tokenData = token.data();
+            }
+
+            await retData.push({
               ...data,
               MarketPrice: marketPrice,
               UserBalance: balance,
+              tokenData,
             });
           }
         });
@@ -1775,7 +1844,13 @@ const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<an
 
       if (creditPoolRef.exists) {
         let creditPoolData: any = creditPoolRef.data();
-        creditPools.push(creditPoolData);
+
+        if (creditPoolData.TokenSymbol) {
+          const token = await db.collection(collections.tokens).doc(creditPoolData.TokenSymbol).get();
+          creditPoolData.tokenData = token.data();
+        }
+
+        await creditPools.push(creditPoolData);
       }
 
       counter++;
@@ -2029,14 +2104,21 @@ const getBadgesFunction = (userId: string) => {
       if (blockchainRes && blockchainRes.success) {
         const badgesBalance = blockchainRes.output;
         const badgeSnap = await db.collection(collections.badges).get();
-        badgeSnap.forEach((doc) => {
+        badgeSnap.forEach(async (doc) => {
           let amount = 0;
           let data = doc.data();
-          if (badgesBalance[data.Symbol]) amount = badgesBalance[data.Symbol].Amount;
+          let tokenData: any = '';
+          if (badgesBalance[data.Symbol]) {
+            amount = badgesBalance[data.Symbol].Amount;
+            const token = await db.collection(collections.tokens).doc(data.Symbol).get();
+            tokenData = token.data();
+          }
+
           if (amount > 0) {
             retData.push({
               ...doc.data(),
               Amount: amount,
+              tokenData: tokenData,
             });
           }
         });
