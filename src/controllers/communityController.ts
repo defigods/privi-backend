@@ -949,8 +949,8 @@ exports.getSellTokenAmount = async (req: express.Request, res: express.Response)
     res.send({ success: false });
   }
 };
-
-exports.editRulesAndLevels = async (req: express.Request, res: express.Response) => {
+//edit rules
+exports.editRules = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
@@ -960,22 +960,33 @@ exports.editRulesAndLevels = async (req: express.Request, res: express.Response)
       MinimumEndorsementScore: body.MinimumEndorsementScore,
       MinimumTrustScore: body.MinimumTrustScore,
       MinimumUserLevel: body.MinimumUserLevel,
-      AdditionalRules : body.AdditionalRules,
+      AdditionalRules : body.AdditionalRules
+    });
+
+    res.send({
+      success: true
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> editRules()', err);
+    res.send({ success: false });
+  }
+};
+//edit levels
+exports.editLevels = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
+
+    await communityRef.update({
       Levels: body.Levels
     });
 
     res.send({
-      success: true,
-      data: {
-        MinimumEndorsementScore: body.MinimumEndorsementScore,
-        MinimumTrustScore: body.MinimumTrustScore,
-        MinimumUserLevel: body.MinimumUserLevel,
-        AdditionalRules : body.AdditionalRules,
-        Levels: body.Levels
-      },
+      success: true
     });
   } catch (err) {
-    console.log('Error in controllers/communityController -> editRulesAndLevels()', err);
+    console.log('Error in controllers/communityController -> editLevels()', err);
     res.send({ success: false });
   }
 };
