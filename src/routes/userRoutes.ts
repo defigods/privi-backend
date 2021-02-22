@@ -126,6 +126,8 @@ router.post('/connections/unFollowUser', authenticateJWT, userController.unFollo
 router.post('/editUser', authenticateJWT, userController.editUser);
 router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), userController.changeUserProfilePhoto);
 router.get('/getPhoto/:userId', userController.getPhotoById);
+router.post('/updateNewLevel', authenticateJWT, userController.updateNewLevel);
+router.post('/updateNewBadge', authenticateJWT, userController.updateNewBadge);
 
 router.post('/addToWaitlist', authenticateJWT, userControllerJS.addToWaitlist);
 router.post('/register', authenticateJWT, userControllerJS.register);

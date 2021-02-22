@@ -178,7 +178,8 @@ router.post(
   communityController.changeCommunityPhoto
 );
 router.post('/editCommunity', authenticateJWT, communityController.editCommunity);
-router.post('/editRulesAndLevels', authenticateJWT, communityController.editRulesAndLevels);
+router.post('/editRules', authenticateJWT, communityController.editRules);
+router.post('/editLevels', authenticateJWT, communityController.editLevels);
 
 router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);
