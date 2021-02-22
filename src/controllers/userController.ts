@@ -495,10 +495,10 @@ const signUp = async (req: express.Request, res: express.Response) => {
       await attachAddress(userPublicId);
 
       // ------------------------- add zero to balance history to make graph prettier ----------------------------
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.cryptoHistory), 'balance');
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.ftHistory), 'balance');
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.nftHistory), 'balance');
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.socialHistory), 'balance');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyCrypto), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyFT), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyNFT), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historySocial), 'price');
 
       // ------------------------- Provisional for TestNet ---------------------------------
       // give user some balance in each tokens (50/tokenRate).
@@ -664,7 +664,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
     // If not slagUrl, set name of user //
     if (userData !== undefined && userData.urlSlug == "") {
       await db.collection(collections.user).doc(userId).update(
-        {"urlSlug": userData.firstName + userData.lastName})
+        { "urlSlug": userData.firstName + userData.lastName })
     }
 
     if (userData !== undefined) {
@@ -701,7 +701,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.urlSlug = userData.urlSlug || userData.firstName+userData.lastName;
+      basicInfo.urlSlug = userData.urlSlug || userData.firstName + userData.lastName;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -762,7 +762,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools = await getMyCreditPools(userId);
 
-     
+
 
       res.send({
         success: true,

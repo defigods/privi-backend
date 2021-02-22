@@ -1,6 +1,7 @@
 import express from 'express';
 const router = express.Router();
 import multer from 'multer';
+import { wallet } from '../firebase/collections';
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const walletController = require('../controllers/walletController');
 
@@ -17,10 +18,6 @@ let upload = multer({
   storage: storage,
 });
 
-router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
-router.post('/transfer', authenticateJWT, walletController.transfer);
-router.post('/giveTip', authenticateJWT, walletController.giveTip);
-
 // called from Postman
 router.post('/burn', walletController.burn);
 router.post('/mint', walletController.mint);
@@ -28,10 +25,18 @@ router.post('/registerTokens', walletController.registerTokens);
 router.post('/updateTokensCollection', walletController.updateTokensCollection);
 router.post('/registerUserEthAccount', walletController.registerUserEthAccount);
 
+// posts
+router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
+router.post('/transfer', authenticateJWT, walletController.transfer);
+router.post('/giveTip', authenticateJWT, walletController.giveTip);
+
+// gets
+router.get('/getUserTokenTypeBalanceHistory', walletController.getUserTokenTypeBalanceHistory);
+
 router.get('/getUserOwnedTokens', authenticateJWT, walletController.getUserOwnedTokens);
+
 router.get('/getCryptosRateAsList', authenticateJWT, walletController.getCryptosRateAsList);
 router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosRateAsMap);
-
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
 router.get('/getEmailToAddressMap', authenticateJWT, walletController.getEmailToAddressMap);
 
