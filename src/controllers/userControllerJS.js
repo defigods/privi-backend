@@ -83,20 +83,6 @@ exports.register = async (req, res) => {
                     country: country,
                     location: location
                 });
-                // wallet
-                const balances = output.UpdateWallets[uid].Balances;
-                for (const [key, value] of Object.entries(balances)) {  // for each token obj
-                    transaction.set(db.collection(collections.wallet).doc(key).collection(collections.user).doc(uid), value);
-                }
-
-                // transaction
-                const history = output.UpdateWallets[uid].Transaction;
-                if (history != null) {
-                    history.forEach(obj => {
-                        transaction.set(db.collection(collections.history).doc(collections.history).collection(uid).doc(obj.Id), obj);
-                        transaction.set(db.collection(collections.allTransactions), obj); // to be deleted later
-                    });
-                }
             });
             res.send({ success: true });
         }

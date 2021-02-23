@@ -18,15 +18,15 @@ module.exports = {
 
   rates: 'ratesOfChange',
 
-  // histories
   registeredEthAddress: 'RegisteredEthAddress',
-  cryptoHistory: 'CryptoHistory',
-  nftHistory: 'NftHistory',
-  ftHistory: 'FtHistory',
-  socialHistory: 'SocialHistory',
-  communityHistory: 'CommunityHistory',
+  //new histories
+  historyCrypto: 'HistoryCRYPTO',
+  historySocial: 'HistorySOCIAL',
+  historyFT: 'HistoryFTPOD',
+  historyNFT: 'HistoryNFTPOD',
 
   priviScan: 'PriviScan',
+  transactions: 'Transactions',
   history: 'History',
   allTransactions: 'AllTransaction',
   ethTransactions: 'EthTransactions',
