@@ -25,9 +25,13 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
     const body = req.body;
     console.log(body);
 
-    let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
+    const userSnap = await db.collection(collections.user).doc(body.author).get();
+    const userData: any = userSnap.data();
 
-    if (body && body.communityId && isCreator) {
+    let isCreator = await checkIfUserIsCreator(body.author, body.communityId);
+    let isUserRole = await communityWallController.checkUserRole(body.author, userData.email, body.communityId, true, false, []);
+
+    if (body && body.communityId && (isCreator || isUserRole.checked )) {
       let ret = await createPost(body, "blogPost", body.priviUser.id);
       res.send({ success: true, data: ret });
     } else if (!isCreator) {

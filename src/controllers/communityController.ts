@@ -16,7 +16,7 @@ import community from '../blockchain/community';
 import coinBalance from '../blockchain/coinBalance';
 import notificationTypes from '../constants/notificationType';
 import { db } from '../firebase/firebase';
-import collections from '../firebase/collections';
+import collections, { communityToken } from '../firebase/collections';
 import fields from '../firebase/fields';
 import cron from 'node-cron';
 import { clearLine } from 'readline';
@@ -105,7 +105,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
     const signature = body.Signature;
 
     const blockchainRes = await community.createCommunity(creator, hash, signature, apiKey);
-    console.log(JSON.stringify(blockchainRes, null, 4))
+    console.log(JSON.stringify(blockchainRes, null, 4));
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const updateCommunities = blockchainRes.output.UpdateCommunities;
@@ -195,8 +195,24 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);*/
 
       const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
-      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
+      await chatController.createDiscordRoom(
+        discordChatJarrCreation.id,
+        'Discussions',
+        creator,
+        user.firstName,
+        'general',
+        false,
+        []
+      );
+      await chatController.createDiscordRoom(
+        discordChatJarrCreation.id,
+        'Information',
+        creator,
+        user.firstName,
+        'announcements',
+        false,
+        []
+      );
 
       db.collection(collections.community)
         .doc(communityAddress)
@@ -264,9 +280,11 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      if ((admins && admins.length > 0) ||
+      if (
+        (admins && admins.length > 0) ||
         (userRolesArray && userRolesArray.length > 0) ||
-        (invitedUsers && invitedUsers.length > 0)) {
+        (invitedUsers && invitedUsers.length > 0)
+      ) {
         let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
         if (!invitationEmails) {
           console.log('failed to send invitation e-mails.');
@@ -485,45 +503,53 @@ exports.addEvent = async (req: express.Request, res: express.Response) => {
     const data: any = {
       Title: body.Title,
       Date: body.Date,
-      Creator: body.Creator
+      Creator: body.Creator,
     };
 
-  const communityAddress = body.CommunityId;
-  const communityRef = db.collection(collections.community).doc(communityAddress);
-  const communityGet = await communityRef.get()
-  let community = communityGet.data();
+    const communityAddress = body.CommunityId;
+    const communityRef = db.collection(collections.community).doc(communityAddress);
+    const communityGet = await communityRef.get();
+    let community = communityGet.data();
 
-  if(community){
-    let events = community.Events;
+    if (community) {
+      let events = community.Events;
 
-    if (events && events.length > 0) {
-      events.push(data);
-    } else {
-      events = [data];
+      if (events && events.length > 0) {
+        events.push(data);
+      } else {
+        events = [data];
+      }
+
+      await communityRef.update({
+        Events: events,
+      });
+
+      res.send({ success: true });
     }
-
-    await communityRef.update({
-      Events: events
-    });
-
-    res.send({success: true});
-  }
   } catch (err) {
     console.log('Error in controllers/communityController -> addEvent()', err);
-    res.send({ success: false, error: err});
+    res.send({ success: false, error: err });
   }
-}
+};
 
 exports.setVestingConditions = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    const communityAddress = body.CommunityAddress
+    const communityAddress = body.CommunityAddress;
     const vestingTime = body.VestingTime;
     const immediateAllocationPct = body.ImmediateAllocationPct;
     const vestedAllocationPct = body.VestedAllocationPct;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await community.setVestingConditions(communityAddress, vestingTime, immediateAllocationPct, vestedAllocationPct, hash, signature, apiKey);
+    const blockchainRes = await community.setVestingConditions(
+      communityAddress,
+      vestingTime,
+      immediateAllocationPct,
+      vestedAllocationPct,
+      hash,
+      signature,
+      apiKey
+    );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // add txn to community
@@ -556,13 +582,13 @@ exports.allocateFunds = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const userAddress = body.UserAddress;
-    const communityAddress = body.CommunityAddress
+    const communityAddress = body.CommunityAddress;
     const amount = body.Amount;
     const hash = body.Hash;
     const signature = body.Signature;
     console.log(body);
     const blockchainRes = await community.allocateFunds(userAddress, communityAddress, amount, hash, signature, apiKey);
-    console.log(JSON.stringify(blockchainRes))
+    console.log(JSON.stringify(blockchainRes));
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // add txn to community
@@ -1030,11 +1056,11 @@ exports.editRules = async (req: express.Request, res: express.Response) => {
       MinimumEndorsementScore: body.MinimumEndorsementScore,
       MinimumTrustScore: body.MinimumTrustScore,
       MinimumUserLevel: body.MinimumUserLevel,
-      AdditionalRules : body.AdditionalRules
+      AdditionalRules: body.AdditionalRules,
     });
 
     res.send({
-      success: true
+      success: true,
     });
   } catch (err) {
     console.log('Error in controllers/communityController -> editRules()', err);
@@ -1049,11 +1075,11 @@ exports.editLevels = async (req: express.Request, res: express.Response) => {
     const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
 
     await communityRef.update({
-      Levels: body.Levels
+      Levels: body.Levels,
     });
 
     res.send({
-      success: true
+      success: true,
     });
   } catch (err) {
     console.log('Error in controllers/communityController -> editLevels()', err);
@@ -1071,7 +1097,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
     await communityRef.update({
       Name: body.Name,
       Description: body.Description,
-      urlSlug: body.urlSlug
+      urlSlug: body.urlSlug,
     });
 
     res.send({
@@ -1079,7 +1105,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
       data: {
         Name: body.Name,
         Description: body.Description,
-        urlSlug: body.urlSlug
+        urlSlug: body.urlSlug,
       },
     });
   } catch (err) {
@@ -1123,8 +1149,7 @@ exports.getCommunityAllocations = async (req: express.Request, res: express.Resp
     if (blockchainRes && blockchainRes.success) {
       const output = blockchainRes.output;
       res.send({ success: true, data: output });
-    }
-    else {
+    } else {
       res.send({ success: true, data: 0 });
     }
   } catch (e) {
@@ -1137,25 +1162,20 @@ exports.getMaxAllocatingFund = async (req: express.Request, res: express.Respons
   try {
     const params = req.query;
     const communityAddress: any = params.communityAddress;
-    const communitySnap = await db
-      .collection(collections.community)
-      .doc(communityAddress)
-      .get();
+    const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
     const data: any = communitySnap.data();
     const initialSupply = data.InitialSupply ?? 0;
     if (initialSupply) {
       const blockchainRes = await community.getCommunityState(communityAddress, apiKey);
       if (blockchainRes && blockchainRes.success) {
         const output = blockchainRes.output;
-        const allocatedFunds = output.AllocatedSupply
+        const allocatedFunds = output.AllocatedSupply;
         const maxAvailable = Math.max(0, initialSupply - allocatedFunds);
         res.send({ success: true, data: maxAvailable });
-      }
-      else {
+      } else {
         res.send({ success: true, data: 0 });
       }
-    }
-    else {
+    } else {
       res.send({ success: true, data: 0 });
     }
   } catch (e) {
@@ -1163,7 +1183,6 @@ exports.getMaxAllocatingFund = async (req: express.Request, res: express.Respons
     return 'Error in controllers/communitiesControllers -> getMaxAllocatingFund()' + e;
   }
 };
-
 
 // get community transactions
 exports.getCommunityTransactions = async (req: express.Request, res: express.Response) => {
@@ -1302,7 +1321,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
 
       let communityHasToken: boolean = false;
       if (communityData.TokenName !== '' && communityData.TokenSymbol !== '') {
-        communityHasToken = true
+        communityHasToken = true;
       }
 
       if (communityHasToken) {
@@ -1311,7 +1330,6 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
 
         if (getTokenRes && getTokenRes.success) {
           totalSupply = getTokenRes.output.Supply;
-
         } else {
           console.log('Error in controllers/communitiesControllers -> getMembersData()', 'Error getting Token info');
           res.send({ success: false, error: 'Error getting Token info' });
@@ -1350,7 +1368,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         });
       }
 
-      const admins = [...communityData.Admins || []];
+      const admins = [...(communityData.Admins || [])];
 
       for (let admin of admins) {
         const userSnap = await db.collection(collections.user).doc(admin.userId).get();
@@ -1411,7 +1429,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         }
       });
 
-      const membersArray = [...communityData.Members || []];
+      const membersArray = [...(communityData.Members || [])];
 
       for (let member of membersArray) {
         const userSnap = await db.collection(collections.user).doc(member.id).get();
@@ -1432,7 +1450,6 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
           }
 
           retData = await addMemberInArray(retData, member.id, userData, proportion, 'Member');
-
         }
       }
 
@@ -1441,10 +1458,9 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         data: {
           members: retData,
           pendingMembers: pendingData,
-          communityHasToken: communityHasToken
-        }
+          communityHasToken: communityHasToken,
+        },
       });
-
     } else {
       console.log('Error in controllers/communitiesControllers -> getMembersData()', 'No community found');
       res.send({ success: false, error: 'No community found' });
@@ -1483,8 +1499,7 @@ const addMemberInArray = async (array, userId, userData, proportion, role): Prom
       reject(e);
     }
   });
-}
-
+};
 
 // get some extra data needed for FE, they are not stored at firebase
 const getExtraData = async (data, rateOfChange) => {
@@ -1542,7 +1557,7 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         ...data,
         ...extraData,
         id: id,
-        arrayMembersId: arrayMembersId
+        arrayMembersId: arrayMembersId,
       });
     }
     res.send({
@@ -1653,6 +1668,15 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
       });
     });
 
+    if (!data.hasOwnProperty('urlSlug') || data.urlSlug == '') {
+      await db
+        .collection(collections.community)
+        .doc(communityAddress)
+        .update({
+          urlSlug: data.Name.split(' ').join(''),
+        });
+    }
+
     res.send({
       success: true,
       data: {
@@ -1660,7 +1684,7 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
         ...extraData,
         id: id,
         ads: ads,
-        membersIdArray: arrayMembersId
+        membersIdArray: arrayMembersId,
       },
     });
   } catch (e) {
@@ -1879,7 +1903,7 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
         ...data,
         ...extraData,
         id: id,
-        arrayMembersId: arrayMembersId
+        arrayMembersId: arrayMembersId,
       });
     }
     res.send({ success: true, data: { trending: trendingCommunities } });
@@ -1932,7 +1956,14 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
     const user: any = userGet.data();
 
     let checkIsCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.communityId);
-    let checkIsAdmin = await communityWallController.checkUserRole(body.userId, user.email, body.communityId, true, false, []);
+    let checkIsAdmin = await communityWallController.checkUserRole(
+      body.userId,
+      user.email,
+      body.communityId,
+      true,
+      false,
+      []
+    );
 
     if (body.userId && body.communityId && body.role && body.creator && (checkIsCreator || checkIsAdmin)) {
       const communityRef = db.collection(collections.community).doc(body.communityId);
@@ -1946,8 +1977,8 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
       if (body.role === 'Admin') {
         let admins: any[] = [...community.Admins];
 
-        let adminFoundIndex = admins.findIndex(admin => admin.userId === body.userId);
-        if(adminFoundIndex === -1) {
+        let adminFoundIndex = admins.findIndex((admin) => admin.userId === body.userId);
+        if (adminFoundIndex === -1) {
           const userRef = db.collection(collections.user).doc(body.userId);
           const userGet = await userRef.get();
           const user: any = userGet.data();
@@ -1961,8 +1992,11 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
             Admins: admins,
           });
         } else {
-          console.log('Error in controllers/communityController -> roleInvitation()', "User is already an Admin or invitation has been sent before");
-          res.send({ success: false, error: "User is already an Admin or invitation has been sent before" });
+          console.log(
+            'Error in controllers/communityController -> roleInvitation()',
+            'User is already an Admin or invitation has been sent before'
+          );
+          res.send({ success: false, error: 'User is already an Admin or invitation has been sent before' });
           return;
         }
       } else if (body.role === 'Moderator' || body.role === 'Treasurer') {
@@ -1976,7 +2010,10 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
           if (!userRoles[user.email].roles[body.role] || userRoles[user.email].roles[body.role] !== 'Accepted') {
             userRoles[user.email].roles[body.role] = 'Pending';
           } else {
-            console.log('Error in controllers/communityController -> roleInvitation()', `User is already a ${body.role}`);
+            console.log(
+              'Error in controllers/communityController -> roleInvitation()',
+              `User is already a ${body.role}`
+            );
             res.send({ success: false, error: `User is already a ${body.role}` });
             return;
           }
@@ -1993,8 +2030,8 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
       } else if (body.role === 'Member') {
         let members: any[] = [...community.Members];
 
-        let memberFoundIndex = members.findIndex(member => member.id === body.userId);
-        if(memberFoundIndex === -1) {
+        let memberFoundIndex = members.findIndex((member) => member.id === body.userId);
+        if (memberFoundIndex === -1) {
           const userRef = db.collection(collections.user).doc(body.userId);
           const userGet = await userRef.get();
           const user: any = userGet.data();
@@ -2007,8 +2044,11 @@ exports.roleInvitation = async (req: express.Request, res: express.Response) => 
             Members: members,
           });
         } else {
-          console.log('Error in controllers/communityController -> roleInvitation()', "User is already a Member or invitation has been sent before");
-          res.send({ success: false, error: "User is already a Member or invitation has been sent before" });
+          console.log(
+            'Error in controllers/communityController -> roleInvitation()',
+            'User is already a Member or invitation has been sent before'
+          );
+          res.send({ success: false, error: 'User is already a Member or invitation has been sent before' });
           return;
         }
       } else {
@@ -2052,7 +2092,14 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
     const user: any = userGet.data();
 
     let checkIsCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.communityId);
-    let checkIsAdmin = await communityWallController.checkUserRole(body.userId, user.email, body.communityId, true, false, []);
+    let checkIsAdmin = await communityWallController.checkUserRole(
+      body.userId,
+      user.email,
+      body.communityId,
+      true,
+      false,
+      []
+    );
 
     if (body.userId && body.communityId && body.role && body.creator && (checkIsCreator || checkIsAdmin)) {
       const communityRef = db.collection(collections.community).doc(body.communityId);
@@ -2082,7 +2129,6 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
         const user: any = userGet.data();
 
         if (userRoles[user.email] && userRoles[user.email].roles && userRoles[user.email].roles[body.role]) {
-
           delete userRoles[user.email].roles[body.role];
 
           await communityRef.update({
@@ -2110,8 +2156,11 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
         }
       }
 
-      const discordRoomSnap = await db.collection(collections.discordChat).doc(community.JarrId)
-        .collection(collections.discordRoom).get();
+      const discordRoomSnap = await db
+        .collection(collections.discordChat)
+        .doc(community.JarrId)
+        .collection(collections.discordRoom)
+        .get();
       for (const doc of discordRoomSnap.docs) {
         let data = doc.data();
         if (!data.private) {
@@ -2121,7 +2170,10 @@ exports.removeRoleUser = async (req: express.Request, res: express.Response) => 
 
       res.send({ success: true, error: 'Role User removed' });
     } else {
-      console.log('Error in controllers/communityController -> removeRoleUser()', "Info missing or you don't have rights");
+      console.log(
+        'Error in controllers/communityController -> removeRoleUser()',
+        "Info missing or you don't have rights"
+      );
       res.send({ success: false, error: "Info missing or you don't have rights" });
     }
   } catch (e) {
@@ -2194,8 +2246,11 @@ exports.acceptRoleInvitation = async (req: express.Request, res: express.Respons
           return;
         }
 
-        const discordRoomSnap = await db.collection(collections.discordChat).doc(community.JarrId)
-          .collection(collections.discordRoom).get();
+        const discordRoomSnap = await db
+          .collection(collections.discordChat)
+          .doc(community.JarrId)
+          .collection(collections.discordRoom)
+          .get();
         for (const doc of discordRoomSnap.docs) {
           let data = doc.data();
           if (!data.private) {
@@ -2521,7 +2576,7 @@ const getArrayIdCommunityMembers = async (data: any) => {
         }
       }
 
-      if(data.UserRoles) {
+      if (data.UserRoles) {
         let userRolesKeys = Object.keys(data.UserRoles);
         for (let userRole of userRolesKeys) {
           if (data.UserRoles[userRole].userId) {
@@ -2545,7 +2600,103 @@ const getArrayIdCommunityMembers = async (data: any) => {
       resolve(arrayMembersId);
     } catch (e) {
       console.log('');
-      reject(e)
+      reject(e);
     }
   });
-}
+};
+
+//save a community in the work in progress collection (to be created in the future)
+exports.saveCommunity = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    //console.log('savecommunity', body);
+
+    if (body) {
+      const communityObj = {
+        HasPhoto: body.HasPhoto ?? false,
+        Name: body.Name ?? '',
+        Description: body.Description ?? '',
+        MainHashtag: body.MainHashtag ?? '',
+        Hashtags: body.Hashtags ?? [],
+        Privacy: body.Privacy,
+        OpenAdvertising: body.OpenAdvertising ?? false,
+        PaymentsAllowed: body.PaymentsAllowed ?? false,
+        TwitterId: body.TwitterId ?? '',
+        Date: new Date().getTime(),
+
+        RuleBased: body.RuleBased !== undefined ? body.RuleBased : true,
+
+        RequiredTokens: body.RequiredTokens ?? {},
+
+        MinimumUserLevel: body.MinimumUserLevel == 'Not required' ? 0 : body.MinimumUserLevel,
+        MinimumEndorsementScore:
+          body.MinimumEndorsementScore == 'Not required' ? 0 : body.MinimumEndorsementScore / 100,
+        MinimumTrustScore: body.MinimumTrustScore == 'Not required' ? 0 : body.MinimumTrustScore / 100,
+
+        Levels: body.Levels ?? [],
+
+        BlogsEnabled: body.BlogsEnabled !== undefined ? body.BlogsEnabled : false,
+        Blogs: body.Blogs ?? [],
+        MemberDirectoriesEnabled: body.MemberDirectoriesEnabled !== undefined ? body.MemberDirectoriesEnabled : false,
+        MemberDirectories: body.MemberDirectories ?? [],
+        ProjectsEnabled: body.ProjectsEnabled !== undefined ? body.ProjectsEnabled : false,
+        Projects: body.Projects ?? [],
+        AppsEnabled: body.AppsEnabled !== undefined ? body.AppsEnabled : false,
+        Apps: body.Apps ?? [],
+
+        UserRoles: body.UserRoles ?? {},
+        Admins: body.Admins ?? [],
+        InvitationUsers: body.InvitationUsers ?? [],
+        Posts: [],
+        Votings: [],
+
+        MembersReached: false,
+
+        AssistanceRequired: body.AssistanceRequired !== undefined ? body.AssistanceRequired : false,
+        Offers: body.Offers ?? [],
+
+        CommunityToken: body.CommunityToken !== undefined ? body.CommunityToken : false,
+        TokenName: body.TokenName ?? '',
+        TokenSymbol: body.TokenSymbol ?? '',
+        TokenDescription: body.TokenDescription ?? '',
+        FundingToken: body.FundingToken ?? '',
+        TargetSpread: body.TargetSpread ?? '',
+        TargetPrice: body.TargetPrice ?? 0,
+        DividendFreq: body.DividendFreq ?? '',
+        TargetSupply: body.TargetSupply ?? 0,
+        InitialSupply: body.InitialSupply ?? 0,
+        AMM: body.AMM ?? '',
+      };
+
+      let communityAddress = body.CommunityAddress;
+
+      if (body.CommunityAddress) {
+        db.collection(collections.workInProgress).doc(communityAddress).update(communityObj);
+      } else {
+        communityAddress = generateUniqueId();
+
+        db.collection(collections.workInProgress)
+          .doc(communityAddress)
+          .set({
+            ...communityObj,
+            CommunityAddress: communityAddress,
+            Creator: body.Creator,
+          });
+      }
+
+      res.send({
+        success: true,
+        data: {
+          communityAddress: communityAddress,
+        },
+      });
+    } else {
+      console.log('Error in controllers/communityController -> saveCommunity(): success = false');
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> saveCommunity(): ', err);
+    res.send({ success: false });
+  }
+};
