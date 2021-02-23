@@ -495,10 +495,10 @@ const signUp = async (req: express.Request, res: express.Response) => {
       await attachAddress(userPublicId);
 
       // ------------------------- add zero to balance history to make graph prettier ----------------------------
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.cryptoHistory), 'balance');
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.ftHistory), 'balance');
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.nftHistory), 'balance');
-      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.socialHistory), 'balance');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyCrypto), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyFT), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyNFT), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historySocial), 'price');
 
       // ------------------------- Provisional for TestNet ---------------------------------
       // give user some balance in each tokens (50/tokenRate).
@@ -1985,9 +1985,9 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 
     let badges = user.badges;
 
-    if(badges && badges.length > 0){
-      badges.forEach(function(badge){
-        if(badge.badgeId = badgeId){
+    if (badges && badges.length > 0) {
+      badges.forEach(function (badge) {
+        if (badge.badgeId = badgeId) {
           badge.isNew = false;
         }
       })

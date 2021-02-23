@@ -18,31 +18,32 @@ module.exports = {
 
   rates: "ratesOfChange",
 
-  // histories
   registeredEthAddress: 'RegisteredEthAddress',
-  cryptoHistory: "CryptoHistory",
-  nftHistory: "NftHistory",
-  ftHistory: "FtHistory",
-  socialHistory: "SocialHistory",
-  communityHistory: "CommunityHistory",
+  //new histories
+  historyCrypto: "HistoryCRYPTO",
+  historySocial: "HistorySOCIAL",
+  historyFT: "HistoryFTPOD",
+  historyNFT: "HistoryNFTPOD",
+
 
   priviScan: "PriviScan",
+  transactions: "Transactions",
   history: "History",
   allTransactions: "AllTransaction",
   ethTransactions: "EthTransactions",
   waitlist: "Waitlist",
   cloudDatabase: "CloudDatabase",
 
-    // privi credit
-    priviCredits: "PriviCredits",
-    priviCreditsLending: "PriviCreditsLending",
-    priviCreditsBorrowing: "PriviCreditsBorrowing",
-    priviCreditsTransactions: "PriviCreditsTransactions",
-    priviCreditInterestHistory: "PriviCreditsInterestHistory",
-    priviCreditDepositedHistory: "PriviCreditsDepositedHistory",
-    priviCreditBorrowedHistory: "PriviCreditsBorrowedHistory",
-    priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
-    trendingPriviCredit: "TrendingPriviCredit",
+  // privi credit
+  priviCredits: "PriviCredits",
+  priviCreditsLending: "PriviCreditsLending",
+  priviCreditsBorrowing: "PriviCreditsBorrowing",
+  priviCreditsTransactions: "PriviCreditsTransactions",
+  priviCreditInterestHistory: "PriviCreditsInterestHistory",
+  priviCreditDepositedHistory: "PriviCreditsDepositedHistory",
+  priviCreditBorrowedHistory: "PriviCreditsBorrowedHistory",
+  priviCreditAvailableHistory: "PriviCreditsAvailableHistory",
+  trendingPriviCredit: "TrendingPriviCredit",
 
   // community
   community: "Community",
@@ -54,17 +55,17 @@ module.exports = {
   voter: "Voter",
   voting: "Voting",
 
-    podsFT: "PodsFT",
-    trendingPodsFT: "TrendingPodsFT",
-    buyingOffers: "BuyingOffers",
-    sellingOffers: "SellingOffers",
-    podsNFT: "PodsNFT",
-    trendingPodsNFT: "TrendingPodsNFT",
-    podTransactions: "PodTransactions",
-    priceOfTheDay: "PriceOfTheDay",
-    priceHistory: "PriceHistory",
-    supplyHistory: "SupplyHistory",
-    podRoleInvitation: "PodRoleInvitation",
+  podsFT: "PodsFT",
+  trendingPodsFT: "TrendingPodsFT",
+  buyingOffers: "BuyingOffers",
+  sellingOffers: "SellingOffers",
+  podsNFT: "PodsNFT",
+  trendingPodsNFT: "TrendingPodsNFT",
+  podTransactions: "PodTransactions",
+  priceOfTheDay: "PriceOfTheDay",
+  priceHistory: "PriceHistory",
+  supplyHistory: "SupplyHistory",
+  podRoleInvitation: "PodRoleInvitation",
 
   podViewInvitation: "PodViewInvitation",
   insurancePools: "InsurancePools",

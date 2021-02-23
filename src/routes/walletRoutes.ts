@@ -17,10 +17,6 @@ let upload = multer({
   storage: storage,
 });
 
-router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
-router.post('/transfer', authenticateJWT, walletController.transfer);
-router.post('/giveTip', authenticateJWT, walletController.giveTip);
-
 // called from Postman
 router.post('/burn', walletController.burn);
 router.post('/mint', walletController.mint);
@@ -28,23 +24,26 @@ router.post('/registerTokens', walletController.registerTokens);
 router.post('/updateTokensCollection', walletController.updateTokensCollection);
 router.post('/registerUserEthAccount', walletController.registerUserEthAccount);
 
-router.get('/getUserOwnedTokens', authenticateJWT, walletController.getUserOwnedTokens);
-router.get('/getCryptosRateAsList', authenticateJWT, walletController.getCryptosRateAsList);
-router.get('/getCryptosRateAsMap', authenticateJWT, walletController.getCryptosRateAsMap);
+// POSTS 
+router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
+router.post('/transfer', authenticateJWT, walletController.transfer);
+router.post('/giveTip', authenticateJWT, walletController.giveTip);
+
+// GETS
+// crypto rates
+router.get('/getCryptosRateAsList', walletController.getCryptosRateAsList);
+router.get('/getCryptosRateAsMap', walletController.getCryptosRateAsMap);
+router.get('/getTokensRateChange', walletController.getTokensRateChange); // tokens changing rate respect last day
 
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
 router.get('/getEmailToAddressMap', authenticateJWT, walletController.getEmailToAddressMap);
 
-router.get('/getBalanceData', authenticateJWT, walletController.getBalanceData);
-router.get('/getTokensRateChange', authenticateJWT, walletController.getTokensRateChange); // tokens rate change respect last day
-router.get('/getTotalBalance_v2', authenticateJWT, walletController.getTotalBalance_v2);
+// user balance and txns
+router.get('/getUserOwnedTokens', authenticateJWT, walletController.getUserOwnedTokens);
 router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.getTokenBalances_v2);
 router.get('/getAllTokenBalances/:address', authenticateJWT, walletController.getAllTokenBalances); // all token balances of the user with extra data (Type, ...)
 router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.getAllTokensWithBuyingPrice);
-router.get('/getBalanceHistoryInTokenTypes', authenticateJWT, walletController.getBalanceHistoryInTokenTypes); // for evoluction graphs
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
-
-router.get('/getBalancesByType', authenticateJWT, walletController.getBalancesByType);
 
 //token images
 router.get('/getTokenPhoto/:tokenSymbol', walletController.getTokenPhotoById);
