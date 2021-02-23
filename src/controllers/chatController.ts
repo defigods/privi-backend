@@ -361,7 +361,100 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
             data: discordChat
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+        console.log('Error in controllers/chatRoutes -> discordGetChat() ' + e)
+        res.send({success: false, error: e});
+    }
+}
+
+exports.discordGetChatInfoMedia = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordRoomRef = db.collection(collections.discordChat)
+          .doc(body.discordChatId).collection(collections.discordRoom)
+          .doc(body.discordRoom);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom: any = discordRoomGet.data();
+
+        let audioMessages: any[] = [];
+        let videoMessages: any[] = [];
+        let photoMessages: any[] = [];
+
+        if (discordRoom.messages && discordRoom.messages.length > 0) {
+            for (let i = 0; i < discordRoom.messages.length; i++) {
+                const messageGet = await db.collection(collections.discordMessage)
+                  .doc(discordRoom.messages[i]).get();
+
+                let discordMsg: any = messageGet.data();
+
+                if(discordMsg && discordMsg.type && discordMsg.type === 'audio') {
+                    const userRef = db.collection(collections.user).doc(discordMsg.from);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    discordMsg['user'] = {
+                        id: userGet.id,
+                        name: user.firstName,
+                        level: user.level || 1,
+                        cred: user.cred || 0,
+                        salutes: user.salutes || 0,
+                    }
+                    discordMsg.id = messageGet.id;
+                    audioMessages.push(discordMsg);
+                } else if(discordMsg && discordMsg.type && discordMsg.type === 'photo') {
+                    const userRef = db.collection(collections.user).doc(discordMsg.from);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    discordMsg['user'] = {
+                        id: userGet.id,
+                        name: user.firstName,
+                        level: user.level || 1,
+                        cred: user.cred || 0,
+                        salutes: user.salutes || 0,
+                    }
+                    discordMsg.id = messageGet.id;
+                    photoMessages.push(discordMsg);
+                } else if(discordMsg && discordMsg.type && discordMsg.type === 'video') {
+                    const userRef = db.collection(collections.user).doc(discordMsg.from);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    discordMsg['user'] = {
+                        id: userGet.id,
+                        name: user.firstName,
+                        level: user.level || 1,
+                        cred: user.cred || 0,
+                        salutes: user.salutes || 0,
+                    }
+                    discordMsg.id = messageGet.id;
+                    videoMessages.push(discordMsg);
+                }
+
+                if (i === discordRoom.messages.length - 1) {
+                    res.status(200).send({
+                        success: true,
+                        data: {
+                            photos: photoMessages,
+                            videos: videoMessages,
+                            audios: audioMessages
+                        }
+                    });
+                }
+            }
+        } else {
+            res.status(200).send({
+                success: true,
+                data: {
+                    photos: [],
+                    videos: [],
+                    audios: []
+                }
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordGetChatInfoMedia() ' + e)
+        res.send({success: false, error: e});
     }
 }
 

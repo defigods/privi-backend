@@ -60,6 +60,7 @@ router.post('/lastView', authenticateJWT, chatController.lastView);
 router.post('/newChat', authenticateJWT, chatController.createChat);
 
 router.post('/discord/getChat', authenticateJWT, chatController.discordGetChat);
+router.post('/discord/getChatInfoMedia', authenticateJWT, chatController.discordGetChatInfoMedia);
 router.post('/discord/createChat', authenticateJWT, chatController.discordCreateChat);
 router.post('/discord/createRoom', authenticateJWT, chatController.discordCreateRoom);
 router.post('/discord/addUserToRoom', authenticateJWT, chatController.discordAddUserToRoom);
