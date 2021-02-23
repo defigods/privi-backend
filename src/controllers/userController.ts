@@ -764,6 +764,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let myCommunities = await getMyCommunitiesFunction(userId);
       let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools = await getMyCreditPools(userId);
+      let myWorkInProgress = await getMyWorkInProgressFunction(userId);
 
       res.send({
         success: true,
@@ -777,6 +778,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myCommunities: myCommunities,
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
+          myWorkInProgress: myWorkInProgress,
         },
       });
     } else {
@@ -1724,8 +1726,9 @@ const getMyCommunitiesFunction = (userId) => {
       const user: any = userRef.data();
       let myCommunities: any[] = [];
 
-      myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
-
+      if (user.JoinedCommunities && user.JoinedCommunities.length > 0) {
+        myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
+      }
       resolve(myCommunities);
     } catch (e) {
       reject(e);
@@ -1859,6 +1862,56 @@ const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<an
         resolve(creditPools);
       }
     });
+  });
+};
+
+//get communities
+const getMyWorkInProgressFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let myWorkInProgress: any[] = [];
+
+      myWorkInProgress = await getWorkInProgressArray(userId, collections.workInProgress);
+
+      resolve(myWorkInProgress);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    let wipInfo: any[] = [];
+
+    db.collection(collection)
+      .get()
+      .then((querySnapshot) => {
+        let counter = 0;
+        if (querySnapshot.size > 0) {
+          querySnapshot.forEach((wip) => {
+            if (wip.data().Creator === userId) {
+              const wipCopy = wip.data();
+              wipCopy.isCreator = true;
+              wipInfo.push(wip.data());
+            } else {
+              if (wip.data().Offers && wip.data().Offers.length > 0) {
+                if (wip.data().Offers.some((offer) => offer.userId === userId)) {
+                  const wipCopy = wip.data();
+                  wipCopy.isCreator = false;
+                  wipInfo.push(wip.data());
+                }
+              }
+            }
+            counter++;
+            if (counter === querySnapshot.size) {
+              resolve(wipInfo);
+            }
+          });
+        } else {
+          resolve(wipInfo);
+        }
+      });
   });
 };
 
