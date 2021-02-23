@@ -27,6 +27,7 @@ module.exports = {
 
 
   priviScan: "PriviScan",
+  transactions: "Transactions",
   history: "History",
   allTransactions: "AllTransaction",
   ethTransactions: "EthTransactions",
