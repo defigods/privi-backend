@@ -52,6 +52,8 @@ router.get('/getPriviCredit/:creditId', authenticateJWT, priviCreditController.g
 router.get('/getPriviTransactions/:creditId', authenticateJWT, priviCreditController.getPriviTransactions);
 router.get('/getHistories/:creditId', authenticateJWT, priviCreditController.getHistories);
 router.get('/getPhoto/:creditId', priviCreditController.getCreditPoolPhotoById);
+router.post('/sumTotalViews', authenticateJWT, priviCreditController.sumTotalViews);
+router.post('/like', authenticateJWT, priviCreditController.like);
 
 router.post('/initiatePriviCredit', authenticateJWT, priviCreditController.initiatePriviCredit);
 router.post('/depositFunds', authenticateJWT, priviCreditController.depositFunds);

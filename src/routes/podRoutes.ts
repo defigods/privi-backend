@@ -84,6 +84,8 @@ router.post('/inviteRole', authenticateJWT, podController.inviteRole);
 router.post('/replyRoleInvitation', authenticateJWT, podController.replyRoleInvitation);
 router.post('/inviteView', authenticateJWT, podController.inviteView);
 router.post('/editPod', authenticateJWT, podController.editPod);
+router.post('/sumTotalViews', authenticateJWT, podController.sumTotalViews);
+router.post('/like', authenticateJWT, podController.like);
 
 // FT
 

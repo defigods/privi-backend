@@ -180,13 +180,13 @@ exports.editSocialToken = async (req: express.Request, res: express.Response) =>
       const tokenRef = db.collection(collections.socialPools).doc(body.PoolAddress);
   
       await tokenRef.update({
-        IsPrivate: body.IsPrivate
+        IsPrivate: body.hidden
       });
   
       res.send({
         success: true,
         data: {
-            IsPrivate: body.IsPrivate
+            IsPrivate: body.hidden
         },
       });
     } catch (err) {
@@ -194,6 +194,76 @@ exports.editSocialToken = async (req: express.Request, res: express.Response) =>
       res.send({ success: false });
     }
   };
+
+  // adds +1 to views counter
+exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let totalViews = body.TotalViews ? body.TotalViews : 0;
+
+    const creditRef = db.collection(collections.socialPools).doc(body.PoolAddress);
+
+    await creditRef.update({
+      TotalViews: totalViews + 1
+    });
+
+    res.send({
+      success: true,
+      data: {
+        TotalViews: totalViews + 1
+      }
+    });
+  } catch (err) {
+    console.log('Error in controllers/priviCredit -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+};
+
+  exports.like = async (req: express.Request, res: express.Response) => {
+    try {
+      const body = req.body;
+      const poolAddress = body.PoolAddress;
+      const userAddress = body.userAddress;
+      const userSnap = await db.collection(collections.user).doc(userAddress).get();
+      const socialSnap = await db.collection(collections.socialPools).doc(poolAddress).get();
+      const userData: any = userSnap.data();
+      const socialData: any = socialSnap.data();
+
+      let userLikes = userData.Likes ?? [];
+      let socialLikes = socialData.Likes ?? [];
+  
+      if(body.liked){
+        userLikes.push({
+          date: Date.now(),
+          type: "socialToken",
+          id: poolAddress
+        })
+        socialLikes.push({
+          date: Date.now(),
+          userId: userAddress
+        })
+      } else{
+        userLikes.forEach((item, index) => {
+          if(poolAddress === item.id) userLikes.splice(index, 1)
+        })
+        socialLikes.forEach((item, index2) => {
+          if(userAddress === item.userId) socialLikes.splice(index2, 1)
+        }) 
+      }
+      
+      userSnap.ref.update({
+        Likes: userLikes
+      });
+      socialSnap.ref.update({
+        Likes: socialLikes
+      });
+      
+      res.send({ success: true });
+    } catch (err) {
+      console.log('Error in controllers/socialController -> like(): ', err);
+      res.send({ success: false });
+    }
+};
 
 exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Response) => {
   try {
