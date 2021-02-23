@@ -2030,7 +2030,7 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
     let badgeId = body.badgeId;
-    let userId = body.userId
+    let userId = body.userId;
 
     const userRef = db.collection(collections.user).doc(userId);
     const userGet = await userRef.get();
@@ -2040,10 +2040,10 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 
     if (badges && badges.length > 0) {
       badges.forEach(function (badge) {
-        if (badge.badgeId = badgeId) {
+        if ((badge.badgeId = badgeId)) {
           badge.isNew = false;
         }
-      })
+      });
     }
 
     await userRef.update({
@@ -2061,7 +2061,6 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 };
-
 
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -3408,6 +3407,7 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
       });
     } else {
       let docSlugSnap;
+      urlSlug = urlId;
 
       if (type === 'user') {
         docSlugSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
