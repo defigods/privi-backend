@@ -431,6 +431,18 @@ exports.discordGetChatInfoMedia = async (req: express.Request, res: express.Resp
                     videoMessages.push(discordMsg);
                 }
 
+                if(photoMessages.length >= 6 && videoMessages.length >= 6 && audioMessages.length >= 6) {
+                    res.status(200).send({
+                        success: true,
+                        data: {
+                            photos: photoMessages,
+                            videos: videoMessages,
+                            audios: audioMessages
+                        }
+                    });
+                    return;
+                }
+
                 if (i === discordRoom.messages.length - 1) {
                     res.status(200).send({
                         success: true,
