@@ -763,6 +763,52 @@ exports.stakeCommunityFunds = async (req: express.Request, res: express.Response
   }
 };
 
+exports.like = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const communityAddress = body.CommunityAddress;
+    const userAddress = body.userAddress;
+    const userSnap = await db.collection(collections.user).doc(userAddress).get();
+    const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
+    const communityData: any = communitySnap.data();
+    const userData: any = userSnap.data();
+
+    const userLikes = userData.Likes ?? [];
+    const communityLikes = communityData.Likes ?? [];
+
+    if(body.liked){
+      userLikes.push({
+        date: Date.now(),
+        type: "community",
+        id: communityAddress
+      })
+      communityLikes.push({
+        date: Date.now(),
+        userId: userAddress
+      })
+    } else{
+         userLikes.forEach((item, index) => {
+          if(communityAddress === item.id) userLikes.splice(index, 1)
+        })
+        communityLikes.forEach((item, index2) => {
+          if(userAddress === item.userId) communityLikes.splice(index2, 1)
+        }) 
+    }
+
+    userSnap.ref.update({
+        Likes: userLikes
+    });
+    communitySnap.ref.update({
+      Likes: communityLikes
+    });
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> like(): ', err);
+    res.send({ success: false });
+  }
+};
+
 exports.follow = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -899,6 +945,30 @@ exports.leave = async (req: express.Request, res: express.Response) => {
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/communityController -> leave(): ', err);
+    res.send({ success: false });
+  }
+};
+
+// adds +1 to views counter
+exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let totalViews = body.TotalViews ? body.TotalViews : 0;
+
+    const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
+
+    await communityRef.update({
+      TotalViews: totalViews + 1
+    });
+
+    res.send({
+      success: true,
+      data: {
+        TotalViews: totalViews + 1
+      }
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> sumTotalViews()', err);
     res.send({ success: false });
   }
 };

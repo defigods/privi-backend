@@ -97,6 +97,78 @@ exports.editPod = async (req: express.Request, res: express.Response) => {
   }
 };
 
+// adds +1 to views counter
+exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let totalViews = body.TotalViews ? body.TotalViews : 0;
+    let collection = body.IsDigital ? "PodsNFT" : "PodsFT";
+
+    const podRef = db.collection(collection).doc(body.PodAddress);
+
+    await podRef.update({
+      TotalViews: totalViews + 1
+    });
+
+    res.send({
+      success: true,
+      data: {
+        TotalViews: totalViews + 1
+      }
+    });
+  } catch (err) {
+    console.log('Error in controllers/podController -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+};
+
+exports.like = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const podAddress = body.PodAddress;
+    const userAddress = body.userAddress;
+    let collection = body.IsDigital ? "podNFT" : "podFT";
+    const userSnap = await db.collection(collections.user).doc(userAddress).get();
+    const podSnap = await db.collection(collection).doc(podAddress).get();
+    const userData: any = userSnap.data();
+    const podData: any = podSnap.data();
+
+    const userLikes = userData.Likes ?? [];
+    const podLikes = podData.Likes ?? [];
+
+    if(body.liked){
+      userLikes.push({
+        date: Date.now(),
+        type: collection,
+        id: podAddress
+      })
+      podLikes.push({
+        date: Date.now(),
+        userId: userAddress
+      })
+    }
+    else{
+       userLikes.forEach((item, index) => {
+          if(podAddress === item.id) userLikes.splice(index, 1)
+        })
+        podLikes.forEach((item, index2) => {
+          if(userAddress === item.userId) podLikes.splice(index2, 1)
+        }) 
+    }
+   
+    userSnap.ref.update({
+        Likes: userLikes
+    });
+    podSnap.ref.update({
+      Likes: podLikes
+    });
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/podController -> like(): ', err);
+    res.send({ success: false });
+  }
+};
 
 /**
  * Pod creator/admin invites a list of users to assume some role // the list could be only one elem

@@ -27,8 +27,10 @@ router.post(
   socialController.changeSocialTokenPhoto
 );
 router.get('/getPhoto/:socialId', socialController.getPhotoById);
-router.get('/editSocialToken', authenticateJWT, socialController.editSocialToken);
+router.post('/editSocialToken', authenticateJWT, socialController.editSocialToken);
 
+router.post('/sumTotalViews', authenticateJWT, socialController.sumTotalViews);
+router.post('/like', authenticateJWT, socialController.like);
 router.get('/getSocialTokens', authenticateJWT, socialController.getSocialTokens);
 router.get('/getTokenInfo/:tokenSymbol', socialController.getTokenInfo);
 

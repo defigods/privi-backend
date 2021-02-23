@@ -458,6 +458,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
           myFTPods: [],
           investedNFTPods: [],
           investedFTPods: [],
+          Likes: [],
           twitter: '',
           instagram: '',
           facebook: '',
@@ -617,6 +618,7 @@ interface BasicInfo {
   numFollowings: number;
   followers: any[];
   followings: any[];
+  likes: any[];
   bio: string;
   level: number;
   twitter: string;
@@ -646,6 +648,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       points: 0,
       numFollowings: 0,
       followings: [],
+      likes: [],
       bio: '',
       level: 1,
       twitter: '',
@@ -683,6 +686,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.followers = userData.followers || [];
       basicInfo.followings = userData.followings || [];
       basicInfo.bio = userData.bio || '';
+      basicInfo.likes = userData.Likes || [];
       basicInfo.level = userData.level || 1;
       basicInfo.twitter = userData.twitter || '';
       basicInfo.instagram = userData.instagram || '';

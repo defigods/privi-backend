@@ -185,6 +185,8 @@ router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);
 router.post('/join', authenticateJWT, communityController.join);
 router.post('/leave', authenticateJWT, communityController.leave);
+router.post('/sumTotalViews', authenticateJWT, communityController.sumTotalViews);
+router.post('/like', authenticateJWT, communityController.like);
 
 router.post('/createCommunity', authenticateJWT, communityController.createCommunity);
 router.post('/createCommunityToken', authenticateJWT, communityController.createCommunityToken);
