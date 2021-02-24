@@ -280,11 +280,9 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      if (
-        (admins && admins.length > 0) ||
+      if ((admins && admins.length > 0) ||
         (userRolesArray && userRolesArray.length > 0) ||
-        (invitedUsers && invitedUsers.length > 0)
-      ) {
+        (invitedUsers && invitedUsers.length > 0)) {
         let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
         if (!invitationEmails) {
           console.log('failed to send invitation e-mails.');
@@ -371,6 +369,12 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
             });
           }
         }
+      }
+
+      const offers = body.Offers;
+
+      for(let offer of offers) {
+        await addOfferToCommunity(creator, communityAddress, offer);
       }
 
       res.send({
@@ -528,6 +532,27 @@ exports.addEvent = async (req: express.Request, res: express.Response) => {
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> addEvent()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.addOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.offer && body.offer.token && body.offer.amount
+      && body.offer.paymentDate && body.offer.userId) {
+
+      let community : any = await addOfferToCommunity(body.userId, body.communityId, body.offer);
+
+      res.send({ success: true, data: community });
+
+    } else {
+      console.log('Error in controllers/communityController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> addOffer()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -2604,6 +2629,60 @@ const getArrayIdCommunityMembers = async (data: any) => {
     }
   });
 };
+
+const addOfferToCommunity = (userId, communityId, offer) => {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const data: any = {
+        Date: offer.paymentDate,
+        Creator: userId,
+        Token: offer.token,
+        Amount: offer.amount,
+        UserRequested: offer.userId
+      };
+
+      const communityRef = db.collection(collections.community).doc(communityId);
+      const communityGet = await communityRef.get();
+      let community : any = communityGet.data();
+
+      let offers = community.Offers;
+
+      if (offers && offers.length > 0) {
+        offers.push(data);
+      } else {
+        offers = [data];
+      }
+
+      community.Offers = offers;
+      await communityRef.update({
+        Offers: offers
+      });
+
+      const userSnap = await db.collection(collections.user).doc(data.Creator).get();
+      const user: any = userSnap.data();
+
+      await notificationsController.addNotification({
+        userId: data.UserRequested,
+        notification: {
+          type: 93,
+          typeItemId: 'user',
+          itemId: data.Creator,
+          follower: user.firstName,
+          pod: '',
+          comment: '',
+          token: data.Token,
+          amount: data.Amount,
+          onlyInformation: false,
+          otherItemId: ''
+        }
+      });
+      resolve(community)
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
+
 
 //save a community in the work in progress collection (to be created in the future)
 exports.saveCommunity = async (req: express.Request, res: express.Response) => {

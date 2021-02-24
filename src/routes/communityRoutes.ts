@@ -207,12 +207,7 @@ router.post('/getSellTokenAmount', authenticateJWT, communityController.getSellT
 
 router.post('/projects/getProjects/:communityId', authenticateJWT, projectController.getProjects);
 router.post('/projects/createProject', authenticateJWT, projectController.createProject);
-router.post(
-  '/projects/changeProjectPhoto',
-  authenticateJWT,
-  upload7.single('image'),
-  projectController.changeProjectPhoto
-);
+router.post('/projects/changeProjectPhoto', authenticateJWT, upload7.single('image'), projectController.changeProjectPhoto);
 router.get('/projects/getPhoto/:projectId', projectController.getProjectPhotoById);
 
 router.post('/blog/createPost', authenticateJWT, blogController.blogCreate);
@@ -220,12 +215,7 @@ router.post('/blog/deletePost', authenticateJWT, blogController.blogDelete);
 router.get('/blog/getBlogPosts/:communityId', authenticateJWT, blogController.getBlogPost);
 router.get('/blog/getBlogPost/:postId', authenticateJWT, blogController.getBlogPostById);
 router.post('/blog/changePostPhoto', authenticateJWT, upload3.single('image'), blogController.changePostPhoto);
-router.post(
-  '/blog/changePostDescriptionPhotos/:blogPostId',
-  authenticateJWT,
-  upload2.array('image'),
-  blogController.changePostDescriptionPhotos
-);
+router.post('/blog/changePostDescriptionPhotos/:blogPostId', authenticateJWT, upload2.array('image'), blogController.changePostDescriptionPhotos);
 router.get('/blog/getPostPhoto/:blogPostId', blogController.getBlogPostPhotoById);
 router.get('/blog/getDescriptionPostPhoto/:blogPostId/:photoId', blogController.getBlogPostDescriptionPhotoById);
 router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBlogPost);
@@ -236,23 +226,10 @@ router.post('/discussions/createPost', authenticateJWT, blogController.discussio
 router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
 router.get('/discussions/getDiscussions/:communityId', authenticateJWT, blogController.getDiscussionsPost);
 router.get('/discussions/getDiscussion/:discussionId', authenticateJWT, blogController.getDiscussionsPostById);
-router.post(
-  '/discussions/changePostPhoto',
-  authenticateJWT,
-  upload9.single('image'),
-  blogController.changeDiscussionsPhoto
-);
-router.post(
-  '/discussions/changePostDescriptionPhotos/:discussionId',
-  authenticateJWT,
-  upload8.array('image'),
-  blogController.changeDiscussionsDescriptionPhotos
-);
+router.post('/discussions/changePostPhoto', authenticateJWT, upload9.single('image'), blogController.changeDiscussionsPhoto);
+router.post('/discussions/changePostDescriptionPhotos/:discussionId', authenticateJWT, upload8.array('image'), blogController.changeDiscussionsDescriptionPhotos);
 router.get('/discussions/getPostPhoto/:discussionId', blogController.getDiscussionsPhotoById);
-router.get(
-  '/discussions/getDescriptionPostPhoto/:discussionId/:photoId',
-  blogController.getDiscussionsDescriptionPhotoById
-);
+router.get('/discussions/getDescriptionPostPhoto/:discussionId/:photoId', blogController.getDiscussionsDescriptionPhotoById);
 router.post('/discussions/makeResponse', authenticateJWT, blogController.makeResponseDiscussions);
 router.post('/discussions/likePost', authenticateJWT, blogController.likePostDiscussions);
 router.post('/discussions/dislikePost', authenticateJWT, blogController.dislikePostDiscussions);
@@ -262,17 +239,9 @@ router.post('/wall/deletePost', authenticateJWT, communityWallController.postDel
 router.get('/wall/getCommunityPosts/:communityId', authenticateJWT, communityWallController.getCommunityPost);
 router.get('/wall/getCommunityPost/:postId', authenticateJWT, communityWallController.getCommunityPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), communityWallController.changePostPhoto);
-router.post(
-  '/wall/changePostDescriptionPhotos/:communityWallPostId',
-  authenticateJWT,
-  upload4.array('image'),
-  communityWallController.changePostDescriptionPhotos
-);
+router.post('/wall/changePostDescriptionPhotos/:communityWallPostId', authenticateJWT, upload4.array('image'), communityWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:communityWallPostId', communityWallController.getCommunityWallPostPhotoById);
-router.get(
-  '/wall/getDescriptionPostPhoto/:communityWallPostId/:photoId',
-  communityWallController.getCommunityWallPostDescriptionPhotoById
-);
+router.get('/wall/getDescriptionPostPhoto/:communityWallPostId/:photoId', communityWallController.getCommunityWallPostDescriptionPhotoById);
 router.post('/wall/makeResponse', authenticateJWT, communityWallController.makeResponseCommunityWallPost);
 router.post('/wall/likePost', authenticateJWT, communityWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, communityWallController.dislikePost);
@@ -284,6 +253,8 @@ router.post('/roleInvitation', authenticateJWT, communityController.roleInvitati
 router.post('/removeRoleUser', authenticateJWT, communityController.removeRoleUser);
 
 router.post('/events/createEvent', authenticateJWT, communityController.addEvent);
+
+router.post('/addOffer', authenticateJWT, communityController.addOffer);
 
 //COMMUNITY SLUG
 router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);
