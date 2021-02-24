@@ -585,7 +585,7 @@ const withdraw = async (
 
             const mintBack = await swapFab(
                 'CRYPTO',
-                toEthAddress,
+                '0x0000000000000000000000000000000000000000',
                 fromFabricAddress,
                 amount,
                 token,
@@ -595,7 +595,7 @@ const withdraw = async (
             if (mintBack.success) {
                 console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
                 updateStatusOneToOneSwap(swapDocId, 'failed with return');
-                updateFirebase(response);
+                updateFirebase(mintBack);
                 updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
             } else {
                 console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
