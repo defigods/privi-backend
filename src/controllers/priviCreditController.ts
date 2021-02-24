@@ -201,6 +201,77 @@ exports.initiatePriviCredit = async (req: express.Request, res: express.Response
   }
 };
 
+// adds +1 to views counter
+exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let totalViews = body.TotalViews ? body.TotalViews : 0;
+
+    const creditRef = db.collection(collections.priviCredits).doc(body.CreditAddress);
+
+    await creditRef.update({
+      TotalViews: totalViews + 1
+    });
+
+    res.send({
+      success: true,
+      data: {
+        TotalViews: totalViews + 1
+      }
+    });
+  } catch (err) {
+    console.log('Error in controllers/priviCredit -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+};
+
+exports.like = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const creditAddress = body.CreditAddress;
+    const userAddress = body.userAddress;
+    const userSnap = await db.collection(collections.user).doc(userAddress).get();
+    const creditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
+    const creditData: any = creditSnap.data();
+    const userData: any = userSnap.data();
+
+    const userLikes = userData.Likes ?? [];
+    const creditLikes = creditData.Likes ?? [];
+
+    if(body.liked){
+      userLikes.push({
+        date: Date.now(),
+        type: "credit",
+        id: creditAddress
+      })
+      creditLikes.push({
+        date: Date.now(),
+        userId: userAddress
+      }) 
+    } else{
+        userLikes.forEach((item, index) => {
+          if(creditAddress === item.id) userLikes.splice(index, 1)
+        })
+        creditLikes.forEach((item, index2) => {
+          if(userAddress === item.userId) creditLikes.splice(index2, 1)
+        }) 
+    }
+      
+    userSnap.ref.update({
+      Likes: userLikes
+    });
+
+    creditSnap.ref.update({
+      Likes: creditLikes
+    });
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/priviCredit -> like(): ', err);
+    res.send({ success: false });
+  }
+};
+
 // edit community
 exports.editPriviCredit = async (req: express.Request, res: express.Response) => {
   try {

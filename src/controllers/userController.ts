@@ -458,6 +458,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
           myFTPods: [],
           investedNFTPods: [],
           investedFTPods: [],
+          Likes: [],
           twitter: '',
           instagram: '',
           facebook: '',
@@ -617,6 +618,7 @@ interface BasicInfo {
   numFollowings: number;
   followers: any[];
   followings: any[];
+  likes: any[];
   bio: string;
   level: number;
   twitter: string;
@@ -646,6 +648,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       points: 0,
       numFollowings: 0,
       followings: [],
+      likes: [],
       bio: '',
       level: 1,
       twitter: '',
@@ -692,6 +695,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.followers = userData.followers || [];
       basicInfo.followings = userData.followings || [];
       basicInfo.bio = userData.bio || '';
+      basicInfo.likes = userData.Likes || [];
       basicInfo.level = userData.level || 1;
       basicInfo.twitter = userData.twitter || '';
       basicInfo.instagram = userData.instagram || '';
@@ -764,6 +768,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let myCommunities = await getMyCommunitiesFunction(userId);
       let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools = await getMyCreditPools(userId);
+      let myWorkInProgress = await getMyWorkInProgressFunction(userId);
 
       res.send({
         success: true,
@@ -777,6 +782,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myCommunities: myCommunities,
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
+          myWorkInProgress: myWorkInProgress,
         },
       });
     } else {
@@ -1724,8 +1730,9 @@ const getMyCommunitiesFunction = (userId) => {
       const user: any = userRef.data();
       let myCommunities: any[] = [];
 
-      myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
-
+      if (user.JoinedCommunities && user.JoinedCommunities.length > 0) {
+        myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
+      }
       resolve(myCommunities);
     } catch (e) {
       reject(e);
@@ -1862,6 +1869,56 @@ const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<an
   });
 };
 
+//get communities
+const getMyWorkInProgressFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let myWorkInProgress: any[] = [];
+
+      myWorkInProgress = await getWorkInProgressArray(userId, collections.workInProgress);
+
+      resolve(myWorkInProgress);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]> => {
+  return new Promise((resolve, reject) => {
+    let wipInfo: any[] = [];
+
+    db.collection(collection)
+      .get()
+      .then((querySnapshot) => {
+        let counter = 0;
+        if (querySnapshot.size > 0) {
+          querySnapshot.forEach((wip) => {
+            if (wip.data().Creator === userId) {
+              const wipCopy = wip.data();
+              wipCopy.isCreator = true;
+              wipInfo.push(wip.data());
+            } else {
+              if (wip.data().Offers && wip.data().Offers.length > 0) {
+                if (wip.data().Offers.some((offer) => offer.userId === userId)) {
+                  const wipCopy = wip.data();
+                  wipCopy.isCreator = false;
+                  wipInfo.push(wip.data());
+                }
+              }
+            }
+            counter++;
+            if (counter === querySnapshot.size) {
+              resolve(wipInfo);
+            }
+          });
+        } else {
+          resolve(wipInfo);
+        }
+      });
+  });
+};
+
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   console.log(userId);
@@ -1977,7 +2034,7 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
     let badgeId = body.badgeId;
-    let userId = body.userId
+    let userId = body.userId;
 
     const userRef = db.collection(collections.user).doc(userId);
     const userGet = await userRef.get();
@@ -1987,10 +2044,10 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 
     if (badges && badges.length > 0) {
       badges.forEach(function (badge) {
-        if (badge.badgeId = badgeId) {
+        if ((badge.badgeId = badgeId)) {
           badge.isNew = false;
         }
-      })
+      });
     }
 
     await userRef.update({
@@ -2008,7 +2065,6 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 };
-
 
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -3355,6 +3411,7 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
       });
     } else {
       let docSlugSnap;
+      urlSlug = urlId;
 
       if (type === 'user') {
         docSlugSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();

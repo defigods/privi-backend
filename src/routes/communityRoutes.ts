@@ -185,6 +185,8 @@ router.post('/follow', authenticateJWT, communityController.follow);
 router.post('/unfollow', authenticateJWT, communityController.unfollow);
 router.post('/join', authenticateJWT, communityController.join);
 router.post('/leave', authenticateJWT, communityController.leave);
+router.post('/sumTotalViews', authenticateJWT, communityController.sumTotalViews);
+router.post('/like', authenticateJWT, communityController.like);
 
 router.post('/createCommunity', authenticateJWT, communityController.createCommunity);
 router.post('/createCommunityToken', authenticateJWT, communityController.createCommunityToken);
@@ -194,6 +196,7 @@ router.post('/sellCommunityToken', authenticateJWT, communityController.sellComm
 router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommunityToken);
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
 router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCommunityInfo);
+router.post('/saveCommunity', authenticateJWT, communityController.saveCommunity);
 
 router.post('/allocateFunds', authenticateJWT, communityController.allocateFunds);
 router.get('/getMaxAllocatingFund', authenticateJWT, communityController.getMaxAllocatingFund);
@@ -233,10 +236,23 @@ router.post('/discussions/createPost', authenticateJWT, blogController.discussio
 router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
 router.get('/discussions/getDiscussions/:communityId', authenticateJWT, blogController.getDiscussionsPost);
 router.get('/discussions/getDiscussion/:discussionId', authenticateJWT, blogController.getDiscussionsPostById);
-router.post('/discussions/changePostPhoto', authenticateJWT, upload9.single('image'), blogController.changeDiscussionsPhoto);
-router.post('/discussions/changePostDescriptionPhotos/:discussionId', authenticateJWT, upload8.array('image'), blogController.changeDiscussionsDescriptionPhotos);
+router.post(
+  '/discussions/changePostPhoto',
+  authenticateJWT,
+  upload9.single('image'),
+  blogController.changeDiscussionsPhoto
+);
+router.post(
+  '/discussions/changePostDescriptionPhotos/:discussionId',
+  authenticateJWT,
+  upload8.array('image'),
+  blogController.changeDiscussionsDescriptionPhotos
+);
 router.get('/discussions/getPostPhoto/:discussionId', blogController.getDiscussionsPhotoById);
-router.get('/discussions/getDescriptionPostPhoto/:discussionId/:photoId', blogController.getDiscussionsDescriptionPhotoById);
+router.get(
+  '/discussions/getDescriptionPostPhoto/:discussionId/:photoId',
+  blogController.getDiscussionsDescriptionPhotoById
+);
 router.post('/discussions/makeResponse', authenticateJWT, blogController.makeResponseDiscussions);
 router.post('/discussions/likePost', authenticateJWT, blogController.likePostDiscussions);
 router.post('/discussions/dislikePost', authenticateJWT, blogController.dislikePostDiscussions);
