@@ -171,12 +171,7 @@ router.get('/getMembersData', authenticateJWT, communityController.getMembersDat
 router.get('/getUserPaymentData', authenticateJWT, communityController.getUserPaymentData);
 router.get('/getCommunityTransactions', authenticateJWT, communityController.getCommunityTransactions);
 router.get('/getPhoto/:communityId', communityController.getCommunityPhotoById);
-router.post(
-  '/changeCommunityPhoto',
-  authenticateJWT,
-  upload6.single('image'),
-  communityController.changeCommunityPhoto
-);
+router.post('/changeCommunityPhoto', authenticateJWT, upload6.single('image'), communityController.changeCommunityPhoto);
 router.post('/editCommunity', authenticateJWT, communityController.editCommunity);
 router.post('/editRules', authenticateJWT, communityController.editRules);
 router.post('/editLevels', authenticateJWT, communityController.editLevels);
@@ -197,6 +192,8 @@ router.post('/buyCommunityToken', authenticateJWT, communityController.buyCommun
 router.post('/stakeCommunityFunds', authenticateJWT, communityController.stakeCommunityFunds);
 router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCommunityInfo);
 router.post('/saveCommunity', authenticateJWT, communityController.saveCommunity);
+router.post('/addOffer', authenticateJWT, communityController.addOffer);
+router.post('/changeOffer', authenticateJWT, communityController.changeOffer);
 
 router.post('/allocateFunds', authenticateJWT, communityController.allocateFunds);
 router.get('/getMaxAllocatingFund', authenticateJWT, communityController.getMaxAllocatingFund);
@@ -253,8 +250,6 @@ router.post('/roleInvitation', authenticateJWT, communityController.roleInvitati
 router.post('/removeRoleUser', authenticateJWT, communityController.removeRoleUser);
 
 router.post('/events/createEvent', authenticateJWT, communityController.addEvent);
-
-router.post('/addOffer', authenticateJWT, communityController.addOffer);
 
 //COMMUNITY SLUG
 router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);

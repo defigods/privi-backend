@@ -537,7 +537,27 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
     if(body && body.userId && body.offer && body.offer.token && body.offer.amount
       && body.offer.paymentDate && body.offer.userId) {
 
-      let community : any = await addOfferToCommunity(body.userId, body.communityId, body.offer);
+      let community : any = await addOfferToWorkInProgress(body.userId, body.communityId, body.offer);
+
+      res.send({ success: true, data: community });
+
+    } else {
+      console.log('Error in controllers/communityController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+exports.changeOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.communityId && body.status
+      && body.token && body.amount) {
+
+      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount);
 
       res.send({ success: true, data: community });
 
@@ -2624,23 +2644,22 @@ const getArrayIdCommunityMembers = async (data: any) => {
   });
 };
 
-const addOfferToCommunity = (userId, communityId, offer) => {
+const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
   return new Promise(async (resolve, reject) => {
     try{
       const data: any = {
-        Date: offer.paymentDate,
-        Creator: userId,
-        Token: offer.token,
-        Amount: offer.amount,
-        UserRequested: offer.userId,
-        Status: 'pending'
+        paymentDate: offer.paymentDate,
+        token: offer.token,
+        amount: offer.amount,
+        userId: offer.userId,
+        status: 'pending'
       };
 
-      const communityRef = db.collection(collections.community).doc(communityId);
-      const communityGet = await communityRef.get();
-      let community : any = communityGet.data();
+      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressGet = await workInProgressRef.get();
+      let workInProgress : any = workInProgressGet.data();
 
-      let offers = community.Offers;
+      let offers = [...workInProgress.Offers];
 
       if (offers && offers.length > 0) {
         offers.push(data);
@@ -2648,30 +2667,136 @@ const addOfferToCommunity = (userId, communityId, offer) => {
         offers = [data];
       }
 
-      community.Offers = offers;
-      await communityRef.update({
+      workInProgress.Offers = offers;
+      await workInProgressRef.update({
         Offers: offers
       });
 
-      const userSnap = await db.collection(collections.user).doc(data.Creator).get();
+      const userSnap = await db.collection(collections.user).doc(creatorId).get();
       const user: any = userSnap.data();
 
       await notificationsController.addNotification({
-        userId: data.UserRequested,
+        userId: data.userId,
         notification: {
           type: 93,
           typeItemId: 'user',
-          itemId: data.Creator,
+          itemId: creatorId,
           follower: user.firstName,
           pod: '',
           comment: '',
-          token: data.Token,
-          amount: data.Amount,
+          token: data.token,
+          amount: data.amount,
           onlyInformation: false,
           otherItemId: ''
         }
       });
-      resolve(community)
+      resolve(workInProgress)
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
+
+const changeOfferToWorkInProgress = (userId, communityId, status, token, amount) => {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressGet = await workInProgressRef.get();
+      let workInProgress : any = workInProgressGet.data();
+
+      let offers = [...workInProgress.Offers];
+
+      let offerIndex = offers.findIndex(off => off.userId === userId);
+      if (offerIndex !== -1) {
+        offers[offerIndex].status = status;
+        offers[offerIndex].token = token;
+        offers[offerIndex].amount = amount;
+      }
+
+      workInProgress.Offers = offers;
+      await workInProgressRef.update({
+        Offers: offers
+      });
+
+      const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
+      const creator: any = userSnap.data();
+
+      const userSnap = await db.collection(collections.user).doc(offers[offerIndex].userId).get();
+      const user: any = userSnap.data();
+
+      if(status === 'accepted') {
+        // ACCEPTED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 98,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: '',
+            comment: '',
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: ''
+          }
+        });
+      } else if(status === 'declined') {
+        // DECLINED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 96,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: '',
+            comment: '',
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: ''
+          }
+        });
+      } else {
+        if(token === null || amount === null) {
+          // REFUSED OFFER NOTIFICATION
+          await notificationsController.addNotification({
+            userId: workInProgress.Creator,
+            notification: {
+              type: 97,
+              typeItemId: 'user',
+              itemId: offers[offerIndex].userId,
+              follower: user.firstName,
+              pod: '',
+              comment: '',
+              token: offers[offerIndex].token,
+              amount: offers[offerIndex].amount,
+              onlyInformation: false,
+              otherItemId: ''
+            }
+          });
+        } else {
+          // ANOTHER OFFER NOTIFICATION
+          await notificationsController.addNotification({
+            userId: offers[offerIndex].userId,
+            notification: {
+              type: 95,
+              typeItemId: 'user',
+              itemId: workInProgress.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offers[offerIndex].token,
+              amount: offers[offerIndex].amount,
+              onlyInformation: false,
+              otherItemId: ''
+            }
+          });
+        }
+      }
+
+      resolve(workInProgress)
     } catch (e) {
       reject(e)
     }
