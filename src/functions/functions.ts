@@ -27,6 +27,13 @@ export async function updateTxOneToOneSwap(swapDocID, txId) {
     });
 };
 
+export async function updatePriviTxOneToOneSwap(swapDocID, txId) {
+    await db.runTransaction(async (transaction) => {
+        // console.log('confirmOneToOneSwap in path, docID', collections.ethTransactions, swapDocID)
+        transaction.update(db.collection(collections.ethTransactions).doc(swapDocID), { txPrivi: txId });
+    });
+};
+
 export async function getRecentSwaps(userAddress) {
     // console.log('getRecentSwaps in path, docID', collections.ethTransactions, userAddress)
     let recentSwaps = {};

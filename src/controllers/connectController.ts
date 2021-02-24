@@ -4,7 +4,7 @@ import cron from 'node-cron';
 import { db } from "../firebase/firebase";
 import collections from "../firebase/collections";
 import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.js';
-import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
+import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, updatePriviTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
 import ERC20Balance from '../contracts/ERC20Balance.json';
 const fs = require('fs');
@@ -307,6 +307,7 @@ const saveTx = async (params: any) => {
     // console.log('saveTx',params)
     // Build object with fields to be stored in Firestore
     const data = {
+        txPrivi: '0x',
         txHash: params.txHash,
         from: params.from,
         to: params.to,
@@ -323,7 +324,7 @@ const saveTx = async (params: any) => {
     };
 
     // Insert data into Firestore
-    const res = await db
+    await db
         .collection(collections.ethTransactions)
         .add(data);
 };
@@ -477,11 +478,12 @@ const swap = async (
             console.log('--> Swap: TX confirmed in Fabric: ', response);
 
             // Update balances in Firestore
-            // updateFirebase(response);
+            updateFirebase(response);
 
             // confirm swap: ** this could be moved to updateFireBase
             console.log('should confirm swap doc id', swapDocId)
             updateStatusOneToOneSwap(swapDocId, 'confirmed');
+            updatePriviTxOneToOneSwap(swapDocId, response.hash);
 
         } else {
             console.log('Error in connectController.ts -> swap(): Swap call in Fabric not successful', response);
@@ -532,7 +534,10 @@ const withdraw = async (
 
     if (response && response.success) {
         console.log('burn fab', response.success)
-        // second send coin to user on eth
+        
+        // Update balances in Firestore
+        updateFirebase(response);
+        updatePriviTxOneToOneSwap(swapDocId, response.hash);
 
         // Convert value into wei
         const amountWei = web3_l.utils.toWei(String(amount));
@@ -574,13 +579,13 @@ const withdraw = async (
         } else {
             console.warn('--> Withdraw: TX failed in Ethereum', 'error', error, 'data', data, 'type of data is string?:', typeof data === 'string');
             console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed')
-            const txHash = data;
+            const txHash = data.transactionHash;
             updateStatusOneToOneSwap(swapDocId, 'failed');
             updateTxOneToOneSwap(swapDocId, txHash);
 
             const mintBack = await swapFab(
                 'CRYPTO',
-                toEthAddress,
+                '0x0000000000000000000000000000000000000000',
                 fromFabricAddress,
                 amount,
                 token,
@@ -588,8 +593,10 @@ const withdraw = async (
             );
 
             if (mintBack.success) {
-                console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+                console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
                 updateStatusOneToOneSwap(swapDocId, 'failed with return');
+                updateFirebase(mintBack);
+                updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
             } else {
                 console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
                 updateStatusOneToOneSwap(swapDocId, 'failed without return');
