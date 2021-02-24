@@ -2719,7 +2719,7 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount)
       });
 
       const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
-      const creator: any = userSnap.data();
+      const creator: any = creatorSnap.data();
 
       const userSnap = await db.collection(collections.user).doc(offers[offerIndex].userId).get();
       const user: any = userSnap.data();
