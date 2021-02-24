@@ -535,10 +535,18 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if(body && body.userId && body.offer && body.offer.token && body.offer.amount
-      && body.offer.paymentDate && body.offer.userId) {
+      && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
 
-      let community : any = await addOfferToWorkInProgress(body.userId, body.communityId, body.offer);
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
 
+      for(let offer of body.Offers) {
+        const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+        const userData: any = userSnap.data();
+
+        let community: any = await addOfferToWorkInProgress(body.userId, body.communityId, body.offer);
+        chatController.createChatFromUsers(body.offer.wipId, body.Creator, offer.userId, creator.firstName, userData.firstName);
+      }
       res.send({ success: true, data: community });
 
     } else {
@@ -2668,6 +2676,7 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
       }
 
       workInProgress.Offers = offers;
+
       await workInProgressRef.update({
         Offers: offers
       });
@@ -2882,6 +2891,16 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             CommunityAddress: communityAddress,
             Creator: body.Creator,
           });
+      }
+
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      for(let offer of body.Offers) {
+        const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+        const userData: any = userSnap.data();
+        chatController.createChatFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
+
       }
 
       res.send({

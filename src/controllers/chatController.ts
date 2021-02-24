@@ -96,9 +96,12 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
                 error: 'Error in controllers/chatRoutes -> createChat(): Non Users Provided Correctly'
             });
         }
-
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> createChat()' + e)
+        console.log('Error in controllers/chatRoutes -> createChat()' + e);
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> createChat(): ' + e
+        });
     }
 };
 
@@ -1726,5 +1729,57 @@ const chatFoldersCheck = async (id) => {
         }
     } catch (e) {
         return e;
+    }
+}
+
+const createChatFromUsers = exports.createChatFromUsers = async (wipId, fromId, toId, fromName, toName) => {
+    try {
+        let room : string = '';
+        if (fromName.toLowerCase() < toName.toLowerCase()) {
+            room = "" + wipId + "" + fromId + "" + toId;
+        } else {
+            room = "" + wipId + "" + fromId + "" + toId + "" + fromId;
+        }
+
+        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        if (!chatQuery.empty) {
+            for (const doc of chatQuery.docs) {
+                let data = doc.data();
+                data.id = doc.id;
+                return(data);
+            }
+        } else {
+            await db.runTransaction(async (transaction) => {
+                const uid = generateUniqueId();
+
+                // userData - no check if firestore insert works? TODO
+                transaction.set(db.collection(collections.chat).doc(uid), {
+                    users: {
+                        userFrom: {
+                            lastView: null,
+                            userConnected: false,
+                            userFoto: '',
+                            userId: fromId,
+                            userName: fromName
+                        },
+                        userTo: {
+                            lastView: null,
+                            userConnected: false,
+                            userFoto: '',
+                            userId: toId,
+                            userName: toName
+                        }
+                    },
+                    created: Date.now(),
+                    room: room,
+                    lastMessage: null,
+                    lastMessageDate: null,
+                    messages: []
+                });
+            });
+        }
+    } catch (e) {
+        console.log(e);
+
     }
 }
