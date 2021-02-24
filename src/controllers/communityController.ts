@@ -2632,7 +2632,8 @@ const addOfferToCommunity = (userId, communityId, offer) => {
         Creator: userId,
         Token: offer.token,
         Amount: offer.amount,
-        UserRequested: offer.userId
+        UserRequested: offer.userId,
+        Status: 'pending'
       };
 
       const communityRef = db.collection(collections.community).doc(communityId);
