@@ -3,19 +3,14 @@ import social from '../blockchain/social';
 import coinBalance from '../blockchain/coinBalance';
 import {
   updateFirebase,
-  addZerosToHistory,
   getMarketPrice,
   getSellTokenAmount,
   getBuyTokenAmount,
-  getSellTokenAmountPod,
 } from '../functions/functions';
-import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
-import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
-import { blockchainCoinBalanceAPI } from '../blockchain/blockchainApi';
 const notificationsController = require('./notificationsController');
 
 const apiKey = process.env.API_KEY;
@@ -83,7 +78,6 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
           otherItemId: '',
         },
       });
-
       res.send({ success: true, data: { id: socialAddress } });
     } else {
       console.log(
@@ -94,6 +88,96 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
     }
   } catch (err) {
     console.log('Error in controllers/socialController -> createSocialToken(): ', err);
+    res.send({ success: false });
+  }
+}
+
+exports.buySocialToken = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const investor = body.Investor;
+    const poolAddress = body.PoolAddress;
+    const amount = body.Amount;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await social.buySocialToken(investor, poolAddress, amount, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+
+      // TODO: set correct notification
+      // await notificationsController.addNotification({
+      //   userId: creator,
+      //   notification: {
+      //     type: 47,
+      //     typeItemId: 'user',
+      //     itemId: body.userId,
+      //     follower: '',
+      //     pod: '',
+      //     comment: '',
+      //     token: tokenSymbol,
+      //     amount: 0,
+      //     onlyInformation: false,
+      //     otherItemId: '',
+      //   },
+      // });
+
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/socialController -> buySocialToken(): success = false.',
+        blockchainRes.message
+      );
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/socialController -> buySocialToken(): ', err);
+    res.send({ success: false });
+  }
+};
+
+exports.sellSocialToken = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const investor = body.Investor;
+    const poolAddress = body.PoolAddress;
+    const amount = body.Amount;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await social.sellSocialToken(investor, poolAddress, amount, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+
+      // TODO: set correct notification
+      // await notificationsController.addNotification({
+      //   userId: creator,
+      //   notification: {
+      //     type: 47,
+      //     typeItemId: 'user',
+      //     itemId: body.userId,
+      //     follower: '',
+      //     pod: '',
+      //     comment: '',
+      //     token: tokenSymbol,
+      //     amount: 0,
+      //     onlyInformation: false,
+      //     otherItemId: '',
+      //   },
+      // });
+
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/socialController -> sellSocialToken(): success = false.',
+        blockchainRes.message
+      );
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/socialController -> sellSocialToken(): ', err);
     res.send({ success: false });
   }
 };
@@ -141,61 +225,51 @@ exports.getSocialTokens = async (req: express.Request, res: express.Response) =>
   }
 };
 
-// get selling price for API
-exports.getBuyTokenAmount = async (req: express.Request, res: express.Response) => {
+exports.getSocialTokenAmount = async (req: express.Request, res: express.Response) => {
   try {
-    const body = req.body;
-    const poolAddress = body.poolAddress;
-    const amount = body.amount;
-    const socialTokenPool = await db.collection(collections.socialPools).doc(poolAddress).get();
-    const data: any = socialTokenPool.data();
-    const retData = getBuyTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.TargetPrice);
-    res.send({ success: true, data: retData });
+    const poolAddress: any = req.query.poolAddress;
+    const amount: any = req.query.amount;  // funding token amount
+    const socialSnap = await db.collection(collections.socialPools).doc(poolAddress).get();
+    const data: any = socialSnap.data();
+    const fundingTokens = getBuyTokenAmount(
+      data.AMM,
+      data.SupplyReleased,
+      data.InitialSupply,
+      amount,
+      data.TargetPrice,
+      data.TargetSupply
+    );
+    res.send({ success: true, data: fundingTokens });
   } catch (err) {
-    console.log('Error in controllers/socialController -> getBuyTokenAmount(): ', err);
+    console.log('Error in controllers/socialController -> getSocialTokenAmount(): ', err);
     res.send({ success: false });
   }
 };
 
-// get funding tokens for API
-exports.getSellTokenAmount = async (req: express.Request, res: express.Response) => {
-  try {
-    const body = req.body;
-    const poolAddress = body.poolAddress;
-    const amount = body.amount;
-    const socialTokenPool = await db.collection(collections.socialPools).doc(poolAddress).get();
-    const data: any = socialTokenPool.data();
-    const retData = getSellTokenAmount(data.AMM, data.SupplyReleased, data.InitialSupply, amount, data.TargetPrice);
-    res.send({ success: true, data: retData });
-  } catch (err) {
-    console.log('Error in controllers/socialController -> getSellTokenAmount(): ', err);
-    res.send({ success: false });
-  }
-};
 
 exports.editSocialToken = async (req: express.Request, res: express.Response) => {
-    try {
-      let body = req.body;
-  
-      const tokenRef = db.collection(collections.socialPools).doc(body.PoolAddress);
-  
-      await tokenRef.update({
-        IsPrivate: body.hidden
-      });
-  
-      res.send({
-        success: true,
-        data: {
-            IsPrivate: body.hidden
-        },
-      });
-    } catch (err) {
-      console.log('Error in controllers/socialController -> editSocialToken()', err);
-      res.send({ success: false });
-    }
-  };
+  try {
+    let body = req.body;
 
-  // adds +1 to views counter
+    const tokenRef = db.collection(collections.socialPools).doc(body.PoolAddress);
+
+    await tokenRef.update({
+      IsPrivate: body.hidden
+    });
+
+    res.send({
+      success: true,
+      data: {
+        IsPrivate: body.hidden
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/socialController -> editSocialToken()', err);
+    res.send({ success: false });
+  }
+};
+
+// adds +1 to views counter
 exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
@@ -219,50 +293,50 @@ exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
   }
 };
 
-  exports.like = async (req: express.Request, res: express.Response) => {
-    try {
-      const body = req.body;
-      const poolAddress = body.PoolAddress;
-      const userAddress = body.userAddress;
-      const userSnap = await db.collection(collections.user).doc(userAddress).get();
-      const socialSnap = await db.collection(collections.socialPools).doc(poolAddress).get();
-      const userData: any = userSnap.data();
-      const socialData: any = socialSnap.data();
+exports.like = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const poolAddress = body.PoolAddress;
+    const userAddress = body.userAddress;
+    const userSnap = await db.collection(collections.user).doc(userAddress).get();
+    const socialSnap = await db.collection(collections.socialPools).doc(poolAddress).get();
+    const userData: any = userSnap.data();
+    const socialData: any = socialSnap.data();
 
-      let userLikes = userData.Likes ?? [];
-      let socialLikes = socialData.Likes ?? [];
-  
-      if(body.liked){
-        userLikes.push({
-          date: Date.now(),
-          type: "socialToken",
-          id: poolAddress
-        })
-        socialLikes.push({
-          date: Date.now(),
-          userId: userAddress
-        })
-      } else{
-        userLikes.forEach((item, index) => {
-          if(poolAddress === item.id) userLikes.splice(index, 1)
-        })
-        socialLikes.forEach((item, index2) => {
-          if(userAddress === item.userId) socialLikes.splice(index2, 1)
-        }) 
-      }
-      
-      userSnap.ref.update({
-        Likes: userLikes
-      });
-      socialSnap.ref.update({
-        Likes: socialLikes
-      });
-      
-      res.send({ success: true });
-    } catch (err) {
-      console.log('Error in controllers/socialController -> like(): ', err);
-      res.send({ success: false });
+    let userLikes = userData.Likes ?? [];
+    let socialLikes = socialData.Likes ?? [];
+
+    if (body.liked) {
+      userLikes.push({
+        date: Date.now(),
+        type: "socialToken",
+        id: poolAddress
+      })
+      socialLikes.push({
+        date: Date.now(),
+        userId: userAddress
+      })
+    } else {
+      userLikes.forEach((item, index) => {
+        if (poolAddress === item.id) userLikes.splice(index, 1)
+      })
+      socialLikes.forEach((item, index2) => {
+        if (userAddress === item.userId) socialLikes.splice(index2, 1)
+      })
     }
+
+    userSnap.ref.update({
+      Likes: userLikes
+    });
+    socialSnap.ref.update({
+      Likes: socialLikes
+    });
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/socialController -> like(): ', err);
+    res.send({ success: false });
+  }
 };
 
 exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Response) => {

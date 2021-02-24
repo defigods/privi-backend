@@ -19,7 +19,11 @@ let upload = multer({
   storage: storage,
 });
 
+// POST
 router.post('/createSocialToken', authenticateJWT, socialController.createSocialToken);
+router.post('/buySocialToken', authenticateJWT, socialController.buySocialToken);
+router.post('/sellSocialToken', authenticateJWT, socialController.sellSocialToken);
+
 router.post(
   '/changeSocialTokenPhoto',
   authenticateJWT,
@@ -31,7 +35,10 @@ router.post('/editSocialToken', authenticateJWT, socialController.editSocialToke
 
 router.post('/sumTotalViews', authenticateJWT, socialController.sumTotalViews);
 router.post('/like', authenticateJWT, socialController.like);
+
+// GET
 router.get('/getSocialTokens', authenticateJWT, socialController.getSocialTokens);
+router.get('/getSocialTokenAmount', authenticateJWT, socialController.getSocialTokenAmount);
 router.get('/getTokenInfo/:tokenSymbol', socialController.getTokenInfo);
 
 module.exports = router;
