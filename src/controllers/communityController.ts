@@ -371,12 +371,6 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         }
       }
 
-      const offers = body.Offers;
-
-      for(let offer of offers) {
-        await addOfferToCommunity(creator, communityAddress, offer);
-      }
-
       res.send({
         success: true,
         data: {
