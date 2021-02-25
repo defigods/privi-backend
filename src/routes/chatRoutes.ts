@@ -82,4 +82,7 @@ router.get('/discord/getMessagePhoto/:discordChatId/:discordRoomId/:discordMessa
 router.get('/discord/getMessageAudio/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetAudioMessage);
 router.get('/discord/getMessageVideo/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetVideoMessage);
 
+router.post('/WIP/getChats', authenticateJWT, chatController.getChatsWIP);
+router.post('/WIP/newChat', authenticateJWT, chatController.createChatWIP);
+
 module.exports = router;
