@@ -20,7 +20,7 @@ import cron from 'node-cron';
 import { user } from 'firebase-functions/lib/providers/auth';
 import { Address } from 'ethereumjs-util';
 import path from 'path';
-import fs from 'fs';
+import fs, { promises } from 'fs';
 import { AMBERDATA_API_KEY, MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE } from '../constants/configuration';
 
 require('dotenv').config();
@@ -387,6 +387,26 @@ async function getImageURLFromCoinGeco(symbol: string): Promise<any> {
   return undefined;
 }
 
+async function checkOpenSea(contractAddress:string) : Promise<any>{
+  console.log('--------------------------------calling open Sea-----------------------------')
+  const config: AxiosRequestConfig = {
+    method: 'get',
+    // headers: { 'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY },
+    url: 'https://api.opensea.io/api/v1/asset_contract/' + contractAddress
+  }
+
+  let openSeaRes = await axios(config);
+  // console.log('--------------------------------checkOpenSea', openSeaRes.data)
+  if (openSeaRes && openSeaRes.data) {
+    return {
+      openSeaPage: 'https://opensea.io/assets/' + openSeaRes.data.collection.slug,
+      openSeaImageUrl: openSeaRes.data.image_url
+    };
+  } else {
+    return null;
+  }
+}
+
 async function getTokenListFromAmberData(address: string): Promise<any> {
   const config: AxiosRequestConfig = {
     method: 'get',
@@ -400,6 +420,7 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
     const records = amberdataRes.data.payload.records;
     const preparedTokenListPromise = Promise.all(records.map(async (element) => {
       const imageUrlObj = await getImageURLFromCoinGeco(element.symbol);
+      const openSea = element.isERC721 ? await checkOpenSea(element.address) : null; // test erc721 contract 0xf766b3e7073f5a6483e27de20ea6f59b30b28f87
       return {
         tokenContractAddress: element.address,
         tokenName: element.name,
@@ -407,7 +428,9 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
         tokenDecimal: element.decimals,
         tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
         balance: element.amount,
-        images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
+        images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND',
+        openSeaImage: element.isERC721 && openSea ? openSea.openSeaImageUrl : 'NO_OPENSEA',
+        openSeaPage: element.isERC721 && openSea ? openSea.openSeaPage : 'NO_OPENSEA',
       }
     })
     );
