@@ -2715,9 +2715,10 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount)
       let workInProgress : any = workInProgressGet.data();
 
       let offers = [...workInProgress.Offers];
-
+      let previousStatus : string = '';
       let offerIndex = offers.findIndex(off => off.userId === userId);
       if (offerIndex !== -1) {
+        previousStatus = offers[offerIndex].status
         offers[offerIndex].status = status;
         offers[offerIndex].token = token;
         offers[offerIndex].amount = amount;
@@ -2768,7 +2769,7 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount)
             otherItemId: ''
           }
         });
-      } else {
+      } else if(status === 'negotiating') {
         if(token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
           await notificationsController.addNotification({
@@ -2787,22 +2788,27 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount)
             }
           });
         } else {
-          // ANOTHER OFFER NOTIFICATION
-          await notificationsController.addNotification({
-            userId: offers[offerIndex].userId,
-            notification: {
-              type: 95,
-              typeItemId: 'user',
-              itemId: workInProgress.Creator,
-              follower: creator.firstName,
-              pod: '',
-              comment: '',
-              token: offers[offerIndex].token,
-              amount: offers[offerIndex].amount,
-              onlyInformation: false,
-              otherItemId: ''
-            }
-          });
+          if(previousStatus === 'pending') {
+            // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
+            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, offers[offerIndex].userId, creator.firstName, user.firstName);
+          } else {
+            // ANOTHER OFFER NOTIFICATION
+            await notificationsController.addNotification({
+              userId: offers[offerIndex].userId,
+              notification: {
+                type: 95,
+                typeItemId: 'user',
+                itemId: workInProgress.Creator,
+                follower: creator.firstName,
+                pod: '',
+                comment: '',
+                token: offers[offerIndex].token,
+                amount: offers[offerIndex].amount,
+                onlyInformation: false,
+                otherItemId: ''
+              }
+            });
+          }
         }
       }
 
@@ -2818,8 +2824,6 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount)
 exports.saveCommunity = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-
-    //console.log('savecommunity', body);
 
     if (body) {
       const communityObj = {
@@ -2892,16 +2896,16 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             CommunityAddress: communityAddress,
             Creator: body.Creator,
           });
-      }
 
-      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
-      const creator: any = creatorSnap.data();
+        const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+        const creator: any = creatorSnap.data();
 
-      for(let offer of body.Offers) {
-        const userSnap = await db.collection(collections.user).doc(offer.userId).get();
-        const userData: any = userSnap.data();
-        chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
+        for(let offer of body.Offers) {
+          const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+          const userData: any = userSnap.data();
+          chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
 
+        }
       }
 
       res.send({
@@ -2919,3 +2923,26 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 };
+
+const arr_diff = (a1, a2) => {
+
+  let a : any[] = [], diff : any[] = [];
+
+  for (let i = 0; i < a1.length; i++) {
+    a[a1[i]] = true;
+  }
+
+  for (let i = 0; i < a2.length; i++) {
+    if (a[a2[i]]) {
+      delete a[a2[i]];
+    } else {
+      a[a2[i]] = true;
+    }
+  }
+
+  for (let k in a) {
+    diff.push(k);
+  }
+
+  return diff;
+}

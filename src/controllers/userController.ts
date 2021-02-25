@@ -1901,7 +1901,7 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
               wipInfo.push(wipCopy);
             } else {
               if (wip.data().Offers && wip.data().Offers.length > 0) {
-                if (wip.data().Offers.some((offer) => offer.userId === userId)) {
+                if (wip.data().Offers.some((offer) => offer.userId === userId && (offer.status === "negotiating" || offer.status === "accepted"))) {
                   const wipCopy = wip.data();
                   wipCopy.id = wip.id;
                   wipCopy.isCreator = false;
