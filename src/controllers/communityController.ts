@@ -563,10 +563,9 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.userId && body.communityId && body.status
-      && body.token && body.amount) {
+    if(body && body.userId && body.communityId && body.status) {
 
-      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount);
+      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notification || false);
 
       res.send({ success: true, data: community });
 
@@ -2707,7 +2706,7 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
   });
 }
 
-const changeOfferToWorkInProgress = (userId, communityId, status, token, amount) => {
+const changeOfferToWorkInProgress = (userId, communityId, status, token, amount, notificationId) => {
   return new Promise(async (resolve, reject) => {
     try{
       const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
@@ -2788,9 +2787,18 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount)
             }
           });
         } else {
+          console.log(status, previousStatus);
           if(previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
             chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, offers[offerIndex].userId, creator.firstName, user.firstName);
+
+            if (notificationId) {
+              await notificationsController.removeNotification({
+                userId: userId,
+                notificationId: notificationId,
+              });
+            }
+
           } else {
             // ANOTHER OFFER NOTIFICATION
             await notificationsController.addNotification({
@@ -2884,8 +2892,38 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
 
       let communityAddress = body.CommunityAddress;
 
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
       if (body.CommunityAddress) {
-        db.collection(collections.workInProgress).doc(communityAddress).update(communityObj);
+        const workInProgressRef = db.collection(collections.workInProgress).doc(communityAddress);
+        const workInProgressGet = await workInProgressRef.get();
+        const workInProgress: any = workInProgressGet.data();
+
+        let diffOffers = communityObj.Offers.filter(item1 =>
+          !workInProgress.Offers.some(item2 => (item2.token === item1.token && item2.amount === item1.amount &&
+            item2.status === item1.status && item2.userId === item1.userId && item2.paymentDate === item1.paymentDate)));
+
+        for(let offer of diffOffers) {
+          await notificationsController.addNotification({
+            userId: offer.userId,
+            notification: {
+              type: 94,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offer.token,
+              amount: offer.amount,
+              onlyInformation: false,
+              otherItemId: body.CommunityAddress
+            }
+          });
+        }
+
+        await workInProgressRef.update(communityObj);
+
       } else {
         communityAddress = generateUniqueId();
 
@@ -2897,14 +2935,26 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             Creator: body.Creator,
           });
 
-        const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
-        const creator: any = creatorSnap.data();
-
         for(let offer of body.Offers) {
           const userSnap = await db.collection(collections.user).doc(offer.userId).get();
           const userData: any = userSnap.data();
           chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
 
+          await notificationsController.addNotification({
+            userId: offer.userId,
+            notification: {
+              type: 94,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offer.token,
+              amount: offer.amount,
+              onlyInformation: false,
+              otherItemId: communityAddress
+            }
+          });
         }
       }
 
@@ -2923,26 +2973,3 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
     res.send({ success: false });
   }
 };
-
-const arr_diff = (a1, a2) => {
-
-  let a : any[] = [], diff : any[] = [];
-
-  for (let i = 0; i < a1.length; i++) {
-    a[a1[i]] = true;
-  }
-
-  for (let i = 0; i < a2.length; i++) {
-    if (a[a2[i]]) {
-      delete a[a2[i]];
-    } else {
-      a[a2[i]] = true;
-    }
-  }
-
-  for (let k in a) {
-    diff.push(k);
-  }
-
-  return diff;
-}
