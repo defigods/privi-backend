@@ -477,23 +477,26 @@ module.exports.getUserTokenTypeBalanceHistory = async (req: express.Request, res
   try {
     let { userId } = req.query;
     userId = userId!.toString();
+    const cryptoHistory: any[] = [];
     const socialHistory: any[] = [];
     const ftHistory: any[] = [];
     const nftHistory: any[] = [];
 
+    const cryptoHistorySnap = await db.collection(collections.user).doc(userId).collection(collections.historyCrypto).orderBy('date', 'asc').get();
     const socialHistorySnap = await db.collection(collections.user).doc(userId).collection(collections.historySocial).orderBy('date', 'asc').get();
     const ftHistorySnap = await db.collection(collections.user).doc(userId).collection(collections.historyFT).orderBy('date', 'asc').get();
     const nftHistorySnap = await db.collection(collections.user).doc(userId).collection(collections.historyNFT).orderBy('date', 'asc').get();
 
+    cryptoHistorySnap.forEach((doc) => cryptoHistory.push(doc.data()));
     socialHistorySnap.forEach((doc) => socialHistory.push(doc.data()));
     ftHistorySnap.forEach((doc) => ftHistory.push(doc.data()));
     nftHistorySnap.forEach((doc) => nftHistory.push(doc.data()));
     const retData = {
+      cryptoHistory: cryptoHistory,
       socialHistory: socialHistory,
       ftHistory: ftHistory,
       nftHistory: nftHistory
     };
-    console.log(userId, retData);
     res.send({ success: true, data: retData });
   } catch (err) {
     console.log('Error in controllers/walletController -> getUserTokenTypeBalanceHistory()', err);
