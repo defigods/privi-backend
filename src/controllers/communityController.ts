@@ -2828,7 +2828,6 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
             }
           });
         } else {
-          console.log('1', status, '0', previousStatus);
           if(previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
             chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, offers[offerIndex].userId, creator.firstName, user.firstName);
@@ -2840,6 +2839,13 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
               });
             }
           } else {
+            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === communityId && not.type === 97)
+            if (notificationIndex !== -1) {
+              await notificationsController.removeNotification({
+                userId: workInProgress.Creator,
+                notificationId: user.notifications[notificationIndex].id,
+              });
+            }
             // ANOTHER OFFER NOTIFICATION
             await notificationsController.addNotification({
               userId: offers[offerIndex].userId,
