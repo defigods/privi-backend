@@ -10,6 +10,40 @@ const apiKey = 'PRIVI'; //process.env.API_KEY;
 
 // ----------------------------------- POST -------------------------------------------
 
+// BUG? there are repeated doc of return history and staking amount history in firebase
+exports.deleteDuplicatedPoints = async (req: express.Request, res: express.Response) => {
+  try {
+    const tokens = ["PRIVI", "pDATA", "pINS"]
+    tokens.forEach(async (token) => {
+      const returnHistorySnap = await db
+        .collection(collections.stakingToken)
+        .doc(token)
+        .collection(collections.stakedHistory)
+        .get();
+      returnHistorySnap.forEach((doc) => {
+        const data: any = doc.data();
+        if (!data || data.amount == 0) doc.ref.delete();
+      });
+    });
+
+    tokens.forEach(async (token) => {
+      const returnHistorySnap = await db
+        .collection(collections.stakingToken)
+        .doc(token)
+        .collection(collections.retunHistory)
+        .get();
+      returnHistorySnap.forEach((doc) => {
+        const data: any = doc.data();
+        if (!data || data.amount == 0) doc.ref.delete();
+      });
+    });
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/stakingController -> deleteDuplicatedPoints(): ', err);
+    res.send({ success: false });
+  }
+};
+
 // user stakes in a token
 exports.stakeToken = async (req: express.Request, res: express.Response) => {
   try {
@@ -320,7 +354,7 @@ exports.getReturnHistory = async (req: express.Request, res: express.Response) =
     const returnHistorySnap = await db
       .collection(collections.stakingToken)
       .doc(token)
-      .collection(collections.retunHistory)
+      .collection(collections.retunHistory).orderBy('date', 'asc')
       .get();
     returnHistorySnap.forEach((doc) => {
       const data: any = doc.data();
@@ -333,6 +367,7 @@ exports.getReturnHistory = async (req: express.Request, res: express.Response) =
   }
 };
 
+
 // get staked amount history of a token
 exports.getStakedHistory = async (req: express.Request, res: express.Response) => {
   try {
@@ -341,7 +376,7 @@ exports.getStakedHistory = async (req: express.Request, res: express.Response) =
     const stakedHistorySnap = await db
       .collection(collections.stakingToken)
       .doc(token)
-      .collection(collections.stakedHistory)
+      .collection(collections.stakedHistory).orderBy('date', 'asc')
       .get();
     stakedHistorySnap.forEach((doc) => {
       const data: any = doc.data();

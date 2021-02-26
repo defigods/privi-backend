@@ -74,7 +74,7 @@ const removeNotification = async (object: any) => {
             notifications: notifications
         });
     } catch (e) {
-        return('Error adding notification: ' + e)
+        return('Error removing notification: ' + e)
     }
 }
 

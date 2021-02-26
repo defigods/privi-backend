@@ -60,6 +60,7 @@ router.post('/lastView', authenticateJWT, chatController.lastView);
 router.post('/newChat', authenticateJWT, chatController.createChat);
 
 router.post('/discord/getChat', authenticateJWT, chatController.discordGetChat);
+router.post('/discord/getChatInfoMedia', authenticateJWT, chatController.discordGetChatInfoMedia);
 router.post('/discord/createChat', authenticateJWT, chatController.discordCreateChat);
 router.post('/discord/createRoom', authenticateJWT, chatController.discordCreateRoom);
 router.post('/discord/addUserToRoom', authenticateJWT, chatController.discordAddUserToRoom);
@@ -80,5 +81,8 @@ router.post('/discord/addMessageVideo/:discordChatId/:discordRoomId/:fromUserId'
 router.get('/discord/getMessagePhoto/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetPhotoMessage);
 router.get('/discord/getMessageAudio/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetAudioMessage);
 router.get('/discord/getMessageVideo/:discordChatId/:discordRoomId/:discordMessageId', chatController.discordGetVideoMessage);
+
+router.post('/WIP/getChats', authenticateJWT, chatController.getChatsWIP);
+router.post('/WIP/newChat', authenticateJWT, chatController.createChatWIP);
 
 module.exports = router;

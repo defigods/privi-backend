@@ -16,12 +16,18 @@ exports.getChats = async (req: express.Request, res: express.Response) => {
         const chatUserFromSnap = await db.collection(collections.chat)
             .where("users.userFrom.userId", "==", body.userId).get();
         chatUserFromSnap.forEach((doc) => {
-            allChats.push(doc.data())
+            let data = doc.data();
+            if(data && (!data.wipId || data.wipId === '')) {
+                allChats.push(data)
+            }
         });
         const chatUserToSnap = await db.collection(collections.chat)
             .where("users.userTo.userId", "==", body.userId).get();
         chatUserToSnap.forEach((doc) => {
-            allChats.push(doc.data())
+            let data = doc.data();
+            if(data && (!data.wipId || data.wipId === '')) {
+                allChats.push(data)
+            }
         });
         let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
 
@@ -30,7 +36,11 @@ exports.getChats = async (req: express.Request, res: express.Response) => {
             data: sortChats
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getChats()' + e)
+        console.log('Error in controllers/chatRoutes -> getChats()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getChats()' + e
+        });
     }
 };
 
@@ -96,9 +106,12 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
                 error: 'Error in controllers/chatRoutes -> createChat(): Non Users Provided Correctly'
             });
         }
-
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> createChat()' + e)
+        console.log('Error in controllers/chatRoutes -> createChat()' + e);
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> createChat(): ' + e
+        });
     }
 };
 
@@ -123,7 +136,11 @@ exports.getMessagesNotSeen = async (req: express.Request, res: express.Response)
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getMessagesNotSeen()' + e)
+        console.log('Error in controllers/chatRoutes -> getMessagesNotSeen()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getMessagesNotSeen()' + e
+        });
     }
 };
 
@@ -178,7 +195,11 @@ exports.lastView = async (req: express.Request, res: express.Response) => {
         }
 
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> lastView()' + e)
+        console.log('Error in controllers/chatRoutes -> lastView()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> lastView()' + e
+        });
     }
 };
 
@@ -258,7 +279,11 @@ exports.getChatRoomById = async (req: express.Request, res: express.Response) =>
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getChatRoomById()' + e)
+        console.log('Error in controllers/chatRoutes -> getChatRoomById()' + e)
+        res.status(200).send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getChatRoomById(): Non Chat Room Provided'
+        });
     }
 };
 
@@ -278,7 +303,11 @@ exports.getChatRoom = async (req: express.Request, res: express.Response) => {
             room: room
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getChatRoom()' + e)
+        console.log('Error in controllers/chatRoutes -> getChatRoom()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getChatRoom()' + e
+        });
     }
 };
 
@@ -301,7 +330,11 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
             });
         }
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getUsers()' + e)
+        console.log('Error in controllers/chatRoutes -> getUsers()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getUsers()' + e
+        });
     }
 };
 
@@ -333,7 +366,11 @@ exports.getFollowings = async (req: express.Request, res: express.Response) => {
             data: users
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> getFollowings()' + e)
+        console.log('Error in controllers/chatRoutes -> getFollowings()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getFollowings()' + e
+        });
     }
 };
 
@@ -361,7 +398,112 @@ exports.discordGetChat = async (req: express.Request, res: express.Response) => 
             data: discordChat
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+        console.log('Error in controllers/chatRoutes -> discordGetChat() ' + e)
+        res.send({success: false, error: e});
+    }
+}
+
+exports.discordGetChatInfoMedia = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const discordRoomRef = db.collection(collections.discordChat)
+          .doc(body.discordChatId).collection(collections.discordRoom)
+          .doc(body.discordRoom);
+        const discordRoomGet = await discordRoomRef.get();
+        const discordRoom: any = discordRoomGet.data();
+
+        let audioMessages: any[] = [];
+        let videoMessages: any[] = [];
+        let photoMessages: any[] = [];
+
+        if (discordRoom.messages && discordRoom.messages.length > 0) {
+            for (let i = 0; i < discordRoom.messages.length; i++) {
+                const messageGet = await db.collection(collections.discordMessage)
+                  .doc(discordRoom.messages[i]).get();
+
+                let discordMsg: any = messageGet.data();
+
+                if(discordMsg && discordMsg.type && discordMsg.type === 'audio') {
+                    const userRef = db.collection(collections.user).doc(discordMsg.from);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    discordMsg['user'] = {
+                        id: userGet.id,
+                        name: user.firstName,
+                        level: user.level || 1,
+                        cred: user.cred || 0,
+                        salutes: user.salutes || 0,
+                    }
+                    discordMsg.id = messageGet.id;
+                    audioMessages.push(discordMsg);
+                } else if(discordMsg && discordMsg.type && discordMsg.type === 'photo') {
+                    const userRef = db.collection(collections.user).doc(discordMsg.from);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    discordMsg['user'] = {
+                        id: userGet.id,
+                        name: user.firstName,
+                        level: user.level || 1,
+                        cred: user.cred || 0,
+                        salutes: user.salutes || 0,
+                    }
+                    discordMsg.id = messageGet.id;
+                    photoMessages.push(discordMsg);
+                } else if(discordMsg && discordMsg.type && discordMsg.type === 'video') {
+                    const userRef = db.collection(collections.user).doc(discordMsg.from);
+                    const userGet = await userRef.get();
+                    const user: any = userGet.data();
+
+                    discordMsg['user'] = {
+                        id: userGet.id,
+                        name: user.firstName,
+                        level: user.level || 1,
+                        cred: user.cred || 0,
+                        salutes: user.salutes || 0,
+                    }
+                    discordMsg.id = messageGet.id;
+                    videoMessages.push(discordMsg);
+                }
+
+                if(photoMessages.length >= 6 && videoMessages.length >= 6 && audioMessages.length >= 6) {
+                    res.status(200).send({
+                        success: true,
+                        data: {
+                            photos: photoMessages,
+                            videos: videoMessages,
+                            audios: audioMessages
+                        }
+                    });
+                    return;
+                }
+
+                if (i === discordRoom.messages.length - 1) {
+                    res.status(200).send({
+                        success: true,
+                        data: {
+                            photos: photoMessages,
+                            videos: videoMessages,
+                            audios: audioMessages
+                        }
+                    });
+                }
+            }
+        } else {
+            res.status(200).send({
+                success: true,
+                data: {
+                    photos: [],
+                    videos: [],
+                    audios: []
+                }
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> discordGetChatInfoMedia() ' + e)
+        res.send({success: false, error: e});
     }
 }
 
@@ -377,7 +519,11 @@ exports.discordCreateChat = async (req: express.Request, res: express.Response) 
             data: discordChatCreation
         });
     } catch (e) {
-        return ('Error in controllers/chatRoutes -> discordGetChat()' + e)
+        console.log('Error in controllers/chatRoutes -> discordGetChat()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> discordGetChat()' + e
+        });
     }
 }
 
@@ -1623,3 +1769,149 @@ const chatFoldersCheck = async (id) => {
         return e;
     }
 }
+
+exports.createChatWIP = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        if (body.wipId && body.users && body.users.userFrom && body.users.userFrom.userId && body.users.userTo && body.users.userTo.userId) {
+            const userFromSnap = await db.collection(collections.user).doc(body.users.userFrom.userId).get();
+            const userFrom: any = userFromSnap.data();
+
+            const userToSnap = await db.collection(collections.user).doc(body.users.userTo.userId).get();
+            const userTo: any = userToSnap.data();
+
+            let chat = await createChatWIPFromUsers(body.wipId, body.users.userFrom.userId, body.users.userTo.userId, userFrom.firstName, userTo.firstName);
+
+            res.send({
+                success: true,
+                data: chat
+            });
+        } else {
+            console.log('Error in controllers/chatRoutes -> createChatWIP(): Missing info');
+            res.send({
+                success: false,
+                error: 'Error in controllers/chatRoutes -> createChatWIP(): Missing info'
+            });
+        }
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> createChatWIP() ' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> createChatWIP() ' + e
+        });
+    }
+};
+
+const createChatWIPFromUsers = exports.createChatWIPFromUsers = (wipId, fromId, toId, fromName, toName) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            let room : string = '';
+            if (fromName.toLowerCase() < toName.toLowerCase()) {
+                room = "" + wipId + "" + fromId + "" + toId;
+            } else {
+                room = "" + wipId + "" + toId + "" + fromId;
+            }
+
+            const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+            if (!chatQuery.empty) {
+                for (const doc of chatQuery.docs) {
+                    let data = doc.data();
+                    data.id = doc.id;
+                    resolve(data);
+                }
+            } else {
+                const uid = generateUniqueId();
+
+                await db.runTransaction(async (transaction) => {
+
+                    // userData - no check if firestore insert works? TODO
+                    transaction.set(db.collection(collections.chat).doc(uid), {
+                        users: {
+                            userFrom: {
+                                lastView: null,
+                                userConnected: false,
+                                userFoto: '',
+                                userId: fromId,
+                                userName: fromName
+                            },
+                            userTo: {
+                                lastView: null,
+                                userConnected: false,
+                                userFoto: '',
+                                userId: toId,
+                                userName: toName
+                            }
+                        },
+                        created: Date.now(),
+                        room: room,
+                        lastMessage: null,
+                        lastMessageDate: null,
+                        messages: [],
+                        wipId: wipId
+                    });
+                });
+                resolve({
+                    users: {
+                        userFrom: {
+                            lastView: null,
+                            userConnected: false,
+                            userFoto: '',
+                            userId: fromId,
+                            userName: fromName
+                        },
+                        userTo: {
+                            lastView: null,
+                            userConnected: false,
+                            userFoto: '',
+                            userId: toId,
+                            userName: toName
+                        }
+                    },
+                    created: Date.now(),
+                    room: room,
+                    lastMessage: null,
+                    lastMessageDate: null,
+                    messages: [],
+                    wipId: wipId,
+                    id: uid
+                })
+            }
+        } catch (e) {
+            reject(e);
+        }
+    });
+
+}
+
+exports.getChatsWIP = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        const allChats: any[] = [];
+        const chatUserFromSnap = await db.collection(collections.chat)
+          .where("wipId", "==", body.wipId)
+          .where("users.userFrom.userId", "==", body.userId).get();
+        chatUserFromSnap.forEach((doc) => {
+            allChats.push(doc.data());
+        });
+        const chatUserToSnap = await db.collection(collections.chat)
+          .where("wipId", "==", body.wipId)
+          .where("users.userTo.userId", "==", body.userId).get();
+        chatUserToSnap.forEach((doc) => {
+            allChats.push(doc.data());
+        });
+        let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+
+        res.send({
+            success: true,
+            data: sortChats
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> getChatsWIP()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getChatsWIP()' + e
+        });
+    }
+};

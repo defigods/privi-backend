@@ -1896,14 +1896,16 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
           querySnapshot.forEach((wip) => {
             if (wip.data().Creator === userId) {
               const wipCopy = wip.data();
+              wipCopy.id = wip.id;
               wipCopy.isCreator = true;
-              wipInfo.push(wip.data());
+              wipInfo.push(wipCopy);
             } else {
               if (wip.data().Offers && wip.data().Offers.length > 0) {
-                if (wip.data().Offers.some((offer) => offer.userId === userId)) {
+                if (wip.data().Offers.some((offer) => offer.userId === userId && (offer.status === "negotiating" || offer.status === "accepted"))) {
                   const wipCopy = wip.data();
+                  wipCopy.id = wip.id;
                   wipCopy.isCreator = false;
-                  wipInfo.push(wip.data());
+                  wipInfo.push(wipCopy);
                 }
               }
             }

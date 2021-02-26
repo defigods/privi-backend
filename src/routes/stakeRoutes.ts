@@ -4,6 +4,9 @@ const router = express.Router();
 import { authenticateJWT } from "../middlewares/jwtAuthMiddleware";
 const stakeController = require("../controllers/stakeController");
 
+// called from postman
+router.post("/deleteDuplicatedPoints", stakeController.deleteDuplicatedPoints);
+
 router.post("/stakeToken", authenticateJWT, stakeController.stakeToken);
 router.post("/unstakeToken", authenticateJWT, stakeController.unstakeToken);
 router.post(

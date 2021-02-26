@@ -262,13 +262,18 @@ export const startSocket = (env: Env) => {
       if (users && users.userFrom && users.userFrom.userName &&
         users.userTo && users.userTo.userName) {
         if (users.userFrom.userName && users.userTo.userName) {
-          if (
-            users.userFrom.userName.toLowerCase() <
-            users.userTo.userName.toLowerCase()
-          ) {
-            room = "" + users.userFrom.userId + "" + users.userTo.userId;
+          if(users.wipId) {
+            if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
+              room = "" + users.wipId + "" + users.userFrom.userId + "" + users.userTo.userId;
+            } else {
+              room = "" + users.wipId + "" + users.userTo.userId + "" + users.userFrom.userId;
+            }
           } else {
-            room = "" + users.userTo.userId + "" + users.userFrom.userId;
+            if (users.userFrom.userName.toLowerCase() < users.userTo.userName.toLowerCase()) {
+              room = "" + users.userFrom.userId + "" + users.userTo.userId;
+            } else {
+              room = "" + users.userTo.userId + "" + users.userFrom.userId;
+            }
           }
         }
         const chatQuery = await db

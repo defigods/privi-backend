@@ -280,11 +280,9 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      if (
-        (admins && admins.length > 0) ||
+      if ((admins && admins.length > 0) ||
         (userRolesArray && userRolesArray.length > 0) ||
-        (invitedUsers && invitedUsers.length > 0)
-      ) {
+        (invitedUsers && invitedUsers.length > 0)) {
         let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
         if (!invitationEmails) {
           console.log('failed to send invitation e-mails.');
@@ -528,6 +526,55 @@ exports.addEvent = async (req: express.Request, res: express.Response) => {
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> addEvent()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.addOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.offer && body.offer.token && body.offer.amount
+      && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
+
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      let community: any;
+      for(let offer of body.Offers) {
+        const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+        const userData: any = userSnap.data();
+
+        community = await addOfferToWorkInProgress(body.userId, body.communityId, body.offer);
+        chatController.createChatWIPFromUsers(body.offer.wipId, body.Creator, offer.userId, creator.firstName, userData.firstName);
+      }
+      res.send({ success: true, data: community });
+
+    } else {
+      console.log('Error in controllers/communityController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+exports.changeOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.communityId && body.status) {
+
+      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notification || false);
+
+      res.send({ success: true, data: community });
+
+    } else {
+      console.log('Error in controllers/communityController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> addOffer()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -2605,12 +2652,186 @@ const getArrayIdCommunityMembers = async (data: any) => {
   });
 };
 
+const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const data: any = {
+        paymentDate: offer.paymentDate,
+        token: offer.token,
+        amount: offer.amount,
+        userId: offer.userId,
+        status: 'pending'
+      };
+
+      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressGet = await workInProgressRef.get();
+      let workInProgress : any = workInProgressGet.data();
+
+      let offers = [...workInProgress.Offers];
+
+      if (offers && offers.length > 0) {
+        offers.push(data);
+      } else {
+        offers = [data];
+      }
+
+      workInProgress.Offers = offers;
+
+      await workInProgressRef.update({
+        Offers: offers
+      });
+
+      const userSnap = await db.collection(collections.user).doc(creatorId).get();
+      const user: any = userSnap.data();
+
+      await notificationsController.addNotification({
+        userId: data.userId,
+        notification: {
+          type: 93,
+          typeItemId: 'user',
+          itemId: creatorId,
+          follower: user.firstName,
+          pod: '',
+          comment: '',
+          token: data.token,
+          amount: data.amount,
+          onlyInformation: false,
+          otherItemId: ''
+        }
+      });
+      resolve(workInProgress)
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
+
+const changeOfferToWorkInProgress = (userId, communityId, status, token, amount, notificationId) => {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressGet = await workInProgressRef.get();
+      let workInProgress : any = workInProgressGet.data();
+
+      let offers = [...workInProgress.Offers];
+      let previousStatus : string = '';
+      let offerIndex = offers.findIndex(off => off.userId === userId);
+      if (offerIndex !== -1) {
+        previousStatus = offers[offerIndex].status
+        offers[offerIndex].status = status;
+        offers[offerIndex].token = token;
+        offers[offerIndex].amount = amount;
+      }
+
+      workInProgress.Offers = offers;
+      await workInProgressRef.update({
+        Offers: offers
+      });
+
+      const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      const userSnap = await db.collection(collections.user).doc(offers[offerIndex].userId).get();
+      const user: any = userSnap.data();
+
+      if(status === 'accepted') {
+        // ACCEPTED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 98,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: '',
+            comment: '',
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: ''
+          }
+        });
+      } else if(status === 'declined') {
+        // DECLINED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 96,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: '',
+            comment: '',
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: ''
+          }
+        });
+      } else if(status === 'negotiating') {
+        if(token === null || amount === null) {
+          // REFUSED OFFER NOTIFICATION
+          await notificationsController.addNotification({
+            userId: workInProgress.Creator,
+            notification: {
+              type: 97,
+              typeItemId: 'user',
+              itemId: offers[offerIndex].userId,
+              follower: user.firstName,
+              pod: '',
+              comment: '',
+              token: offers[offerIndex].token,
+              amount: offers[offerIndex].amount,
+              onlyInformation: false,
+              otherItemId: ''
+            }
+          });
+        } else {
+          console.log(status, previousStatus);
+          if(previousStatus === 'pending') {
+            // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
+            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, offers[offerIndex].userId, creator.firstName, user.firstName);
+
+            if (notificationId) {
+              await notificationsController.removeNotification({
+                userId: userId,
+                notificationId: notificationId,
+              });
+            }
+
+          } else {
+            // ANOTHER OFFER NOTIFICATION
+            await notificationsController.addNotification({
+              userId: offers[offerIndex].userId,
+              notification: {
+                type: 95,
+                typeItemId: 'user',
+                itemId: workInProgress.Creator,
+                follower: creator.firstName,
+                pod: '',
+                comment: '',
+                token: offers[offerIndex].token,
+                amount: offers[offerIndex].amount,
+                onlyInformation: false,
+                otherItemId: ''
+              }
+            });
+          }
+        }
+      }
+
+      resolve(workInProgress)
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
+
+
 //save a community in the work in progress collection (to be created in the future)
 exports.saveCommunity = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-
-    //console.log('savecommunity', body);
 
     if (body) {
       const communityObj = {
@@ -2671,8 +2892,38 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
 
       let communityAddress = body.CommunityAddress;
 
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
       if (body.CommunityAddress) {
-        db.collection(collections.workInProgress).doc(communityAddress).update(communityObj);
+        const workInProgressRef = db.collection(collections.workInProgress).doc(communityAddress);
+        const workInProgressGet = await workInProgressRef.get();
+        const workInProgress: any = workInProgressGet.data();
+
+        let diffOffers = communityObj.Offers.filter(item1 =>
+          !workInProgress.Offers.some(item2 => (item2.token === item1.token && item2.amount === item1.amount &&
+            item2.status === item1.status && item2.userId === item1.userId && item2.paymentDate === item1.paymentDate)));
+
+        for(let offer of diffOffers) {
+          await notificationsController.addNotification({
+            userId: offer.userId,
+            notification: {
+              type: 94,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offer.token,
+              amount: offer.amount,
+              onlyInformation: false,
+              otherItemId: body.CommunityAddress
+            }
+          });
+        }
+
+        await workInProgressRef.update(communityObj);
+
       } else {
         communityAddress = generateUniqueId();
 
@@ -2683,6 +2934,28 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             CommunityAddress: communityAddress,
             Creator: body.Creator,
           });
+
+        for(let offer of body.Offers) {
+          const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+          const userData: any = userSnap.data();
+          chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
+
+          await notificationsController.addNotification({
+            userId: offer.userId,
+            notification: {
+              type: 94,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offer.token,
+              amount: offer.amount,
+              onlyInformation: false,
+              otherItemId: communityAddress
+            }
+          });
+        }
       }
 
       res.send({
