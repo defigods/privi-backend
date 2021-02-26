@@ -194,6 +194,7 @@ router.post('/checkCommunityInfo', authenticateJWT, communityController.checkCom
 router.post('/saveCommunity', authenticateJWT, communityController.saveCommunity);
 router.post('/addOffer', authenticateJWT, communityController.addOffer);
 router.post('/changeOffer', authenticateJWT, communityController.changeOffer);
+router.get('/getWIP/:communityId/:userId/:notificationId', authenticateJWT, communityController.getWIP);
 
 router.post('/allocateFunds', authenticateJWT, communityController.allocateFunds);
 router.get('/getMaxAllocatingFund', authenticateJWT, communityController.getMaxAllocatingFund);
