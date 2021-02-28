@@ -14,6 +14,7 @@ import {
 import badge from '../blockchain/badge';
 import community from '../blockchain/community';
 import coinBalance from '../blockchain/coinBalance';
+import streaming from '../blockchain/streaming';
 import notificationTypes from '../constants/notificationType';
 import { db } from '../firebase/firebase';
 import collections, { communityToken } from '../firebase/collections';
@@ -25,6 +26,7 @@ import fs from 'fs';
 import { sendNewCommunityUsersEmail } from '../email_templates/emailTemplates';
 import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
 import { user } from 'firebase-functions/lib/providers/auth';
+import tradinionalLending from "../blockchain/traditionalLending";
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
@@ -575,6 +577,44 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.sender && body.receiver && body.amountPeriod && body.token &&
+      body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.communityId) {
+
+      console.log(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+      const blockchainRes = await streaming.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+      if (blockchainRes && blockchainRes.success) {
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let notificationIndex = user.notifications.findIndex(not => not.otherItemId === body.communityId && not.type === 98)
+        if (notificationIndex !== -1) {
+          await notificationsController.removeNotification({
+            userId: body.userId,
+            notificationId: user.notifications[notificationIndex].id,
+          });
+        }
+        res.send({ success: true });
+
+      } else {
+        console.log('Error in controllers/communityController -> signTransactionAcceptOffer(): success = false',
+          blockchainRes.message);
+        res.send({ success: false, error: "Blockchain error" });
+      }
+    } else {
+      console.log('Error in controllers/communityController -> signTransactionAcceptOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/communityController -> signTransactionAcceptOffer()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -2783,8 +2823,8 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
             typeItemId: 'user',
             itemId: offers[offerIndex].userId,
             follower: user.firstName,
-            pod: '',
-            comment: '',
+            pod: user.address, //userAddress
+            comment: offers[offerIndex].paymentDate, //endDate
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
