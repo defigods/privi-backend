@@ -2923,7 +2923,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if (body) {
-      const communityObj = {
+      const communityObj : any = {
         HasPhoto: body.HasPhoto ?? false,
         Name: body.Name ?? '',
         Description: body.Description ?? '',
@@ -2988,16 +2988,20 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         const workInProgressGet = await workInProgressRef.get();
         const workInProgress: any = workInProgressGet.data();
 
-        await workInProgressRef.update(communityObj);
+        if(body.directlyUpdate) {
+          communityObj.Offers =  body.Offers
+          await workInProgressRef.update(communityObj);
+        } else {
+          await workInProgressRef.update(communityObj);
 
-        let diffOffers = body.Offers.filter(item1 =>
-          !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
-            && item2.amount === item1.amount && item2.token === item1.token)));
+          let diffOffers = body.Offers.filter(item1 =>
+            !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
+              && item2.amount === item1.amount && item2.token === item1.token)));
 
-        for(let offer of diffOffers) {
-          await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+          for(let offer of diffOffers) {
+            await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+          }
         }
-
       } else {
         communityAddress = generateUniqueId();
 
