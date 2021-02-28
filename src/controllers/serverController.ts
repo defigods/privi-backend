@@ -15,6 +15,7 @@ const os = require("os");
 const userRoutes = require("../routes/userRoutes");
 const podRoutes = require("../routes/podRoutes");
 const stakeRoutes = require("../routes/stakeRoutes");
+const streamingRoutes = require("../routes/streamingRoutes");
 const lendingRoutes = require("../routes/lendingRoutes");
 const walletRoutes = require("../routes/walletRoutes");
 const priviScanRoutes = require("../routes/priviScanRoutes");
@@ -67,6 +68,7 @@ export const startServer = (env: Env) => {
   app.use("/user", userRoutes);
   app.use("/pod", podRoutes);
   app.use("/stake", stakeRoutes);
+  app.use("/streaming", streamingRoutes);
   app.use("/lendings", lendingRoutes);
   app.use("/wallet", walletRoutes);
   app.use("/privi-scan", priviScanRoutes);
