@@ -565,7 +565,7 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
 
     if(body && body.userId && body.communityId && body.status) {
 
-      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notification || false, null);
+      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notificationId || false, null);
 
       res.send({ success: true, data: community });
 
@@ -2746,7 +2746,6 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
       let userSavedId : string = '';
 
       let offerIndex = offers.findIndex(off => off.userId === userId);
-      console.log(offers, offerIndex);
       if (offerIndex !== -1) {
         previousStatus = offers[offerIndex].status
         offers[offerIndex].status = status;
@@ -2809,6 +2808,33 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
             otherItemId: communityId
           }
         });
+        if (notificationId) {
+          await notificationsController.removeNotification({
+            userId: userId,
+            notificationId: notificationId,
+          });
+        }
+
+        let room : string = '';
+        if (user && user.firstName && creator && creator.firstName
+          && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
+          room = "" + communityId + "" + userSavedId + "" + workInProgress.Creator;
+        } else {
+          room = "" + communityId + "" + workInProgress.Creator + "" + userSavedId;
+        }
+        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        if (!chatQuery.empty) {
+          for (const doc of chatQuery.docs) {
+            let data = doc.data();
+            await db.collection(collections.chat).doc(doc.id).delete();
+            if(data.messages && data.messages.length > 0) {
+              for (const msg of data.messages) {
+                await db.collection(collections.message).doc(msg).delete();
+              }
+            }
+          }
+        }
+
       } else if(status === 'negotiating') {
         if(token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
@@ -2830,7 +2856,7 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
         } else {
           if(previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
-            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, offers[offerIndex].userId, creator.firstName, user.firstName);
+            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
 
             if (notificationId) {
               await notificationsController.removeNotification({
@@ -2897,7 +2923,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if (body) {
-      const communityObj = {
+      const communityObj : any = {
         HasPhoto: body.HasPhoto ?? false,
         Name: body.Name ?? '',
         Description: body.Description ?? '',
@@ -2962,16 +2988,20 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         const workInProgressGet = await workInProgressRef.get();
         const workInProgress: any = workInProgressGet.data();
 
-        await workInProgressRef.update(communityObj);
+        if(body.directlyUpdate) {
+          communityObj.Offers =  body.Offers
+          await workInProgressRef.update(communityObj);
+        } else {
+          await workInProgressRef.update(communityObj);
 
-        let diffOffers = body.Offers.filter(item1 =>
-          !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
-            && item2.amount === item1.amount && item2.token === item1.token)));
+          let diffOffers = body.Offers.filter(item1 =>
+            !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
+              && item2.amount === item1.amount && item2.token === item1.token)));
 
-        for(let offer of diffOffers) {
-          await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+          for(let offer of diffOffers) {
+            await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+          }
         }
-
       } else {
         communityAddress = generateUniqueId();
 

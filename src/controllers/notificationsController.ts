@@ -1,6 +1,8 @@
 import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
 import { io, sockets } from "./serverController";
+import {filterTrending, getRateOfChangeAsMap} from "../functions/functions";
+import cron from 'node-cron';
 
 interface Notification {
     id: number,
@@ -74,7 +76,7 @@ const removeNotification = async (object: any) => {
             notifications: notifications
         });
     } catch (e) {
-        return('Error removing notification: ' + e)
+        console.log('Error removing notification: ' + e);
     }
 }
 
@@ -84,7 +86,39 @@ const sendNotificationSocket = (userId, socketId, notification) => {
     }
 }
 
+const removeOldNotifications = cron.schedule('0 0 * * *', async () => {
+    try {
+        const userSnap = await db.collection(collections.user).get();
+        const docs = userSnap.docs;
+        for (let i = 0; i < docs.length; i++) {
+            const doc = docs[i];
+            const data: any = doc.data();
+            const id: any = doc.id;
+
+            let notifications = data.notifications;
+            if(notifications && notifications.length > 0) {
+                for(let [i, notification] of notifications.entries()) {
+                    let date = new Date();
+                    let pastDate = date.getDate() - 7;
+                    date.setDate(pastDate);
+
+                    if(date.getTime() > notification.date) {
+                        notifications.splice(i, 1)
+                    }
+                    if(notifications.length === i + 1) {
+                        data.notifications = notifications;
+                        await db.collection(collections.user).doc(id).update(data);
+                    }
+                }
+            }
+        }
+    } catch (err) {
+        console.log('Error in controllers/communityController -> removeOldNotifications()', err);
+    }
+});
+
 module.exports = {
     addNotification,
-    removeNotification
+    removeNotification,
+    removeOldNotifications
 }
