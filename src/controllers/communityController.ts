@@ -588,7 +588,6 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
     if(body && body.sender && body.receiver && body.amountPeriod && body.token &&
       body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.communityId) {
 
-      console.log(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
       const blockchainRes = await streaming.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
       if (blockchainRes && blockchainRes.success) {
         const userRef = db.collection(collections.user).doc(body.userId);
