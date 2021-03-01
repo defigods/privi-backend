@@ -707,7 +707,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.urlSlug = userData.urlSlug || userId;
+      basicInfo.urlSlug =
+        userData.urlSlug ||
+        userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
