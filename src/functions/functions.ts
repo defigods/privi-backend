@@ -99,6 +99,7 @@ export async function updateFirebase(blockchainRes) {
         const updateCommunities = output.UpdateCommunities;
         const updateCommunityStates = output.UpdateCommunityStates;
         const updateCommunityLPs = output.UpdateCommunityLPs;
+        // voting
         const updateVotations = output.updateVotations;
         const updateVotationStates = output.updateVotationStates;
         const updateVoters = output.UpdateVoters;
@@ -343,7 +344,6 @@ export async function updateFirebase(blockchainRes) {
         }
         // update votations
         if (updateVotations) {
-            console.log(updateVotations)
             let votationId: string = '';
             let votationObj: any = {};
             for ([votationId, votationObj] of Object.entries(updateVotations)) {

@@ -15,3 +15,4 @@ module.exports.endVotation = async (data) => {
     let blockchainRes = await axios.post(api.blockchainVotationAPI + "/endVotation", data);
     return blockchainRes.data;
 }
+

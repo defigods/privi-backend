@@ -1,7 +1,7 @@
 import express from "express";
-import {generateUniqueId, updateFirebase} from "../functions/functions";
-import {db} from "../firebase/firebase";
-import collections from "../firebase/collections";
+import { generateUniqueId, updateFirebase } from "../functions/functions";
+import { db } from "../firebase/firebase";
+import collections, { voting } from "../firebase/collections";
 import cron from 'node-cron';
 import votation from "../blockchain/votation";
 import coinBalance from '../blockchain/coinBalance';
@@ -17,8 +17,8 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
         const body = req.body;
         const uid = generateUniqueId();
 
-        let isAdmin : boolean = false;
-        let checkUserRole : any;
+        let isAdmin: boolean = false;
+        let checkUserRole: any;
 
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
@@ -31,12 +31,12 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
             isAdmin = await checkIfUserIsAdmin(pod.Creator, body.userId);
 
-        } else if(body.itemType === 'Community') {
+        } else if (body.itemType === 'Community') {
             const communityRef = db.collection(collections.community).doc(body.itemId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
 
-            if(body.type === 'regular') {
+            if (body.type === 'regular') {
                 checkUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, false, ['Moderator'])
             } else {
                 checkUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, false, ['Treasurer'])
@@ -44,7 +44,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             isAdmin = await checkIfUserIsAdmin(community.Creator, body.userId);
             console.log(isAdmin, community.Creator, body.userId)
 
-        } else if(body.itemType === 'CommunityTreasury') {
+        } else if (body.itemType === 'CommunityTreasury') {
             const communityRef = db.collection(collections.community).doc(body.itemId);
             const communityGet = await communityRef.get();
             const community: any = communityGet.data();
@@ -54,7 +54,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
             isAdmin = await checkIfUserIsAdmin(community.Creator, body.userId);
             console.log(isAdmin, community.Creator, body.userId)
 
-        } else if(body.itemType === 'CreditPool') {
+        } else if (body.itemType === 'CreditPool') {
             const priviCreditsRef = db.collection(collections.priviCredits).doc(body.itemId);
             const priviCreditsGet = await priviCreditsRef.get();
             const priviCredits: any = priviCreditsGet.data();
@@ -63,10 +63,10 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
         } else {
             console.log('Error in controllers/votingController -> createVotation()', 'Voting ItemType is unknown');
-            res.send({success: false, error: 'Voting ItemType is unknown'})
+            res.send({ success: false, error: 'Voting ItemType is unknown' })
         }
 
-        if(isAdmin || (checkUserRole && checkUserRole.checked)) {
+        if (isAdmin || (checkUserRole && checkUserRole.checked)) {
             let voting: any = {
                 VotationId: uid,
                 Type: body.type,
@@ -78,20 +78,20 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                 Answers: [],
                 OpenVotation: false,
                 Description: body.description,
-                StartingDate: Math.round(body.startingDate/1000),
-                EndingDate: Math.round(body.endingDate/1000)
+                StartingDate: Math.round(body.startingDate / 1000),
+                EndingDate: Math.round(body.endingDate / 1000)
             }
 
-            if(body.startingDate < Date.now()) {
+            if (body.startingDate < Date.now()) {
                 voting.OpenVotation = true
             }
 
-            if(voting.Type && voting.ItemType) {
+            if (voting.Type && voting.ItemType) {
                 if (voting.Type === 'staking') {
                     voting.VotationAddress = body.votationAddress;
                     voting.VotingToken = body.VotingToken;
                     voting.TotalVotes = body.totalVotes;
-                    voting.QuorumRequired = body.quorumRequired/100;
+                    voting.QuorumRequired = body.quorumRequired / 100;
                     voting.Hash = body.hash;
                     voting.Signature = body.signature;
                     voting.PossibleAnswers = ['Yes', 'No'];
@@ -108,11 +108,11 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                         })
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
-                        res.send({success: false, error: blockchainRes.message});
+                        res.send({ success: false, error: blockchainRes.message });
                         return;
                     }
                 } else if (voting.Type === 'regular') {
-                    if(body.itemType === 'CommunityTreasury') {
+                    if (body.itemType === 'CommunityTreasury') {
                         voting.RequiredAnswers = +body.requiredAnswers
                     }
                     voting.PossibleAnswers = body.possibleAnswers;
@@ -123,7 +123,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                     if (voting.NumberOfSignatures <= 1) {
                         let mes = 'wrong number of signatures: ' + voting.NumberOfSignatures;
                         console.log('Error in controllers/votingController -> createVotation()', mes);
-                        res.send({success: false, error: mes});
+                        res.send({ success: false, error: mes });
                     }
 
                     const blockchainRes = await coinBalance.balanceOf(voting.TranferFrom, voting.TokenToTransfer);
@@ -132,7 +132,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                         if (balance < voting.AmountToTransfer) {
                             let mes = 'amount to transfer ' + voting.AmountToTransfer + ' is more than current balance: ' + voting.AmountToTransfer;
                             console.log('Error in controllers/votingController -> createVotation()', mes);
-                            res.send({success: false, error: mes});
+                            res.send({ success: false, error: mes });
                         }
                     }
 
@@ -153,7 +153,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
                 } else {
                     console.log('Error in controllers/votingController -> createVotation()', 'Voting type is unknown');
-                    res.send({success: false, error: 'Voting type is unknown'});
+                    res.send({ success: false, error: 'Voting type is unknown' });
                     return;
                 }
 
@@ -164,14 +164,14 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
                     await updateItemTypeVoting(podRef, podGet, pod, uid, voting);
 
-                } else if(voting.ItemType === 'Community') {
+                } else if (voting.ItemType === 'Community') {
                     const communityRef = db.collection(collections.community).doc(voting.ItemId);
                     const communityGet = await communityRef.get();
                     const community: any = communityGet.data();
 
                     await updateItemTypeVoting(communityRef, communityGet, community, uid, voting);
 
-                } else if(voting.ItemType === 'CommunityTreasury') {
+                } else if (voting.ItemType === 'CommunityTreasury') {
                     const communityRef = db.collection(collections.community).doc(voting.ItemId);
                     const communityGet = await communityRef.get();
                     const community: any = communityGet.data();
@@ -189,7 +189,7 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
                         TreasuryVoting: votingsIdArray
                     });
 
-                } else if(voting.ItemType === 'CreditPool') {
+                } else if (voting.ItemType === 'CreditPool') {
                     const priviCreditsRef = db.collection(collections.priviCredits).doc(voting.ItemId);
                     const priviCreditsGet = await priviCreditsRef.get();
                     const priviCredits: any = priviCreditsGet.data();
@@ -198,23 +198,23 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 
                 } else {
                     console.log('Error in controllers/votingController -> createVotation()', 'Voting ItemType is unknown');
-                    res.send({success: false, error: 'Voting ItemType is unknown'})
+                    res.send({ success: false, error: 'Voting ItemType is unknown' })
                 }
             } else {
                 console.log('Error in controllers/votingController -> createVotation()', 'Voting Type or ItemType is unknown');
-                res.send({success: false, error: 'Voting Type or ItemType is unknown'})
+                res.send({ success: false, error: 'Voting Type or ItemType is unknown' })
             }
             res.send({
                 success: true, data: voting
             })
         } else {
             console.log('Error in controllers/votingController -> createVotation()', "You don't have rights to create voting");
-            res.send({success: false, error: "You don't have rights to create voting"})
+            res.send({ success: false, error: "You don't have rights to create voting" })
 
         }
     } catch (e) {
         console.log('Error in controllers/votingController -> createVoting()', e);
-        res.send({success: false, error: e});
+        res.send({ success: false, error: e });
     }
 }
 
@@ -222,7 +222,7 @@ exports.changeVotingPhoto = async (req: express.Request, res: express.Response) 
     try {
         if (req.file) {
             const votingRef = db.collection(collections.voting)
-              .doc(req.file.originalname);
+                .doc(req.file.originalname);
             const votingGet = await votingRef.get();
             const voting: any = await votingGet.data();
 
@@ -250,27 +250,27 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
         if (!body || !body.userId || body.voteIndex === -1 ||
             !body.type || !body.votationId || !body.itemType || !body.itemId) {
             console.log('Error in controllers/votingController -> makeVote()', 'Info not provided');
-            res.send({success: false, error: 'Info not provided'});
+            res.send({ success: false, error: 'Info not provided' });
         } else {
-            let possibleVoters : any[] = await getPossibleVoters(body.itemType, body.itemId);
+            let possibleVoters: any[] = await getPossibleVoters(body.itemType, body.itemId);
 
-            let foundUser : boolean = false;
-            let isCreator : boolean = false;
-            let isUserRole : any;
+            let foundUser: boolean = false;
+            let isCreator: boolean = false;
+            let isUserRole: any;
 
-            if(body.itemType === 'Pod' || body.itemType === 'CreditPool') {
+            if (body.itemType === 'Pod' || body.itemType === 'CreditPool') {
                 let foundUserIndex = possibleVoters.findIndex(voter => voter === body.userId);
-                if(foundUserIndex !== -1) {
+                if (foundUserIndex !== -1) {
                     foundUser = true;
                 }
-            } else if(body.itemType === 'Community') {
+            } else if (body.itemType === 'Community') {
                 const userRef = db.collection(collections.user).doc(body.userId);
                 const userGet = await userRef.get();
                 const user: any = userGet.data();
 
                 isCreator = await communityWallController.checkIfUserIsCreator(body.userId, body.itemId);
                 isUserRole = await communityWallController.checkUserRole(body.userId, user.email, body.itemId, true, true, ['Moderator', 'Treasurer']);
-            } else if(body.itemType === 'CommunityTreasury') {
+            } else if (body.itemType === 'CommunityTreasury') {
                 const userRef = db.collection(collections.user).doc(body.userId);
                 const userGet = await userRef.get();
                 const user: any = userGet.data();
@@ -282,7 +282,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
             }
 
 
-            if(foundUser || (isUserRole && isUserRole.checked) || isCreator) {
+            if (foundUser || (isUserRole && isUserRole.checked) || isCreator) {
                 let vote: any = {
                     UserId: body.userId,
                     VoteIndex: body.voteIndex,
@@ -306,7 +306,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                         const votingGet = await votingRef.get();
                         const voting: any = votingGet.data();
 
-                        if(voting.NumVotes !== 0) {
+                        if (voting.NumVotes !== 0) {
                             voting.NumVotes = voting.NumVotes + 1;
                         } else {
                             voting.NumVotes = 1;
@@ -317,7 +317,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                         });
                     } else {
                         console.log('Error in controllers/votingController -> createVotation()', blockchainRes.message);
-                        res.send({success: false, error: blockchainRes.message})
+                        res.send({ success: false, error: blockchainRes.message })
                         return;
                     }
                 } else if (body.type === 'regular' || body.type === 'multisignature') {
@@ -326,16 +326,16 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     const voting: any = votingGet.data();
 
                     let answers: any[] = [];
-                    if (!(voting && voting.OpenVotation && voting.StartingDate < Math.trunc(Date.now()/1000) && voting.EndingDate > Math.trunc(Date.now()/1000))) {
+                    if (!(voting && voting.OpenVotation && voting.StartingDate < Math.trunc(Date.now() / 1000) && voting.EndingDate > Math.trunc(Date.now() / 1000))) {
                         console.log('Error in controllers/votingController -> makeVote()', 'Voting is closed or missing')
-                        res.send({success: false, error: 'Voting is closed or missing'});
+                        res.send({ success: false, error: 'Voting is closed or missing' });
                         return;
                     }
 
                     if (voting.Answers && voting.Answers.length > 0) {
                         let foundVote = voting.Answers.findIndex(item => item.UserId === body.userId);
 
-                        if(foundVote === -1) {
+                        if (foundVote === -1) {
                             let votingAnswers = [...voting.Answers];
                             votingAnswers.push(vote);
                             answers = votingAnswers;
@@ -345,28 +345,28 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                                 if (!isRightRole) {
                                     let mes = 'User ' + vote.VoterAddress + ' does not have the right role for voting in multisignature votation';
                                     console.log('Error in controllers/votingController -> createVotation()', mes);
-                                    res.send({success: false, error: mes});
+                                    res.send({ success: false, error: mes });
                                     return;
                                 }
                                 if (answers.length >= voting.NumberOfSignatures) {
                                     coinBalance.transfer("transfer", voting.TransferFrom, voting.TransferTo,
                                         voting.AmountToTransfer, voting.TokenToTransfer, apiKey).then((blockchainRes) => {
-                                        if (!blockchainRes.success) {
-                                            console.log(`user ${voting.TransferTo} did not get ${voting.TokenToTransfer}, ${blockchainRes.message}`);
-                                            res.send({success: false});
-                                            return;
-                                        }
-                                    });
+                                            if (!blockchainRes.success) {
+                                                console.log(`user ${voting.TransferTo} did not get ${voting.TokenToTransfer}, ${blockchainRes.message}`);
+                                                res.send({ success: false });
+                                                return;
+                                            }
+                                        });
                                     await votingRef.update({
                                         Answers: answers,
                                         OpenVotation: false
                                     });
-                                    res.send({success: true, data: vote});
+                                    res.send({ success: true, data: vote });
                                     return;
                                 }
                             }
                         } else {
-                            res.send({success: false, error: "You've already voted"});
+                            res.send({ success: false, error: "You've already voted" });
                             return;
                         }
                     } else {
@@ -374,9 +374,9 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                     }
 
                     let open = voting.OpenVotation;
-                    if(body.itemType === 'CommunityTreasury') {
+                    if (body.itemType === 'CommunityTreasury') {
                         console.log(voting.RequiredAnswers, answers.length, answers.length === voting.RequiredAnswers)
-                        if(voting.RequiredAnswers && answers.length === voting.RequiredAnswers) {
+                        if (voting.RequiredAnswers && answers.length === voting.RequiredAnswers) {
                             open = false;
                         }
                     }
@@ -385,14 +385,14 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
                         OpenVotation: open
                     });
                 }
-                res.send({success: true, data: vote});
+                res.send({ success: true, data: vote });
             } else {
-                res.send({success: false, error: "You don't have rights to vote"});
+                res.send({ success: false, error: "You don't have rights to vote" });
             }
         }
     } catch (err) {
         console.log('Error in controllers/votingController -> makeVote()', err)
-        res.send({success: false, error: err})
+        res.send({ success: false, error: err })
     }
 }
 
@@ -470,40 +470,40 @@ const updateItemTypeVoting = (itemRef, itemGet, item, uid, voting) => {
             });
 
             resolve(true)
-        } catch(e) {
+        } catch (e) {
             reject('Error in updateItemTypeVoting: ' + e);
         }
     });
 }
 
 
-const getPossibleVoters = (itemType, itemId) : Promise<any[]> => {
+const getPossibleVoters = (itemType, itemId): Promise<any[]> => {
     return new Promise(async (resolve, reject) => {
         try {
-            let possibleVoters : any = [];
+            let possibleVoters: any = [];
 
-            if(itemType === 'Community') {
+            if (itemType === 'Community') {
                 const communityRef = db.collection(collections.community)
-                  .doc(itemId);
+                    .doc(itemId);
                 const communityGet = await communityRef.get();
                 const community: any = communityGet.data();
 
                 // Apply future privacy limitations
                 possibleVoters = null;
 
-            } else if(itemType === 'Pod') {
+            } else if (itemType === 'Pod') {
                 const podRef = db.collection(collections.podsFT)
-                  .doc(itemId);
+                    .doc(itemId);
                 const podGet = await podRef.get();
                 const pod: any = podGet.data();
 
                 possibleVoters = Object.keys(pod.Investors);
 
-            } else if(itemType === 'CreditPool') {
+            } else if (itemType === 'CreditPool') {
                 const creditPoolBorrowersSnap = await db.collection(collections.priviCredits).doc(itemId)
-                  .collection(collections.priviCreditsBorrowing).get();
+                    .collection(collections.priviCreditsBorrowing).get();
                 const creditPoolLendersSnap = await db.collection(collections.priviCredits).doc(itemId)
-                  .collection(collections.priviCreditsLending).get();
+                    .collection(collections.priviCreditsLending).get();
 
                 if (!creditPoolBorrowersSnap.empty) {
                     for (const doc of creditPoolBorrowersSnap.docs) {
@@ -606,7 +606,7 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
             // stream the image back by loading the file
             res.setHeader("Content-Type", "image");
             let raw = fs.createReadStream(
-              path.join("uploads", "voting", userId + ".png")
+                path.join("uploads", "voting", userId + ".png")
             );
             raw.on("error", function (err) {
                 console.log(err);
@@ -633,9 +633,9 @@ exports.getDaoProposalById = async (req: express.Request, res: express.Response)
             votingData.id = votingSnap.id;
 
             const votersQuery = await db.collection(collections.voter)
-              .where("VotationId", "==", proposalId).get();
+                .where("VotationId", "==", proposalId).get();
 
-            let voters : any[] = [];
+            let voters: any[] = [];
             if (!votersQuery.empty) {
                 for (const doc of votersQuery.docs) {
                     let data = doc.data();
@@ -643,7 +643,8 @@ exports.getDaoProposalById = async (req: express.Request, res: express.Response)
                     voters.push(data);
                 }
             }
-            res.send({success: true, data: {
+            res.send({
+                success: true, data: {
                     voting: votingData,
                     voters: voters
                 }
@@ -651,10 +652,41 @@ exports.getDaoProposalById = async (req: express.Request, res: express.Response)
 
         } else {
             console.log("Error in controllers/votingController -> getDaoProposalById()", "There's no id...");
-            res.send({success: false, error: "There's no id..."});
+            res.send({ success: false, error: "There's no id..." });
         }
     } catch (err) {
         console.log("Error in controllers/votingController -> getDaoProposalById()", err);
-        res.send({success: false, error: err});
+        res.send({ success: false, error: err });
     }
+}
+
+
+
+// GROWTH - PREDICT  
+// !!! it is stored in a different collection than the votation coming from DAO proposals !!!
+
+// get all growth prediction doc data
+exports.getPredictions = async (req: express.Request, res: express.Response) => {
+    const retData: any[] = [];
+    const predictionSnaps = await db.collection(collections.growthPredictions).get();
+    predictionSnaps.forEach((doc) => {
+        retData.push(doc.data());
+    });
+    res.send({ success: true, data: retData });
+}
+
+exports.postVote = async (req: express.Request, res: express.Response) => {
+    const body = req.body;
+    body.Caller = apiKey;
+    const blockchainRes = await votation.makeVote(body);
+    if (blockchainRes && blockchainRes.success) {
+        // todo: update db
+
+        res.send({ success: true });
+    } else {
+        console.log("Error in controllers/votingController -> postVote()", blockchainRes.message);
+        res.send({ success: false });
+    }
+
+    return;
 }
