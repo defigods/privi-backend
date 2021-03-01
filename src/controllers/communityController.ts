@@ -3015,6 +3015,18 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         TargetSupply: body.TargetSupply ?? 0,
         InitialSupply: body.InitialSupply ?? 0,
         AMM: body.AMM ?? '',
+
+        RequiredTokensValidation: false,
+        MinimumUserLevelValidation: false,
+        MinimumEndorsementScoreValidation: false,
+        MinimumTrustScoreValidation: false,
+        TokenNameValidation: false,
+        TokenSymbolValidation: false,
+        TokenDescriptionValidation: false,
+        TargetSpreadValidation: false,
+        TargetPriceValidation: false,
+        TargetSupplyValidation: false,
+        InitialSupplyValidation: false
       };
 
       let communityAddress = body.CommunityAddress;
