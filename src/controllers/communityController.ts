@@ -373,6 +373,10 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         }
       }
 
+      if(body.workInProgressId) {
+        await db.collection(collections.workInProgress).doc(body.workInProgressId).delete();
+      }
+
       res.send({
         success: true,
         data: {
@@ -3015,6 +3019,18 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         TargetSupply: body.TargetSupply ?? 0,
         InitialSupply: body.InitialSupply ?? 0,
         AMM: body.AMM ?? '',
+
+        RequiredTokensValidation: body.RequiredTokensValidation ?? false,
+        MinimumUserLevelValidation: body.MinimumUserLevelValidation ?? false,
+        MinimumEndorsementScoreValidation: body.MinimumEndorsementScoreValidation ?? false,
+        MinimumTrustScoreValidation: body.MinimumTrustScoreValidation ?? false,
+        TokenNameValidation: body.TokenNameValidation ?? false,
+        TokenSymbolValidation: body.TokenSymbolValidation ?? false,
+        TokenDescriptionValidation: body.TokenDescriptionValidation ?? false,
+        TargetSpreadValidation: body.TargetSpreadValidation ?? false,
+        TargetPriceValidation: body.TargetPriceValidation ?? false,
+        TargetSupplyValidation: body.TargetSupplyValidation ?? false,
+        InitialSupplyValidation: body.InitialSupplyValidation ?? false
       };
 
       let communityAddress = body.CommunityAddress;

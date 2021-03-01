@@ -158,12 +158,14 @@ export async function updateFirebase(blockchainRes) {
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTransactions)) {
                 transaction.set(db.collection(collections.priviScan).doc(tid), { Transactions: txnArray });
-                txnArray.forEach((txnObj) => {
-                    const from = txnObj.From;
-                    const to = txnObj.To;
-                    if (from) transaction.set(db.collection(collections.transactions).doc(from).collection(collections.history).doc(), txnObj);
-                    if (to) transaction.set(db.collection(collections.transactions).doc(to).collection(collections.history).doc(), txnObj);
-                });
+                if(txnArray && txnArray.length > 0) {
+                    txnArray.forEach((txnObj) => {
+                        const from = txnObj.From;
+                        const to = txnObj.To;
+                        if (from) transaction.set(db.collection(collections.transactions).doc(from).collection(collections.history).doc(), txnObj);
+                        if (to) transaction.set(db.collection(collections.transactions).doc(to).collection(collections.history).doc(), txnObj);
+                    });
+                }
             }
         }
         // update pods (FT and NFT)
