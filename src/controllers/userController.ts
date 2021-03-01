@@ -707,7 +707,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.urlSlug = userData.urlSlug || userData.firstName + userData.lastName;
+      basicInfo.urlSlug = userData.urlSlug || userId;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -1901,7 +1901,14 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
               wipInfo.push(wipCopy);
             } else {
               if (wip.data().Offers && wip.data().Offers.length > 0) {
-                if (wip.data().Offers.some((offer) => offer.userId === userId && (offer.status === "negotiating" || offer.status === "accepted"))) {
+                if (
+                  wip
+                    .data()
+                    .Offers.some(
+                      (offer) =>
+                        offer.userId === userId && (offer.status === 'negotiating' || offer.status === 'accepted')
+                    )
+                ) {
                   const wipCopy = wip.data();
                   wipCopy.id = wip.id;
                   wipCopy.isCreator = false;
