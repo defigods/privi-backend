@@ -1276,9 +1276,14 @@ exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) 
   try {
     const trendingFTPods: any[] = [];
     const ftPodsSnap = await db.collection(collections.trendingPodsFT).get();
-    ftPodsSnap.docs.forEach((c) => {
-      trendingFTPods.push(c.data());
-    });
+    for(let podSnap of ftPodsSnap.docs) {
+      let podData = podSnap.data()
+      let ftPod = await db.collection(collections.podsFT).doc(podData.id).get();
+      if(ftPod.exists) {
+        trendingFTPods.push(ftPod.data());
+      }
+    }
+
     res.send({ success: true, data: { trending: trendingFTPods } });
   } catch (e) {
     console.log('Error in controllers/podController -> getTrendingFTPods()', e);
@@ -1286,12 +1291,14 @@ exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) 
   }
 };
 
-exports.setTrendingPodsFT = cron.schedule('0 0 * * *', async () => {
+exports.setTrendingPodsFT = cron.schedule('* * * * *', async () => {
   try {
     let allFTPods: any[] = [];
     let podsFT = await db.collection(collections.podsFT).get();
     podsFT.docs.forEach((p) => {
-      allFTPods.push(p.data());
+      let data = p.data();
+      data.id = p.id;
+      allFTPods.push(data);
     });
     let trendingFTPods: any[] = await countLastWeekPods(allFTPods);
 
@@ -1307,7 +1314,7 @@ exports.setTrendingPodsFT = cron.schedule('0 0 * * *', async () => {
       });
     await trendingFTPods.forEach((doc) => {
       let docRef = db.collection(collections.trendingPodsFT).doc();
-      batch.set(docRef, doc);
+      batch.set(docRef, {id: doc.id});
     });
     await batch.commit();
   } catch (err) {
@@ -1614,9 +1621,13 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
   try {
     const trendingNFTPods: any[] = [];
     const nftPodsSnap = await db.collection(collections.trendingPodsNFT).get();
-    nftPodsSnap.docs.forEach((c) => {
-      trendingNFTPods.push(c.data());
-    });
+    for(let podSnap of nftPodsSnap.docs) {
+      let podData = podSnap.data()
+      let nftPod = await db.collection(collections.podsNFT).doc(podData.id).get();
+      if(nftPod.exists) {
+        trendingNFTPods.push(nftPod.data());
+      }
+    }
 
     res.send({ success: true, data: trendingNFTPods });
   } catch (err) {
@@ -1625,12 +1636,14 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
   }
 };
 
-exports.setTrendingPodsNFT = cron.schedule('0 0 * * *', async () => {
+exports.setTrendingPodsNFT = cron.schedule('* * * * *', async () => {
   try {
     let allNFTPods: any[] = [];
     let podsNFT = await db.collection(collections.podsNFT).get();
     podsNFT.docs.forEach((p) => {
-      allNFTPods.push(p.data());
+      let data = p.data();
+      data.id = p.id;
+      allNFTPods.push(data);
     });
     let trendingNFTPods: any[] = await countLastWeekPods(allNFTPods);
 
@@ -1646,7 +1659,7 @@ exports.setTrendingPodsNFT = cron.schedule('0 0 * * *', async () => {
       });
     await trendingNFTPods.forEach((doc) => {
       let docRef = db.collection(collections.trendingPodsNFT).doc();
-      batch.set(docRef, doc);
+      batch.set(docRef, {id: doc.id});
     });
     await batch.commit();
   } catch (err) {

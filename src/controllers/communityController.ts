@@ -2034,7 +2034,7 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
   }
 };
 
-exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
+exports.setTrendingCommunities = cron.schedule('0 0  * * *', async () => {
   try {
     const allCommunities: any[] = [];
     const communitiesSnap = await db.collection(collections.community).get();
