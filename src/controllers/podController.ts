@@ -1661,7 +1661,7 @@ const getNFTPods = (exports.getNFTPods = (lastNFTPod): Promise<any[]> => {
     if (lastNFTPod) {
       podsNFT = await db.collection(collections.podsNFT).startAfter(lastNFTPod).limit(5).get();
     } else {
-      podsNFT = await db.collection(collections.podsNFT).limit(5).get();
+      podsNFT = await db.collection(collections.podsNFT).limit(6).get();
     }
 
     let array: any[] = [];
