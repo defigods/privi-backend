@@ -1368,6 +1368,7 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
       user.followers[alreadyFollowerIndex] = {
         user: userToAcceptFollow.id,
         accepted: true,
+        superFollower: false
       };
     } else {
       console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
@@ -1527,6 +1528,41 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/userController -> unFollowUser()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+const superFollowerUser = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if(body && body.superFollower && body.user && body.userToSuperFollow) {
+      let superFollower = body.superFollower;
+
+      const userRef = db.collection(collections.user).doc(body.user);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      const userToSuperFollowRef = db.collection(collections.user).doc(body.userToSuperFollow);
+      const userToSuperFollowGet = await userToSuperFollowRef.get();
+      const userToSuperFollowData: any = userToSuperFollowGet.data();
+
+      if(superFollower) {
+        // add superFollower
+
+      } else {
+        // remove superFollower
+
+      }
+
+      res.send({ success: true });
+
+    } else {
+      console.log('Error in controllers/userController -> superFollowerUser(): Info Missing');
+      res.send({ success: false, error: 'Info Missing' });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userController -> superFollowerUser()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -3560,4 +3596,5 @@ module.exports = {
   getIdFromSlug,
   getSlugFromId,
   getFriends,
+  superFollowerUser
 };

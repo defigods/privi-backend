@@ -122,6 +122,7 @@ router.post('/connections/followUser', authenticateJWT, userController.followUse
 router.post('/connections/acceptFollowUser', authenticateJWT, userController.acceptFollowUser);
 router.post('/connections/declineFollowUser', authenticateJWT, userController.declineFollowUser);
 router.post('/connections/unFollowUser', authenticateJWT, userController.unFollowUser);
+router.post('/connections/superFollowerUser', authenticateJWT, userController.superFollowerUser);
 
 router.post('/editUser', authenticateJWT, userController.editUser);
 router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), userController.changeUserProfilePhoto);
