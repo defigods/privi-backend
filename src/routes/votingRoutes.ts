@@ -31,6 +31,6 @@ router.get('/getVotationState', authenticateJWT, votingController.getVotationSta
 
 // growth
 router.get('/getPredictions', authenticateJWT, votingController.getPredictions);
-router.post('/postVote', votingController.postVote);
+router.post('/votePrediction', authenticateJWT, votingController.votePrediction);
 
 module.exports = router;

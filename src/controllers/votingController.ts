@@ -675,18 +675,58 @@ exports.getPredictions = async (req: express.Request, res: express.Response) => 
     res.send({ success: true, data: retData });
 }
 
-exports.postVote = async (req: express.Request, res: express.Response) => {
-    const body = req.body;
-    body.Caller = apiKey;
-    const blockchainRes = await votation.makeVote(body);
-    if (blockchainRes && blockchainRes.success) {
-        // todo: update db
+exports.votePrediction = async (req: express.Request, res: express.Response) => {
+    try {
+        const optionMap = {
+            0: "NO",
+            1: "YES",
+            NO: 0,
+            YES: 1
+        }
+        const body = req.body;
+        body.VotingType = optionMap[body.VotingAnswerId];
+        body.Caller = apiKey;
+        const blockchainRes = await votation.makeVote(body);
+        if (blockchainRes && blockchainRes.success) {
+            // update manually (except UpdateTransaction)
+            const output = blockchainRes.output;
+            const newOutput = { ...output };
+            delete newOutput.UpdateVotations;
+            delete newOutput.UpdateVotationStates;
+            delete newOutput.UpdateVoters;
+            const blockchainRes2 = {
+                output: newOutput
+            }
+            updateFirebase(blockchainRes2); // update txns
 
-        res.send({ success: true });
-    } else {
-        console.log("Error in controllers/votingController -> postVote()", blockchainRes.message);
-        res.send({ success: false });
+            const voterAddress = body.VoterAddress;
+            const predictionId = body.VotationId;
+            const updateVotationState = output.UpdateVotationStates[predictionId];
+            const updateVoter = output.UpdateVoters[predictionId];
+            const votingType = updateVoter.VotingType;
+            const answerId = optionMap[votingType];
+            const stakedAmount = updateVoter.StakedAmount;
+
+            const predictionSnap = await db.collection(collections.growthPredictions).doc(predictionId).get();
+            const predictionData: any = predictionSnap.data();
+            const newVoters = predictionData.Voters ?? {};
+            newVoters[voterAddress] = {
+                Staked: stakedAmount,
+                UserId: voterAddress,
+                AnswerId: answerId,
+                VotingType: votingType,
+            };
+            predictionSnap.ref.update({
+                ...updateVotationState,
+                Voters: newVoters
+            })
+            res.send({ success: true });
+        } else {
+            console.log("Error in controllers/votingController -> votePrediction()", blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log("Error in controllers/votingController -> votePrediction()", err);
+        res.send({ success: false, error: err });
     }
-
-    return;
 }
