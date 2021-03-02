@@ -2014,11 +2014,14 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
       const doc = docs[i];
       const data: any = doc.data();
       const id: any = doc.id;
-      const extraData = await getExtraData(data, rateOfChange);
-      let arrayMembersId: any[] = await getArrayIdCommunityMembers(data);
+      const communitySnap = await db.collection(collections.community).doc(data.id).get();
+      const communityData = communitySnap.data();
+
+      const extraData = await getExtraData(communityData, rateOfChange);
+      let arrayMembersId: any[] = await getArrayIdCommunityMembers(communityData);
 
       trendingCommunities.push({
-        ...data,
+        ...communityData,
         ...extraData,
         id: id,
         arrayMembersId: arrayMembersId,
@@ -2055,9 +2058,9 @@ exports.setTrendingCommunities = cron.schedule('0 0 * * *', async () => {
           batch.delete(val);
         });
       });
-    await trendingCommunities.forEach((doc) => {
+    await trendingCommunities.forEach((doc: any) => {
       let docRef = db.collection(collections.trendingCommunity).doc(); //automatically generate unique id
-      batch.set(docRef, doc);
+      batch.set(docRef, {id: doc.id});
     });
     await batch.commit();
   } catch (err) {
