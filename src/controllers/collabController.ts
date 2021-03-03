@@ -7,10 +7,16 @@ module.exports.createCollab = async (req: express.Request, res: express.Response
     try {
         const body = req.body;
         const creator = body.Creator;
-        const description = body.Description;
-
+        const collaborators = body.Collaborators;
+        const idea = body.Idea;
+        const platform = body.Platform;
+        db.collection(collections.collabs).add({
+            Creator: creator,
+            Collaborators: collaborators,
+            Idea: idea,
+            Platform: platform
+        });
         res.send({ success: true });
-
     } catch (err) {
         console.log('Error in controllers/collabController -> createCollab()', err);
         res.send({ success: false });
@@ -20,6 +26,14 @@ module.exports.createCollab = async (req: express.Request, res: express.Response
 module.exports.upvote = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
+        const user = body.User;
+        const collabId = body.CollabId;
+        const collabSnap = await db.collection(collections.collabs).doc(collabId).get();
+        const data: any = collabSnap.data();
+        const newUpvotes = data.Upvotes ?? {};
+        newUpvotes[user] = "";
+        collabSnap.ref.update({ Upvotes: newUpvotes });
+        res.send({ success: true });
     } catch (err) {
         console.log('Error in controllers/collabController -> upvote()', err);
         res.send({ success: false });
@@ -37,7 +51,10 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
         collabSnap.forEach((doc) => {
             const data = doc.data();
             const numUpvotes = Object.keys(data.Upvotes ?? {}).length;
-            allCollabs.push(data);
+            allCollabs.push({
+                CollabId: doc.id,
+                ...data
+            });
             upvoteList.push(numUpvotes);
         });
         const mean = upvoteList.length > 0 ? upvoteList.reduce((a, b) => a + b) / upvoteList.length : 0;
