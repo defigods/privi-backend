@@ -44,6 +44,10 @@ const Action = {
     SWAP_APPROVE_ERC20: 'SWAP_APPROVE_ERC20',
     WITHDRAW_ETH: 'WITHDRAW_ETH',
     WITHDRAW_ERC20: 'WITHDRAW_ERC20',
+
+    SWAP_APPROVE_ERC721: 'SWAP_APPROVE_ERC721',
+    SWAP_TRANSFER_ERC721: 'SWAP_TRANSFER_ERC721',
+    WITHDRAW_ERC721: 'WITHDRAW_ERC721'
 };
 
 // Promise return type for ethereum transactions
@@ -478,10 +482,11 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                 const docId = snapshot.docs[i].id;
                 if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
                     doc.action === Action.WITHDRAW_ETH ||
-                    doc.action === Action.WITHDRAW_ERC20) {
+                    doc.action === Action.WITHDRAW_ERC20 || 
+                    doc.action === Action.WITHDRAW_ERC721) {
                     console.log('performing withdraw');
                     withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId)
-                } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
+                } else if (doc.action === Action.SWAP_APPROVE_ERC20 || doc.action === Action.SWAP_APPROVE_ERC721) {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
                     console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                     /* 
@@ -597,11 +602,11 @@ const withdraw = async (
     updateStatusOneToOneSwap(swapDocId, 'inProgress');
     // first burn fabric token
     // Withdraw in Fabric
-    const response = await withdrawFab(
+    const response: any = await withdrawFab(
         action,
         fromFabricAddress,
         toEthAddress,
-        amount,
+        action === Action.WITHDRAW_ERC721 ? 1 : amount,
         token,
         'PRIVI'
     );
@@ -614,7 +619,7 @@ const withdraw = async (
         updatePriviTxOneToOneSwap(swapDocId, response.hash);
 
         // Convert value into wei
-        const amountWei = web3_l.utils.toWei(String(amount));
+        // const amountWei = web3_l.utils.toWei(String(amount));
 
         let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
 
@@ -625,12 +630,13 @@ const withdraw = async (
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
-        console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amountWei', amountWei)
+        console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amount', amount)
 
         // Choose method from SwapManager to be called
-        const method = (action === Action.WITHDRAW_ETH)
-            ? contract.methods.withdrawEther(toEthAddress, amountWei).encodeABI()
-            : contract.methods.withdrawERC20Token(token, toEthAddress, amountWei).encodeABI();
+        const method = 
+            (action === Action.WITHDRAW_ETH) ? contract.methods.withdrawEther(toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
+            : (action === Action.SWAP_APPROVE_ERC20) ? contract.methods.withdrawERC20Token(token, toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
+            : contract.methods.withdrawERC721Token(token, toEthAddress, amount === 'NO_ID' ? '999999999' : amount, amount === 'NO_ID' ? true : false).encodeABI(); // hopefully this id won't exist, swapmanager needs update to account for minting pods
 
         // Transaction parameters
         const paramsTX = {
@@ -658,10 +664,10 @@ const withdraw = async (
             updateTxOneToOneSwap(swapDocId, txHash);
 
             const mintBack = await swapFab(
-                'CRYPTO',
+                action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
                 '0x0000000000000000000000000000000000000000',
                 fromFabricAddress,
-                amount,
+                action === Action.WITHDRAW_ERC721 ? 1 : amount,
                 token,
                 'PRIVI'
             );
