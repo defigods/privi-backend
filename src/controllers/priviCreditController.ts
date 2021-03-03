@@ -843,9 +843,14 @@ exports.getTrendingPriviCredits = async (req: express.Request, res: express.Resp
   try {
     const trendingCredits: any[] = [];
     const creditsSnap = await db.collection(collections.trendingPriviCredit).get();
-    creditsSnap.docs.forEach((c) => {
-      trendingCredits.push(c.data());
-    });
+    for(let creditDoc of creditsSnap.docs) {
+      let trending = creditDoc.data();
+
+      const creditSnap = await db.collection(collections.priviCredits).doc(trending.id).get();
+      const creditData: any = creditSnap.data();
+      trendingCredits.push(creditData);
+      console.log(trending.id, creditData);
+    }
     res.send({ success: true, data: { trending: trendingCredits } });
   } catch (e) {
     console.log('Error in controllers/priviCredit -> getTrendingPriviCredits(): ', e);
@@ -856,14 +861,14 @@ exports.getTrendingPriviCredits = async (req: express.Request, res: express.Resp
 exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
   try {
     const allCredits: any[] = [];
-    const creditsSnap = await db.collection(collections.priviCreditsLending).get();
+    const creditsSnap = await db.collection(collections.priviCredits).get();
     const popularity = 0.5;
-    creditsSnap.docs.forEach(async (c) => {
-      const data = c.data();
+    for(let credit of creditsSnap.docs) {
+      const data = credit.data();
       const lenders: any[] = [];
       const borrowers: any[] = [];
-      const lendersSnap = await c.ref.collection(collections.priviCreditsLending).get();
-      const borrowersSnap = await c.ref.collection(collections.priviCreditsBorrowing).get();
+      const lendersSnap = await credit.ref.collection(collections.priviCreditsLending).get();
+      const borrowersSnap = await credit.ref.collection(collections.priviCreditsBorrowing).get();
       lendersSnap.forEach((doc) => {
         lenders.push(doc.data());
       });
@@ -873,11 +878,12 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
 
       allCredits.push({
         ...data,
+        id: credit.id,
         popularity: popularity,
         Lenders: lenders,
         Borrowers: borrowers,
       });
-    });
+    }
 
     const trendingCredits = filterTrending(allCredits);
     let batch = db.batch();
@@ -890,9 +896,9 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
           batch.delete(val);
         });
       });
-    await trendingCredits.forEach((doc) => {
+    await trendingCredits.forEach((doc: any) => {
       let docRef = db.collection(collections.trendingPriviCredit).doc();
-      batch.set(docRef, doc);
+      batch.set(docRef, {id: doc.id});
     });
     await batch.commit();
   } catch (err) {
