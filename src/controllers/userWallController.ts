@@ -12,9 +12,9 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    let isCreator = await checkIfUserIsFollower(body.author, body.userId);
+    let isFollower = await checkIfUserIsFollower(body.author, body.userId);
 
-    if (body && body.userId && isCreator) {
+    if (body && body.userId && (isFollower || body.author === body.userId)) {
       let ret = await blogController.createPost(body, 'userWallPost', body.author);
 
       const userRef = db.collection(collections.user).doc(body.userId);
@@ -36,7 +36,7 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
       });
 
       res.send({ success: true, data: ret });
-    } else if (!isCreator) {
+    } else if (!isFollower) {
       console.log('Error in controllers/userWallController -> postCreate()', "You can't create a post");
       res.send({ success: false, error: "You can't create a post" });
     } else {
