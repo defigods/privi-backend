@@ -1194,6 +1194,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
               numFollowers: followerData.numFollowers,
               numFollowings: followerData.numFollowings,
               isFollowing: numFollowing,
+              isSuperFollower: follower.superFollower || false
             };
 
             followers.push(followerObj);
@@ -1536,27 +1537,30 @@ const superFollowerUser = async (req: express.Request, res: express.Response) =>
   try {
     let body = req.body;
 
-    if(body && body.superFollower && body.user && body.userToSuperFollow) {
+    if(body && body.user && body.userToSuperFollow) {
       let superFollower = body.superFollower;
 
       const userRef = db.collection(collections.user).doc(body.user);
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const userToSuperFollowRef = db.collection(collections.user).doc(body.userToSuperFollow);
-      const userToSuperFollowGet = await userToSuperFollowRef.get();
-      const userToSuperFollowData: any = userToSuperFollowGet.data();
+      if(user.followers && user.followers.length > 0) {
+        let followerIndex = user.followers.findIndex(follower => follower.user === body.userToSuperFollow);
+        if(followerIndex !== -1) {
+          user.followers[followerIndex].superFollower = superFollower;
+          await userRef.update({
+            followers: user.followers
+          });
+          res.send({ success: true });
 
-      if(superFollower) {
-        // add superFollower
-
+        } else {
+          console.log('Error in controllers/userController -> superFollowerUser(): Follower not found');
+          res.send({ success: false, error: 'Follower not found' });
+        }
       } else {
-        // remove superFollower
-
+        console.log('Error in controllers/userController -> superFollowerUser(): No followers found');
+        res.send({success: false, error: 'No followers found'});
       }
-
-      res.send({ success: true });
-
     } else {
       console.log('Error in controllers/userController -> superFollowerUser(): Info Missing');
       res.send({ success: false, error: 'Info Missing' });
