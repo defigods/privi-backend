@@ -1,5 +1,5 @@
 import express from 'express';
-import {authenticateJWT} from "../middlewares/jwtAuthMiddleware";
+import { authenticateJWT } from "../middlewares/jwtAuthMiddleware";
 import multer from "multer";
 
 const router = express.Router();
@@ -28,5 +28,9 @@ router.post('/vote', authenticateJWT, votingController.makeVote);
 router.get('/get', authenticateJWT, votingController.getVotationInfo);
 router.get('/getUserVotation', authenticateJWT, votingController.getUserVotation);
 router.get('/getVotationState', authenticateJWT, votingController.getVotationState);
+
+// growth
+router.get('/getPredictions', authenticateJWT, votingController.getPredictions);
+router.post('/votePrediction', authenticateJWT, votingController.votePrediction);
 
 module.exports = router;

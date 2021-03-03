@@ -707,7 +707,9 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.anonAvatar = userData.anonAvatar || 'ToyFaces_Colored_BG_111.jpg';
       basicInfo.hasPhoto = userData.hasPhoto || false;
       basicInfo.verified = userData.verified || false;
-      basicInfo.urlSlug = userData.urlSlug || userData.firstName + userData.lastName;
+      basicInfo.urlSlug =
+        userData.urlSlug ||
+        userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -1192,6 +1194,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
               numFollowers: followerData.numFollowers,
               numFollowings: followerData.numFollowings,
               isFollowing: numFollowing,
+              isSuperFollower: follower.superFollower || false
             };
 
             followers.push(followerObj);
@@ -1366,6 +1369,7 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
       user.followers[alreadyFollowerIndex] = {
         user: userToAcceptFollow.id,
         accepted: true,
+        superFollower: false
       };
     } else {
       console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
@@ -1525,6 +1529,44 @@ const unFollowUser = async (req: express.Request, res: express.Response) => {
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/userController -> unFollowUser()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+const superFollowerUser = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if(body && body.user && body.userToSuperFollow) {
+      let superFollower = body.superFollower;
+
+      const userRef = db.collection(collections.user).doc(body.user);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      if(user.followers && user.followers.length > 0) {
+        let followerIndex = user.followers.findIndex(follower => follower.user === body.userToSuperFollow);
+        if(followerIndex !== -1) {
+          user.followers[followerIndex].superFollower = superFollower;
+          await userRef.update({
+            followers: user.followers
+          });
+          res.send({ success: true });
+
+        } else {
+          console.log('Error in controllers/userController -> superFollowerUser(): Follower not found');
+          res.send({ success: false, error: 'Follower not found' });
+        }
+      } else {
+        console.log('Error in controllers/userController -> superFollowerUser(): No followers found');
+        res.send({success: false, error: 'No followers found'});
+      }
+    } else {
+      console.log('Error in controllers/userController -> superFollowerUser(): Info Missing');
+      res.send({ success: false, error: 'Info Missing' });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userController -> superFollowerUser()', err);
     res.send({ success: false, error: err });
   }
 };
@@ -1901,7 +1943,14 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
               wipInfo.push(wipCopy);
             } else {
               if (wip.data().Offers && wip.data().Offers.length > 0) {
-                if (wip.data().Offers.some((offer) => offer.userId === userId && (offer.status === "negotiating" || offer.status === "accepted"))) {
+                if (
+                  wip
+                    .data()
+                    .Offers.some(
+                      (offer) =>
+                        offer.userId === userId && (offer.status === 'negotiating' || offer.status === 'accepted')
+                    )
+                ) {
                   const wipCopy = wip.data();
                   wipCopy.id = wip.id;
                   wipCopy.isCreator = false;
@@ -3551,4 +3600,5 @@ module.exports = {
   getIdFromSlug,
   getSlugFromId,
   getFriends,
+  superFollowerUser
 };

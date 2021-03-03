@@ -135,4 +135,6 @@ module.exports = {
   tasks: 'Tasks',
 
   workInProgress: 'WorkInProgress',
+
+  growthPredictions: "GrowthPredictions",
 };

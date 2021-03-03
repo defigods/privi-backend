@@ -65,5 +65,5 @@ module.exports = {
     setTrendingPodsFT,
     setTrendingPodsNFT,
     setTrendingPriviCredits,
-    removeOldNotifications
+    // removeOldNotifications //TODO: Descomentar al publicarlo
 }
