@@ -137,4 +137,7 @@ module.exports = {
   workInProgress: 'WorkInProgress',
 
   growthPredictions: "GrowthPredictions",
+
+  collabs: "Collabs",
+
 };
