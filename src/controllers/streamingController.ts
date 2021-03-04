@@ -20,6 +20,8 @@ const apiKey = "PRIVI";
 const ORIGIN_DAILY_API_URL = "https://api.daily.co/v1";
 const DAILY_API_KEY = 'dd019368c1134baba69c91b9fd6852eab5b2a38d12c61b37459f0eba9c459513';
 
+// Daily API URL
+const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
 
 // ----------------------------------- POST -------------------------------------------
 
@@ -69,18 +71,24 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
 /*
  ** Create Video Streaming **
  
- ** req.body **
+ ** Request Body **
  StreamingToken
  UserId
  
+ ** Response **
+ success: API call succeed or not
+ streamingUrl: Daily Streaming URL which users can join
+ docId: Firebase document id
+
+ ** **
 */
 
 exports.createVideoStreaming = async (req: express.Request, res: express.Response) => {
   const { StreamingToken, UserId } = req.body;
-  const CREATE_ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
+
   let dailyResponse;
   try {
-    dailyResponse = await axios.post(CREATE_ROOM_URL, {}, {
+    dailyResponse = await axios.post(ROOM_URL, {}, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${DAILY_API_KEY}`
@@ -89,10 +97,11 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
   } catch(err) {
     res.send({ success: false, message: "Error creating in room" })
   }
+
   const { data } = dailyResponse;
 
   try {
-    await db.collection(collections.streaming).add({
+    const collectionRef = await db.collection(collections.streaming).add({
       Completed: false,
       CountStreamers: 1,
       CountWatchers: 0,
@@ -101,6 +110,7 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
       Owner: UserId,
       Paused: false,
       PricePerSecond: 12,
+      RoomName: data.name,
       StartedTime: Date.now(),
       Streamers: [ UserId ],
       StreamingToken,
@@ -109,11 +119,54 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
       Video: true,
       Watchers: [],
     });
+    res.send({ success: true, streamingUrl: data.url, docId: collectionRef.id });
   } catch(err) {
-    res.send({ success: false, message: "Error creating in firebase document"})
+    res.send({ success: false, message: "Error creating in firebase document" })
   }
+}
 
-  res.send({ success: true, streamingUrl: data.url });
+/*
+ ** Create Video Streaming **
+ 
+ ** Request Body **
+ docId
+ UserId
+
+ ** Response **
+ success
+ message
+
+ ** **
+*/
+
+exports.endVideoStreaming = async (req: express.Request, res: express.Response) => {
+  // Get the document from Firestore
+  const { docId, UserId } = req.body;
+  const docRef = await db.collection(collections.streaming).doc(docId);
+  const streamingData = (await docRef.get()).data();
+
+  // Check the User is Owner of this streaming data
+  if (streamingData && UserId === streamingData?.Owner) {
+    // Delete Room From Daily.co
+    try {
+      const DELETE_ROOM_URL = `${ROOM_URL}/${streamingData.RoomName}`
+      await axios.delete(DELETE_ROOM_URL, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DAILY_API_KEY}`
+        }
+      });
+    } catch(err) {
+      res.send({ success: false, message: "Error Deleting Room in Daily" })
+    }
+
+    // Update the Streaming data
+    await docRef.update({ Completed: true, EndedTime: Date.now() });
+
+    res.send({ success: true, message: "Streaming Data Updated!" });
+  } else {
+    res.send({ success: false, message: "This User is not a Owner of this meeting!"});
+  }
 }
 // ----------------------------------- GETS -------------------------------------------
 // get social pools
