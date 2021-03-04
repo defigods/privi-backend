@@ -11,10 +11,14 @@ import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
+import axios from 'axios';
+
 const notificationsController = require('./notificationsController');
 
 //const apiKey = process.env.API_KEY;
-const apiKey = "PRIVI"
+const apiKey = "PRIVI";
+const ORIGIN_DAILY_API_URL = "https://api.daily.co/v1";
+const DAILY_API_KEY = 'dd019368c1134baba69c91b9fd6852eab5b2a38d12c61b37459f0eba9c459513';
 
 
 // ----------------------------------- POST -------------------------------------------
@@ -62,6 +66,55 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
   }
 }
 
+/*
+ ** Create Video Streaming **
+ 
+ ** req.body **
+ StreamingToken
+ UserId
+ 
+*/
+
+exports.createVideoStreaming = async (req: express.Request, res: express.Response) => {
+  const { StreamingToken, UserId } = req.body;
+  const CREATE_ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
+  let dailyResponse;
+  try {
+    dailyResponse = await axios.post(CREATE_ROOM_URL, {}, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DAILY_API_KEY}`
+      }
+    });
+  } catch(err) {
+    res.send({ success: false, message: "Error creating in room" })
+  }
+  const { data } = dailyResponse;
+
+  try {
+    await db.collection(collections.streaming).add({
+      Completed: false,
+      CountStreamers: 1,
+      CountWatchers: 0,
+      EndedTime: 0,
+      ExpectedDuration: 10,
+      Owner: UserId,
+      Paused: false,
+      PricePerSecond: 12,
+      StartedTime: Date.now(),
+      Streamers: [ UserId ],
+      StreamingToken,
+      StreamingUrl: data.url,
+      TotalWatchers: 0,
+      Video: true,
+      Watchers: [],
+    });
+  } catch(err) {
+    res.send({ success: false, message: "Error creating in firebase document"})
+  }
+
+  res.send({ success: true, streamingUrl: data.url });
+}
 // ----------------------------------- GETS -------------------------------------------
 // get social pools
 // exports.getSocialTokens = async (req: express.Request, res: express.Response) => {

@@ -140,4 +140,6 @@ module.exports = {
 
   collabs: "Collabs",
 
+  streaming: "Streaming",
+
 };

@@ -6,5 +6,7 @@ const streamingController = require("../controllers/streamingController");
 
 // called from postman
 router.post("/initiateStreaming", authenticateJWT, streamingController.initiateStreaming)
+router.post("/createVideoStreaming", authenticateJWT, streamingController.createVideoStreaming)
+
 
 module.exports = router;
