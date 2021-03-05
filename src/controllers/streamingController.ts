@@ -126,7 +126,7 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
 }
 
 /*
- ** Create Video Streaming **
+ ** End Video Streaming **
  
  ** Request Body **
  docId
@@ -168,6 +168,33 @@ exports.endVideoStreaming = async (req: express.Request, res: express.Response) 
     res.send({ success: false, message: "This User is not a Owner of this meeting!"});
   }
 }
+
+/*
+ ** List Streaming **
+ ** GET METHOD **
+ 
+ ** Request Body **
+
+ ** Response **
+ success
+ streamings
+
+ ** **
+*/
+exports.listStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const collectionRef = await db.collection(collections.streaming).get();
+    const streamings = collectionRef.docs.map(doc => {
+      return {
+        [doc.id] : doc.data()
+      }
+    });
+  
+    res.send({ success: true, streamings });
+  } catch (err) {
+    res.send({ success: false, message: 'Error in getting firestore data' });
+  }
+};
 // ----------------------------------- GETS -------------------------------------------
 // get social pools
 // exports.getSocialTokens = async (req: express.Request, res: express.Response) => {

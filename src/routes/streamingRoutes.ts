@@ -8,6 +8,7 @@ const streamingController = require("../controllers/streamingController");
 router.post("/initiateStreaming", authenticateJWT, streamingController.initiateStreaming)
 router.post("/createVideoStreaming", authenticateJWT, streamingController.createVideoStreaming)
 router.post("/endVideoStreaming", authenticateJWT, streamingController.endVideoStreaming)
+router.get("/listStreaming", authenticateJWT, streamingController.listStreaming)
 
 
 module.exports = router;
