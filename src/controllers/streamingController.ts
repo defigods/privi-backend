@@ -84,7 +84,7 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
 */
 
 exports.createVideoStreaming = async (req: express.Request, res: express.Response) => {
-  const { StreamingToken, UserId } = req.body;
+  const { StreamingToken, UserId, Moderators, Streamers } = req.body;
 
   let dailyResponse;
   try {
@@ -112,12 +112,13 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
       PricePerSecond: 12,
       RoomName: data.name,
       StartedTime: Date.now(),
-      Streamers: [ UserId ],
+      Streamers,
       StreamingToken,
       StreamingUrl: data.url,
       TotalWatchers: 0,
       Video: true,
       Watchers: [],
+      Moderators
     });
     res.send({ success: true, streamingUrl: data.url, docId: collectionRef.id });
   } catch(err) {
