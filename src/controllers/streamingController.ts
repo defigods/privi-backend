@@ -126,7 +126,7 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
 }
 
 /*
- ** Create Video Streaming **
+ ** End Video Streaming **
  
  ** Request Body **
  docId
