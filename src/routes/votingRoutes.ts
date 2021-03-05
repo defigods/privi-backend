@@ -30,6 +30,7 @@ router.get('/getUserVotation', authenticateJWT, votingController.getUserVotation
 router.get('/getVotationState', authenticateJWT, votingController.getVotationState);
 
 // growth
+router.post('/postVote', votingController.postVote);
 router.get('/getPredictions', authenticateJWT, votingController.getPredictions);
 router.post('/votePrediction', authenticateJWT, votingController.votePrediction);
 

@@ -23,6 +23,7 @@ import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates
 import { sockets } from './serverController';
 import { LEVELS, ONE_DAY } from '../constants/userLevels';
 
+const walletController = require('./walletController');
 const levels = require('./userLevelsController');
 const tasks = require('./tasksController');
 const bcrypt = require('bcrypt');
@@ -506,20 +507,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
       const updatedUserSnap = await db.collection(collections.user).doc(uid).get();
       const updatedUserData: any = updatedUserSnap.data();
       const userAddress = updatedUserData.address;
-      const coinsVal = 100; // value in USD to be sent
-      const blockchainRes2 = await coinBalance.getTokenListByType('CRYPTO', apiKey);
-      const registeredCryptoTokens: string[] = blockchainRes2.output ?? [];
-      const rateOfChange: any = await getRateOfChangeAsMap(); // get rate of tokens
-      registeredCryptoTokens.forEach((token) => {
-        const rate = rateOfChange[token] ?? 1;
-        const amount = coinsVal / rate;
-        coinBalance.mint('transfer', '', userAddress, amount, token, apiKey).then((blockchainRes3) => {
-          console.log(blockchainRes3);
-          if (!blockchainRes3.success) {
-            console.log(`user ${uid} dindt get ${token}, ${blockchainRes3.message}`);
-          }
-        });
-      });
+      walletController.giveAwayTokens(userAddress, 100);
 
       // ------------------------------------------------------------------------------------
 
@@ -1537,16 +1525,16 @@ const superFollowerUser = async (req: express.Request, res: express.Response) =>
   try {
     let body = req.body;
 
-    if(body && body.user && body.userToSuperFollow) {
+    if (body && body.user && body.userToSuperFollow) {
       let superFollower = body.superFollower;
 
       const userRef = db.collection(collections.user).doc(body.user);
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      if(user.followers && user.followers.length > 0) {
+      if (user.followers && user.followers.length > 0) {
         let followerIndex = user.followers.findIndex(follower => follower.user === body.userToSuperFollow);
-        if(followerIndex !== -1) {
+        if (followerIndex !== -1) {
           user.followers[followerIndex].superFollower = superFollower;
           await userRef.update({
             followers: user.followers
@@ -1559,7 +1547,7 @@ const superFollowerUser = async (req: express.Request, res: express.Response) =>
         }
       } else {
         console.log('Error in controllers/userController -> superFollowerUser(): No followers found');
-        res.send({success: false, error: 'No followers found'});
+        res.send({ success: false, error: 'No followers found' });
       }
     } else {
       console.log('Error in controllers/userController -> superFollowerUser(): Info Missing');

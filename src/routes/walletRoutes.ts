@@ -23,6 +23,8 @@ router.post('/mint', walletController.mint);
 router.post('/registerTokens', walletController.registerTokens);
 router.post('/updateTokensCollection', walletController.updateTokensCollection);
 router.post('/registerUserEthAccount', walletController.registerUserEthAccount);
+router.post('/giveTokensExistingUsers', walletController.giveTokensExistingUsers);
+router.post('/saveCollectionDataInJSON', walletController.saveCollectionDataInJSON);
 
 // POSTS 
 router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
