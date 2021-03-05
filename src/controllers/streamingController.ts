@@ -1,35 +1,43 @@
 import express from 'express';
 import social from '../blockchain/social';
 import streaming from '../blockchain/streaming';
-import {
-  updateFirebase,
-  getMarketPrice,
-  getSellTokenAmount,
-  getBuyTokenAmount,
-} from '../functions/functions';
+import { updateFirebase, getMarketPrice, getSellTokenAmount, getBuyTokenAmount } from '../functions/functions';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
 
-const notificationsController = require('./notificationsController');
-
 //const apiKey = process.env.API_KEY;
-const apiKey = "PRIVI";
-const ORIGIN_DAILY_API_URL = "https://api.daily.co/v1";
+const apiKey = 'PRIVI';
+const ORIGIN_DAILY_API_URL = 'https://api.daily.co/v1';
 const DAILY_API_KEY = 'dd019368c1134baba69c91b9fd6852eab5b2a38d12c61b37459f0eba9c459513';
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
 
+enum ROOM_STATE {
+  COMPLETED = 'COMPLETED',
+  SCHEDULED = 'SCHEDULED',
+  GOING = 'GOING',
+}
+
+enum PRICE_TYPE {
+  FREE = 'FREE', // Price = 0
+  STREAMING = 'STREAMING', // Pirce is just PricePerSecond
+  FIXED = 'FIXED', // Price is TotalPrice
+}
+
+enum ERROR_MSG {
+  PERMISSION_ERROR = "You don't have right permission",
+  FIRESTORE_ERROR = 'Error in interacting Firestore',
+  DAILY_ERROR = 'Error in interacting streaming service',
+}
 // ----------------------------------- POST -------------------------------------------
 
 // user stakes in a token
 exports.initiateStreaming = async (req: express.Request, res: express.Response) => {
   try {
-
-
     const body = req.body;
     const sender = body.SenderAddress;
     const receiver = body.ReceiverAddress;
@@ -54,82 +62,153 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
     );
 
     if (blockchainRes && blockchainRes.success) {
-      res.send({ success: true, data: { id: "" } });
+      res.send({ success: true, data: { id: '' } });
     } else {
-      console.log(
-        'Error in controllers/streaming -> createStreaming(): success = false.',
-        blockchainRes.message
-      );
+      console.log('Error in controllers/streaming -> createStreaming(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
     console.log('Error in controllers/streaming -> createStreaming(): ', err);
     res.send({ success: false });
   }
-}
+};
+
+/*
+ ** Schedule Video Streaming **
+ 
+ ** Request Body **
+  StreamingToken,
+  UserId, // MainStreamer
+  Moderators,
+  Streamers,
+  LimitedEdition,
+  ExpectedDuration,
+  PriceType,
+  Price,
+  StartingTime,
+  EndingTime,
+  Rewards,
+ 
+ ** Response **
+  success: API call succeed or not
+  docId: Firebase document id
+
+ ** **
+*/
+
+exports.scheduleVideoStreaming = async (req: express.Request, res: express.Response) => {
+  const {
+    StreamingToken,
+    UserId, // MainStreamer
+    Moderators,
+    Streamers,
+    LimitedEdition,
+    ExpectedDuration,
+    PriceType,
+    Price,
+    StartingTime,
+    EndingTime,
+    Rewards,
+  } = req.body;
+
+  try {
+    const collectionRef = await db.collection(collections.streaming).add({
+      RoomState: ROOM_STATE.SCHEDULED,
+      CountStreamers: 0,
+      CountWatchers: 0,
+      ExpectedDuration,
+      MainStreamer: UserId,
+      RoomName: '',
+      StartedTime: 0,
+      EndedTime: 0,
+      StreamingToken,
+      StreamingUrl: '',
+      TotalWatchers: 0,
+      Video: true,
+      Watchers: [],
+      OnlineModerators: [],
+      Moderators,
+      OnlineStreamers: [],
+      Streamers,
+      LimitedEdition,
+      PriceType,
+      Price,
+      StartingTime,
+      EndingTime,
+      Rewards,
+    });
+    res.send({ success: true, DocId: collectionRef.id });
+  } catch (err) {
+    res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
+  }
+};
 
 /*
  ** Create Video Streaming **
  
  ** Request Body **
- StreamingToken
+ DocId
  UserId
  
  ** Response **
  success: API call succeed or not
  streamingUrl: Daily Streaming URL which users can join
- docId: Firebase document id
 
  ** **
 */
 
 exports.createVideoStreaming = async (req: express.Request, res: express.Response) => {
-  const { StreamingToken, UserId } = req.body;
+  // Get the document from Firestore
+  const { DocId, UserId } = req.body;
+  const docRef = await db.collection(collections.streaming).doc(DocId);
+  const streamingData = (await docRef.get()).data();
 
-  let dailyResponse;
-  try {
-    dailyResponse = await axios.post(ROOM_URL, {}, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DAILY_API_KEY}`
+  // Check the User is MainStreamer of this streaming data
+  if (streamingData && UserId === streamingData?.MainStreamer) {
+    if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
+      let dailyResponse;
+      try {
+        dailyResponse = await axios.post(
+          ROOM_URL,
+          {},
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${DAILY_API_KEY}`,
+            },
+          }
+        );
+      } catch (err) {
+        res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
       }
-    });
-  } catch(err) {
-    res.send({ success: false, message: "Error creating in room" })
-  }
 
-  const { data } = dailyResponse;
+      const { data } = dailyResponse;
 
-  try {
-    const collectionRef = await db.collection(collections.streaming).add({
-      Completed: false,
-      CountStreamers: 1,
-      CountWatchers: 0,
-      EndedTime: 0,
-      ExpectedDuration: 10,
-      Owner: UserId,
-      Paused: false,
-      PricePerSecond: 12,
-      RoomName: data.name,
-      StartedTime: Date.now(),
-      Streamers: [ UserId ],
-      StreamingToken,
-      StreamingUrl: data.url,
-      TotalWatchers: 0,
-      Video: true,
-      Watchers: [],
-    });
-    res.send({ success: true, streamingUrl: data.url, docId: collectionRef.id });
-  } catch(err) {
-    res.send({ success: false, message: "Error creating in firebase document" })
+      try {
+        await docRef.update({
+          RoomName: data.name,
+          StreamingUrl: data.url,
+          StartedTime: Date.now(),
+          RoomState: ROOM_STATE.GOING,
+        });
+        let resData = (await docRef.get()).data();
+        res.send({ success: true, StreamingUrl: data.url, data: resData });
+      } catch (err) {
+        res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
+      }
+    } else {
+      res.send({ success: false, message: 'This streaming is not scheduled' });
+    }
+  } else {
+    res.send({ success: false, message: ERROR_MSG.PERMISSION_ERROR });
   }
-}
+};
 
 /*
  ** End Video Streaming **
  
  ** Request Body **
- docId
+ DocId
  UserId
 
  ** Response **
@@ -141,33 +220,33 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
 
 exports.endVideoStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
-  const { docId, UserId } = req.body;
-  const docRef = await db.collection(collections.streaming).doc(docId);
+  const { DocId, UserId } = req.body;
+  const docRef = await db.collection(collections.streaming).doc(DocId);
   const streamingData = (await docRef.get()).data();
 
-  // Check the User is Owner of this streaming data
-  if (streamingData && UserId === streamingData?.Owner) {
+  // Check the User is MainStreamer of this streaming data
+  if (streamingData && UserId === streamingData?.MainStreamer) {
     // Delete Room From Daily.co
     try {
-      const DELETE_ROOM_URL = `${ROOM_URL}/${streamingData.RoomName}`
+      const DELETE_ROOM_URL = `${ROOM_URL}/${streamingData.RoomName}`;
       await axios.delete(DELETE_ROOM_URL, {
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${DAILY_API_KEY}`
-        }
+          Authorization: `Bearer ${DAILY_API_KEY}`,
+        },
       });
-    } catch(err) {
-      res.send({ success: false, message: "Error Deleting Room in Daily" })
+    } catch (err) {
+      res.send({ success: false, message: 'Error Deleting Room in Daily' });
     }
 
     // Update the Streaming data
-    await docRef.update({ Completed: true, EndedTime: Date.now() });
+    await docRef.update({ RoomState: ROOM_STATE.COMPLETED, EndedTime: Date.now() });
 
-    res.send({ success: true, message: "Streaming Data Updated!" });
+    res.send({ success: true, message: 'Streaming Data Updated!' });
   } else {
-    res.send({ success: false, message: "This User is not a Owner of this meeting!"});
+    res.send({ success: false, message: 'This User is not a MainStreamer of this meeting!' });
   }
-}
+};
 
 /*
  ** List Streaming **
@@ -184,12 +263,12 @@ exports.endVideoStreaming = async (req: express.Request, res: express.Response) 
 exports.listStreaming = async (req: express.Request, res: express.Response) => {
   try {
     const collectionRef = await db.collection(collections.streaming).get();
-    const streamings = collectionRef.docs.map(doc => {
+    const streamings = collectionRef.docs.map((doc) => {
       return {
-        [doc.id] : doc.data()
-      }
+        [doc.id]: doc.data(),
+      };
     });
-  
+
     res.send({ success: true, streamings });
   } catch (err) {
     res.send({ success: false, message: 'Error in getting firestore data' });
