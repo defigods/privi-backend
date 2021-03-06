@@ -1844,6 +1844,348 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
   }
 };
 
+exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if (body) {
+      const nftMediaObj : any = {
+        HasPhoto: body.HasPhoto ?? false,
+        Name: body.Name ?? '',
+        Description: body.Description ?? '',
+        MainHashtag: body.MainHashtag ?? '',
+        Hashtags: body.Hashtags ?? [],
+        Privacy: body.Privacy,
+        OpenAdvertising: body.OpenAdvertising ?? false,
+        PaymentsAllowed: body.PaymentsAllowed ?? false,
+        TwitterId: body.TwitterId ?? '',
+        Date: new Date().getTime(),
+
+        RuleBased: body.RuleBased !== undefined ? body.RuleBased : true,
+
+        RequiredTokens: body.RequiredTokens ?? {},
+
+        MinimumUserLevel: body.MinimumUserLevel == 'Not required' ? 0 : body.MinimumUserLevel,
+        MinimumEndorsementScore:
+          body.MinimumEndorsementScore == 'Not required' ? 0 : body.MinimumEndorsementScore / 100,
+        MinimumTrustScore: body.MinimumTrustScore == 'Not required' ? 0 : body.MinimumTrustScore / 100,
+
+        Levels: body.Levels ?? [],
+
+        BlogsEnabled: body.BlogsEnabled !== undefined ? body.BlogsEnabled : false,
+        Blogs: body.Blogs ?? [],
+        MemberDirectoriesEnabled: body.MemberDirectoriesEnabled !== undefined ? body.MemberDirectoriesEnabled : false,
+        MemberDirectories: body.MemberDirectories ?? [],
+        ProjectsEnabled: body.ProjectsEnabled !== undefined ? body.ProjectsEnabled : false,
+        Projects: body.Projects ?? [],
+        AppsEnabled: body.AppsEnabled !== undefined ? body.AppsEnabled : false,
+        Apps: body.Apps ?? [],
+
+        UserRoles: body.UserRoles ?? {},
+        Admins: body.Admins ?? [],
+        InvitationUsers: body.InvitationUsers ?? [],
+        Posts: [],
+        Votings: [],
+
+        MembersReached: false,
+
+        AssistanceRequired: body.AssistanceRequired !== undefined ? body.AssistanceRequired : false,
+
+        CommunityToken: body.CommunityToken !== undefined ? body.CommunityToken : false,
+        TokenName: body.TokenName ?? '',
+        TokenSymbol: body.TokenSymbol ?? '',
+        TokenDescription: body.TokenDescription ?? '',
+        InvestmentToken: body.InvestmentToken ?? '',
+
+        TargetSpread: body.TargetSpread ?? '',
+        TargetPrice: body.TargetPrice ?? 0,
+        DividendFreq: body.DividendFreq ?? '',
+        TargetSupply: body.TargetSupply ?? 0,
+        InitialSupply: body.InitialSupply ?? 0,
+        AMM: body.AMM ?? '',
+
+        RequiredTokensValidation: body.RequiredTokensValidation ?? false,
+        MinimumUserLevelValidation: body.MinimumUserLevelValidation ?? false,
+        MinimumEndorsementScoreValidation: body.MinimumEndorsementScoreValidation ?? false,
+        MinimumTrustScoreValidation: body.MinimumTrustScoreValidation ?? false,
+        TokenNameValidation: body.TokenNameValidation ?? false,
+        TokenSymbolValidation: body.TokenSymbolValidation ?? false,
+        TokenDescriptionValidation: body.TokenDescriptionValidation ?? false,
+        TargetSpreadValidation: body.TargetSpreadValidation ?? false,
+        TargetPriceValidation: body.TargetPriceValidation ?? false,
+        TargetSupplyValidation: body.TargetSupplyValidation ?? false,
+        InitialSupplyValidation: body.InitialSupplyValidation ?? false,
+
+        Principal: body.Principal ?? 0,
+        Supply: body.Supply ?? 0,
+        P_liquidation: body.P_liquidation ?? 0,
+        Royalty: body.Royalty ?? 0,
+        Interest: body.Interest ?? 0,
+        ExchangeSpread: body.ExchangeSpread ?? 0,
+        Offers: body.Offers ?? 0,
+        OpenInvestment: body.OpenInvestment ?? 0,
+        PodToken: body.PodToken ?? 0,
+        Media: body.Media ?? 0,
+      };
+
+      let communityAddress = body.CommunityAddress;
+
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      if (body.CommunityAddress) {
+        const workInProgressRef = db.collection(collections.workInProgress).doc(communityAddress);
+        const workInProgressGet = await workInProgressRef.get();
+        const workInProgress: any = workInProgressGet.data();
+
+        if(body.directlyUpdate) {
+          nftMediaObj.Offers =  body.Offers
+          await workInProgressRef.update(nftMediaObj);
+        } else {
+          await workInProgressRef.update(nftMediaObj);
+
+          let diffOffers = body.Offers.filter(item1 =>
+            !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
+              && item2.amount === item1.amount && item2.token === item1.token)));
+
+          for(let offer of diffOffers) {
+            await changeOfferToWorkInProgressNFTPod(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+          }
+        }
+      } else {
+        communityAddress = generateUniqueId();
+
+        db.collection(collections.workInProgress)
+          .doc(communityAddress)
+          .set({
+            ...nftMediaObj,
+            CommunityAddress: communityAddress,
+            Creator: body.Creator,
+            Offers: body.Offers ?? [],
+            WIPType: 'NFTMedia'
+          });
+
+        for(let offer of body.Offers) {
+          const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+          const userData: any = userSnap.data();
+          chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
+
+          await notificationsController.addNotification({
+            userId: offer.userId,
+            notification: {
+              type: 94,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offer.token,
+              amount: offer.amount,
+              onlyInformation: false,
+              otherItemId: communityAddress
+            }
+          });
+        }
+      }
+
+      res.send({
+        success: true,
+        data: {
+          nftPodId: communityAddress,
+        },
+      });
+    } else {
+      console.log('Error in controllers/podController -> saveNFTMedia(): success = false');
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> saveNFTMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+}
+//TODO: Modify for NFTPod
+const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, amount, notificationId, paymentDate) => {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressGet = await workInProgressRef.get();
+      let workInProgress : any = workInProgressGet.data();
+
+      let offers = [...workInProgress.Offers];
+      let previousStatus : string = '';
+      let userSavedId : string = '';
+
+      let offerIndex = offers.findIndex(off => off.userId === userId);
+      if (offerIndex !== -1) {
+        previousStatus = offers[offerIndex].status
+        offers[offerIndex].status = status;
+        offers[offerIndex].token = token;
+        offers[offerIndex].amount = amount;
+        userSavedId = offers[offerIndex].userId;
+      } else {
+        userSavedId = userId;
+        offers.push({
+          status: 'pending',
+          token: token,
+          amount: amount,
+          paymentDate: paymentDate,
+          userId: userId
+        })
+      }
+
+      workInProgress.Offers = offers;
+      await workInProgressRef.update({
+        Offers: offers
+      });
+
+      const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      const userSnap = await db.collection(collections.user).doc(userSavedId).get();
+      const user: any = userSnap.data();
+
+      if(status === 'accepted') {
+        // ACCEPTED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 98,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: user.address, //userAddress
+            comment: offers[offerIndex].paymentDate, //endDate
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: communityId
+          }
+        });
+      } else if(status === 'declined') {
+        // DECLINED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 96,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: '',
+            comment: '',
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: communityId
+          }
+        });
+        if (notificationId) {
+          await notificationsController.removeNotification({
+            userId: userId,
+            notificationId: notificationId,
+          });
+        }
+
+        let room : string = '';
+        if (user && user.firstName && creator && creator.firstName
+          && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
+          room = "" + communityId + "" + userSavedId + "" + workInProgress.Creator;
+        } else {
+          room = "" + communityId + "" + workInProgress.Creator + "" + userSavedId;
+        }
+        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        if (!chatQuery.empty) {
+          for (const doc of chatQuery.docs) {
+            let data = doc.data();
+            await db.collection(collections.chat).doc(doc.id).delete();
+            if(data.messages && data.messages.length > 0) {
+              for (const msg of data.messages) {
+                await db.collection(collections.message).doc(msg).delete();
+              }
+            }
+          }
+        }
+
+      } else if(status === 'negotiating') {
+        if(token === null || amount === null) {
+          // REFUSED OFFER NOTIFICATION
+          await notificationsController.addNotification({
+            userId: workInProgress.Creator,
+            notification: {
+              type: 97,
+              typeItemId: 'user',
+              itemId: offers[offerIndex].userId,
+              follower: user.firstName,
+              pod: '',
+              comment: '',
+              token: offers[offerIndex].token,
+              amount: offers[offerIndex].amount,
+              onlyInformation: false,
+              otherItemId: communityId
+            }
+          });
+        } else {
+          if(previousStatus === 'pending') {
+            // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
+            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
+
+            if (notificationId) {
+              await notificationsController.removeNotification({
+                userId: userId,
+                notificationId: notificationId,
+              });
+            }
+          } else {
+            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === communityId && not.type === 97)
+            if (notificationIndex !== -1) {
+              await notificationsController.removeNotification({
+                userId: workInProgress.Creator,
+                notificationId: user.notifications[notificationIndex].id,
+              });
+            }
+            // ANOTHER OFFER NOTIFICATION
+            await notificationsController.addNotification({
+              userId: offers[offerIndex].userId,
+              notification: {
+                type: 95,
+                typeItemId: 'user',
+                itemId: workInProgress.Creator,
+                follower: creator.firstName,
+                pod: '',
+                comment: '',
+                token: offers[offerIndex].token,
+                amount: offers[offerIndex].amount,
+                onlyInformation: false,
+                otherItemId: communityId
+              }
+            });
+          }
+        }
+      } else if(status === 'pending') {
+        //First offer - WIP already created
+        await notificationsController.addNotification({
+          userId: userSavedId,
+          notification: {
+            type: 94,
+            typeItemId: 'user',
+            itemId: workInProgress.Creator,
+            follower: creator.firstName,
+            pod: '',
+            comment: '',
+            token: token,
+            amount: amount,
+            onlyInformation: false,
+            otherItemId: communityId
+          }
+        });
+      }
+
+      resolve(workInProgress)
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
+
 /**
  * Blockchain-Backend function, a user request a buy offer specifying the conditions
  * if the operation is performed (success = true) then update firebase accordingly

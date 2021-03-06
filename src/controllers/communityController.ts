@@ -3070,6 +3070,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             CommunityAddress: communityAddress,
             Creator: body.Creator,
             Offers: body.Offers ?? [],
+            WIPType: 'Community'
           });
 
         for(let offer of body.Offers) {

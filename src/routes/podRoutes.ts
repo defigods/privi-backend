@@ -128,6 +128,9 @@ router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherP
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.post('/changeNFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeNFTPodPhoto);
 
+router.post('/NFT/saveMedia', authenticateJWT, podController.saveNFTMedia);
+
+
 //wall
 router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, podWallController.postDelete);
