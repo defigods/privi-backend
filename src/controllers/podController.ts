@@ -1853,88 +1853,34 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         HasPhoto: body.HasPhoto ?? false,
         Name: body.Name ?? '',
         Description: body.Description ?? '',
-        MainHashtag: body.MainHashtag ?? '',
-        Hashtags: body.Hashtags ?? [],
-        Privacy: body.Privacy,
-        OpenAdvertising: body.OpenAdvertising ?? false,
-        PaymentsAllowed: body.PaymentsAllowed ?? false,
-        TwitterId: body.TwitterId ?? '',
         Date: new Date().getTime(),
 
-        RuleBased: body.RuleBased !== undefined ? body.RuleBased : true,
+        MainHashtag: body.MainHashtag ?? '',
+        Hashtags: body.Hashtags ?? [],
+        OpenAdvertising: body.OpenAdvertising ?? false,
+        OpenInvestment: body.openInvestment ?? false,
 
-        RequiredTokens: body.RequiredTokens ?? {},
+        Media: body.Media ?? 0,
 
-        MinimumUserLevel: body.MinimumUserLevel == 'Not required' ? 0 : body.MinimumUserLevel,
-        MinimumEndorsementScore:
-          body.MinimumEndorsementScore == 'Not required' ? 0 : body.MinimumEndorsementScore / 100,
-        MinimumTrustScore: body.MinimumTrustScore == 'Not required' ? 0 : body.MinimumTrustScore / 100,
-
-        Levels: body.Levels ?? [],
-
-        BlogsEnabled: body.BlogsEnabled !== undefined ? body.BlogsEnabled : false,
-        Blogs: body.Blogs ?? [],
-        MemberDirectoriesEnabled: body.MemberDirectoriesEnabled !== undefined ? body.MemberDirectoriesEnabled : false,
-        MemberDirectories: body.MemberDirectories ?? [],
-        ProjectsEnabled: body.ProjectsEnabled !== undefined ? body.ProjectsEnabled : false,
-        Projects: body.Projects ?? [],
-        AppsEnabled: body.AppsEnabled !== undefined ? body.AppsEnabled : false,
-        Apps: body.Apps ?? [],
-
-        UserRoles: body.UserRoles ?? {},
-        Admins: body.Admins ?? [],
-        InvitationUsers: body.InvitationUsers ?? [],
-        Posts: [],
-        Votings: [],
-
-        MembersReached: false,
-
-        AssistanceRequired: body.AssistanceRequired !== undefined ? body.AssistanceRequired : false,
-
-        CommunityToken: body.CommunityToken !== undefined ? body.CommunityToken : false,
         TokenName: body.TokenName ?? '',
         TokenSymbol: body.TokenSymbol ?? '',
         TokenDescription: body.TokenDescription ?? '',
         InvestmentToken: body.InvestmentToken ?? '',
-
         TargetSpread: body.TargetSpread ?? '',
         TargetPrice: body.TargetPrice ?? 0,
         DividendFreq: body.DividendFreq ?? '',
         TargetSupply: body.TargetSupply ?? 0,
         InitialSupply: body.InitialSupply ?? 0,
-        AMM: body.AMM ?? '',
-
-        RequiredTokensValidation: body.RequiredTokensValidation ?? false,
-        MinimumUserLevelValidation: body.MinimumUserLevelValidation ?? false,
-        MinimumEndorsementScoreValidation: body.MinimumEndorsementScoreValidation ?? false,
-        MinimumTrustScoreValidation: body.MinimumTrustScoreValidation ?? false,
-        TokenNameValidation: body.TokenNameValidation ?? false,
-        TokenSymbolValidation: body.TokenSymbolValidation ?? false,
-        TokenDescriptionValidation: body.TokenDescriptionValidation ?? false,
-        TargetSpreadValidation: body.TargetSpreadValidation ?? false,
-        TargetPriceValidation: body.TargetPriceValidation ?? false,
-        TargetSupplyValidation: body.TargetSupplyValidation ?? false,
-        InitialSupplyValidation: body.InitialSupplyValidation ?? false,
-
-        Principal: body.Principal ?? 0,
-        Supply: body.Supply ?? 0,
-        P_liquidation: body.P_liquidation ?? 0,
-        Royalty: body.Royalty ?? 0,
-        Interest: body.Interest ?? 0,
-        ExchangeSpread: body.ExchangeSpread ?? 0,
-        Offers: body.Offers ?? 0,
-        OpenInvestment: body.OpenInvestment ?? 0,
-        PodToken: body.PodToken ?? 0,
-        Media: body.Media ?? 0,
+        AMM: body.AMM ?? ''
       };
 
-      let communityAddress = body.CommunityAddress;
+      let mediaIdNFT = body.MediaIdNFT;
 
       const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
       const creator: any = creatorSnap.data();
 
-      if (body.CommunityAddress) {
-        const workInProgressRef = db.collection(collections.workInProgress).doc(communityAddress);
+      if (body.MediaIdNFT) {
+        const workInProgressRef = db.collection(collections.workInProgress).doc(mediaIdNFT);
         const workInProgressGet = await workInProgressRef.get();
         const workInProgress: any = workInProgressGet.data();
 
@@ -1949,17 +1895,16 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
               && item2.amount === item1.amount && item2.token === item1.token)));
 
           for(let offer of diffOffers) {
-            await changeOfferToWorkInProgressNFTPod(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+            await changeOfferToWorkInProgressNFTPod(offer.userId, body.MediaIdNFT, offer.status, offer.token, offer.amount, false, offer.paymentDate);
           }
         }
       } else {
-        communityAddress = generateUniqueId();
+        mediaIdNFT = generateUniqueId();
 
         db.collection(collections.workInProgress)
-          .doc(communityAddress)
+          .doc(mediaIdNFT)
           .set({
             ...nftMediaObj,
-            CommunityAddress: communityAddress,
             Creator: body.Creator,
             Offers: body.Offers ?? [],
             WIPType: 'NFTMedia'
@@ -1968,12 +1913,12 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         for(let offer of body.Offers) {
           const userSnap = await db.collection(collections.user).doc(offer.userId).get();
           const userData: any = userSnap.data();
-          chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
+          chatController.createChatWIPFromUsers(mediaIdNFT, body.Creator, offer.userId, creator.firstName, userData.firstName)
 
           await notificationsController.addNotification({
             userId: offer.userId,
             notification: {
-              type: 94,
+              type: 99,
               typeItemId: 'user',
               itemId: body.Creator,
               follower: creator.firstName,
@@ -1982,7 +1927,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
               token: offer.token,
               amount: offer.amount,
               onlyInformation: false,
-              otherItemId: communityAddress
+              otherItemId: mediaIdNFT
             }
           });
         }
@@ -1991,7 +1936,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
       res.send({
         success: true,
         data: {
-          nftPodId: communityAddress,
+          nftPodId: mediaIdNFT
         },
       });
     } else {
@@ -2003,6 +1948,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 }
+
 //TODO: Modify for NFTPod
 const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, amount, notificationId, paymentDate) => {
   return new Promise(async (resolve, reject) => {
