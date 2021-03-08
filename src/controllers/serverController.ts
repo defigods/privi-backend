@@ -88,11 +88,11 @@ export const startServer = (env: Env) => {
   app.use("/collab", collabRoutes);
 
   // start all cron jobs
-  let name: string;
-  let cronJob: any;
-  for ([name, cronJob] of Object.entries(crons)) {
-    cronJob.start();
-  }
+  // let name: string;
+  // let cronJob: any;
+  // for ([name, cronJob] of Object.entries(crons)) {
+  //   cronJob.start();
+  // }
 
   // Start server
   switch (env) {

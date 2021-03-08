@@ -6,7 +6,6 @@ const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const userController = require('../controllers/userController');
 const userWallController = require('../controllers/userWallController');
-const userControllerJS = require('../controllers/userControllerJS');
 
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
@@ -129,12 +128,6 @@ router.post('/changeProfilePhoto', authenticateJWT, upload.single('image'), user
 router.get('/getPhoto/:userId', userController.getPhotoById);
 router.post('/updateNewLevel', authenticateJWT, userController.updateNewLevel);
 router.post('/updateNewBadge', authenticateJWT, userController.updateNewBadge);
-
-router.post('/addToWaitlist', authenticateJWT, userControllerJS.addToWaitlist);
-router.post('/register', authenticateJWT, userControllerJS.register);
-
-router.get('/getPrivacy', authenticateJWT, userControllerJS.getPrivacy);
-router.post('/setPrivacy', authenticateJWT, userControllerJS.setPrivacy);
 
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
