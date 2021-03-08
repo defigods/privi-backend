@@ -142,13 +142,16 @@ const wsListen = () => {
     };
 };
 
-const getWeb3forChain = (chainId: string): Web3 => {
-    if(chainId === '0x3' || chainId === '3'){
+const getWeb3forChain = (chainId: any): Web3 => {
+    if(chainId === '0x3' || chainId === '3' || chainId === 3){
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
-    } else if (chainId === '0x4' || chainId === '4') {
+    } else if (chainId === '0x4' || chainId === '4' || chainId === 4) {
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
+    } else if (chainId === '0x97' || chainId === '97' || chainId === 97) {
+        console.log('getWeb3forChain', chainId)
+        return new Web3(new Web3.providers.HttpProvider(`https://data-seed-prebsc-1-s1.binance.org:8545`))
     } else {
         return new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${ETH_INFURA_KEY}`))
     }        
@@ -492,11 +495,11 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                     /* 
                         confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                     */
-                if (confirmations > MIN_ETH_CONFIRMATION) {
-                    console.log('approve should be set to confirmed');
-                    updateStatusOneToOneSwap(docId, 'confirmed');
-                    return;
-                };
+                    if (confirmations > MIN_ETH_CONFIRMATION) {
+                        console.log('approve should be set to confirmed');
+                        updateStatusOneToOneSwap(docId, 'confirmed');
+                        return;
+                    };
                 } else {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
                     console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
@@ -542,13 +545,13 @@ const swap = async (
     chainId: string) => {
 
     try {
-        console.log('--> Swap: TX confirmed in Ethereum');
+        console.log('--> Swap: TX confirmed in Ethereum', swapDocId, token, amount, 'action', action);
 
-        const response = await swapFab(
+        const response: any = await swapFab(
             action,
             from,
             userAddress,
-            amount,
+            action === Action.SWAP_TRANSFER_ERC721 ? 1 : amount,
             token,
             'PRIVI'
         );
@@ -624,9 +627,10 @@ const withdraw = async (
         let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
 
         // console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
-
+        const _chain: any = chainId?.toString();
+        const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
         // Get SwapManager contract code
-        const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(chainId.split('x')[1])]["address"]);
+        const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[_chainId]["address"]);
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);

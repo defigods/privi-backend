@@ -34,15 +34,15 @@
     "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
     "exportedSymbols": {
       "FakeInterface": [
-        3391
+        3380
       ]
     },
-    "id": 3392,
+    "id": 3381,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 3382,
+        "id": 3371,
         "literals": [
           "solidity",
           "^",
@@ -58,38 +58,38 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "documentation": {
-          "id": 3383,
+          "id": 3372,
           "nodeType": "StructuredDocumentation",
           "src": "58:70:24",
           "text": " @dev Interface of the ERC20 standard as defined in the EIP."
         },
         "fullyImplemented": false,
-        "id": 3391,
+        "id": 3380,
         "linearizedBaseContracts": [
-          3391
+          3380
         ],
         "name": "FakeInterface",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "functionSelector": "d0dbc833",
-            "id": 3390,
+            "id": 3379,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintForUser",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 3388,
+              "id": 3377,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 3385,
+                  "id": 3374,
                   "mutability": "mutable",
                   "name": "user",
                   "nodeType": "VariableDeclaration",
-                  "scope": 3390,
+                  "scope": 3379,
                   "src": "180:12:24",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -98,7 +98,7 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 3384,
+                    "id": 3373,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
                     "src": "180:7:24",
@@ -112,11 +112,11 @@
                 },
                 {
                   "constant": false,
-                  "id": 3387,
+                  "id": 3376,
                   "mutability": "mutable",
                   "name": "amount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 3390,
+                  "scope": 3379,
                   "src": "194:14:24",
                   "stateVariable": false,
                   "storageLocation": "default",
@@ -125,7 +125,7 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 3386,
+                    "id": 3375,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
                     "src": "194:7:24",
@@ -140,19 +140,19 @@
               "src": "179:30:24"
             },
             "returnParameters": {
-              "id": 3389,
+              "id": 3378,
               "nodeType": "ParameterList",
               "parameters": [],
               "src": "218:0:24"
             },
-            "scope": 3391,
+            "scope": 3380,
             "src": "159:60:24",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 3392,
+        "scope": 3381,
         "src": "129:92:24"
       }
     ],
@@ -163,7 +163,7 @@
       "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
       "exportedSymbols": {
         "FakeInterface": [
-          3391
+          3380
         ]
       },
       "license": "MIT"
@@ -178,7 +178,7 @@
             ".6"
           ]
         },
-        "id": 3382,
+        "id": 3371,
         "name": "PragmaDirective",
         "src": "33:23:24"
       },
@@ -194,17 +194,17 @@
           "contractKind": "interface",
           "fullyImplemented": false,
           "linearizedBaseContracts": [
-            3391
+            3380
           ],
           "name": "FakeInterface",
-          "scope": 3392
+          "scope": 3381
         },
         "children": [
           {
             "attributes": {
               "text": " @dev Interface of the ERC20 standard as defined in the EIP."
             },
-            "id": 3383,
+            "id": 3372,
             "name": "StructuredDocumentation",
             "src": "58:70:24"
           },
@@ -218,7 +218,7 @@
                 null
               ],
               "name": "mintForUser",
-              "scope": 3391,
+              "scope": 3380,
               "stateMutability": "nonpayable",
               "virtual": false,
               "visibility": "external"
@@ -231,7 +231,7 @@
                       "constant": false,
                       "mutability": "mutable",
                       "name": "user",
-                      "scope": 3390,
+                      "scope": 3379,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "address",
@@ -244,12 +244,12 @@
                           "stateMutability": "nonpayable",
                           "type": "address"
                         },
-                        "id": 3384,
+                        "id": 3373,
                         "name": "ElementaryTypeName",
                         "src": "180:7:24"
                       }
                     ],
-                    "id": 3385,
+                    "id": 3374,
                     "name": "VariableDeclaration",
                     "src": "180:12:24"
                   },
@@ -258,7 +258,7 @@
                       "constant": false,
                       "mutability": "mutable",
                       "name": "amount",
-                      "scope": 3390,
+                      "scope": 3379,
                       "stateVariable": false,
                       "storageLocation": "default",
                       "type": "uint256",
@@ -270,17 +270,17 @@
                           "name": "uint256",
                           "type": "uint256"
                         },
-                        "id": 3386,
+                        "id": 3375,
                         "name": "ElementaryTypeName",
                         "src": "194:7:24"
                       }
                     ],
-                    "id": 3387,
+                    "id": 3376,
                     "name": "VariableDeclaration",
                     "src": "194:14:24"
                   }
                 ],
-                "id": 3388,
+                "id": 3377,
                 "name": "ParameterList",
                 "src": "179:30:24"
               },
@@ -291,22 +291,22 @@
                   ]
                 },
                 "children": [],
-                "id": 3389,
+                "id": 3378,
                 "name": "ParameterList",
                 "src": "218:0:24"
               }
             ],
-            "id": 3390,
+            "id": 3379,
             "name": "FunctionDefinition",
             "src": "159:60:24"
           }
         ],
-        "id": 3391,
+        "id": 3380,
         "name": "ContractDefinition",
         "src": "129:92:24"
       }
     ],
-    "id": 3392,
+    "id": 3381,
     "name": "SourceUnit",
     "src": "33:188:24"
   },
@@ -316,7 +316,7 @@
   },
   "networks": {},
   "schemaVersion": "3.3.3",
-  "updatedAt": "2021-03-03T14:32:11.346Z",
+  "updatedAt": "2021-03-05T14:50:31.502Z",
   "devdoc": {
     "details": "Interface of the ERC20 standard as defined in the EIP.",
     "kind": "dev",

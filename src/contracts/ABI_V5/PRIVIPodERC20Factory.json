@@ -442,37 +442,37 @@
     "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/PRIVIPodERC20Factory.sol",
     "exportedSymbols": {
       "AccessControl": [
-        3677
+        3666
       ],
       "Address": [
-        7457
+        7446
       ],
       "Context": [
-        7480
+        7469
       ],
       "ERC20": [
-        5859
+        5848
       ],
       "ERC20Burnable": [
-        5918
+        5907
       ],
       "EnumerableSet": [
-        8582
+        8571
       ],
       "IBridgeManager": [
-        1948
+        1937
       ],
       "IERC20": [
-        5996
+        5985
       ],
       "PRIVIPodERC20Factory": [
         966
       ],
       "PRIVIPodERC20Token": [
-        2251
+        2240
       ],
       "SafeMath": [
-        4101
+        4090
       ]
     },
     "id": 967,
@@ -496,7 +496,7 @@
         "id": 689,
         "nodeType": "ImportDirective",
         "scope": 967,
-        "sourceUnit": 3678,
+        "sourceUnit": 3667,
         "src": "58:58:3",
         "symbolAliases": [],
         "unitAlias": ""
@@ -507,7 +507,7 @@
         "id": 690,
         "nodeType": "ImportDirective",
         "scope": 967,
-        "sourceUnit": 4102,
+        "sourceUnit": 4091,
         "src": "117:51:3",
         "symbolAliases": [],
         "unitAlias": ""
@@ -518,7 +518,7 @@
         "id": 691,
         "nodeType": "ImportDirective",
         "scope": 967,
-        "sourceUnit": 2252,
+        "sourceUnit": 2241,
         "src": "169:40:3",
         "symbolAliases": [],
         "unitAlias": ""
@@ -529,7 +529,7 @@
         "id": 692,
         "nodeType": "ImportDirective",
         "scope": 967,
-        "sourceUnit": 1949,
+        "sourceUnit": 1938,
         "src": "210:41:3",
         "symbolAliases": [],
         "unitAlias": ""
@@ -542,10 +542,10 @@
               "id": 693,
               "name": "AccessControl",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 3677,
+              "referencedDeclaration": 3666,
               "src": "286:13:3",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_AccessControl_$3677",
+                "typeIdentifier": "t_contract$_AccessControl_$3666",
                 "typeString": "contract AccessControl"
               }
             },
@@ -555,17 +555,17 @@
           }
         ],
         "contractDependencies": [
-          2251,
-          3677,
-          7480
+          2240,
+          3666,
+          7469
         ],
         "contractKind": "contract",
         "fullyImplemented": true,
         "id": 966,
         "linearizedBaseContracts": [
           966,
-          3677,
-          7480
+          3666,
+          7469
         ],
         "name": "PRIVIPodERC20Factory",
         "nodeType": "ContractDefinition",
@@ -576,10 +576,10 @@
               "id": 695,
               "name": "SafeMath",
               "nodeType": "UserDefinedTypeName",
-              "referencedDeclaration": 4101,
+              "referencedDeclaration": 4090,
               "src": "312:8:3",
               "typeDescriptions": {
-                "typeIdentifier": "t_contract$_SafeMath_$4101",
+                "typeIdentifier": "t_contract$_SafeMath_$4090",
                 "typeString": "library SafeMath"
               }
             },
@@ -930,7 +930,7 @@
                         "name": "DEFAULT_ADMIN_ROLE",
                         "nodeType": "Identifier",
                         "overloadedDeclarations": [],
-                        "referencedDeclaration": 3420,
+                        "referencedDeclaration": 3409,
                         "src": "908:18:3",
                         "typeDescriptions": {
                           "typeIdentifier": "t_bytes32",
@@ -945,7 +945,7 @@
                           "name": "_msgSender",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 7468,
+                          "referencedDeclaration": 7457,
                           "src": "928:10:3",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_view$__$returns$_t_address_payable_$",
@@ -983,7 +983,7 @@
                       "name": "_setupRole",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3603,
+                      "referencedDeclaration": 3592,
                       "src": "897:10:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_bytes32_$_t_address_$returns$__$",
@@ -1032,7 +1032,7 @@
                           "name": "_msgSender",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 7468,
+                          "referencedDeclaration": 7457,
                           "src": "978:10:3",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_view$__$returns$_t_address_payable_$",
@@ -1070,7 +1070,7 @@
                       "name": "_setupRole",
                       "nodeType": "Identifier",
                       "overloadedDeclarations": [],
-                      "referencedDeclaration": 3603,
+                      "referencedDeclaration": 3592,
                       "src": "951:10:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_nonpayable$_t_bytes32_$_t_address_$returns$__$",
@@ -1994,17 +1994,17 @@
                       "stateVariable": false,
                       "storageLocation": "default",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                        "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                         "typeString": "contract PRIVIPodERC20Token"
                       },
                       "typeName": {
                         "id": 819,
                         "name": "PRIVIPodERC20Token",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2251,
+                        "referencedDeclaration": 2240,
                         "src": "2160:18:3",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                           "typeString": "contract PRIVIPodERC20Token"
                         }
                       },
@@ -2118,17 +2118,17 @@
                       "nodeType": "NewExpression",
                       "src": "2190:22:3",
                       "typeDescriptions": {
-                        "typeIdentifier": "t_function_creation_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$returns$_t_contract$_PRIVIPodERC20Token_$2251_$",
+                        "typeIdentifier": "t_function_creation_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$returns$_t_contract$_PRIVIPodERC20Token_$2240_$",
                         "typeString": "function (string memory,string memory,address) returns (contract PRIVIPodERC20Token)"
                       },
                       "typeName": {
                         "id": 821,
                         "name": "PRIVIPodERC20Token",
                         "nodeType": "UserDefinedTypeName",
-                        "referencedDeclaration": 2251,
+                        "referencedDeclaration": 2240,
                         "src": "2194:18:3",
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                           "typeString": "contract PRIVIPodERC20Token"
                         }
                       }
@@ -2144,7 +2144,7 @@
                     "src": "2190:68:3",
                     "tryCall": false,
                     "typeDescriptions": {
-                      "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                      "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                       "typeString": "contract PRIVIPodERC20Token"
                     }
                   },
@@ -2182,7 +2182,7 @@
                           "referencedDeclaration": 820,
                           "src": "2289:8:3",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                            "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                             "typeString": "contract PRIVIPodERC20Token"
                           }
                         }
@@ -2190,7 +2190,7 @@
                       "expression": {
                         "argumentTypes": [
                           {
-                            "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                            "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                             "typeString": "contract PRIVIPodERC20Token"
                           }
                         ],
@@ -2284,7 +2284,7 @@
                       "lValueRequested": false,
                       "memberName": "add",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 3928,
+                      "referencedDeclaration": 3917,
                       "src": "2308:19:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_internal_pure$_t_uint256_$_t_uint256_$returns$_t_uint256_$bound_to$_t_uint256_$",
@@ -2527,10 +2527,10 @@
                           "name": "IBridgeManager",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 1948,
+                          "referencedDeclaration": 1937,
                           "src": "2455:14:3",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_type$_t_contract$_IBridgeManager_$1948_$",
+                            "typeIdentifier": "t_type$_t_contract$_IBridgeManager_$1937_$",
                             "typeString": "type(contract IBridgeManager)"
                           }
                         },
@@ -2545,7 +2545,7 @@
                         "src": "2455:36:3",
                         "tryCall": false,
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_IBridgeManager_$1948",
+                          "typeIdentifier": "t_contract$_IBridgeManager_$1937",
                           "typeString": "contract IBridgeManager"
                         }
                       },
@@ -2556,7 +2556,7 @@
                       "lValueRequested": false,
                       "memberName": "registerTokenERC20",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 1927,
+                      "referencedDeclaration": 1916,
                       "src": "2455:55:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_string_memory_ptr_$_t_string_memory_ptr_$_t_address_$returns$__$",
@@ -2838,7 +2838,7 @@
                               "name": "_msgSender",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 7468,
+                              "referencedDeclaration": 7457,
                               "src": "2969:10:3",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_internal_view$__$returns$_t_address_payable_$",
@@ -2876,7 +2876,7 @@
                           "name": "hasRole",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3466,
+                          "referencedDeclaration": 3455,
                           "src": "2945:7:3",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_view$_t_bytes32_$_t_address_$returns$_t_bool_$",
@@ -3313,10 +3313,10 @@
                           "name": "PRIVIPodERC20Token",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 2251,
+                          "referencedDeclaration": 2240,
                           "src": "3261:18:3",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_type$_t_contract$_PRIVIPodERC20Token_$2251_$",
+                            "typeIdentifier": "t_type$_t_contract$_PRIVIPodERC20Token_$2240_$",
                             "typeString": "type(contract PRIVIPodERC20Token)"
                           }
                         },
@@ -3331,7 +3331,7 @@
                         "src": "3261:48:3",
                         "tryCall": false,
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                           "typeString": "contract PRIVIPodERC20Token"
                         }
                       },
@@ -3342,7 +3342,7 @@
                       "lValueRequested": false,
                       "memberName": "mint",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2230,
+                      "referencedDeclaration": 2219,
                       "src": "3261:53:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_uint256_$returns$__$",
@@ -3512,7 +3512,7 @@
                               "name": "_msgSender",
                               "nodeType": "Identifier",
                               "overloadedDeclarations": [],
-                              "referencedDeclaration": 7468,
+                              "referencedDeclaration": 7457,
                               "src": "3500:10:3",
                               "typeDescriptions": {
                                 "typeIdentifier": "t_function_internal_view$__$returns$_t_address_payable_$",
@@ -3550,7 +3550,7 @@
                           "name": "hasRole",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 3466,
+                          "referencedDeclaration": 3455,
                           "src": "3476:7:3",
                           "typeDescriptions": {
                             "typeIdentifier": "t_function_internal_view$_t_bytes32_$_t_address_$returns$_t_bool_$",
@@ -3987,10 +3987,10 @@
                           "name": "PRIVIPodERC20Token",
                           "nodeType": "Identifier",
                           "overloadedDeclarations": [],
-                          "referencedDeclaration": 2251,
+                          "referencedDeclaration": 2240,
                           "src": "3792:18:3",
                           "typeDescriptions": {
-                            "typeIdentifier": "t_type$_t_contract$_PRIVIPodERC20Token_$2251_$",
+                            "typeIdentifier": "t_type$_t_contract$_PRIVIPodERC20Token_$2240_$",
                             "typeString": "type(contract PRIVIPodERC20Token)"
                           }
                         },
@@ -4005,7 +4005,7 @@
                         "src": "3792:58:3",
                         "tryCall": false,
                         "typeDescriptions": {
-                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                          "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                           "typeString": "contract PRIVIPodERC20Token"
                         }
                       },
@@ -4016,7 +4016,7 @@
                       "lValueRequested": false,
                       "memberName": "mint",
                       "nodeType": "MemberAccess",
-                      "referencedDeclaration": 2230,
+                      "referencedDeclaration": 2219,
                       "src": "3792:63:3",
                       "typeDescriptions": {
                         "typeIdentifier": "t_function_external_nonpayable$_t_address_$_t_uint256_$returns$__$",
@@ -4161,37 +4161,37 @@
       "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/PRIVIPodERC20Factory.sol",
       "exportedSymbols": {
         "AccessControl": [
-          3677
+          3666
         ],
         "Address": [
-          7457
+          7446
         ],
         "Context": [
-          7480
+          7469
         ],
         "ERC20": [
-          5859
+          5848
         ],
         "ERC20Burnable": [
-          5918
+          5907
         ],
         "EnumerableSet": [
-          8582
+          8571
         ],
         "IBridgeManager": [
-          1948
+          1937
         ],
         "IERC20": [
-          5996
+          5985
         ],
         "PRIVIPodERC20Factory": [
           966
         ],
         "PRIVIPodERC20Token": [
-          2251
+          2240
         ],
         "SafeMath": [
-          4101
+          4090
         ]
       },
       "license": "MIT"
@@ -4212,7 +4212,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 3678,
+          "SourceUnit": 3667,
           "absolutePath": "@openzeppelin/contracts/access/AccessControl.sol",
           "file": "@openzeppelin/contracts/access/AccessControl.sol",
           "scope": 967,
@@ -4227,7 +4227,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 4102,
+          "SourceUnit": 4091,
           "absolutePath": "@openzeppelin/contracts/math/SafeMath.sol",
           "file": "@openzeppelin/contracts/math/SafeMath.sol",
           "scope": 967,
@@ -4242,7 +4242,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 2252,
+          "SourceUnit": 2241,
           "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/PRIVIPodERC20Token.sol",
           "file": "./token/PRIVIPodERC20Token.sol",
           "scope": 967,
@@ -4257,7 +4257,7 @@
       },
       {
         "attributes": {
-          "SourceUnit": 1949,
+          "SourceUnit": 1938,
           "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/IBridgeManager.sol",
           "file": "./interfaces/IBridgeManager.sol",
           "scope": 967,
@@ -4274,16 +4274,16 @@
         "attributes": {
           "abstract": false,
           "contractDependencies": [
-            2251,
-            3677,
-            7480
+            2240,
+            3666,
+            7469
           ],
           "contractKind": "contract",
           "fullyImplemented": true,
           "linearizedBaseContracts": [
             966,
-            3677,
-            7480
+            3666,
+            7469
           ],
           "name": "PRIVIPodERC20Factory",
           "scope": 967
@@ -4295,7 +4295,7 @@
               {
                 "attributes": {
                   "name": "AccessControl",
-                  "referencedDeclaration": 3677,
+                  "referencedDeclaration": 3666,
                   "type": "contract AccessControl"
                 },
                 "id": 693,
@@ -4312,7 +4312,7 @@
               {
                 "attributes": {
                   "name": "SafeMath",
-                  "referencedDeclaration": 4101,
+                  "referencedDeclaration": 4090,
                   "type": "library SafeMath"
                 },
                 "id": 695,
@@ -4761,7 +4761,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 3603,
+                              "referencedDeclaration": 3592,
                               "type": "function (bytes32,address)",
                               "value": "_setupRole"
                             },
@@ -4774,7 +4774,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 3420,
+                              "referencedDeclaration": 3409,
                               "type": "bytes32",
                               "value": "DEFAULT_ADMIN_ROLE"
                             },
@@ -4808,7 +4808,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 7468,
+                                  "referencedDeclaration": 7457,
                                   "type": "function () view returns (address payable)",
                                   "value": "_msgSender"
                                 },
@@ -4863,7 +4863,7 @@
                               "overloadedDeclarations": [
                                 null
                               ],
-                              "referencedDeclaration": 3603,
+                              "referencedDeclaration": 3592,
                               "type": "function (bytes32,address)",
                               "value": "_setupRole"
                             },
@@ -4910,7 +4910,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 7468,
+                                  "referencedDeclaration": 7457,
                                   "type": "function () view returns (address payable)",
                                   "value": "_msgSender"
                                 },
@@ -5994,7 +5994,7 @@
                           {
                             "attributes": {
                               "name": "PRIVIPodERC20Token",
-                              "referencedDeclaration": 2251,
+                              "referencedDeclaration": 2240,
                               "type": "contract PRIVIPodERC20Token"
                             },
                             "id": 819,
@@ -6047,7 +6047,7 @@
                               {
                                 "attributes": {
                                   "name": "PRIVIPodERC20Token",
-                                  "referencedDeclaration": 2251,
+                                  "referencedDeclaration": 2240,
                                   "type": "contract PRIVIPodERC20Token"
                                 },
                                 "id": 821,
@@ -6200,7 +6200,7 @@
                                 "attributes": {
                                   "argumentTypes": [
                                     {
-                                      "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2251",
+                                      "typeIdentifier": "t_contract$_PRIVIPodERC20Token_$2240",
                                       "typeString": "contract PRIVIPodERC20Token"
                                     }
                                   ],
@@ -6282,7 +6282,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "add",
-                              "referencedDeclaration": 3928,
+                              "referencedDeclaration": 3917,
                               "type": "function (uint256,uint256) pure returns (uint256)"
                             },
                             "children": [
@@ -6517,7 +6517,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "registerTokenERC20",
-                              "referencedDeclaration": 1927,
+                              "referencedDeclaration": 1916,
                               "type": "function (string memory,string memory,address) external"
                             },
                             "children": [
@@ -6547,7 +6547,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 1948,
+                                      "referencedDeclaration": 1937,
                                       "type": "type(contract IBridgeManager)",
                                       "value": "IBridgeManager"
                                     },
@@ -6924,7 +6924,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 3466,
+                                  "referencedDeclaration": 3455,
                                   "type": "function (bytes32,address) view returns (bool)",
                                   "value": "hasRole"
                                 },
@@ -6971,7 +6971,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 7468,
+                                      "referencedDeclaration": 7457,
                                       "type": "function () view returns (address payable)",
                                       "value": "_msgSender"
                                     },
@@ -7322,7 +7322,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mint",
-                              "referencedDeclaration": 2230,
+                              "referencedDeclaration": 2219,
                               "type": "function (address,uint256) external"
                             },
                             "children": [
@@ -7352,7 +7352,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 2251,
+                                      "referencedDeclaration": 2240,
                                       "type": "type(contract PRIVIPodERC20Token)",
                                       "value": "PRIVIPodERC20Token"
                                     },
@@ -7642,7 +7642,7 @@
                                   "overloadedDeclarations": [
                                     null
                                   ],
-                                  "referencedDeclaration": 3466,
+                                  "referencedDeclaration": 3455,
                                   "type": "function (bytes32,address) view returns (bool)",
                                   "value": "hasRole"
                                 },
@@ -7689,7 +7689,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 7468,
+                                      "referencedDeclaration": 7457,
                                       "type": "function () view returns (address payable)",
                                       "value": "_msgSender"
                                     },
@@ -8040,7 +8040,7 @@
                               "isPure": false,
                               "lValueRequested": false,
                               "member_name": "mint",
-                              "referencedDeclaration": 2230,
+                              "referencedDeclaration": 2219,
                               "type": "function (address,uint256) external"
                             },
                             "children": [
@@ -8070,7 +8070,7 @@
                                       "overloadedDeclarations": [
                                         null
                                       ],
-                                      "referencedDeclaration": 2251,
+                                      "referencedDeclaration": 2240,
                                       "type": "type(contract PRIVIPodERC20Token)",
                                       "value": "PRIVIPodERC20Token"
                                     },
@@ -8293,8 +8293,8 @@
         }
       },
       "links": {},
-      "address": "0xEcd9502E0Fa01FFb0d4EebC0D84fc0D1b250F391",
-      "transactionHash": "0x8a4293c15b6a0a69c44e6aeb038946153bbca3fa64b5004a2da0d7bb145c94d1"
+      "address": "0x9B9509ed55FaE1a667768A215a5B6D4Ff921aa9b",
+      "transactionHash": "0xef94cafd551275815791132efef6b84926e4be3779d2128c0d5eb6b262b595e4"
     },
     "4": {
       "events": {
@@ -8400,8 +8400,8 @@
         }
       },
       "links": {},
-      "address": "0x3d9Dd4c18e3432B02423018aC7550879c91B5AA7",
-      "transactionHash": "0xe9e05040e14acf867b8c75513ef84157c59bd3f48976740681763f02217b5e21"
+      "address": "0x5F7C79D16D2Dfc655143cF7E20B5FFbc8abA87e1",
+      "transactionHash": "0xf7e49daf1a3f5455db4f0f195368887382c014ecf064ef9e82616b141f030e86"
     },
     "97": {
       "events": {
@@ -8507,12 +8507,12 @@
         }
       },
       "links": {},
-      "address": "0xC5dbDD50bbD7caAc57cE618aD6C1c263d21A6B3c",
-      "transactionHash": "0xd69cb6894e642b77e799394b41761f0daf79ed560e132fb25513281da281dfd0"
+      "address": "0x96822d166ce19B0672FEe0D316D55B0Efa29dE4c",
+      "transactionHash": "0xf4db892b4c3f0372c2b0edd2ecdfee55417e7d15376f6aed7ea917a7443270f8"
     }
   },
   "schemaVersion": "3.3.3",
-  "updatedAt": "2021-03-03T15:30:24.365Z",
+  "updatedAt": "2021-03-05T19:29:35.820Z",
   "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
