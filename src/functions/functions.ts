@@ -73,15 +73,16 @@ export async function getRecentSwaps(userAddress) {
 export async function updateFirebase(blockchainRes) {
     const output = blockchainRes.output;
     await db.runTransaction(async (transaction) => {
-        const updateUser = output.UpdateUser;
         const updateTokens = output.UpdateTokens;
         const updateBalances = output.UpdateBalances;
         const updateTransactions = output.Transactions;
-        // Pods FT and NFT
+        // Pods FT and NFT  (NFT replaced by Media)
         const updatePods = output.UpdatePods;
         const updatePodStates = output.UpdatePodStates;
         const updateBuyingOffers = output.UpdateBuyingOffers;
         const updateSellingOffers = output.UpdateSellingOffers;
+        const updateMedias = output.UpdateMedias;
+        const updateStreamings = output.UpdateStreamings;
         // Insurance
         const updateInsurancePools = output.UpdateInsurancePools;
         const updateInsuranceStates = output.UpdateInsuranceStates;
@@ -157,30 +158,37 @@ export async function updateFirebase(blockchainRes) {
             let tid: string = "";
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTransactions)) {
-                transaction.set(db.collection(collections.priviScan).doc(tid), { Transactions: txnArray });
-                if(txnArray && txnArray.length > 0) {
-                    txnArray.forEach((txnObj) => {
-                        const from = txnObj.From;
-                        const to = txnObj.To;
-                        if (from) transaction.set(db.collection(collections.transactions).doc(from).collection(collections.history).doc(), txnObj);
-                        if (to) transaction.set(db.collection(collections.transactions).doc(to).collection(collections.history).doc(), txnObj);
-                    });
+                if (txnArray && txnArray.length > 0) {
+                    const firstTxn = txnArray[0];
+                    const date = firstTxn.Date;
+                    transaction.set(db.collection(collections.priviScan).doc(tid), { Transactions: txnArray, Date: date });
+                    if (txnArray && txnArray.length > 0) {
+                        txnArray.forEach((txnObj) => {
+                            const from = txnObj.From;
+                            const to = txnObj.To;
+                            if (from) transaction.set(db.collection(collections.transactions).doc(from).collection(collections.history).doc(), txnObj);
+                            if (to) transaction.set(db.collection(collections.transactions).doc(to).collection(collections.history).doc(), txnObj);
+                        });
+                    }
                 }
             }
         }
         // update pods (FT and NFT)
-        const isNFT = {};
+        const podType = {};
         if (updatePods) {
             let podId: string = '';
             let podObj: any = {};
             for ([podId, podObj] of Object.entries(updatePods)) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
-                if (podObj.Royalty != undefined) {
-                    isNFT[podId] = true;
-                    colectionName = collections.podsNFT;    // case NFT
+                if (podObj.Royalty != undefined) {  // case NFT
+                    podType[podId] = 'NFT';
+                    colectionName = collections.podsNFT;
+                } else if (podObj.IsInvesting != undefined) {
+                    podType[podId] = 'MEDIA';
+                    colectionName = collections.mediaPods;
                 } else {
-                    isNFT[podId] = false;
+                    podType[podId] = 'FT';
                 }
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podObj, { merge: true });
@@ -193,7 +201,8 @@ export async function updateFirebase(blockchainRes) {
             for ([podId, podState] of Object.entries(updatePodStates)) {
                 // find out NFT or FT
                 let colectionName = collections.podsFT;
-                if (isNFT[podId]) colectionName = collections.podsNFT;    // case NFT
+                if (podType[podId] && podType[podId] == "NFT") colectionName = collections.podsNFT;    // case NFT
+                else if ((podType[podId] && podType[podId] == "MEDIA")) colectionName = collections.mediaPods;
                 // with merge flag because pods have more info thats not in blockchain (eg followers)
                 transaction.set(db.collection(colectionName).doc(podId), podState, { merge: true });
             }
@@ -226,6 +235,22 @@ export async function updateFirebase(blockchainRes) {
                     else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
                 }
                 else console.log("Update Firebase: update nft selling order error ,", orderId, " order updateObject has no podAddress field");
+            }
+        }
+        if (updateMedias) {
+            let mediaSymbol: string = '';
+            let mediaObj: any = null;
+            for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
+                const podAddress = mediaObj.PodAddress;
+                if (podAddress) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol), mediaObj, { merge: true });
+            }
+        }
+        if (updateStreamings) {
+            let id: string = '';
+            let streamingObj: any = null;
+            for ([id, streamingObj] of Object.entries(updateStreamings)) {
+                // const podAddress = mediaObj.PodAddress;
+                // if (podAddress) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol), mediaObj, { merge: true });
             }
         }
         // update pools
