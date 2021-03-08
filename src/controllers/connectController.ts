@@ -487,7 +487,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                     doc.action === Action.WITHDRAW_ETH ||
                     doc.action === Action.WITHDRAW_ERC20 || 
                     doc.action === Action.WITHDRAW_ERC721) {
-                    console.log('performing withdraw');
+                    console.log('performing withdraw', docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId);
                     withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId)
                 } else if (doc.action === Action.SWAP_APPROVE_ERC20 || doc.action === Action.SWAP_APPROVE_ERC721) {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
@@ -598,7 +598,7 @@ const withdraw = async (
     date: string,
     chainId: string
 ) => {
-    console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
+    console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date, chainId)
 
     const web3_l = getWeb3forChain(chainId);
     // set swap doc to in progress
@@ -639,7 +639,7 @@ const withdraw = async (
         // Choose method from SwapManager to be called
         const method = 
             (action === Action.WITHDRAW_ETH) ? contract.methods.withdrawEther(toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
-            : (action === Action.SWAP_APPROVE_ERC20) ? contract.methods.withdrawERC20Token(token, toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
+            : (action === Action.WITHDRAW_ERC20) ? contract.methods.withdrawERC20Token(token, toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
             : contract.methods.withdrawERC721Token(token, toEthAddress, amount === 'NO_ID' ? '999999999' : amount, amount === 'NO_ID' ? true : false).encodeABI(); // hopefully this id won't exist, swapmanager needs update to account for minting pods
 
         // Transaction parameters
