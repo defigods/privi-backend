@@ -421,6 +421,78 @@ exports.changeWIPPhotoToken = async (req: express.Request, res: express.Response
   }
 };
 
+exports.getPhotoWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    let wipId = req.params.wipId;
+    if (wipId) {
+      const directoryPath = path.join('uploads', 'wip');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wip', wipId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoWIP()', "There's no post id...");
+      res.send({ success: false, error: "There's no post id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoWIP()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getPhotoTokenWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    let wipId = req.params.wipId;
+    if (wipId) {
+      const directoryPath = path.join('uploads', 'wipToken');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wipToken', wipId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoTokenWIP()', "There's no post id...");
+      res.send({ success: false, error: "There's no post id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoTokenWIP()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
 /**
  * Function used to retrieve a pod's photo from server, if the pod has image then this image is stored with name = podId
  * @param req podId as params

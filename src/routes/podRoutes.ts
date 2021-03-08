@@ -162,6 +162,8 @@ router.get('/NFT/getWIP/:mediaIdNFT/:userId/:notificationId', authenticateJWT, p
 
 router.post('/WIP/changePhoto', authenticateJWT, upload6.single('image'), podController.changeWIPPhoto);
 router.post('/WIP/changePhotoToken', authenticateJWT, upload7.single('image'), podController.changeWIPPhotoToken);
+router.get('/WIP/getPhoto/:wipId', podController.getPhotoWIP);
+router.get('/WIP/getPhotoToken/:wipId', podController.getPhotoTokenWIP);
 
 //wall
 router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
