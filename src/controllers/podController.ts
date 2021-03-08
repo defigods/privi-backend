@@ -1876,12 +1876,12 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         AMM: body.AMM ?? ''
       };
 
-      let mediaIdNFT = body.MediaIdNFT;
+      let mediaIdNFT = body.id;
 
       const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
       const creator: any = creatorSnap.data();
 
-      if (body.MediaIdNFT) {
+      if (body.id) {
         const workInProgressRef = db.collection(collections.workInProgress).doc(mediaIdNFT);
         const workInProgressGet = await workInProgressRef.get();
         const workInProgress: any = workInProgressGet.data();
@@ -1985,7 +1985,7 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.userId && body.communityId && body.status) {
+    if(body && body.userId && body.mediaIdNFT && body.status) {
 
       let mediaNFT : any = await communityController.changeOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.status, body.token, body.amount, body.notificationId || false, null, 'mediaNFT');
 
