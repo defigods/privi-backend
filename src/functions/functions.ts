@@ -237,6 +237,7 @@ export async function updateFirebase(blockchainRes) {
                 else console.log("Update Firebase: update nft selling order error ,", orderId, " order updateObject has no podAddress field");
             }
         }
+        // update medias
         if (updateMedias) {
             let mediaSymbol: string = '';
             let mediaObj: any = null;
@@ -245,12 +246,15 @@ export async function updateFirebase(blockchainRes) {
                 if (podAddress) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol), mediaObj, { merge: true });
             }
         }
+        // update streamings
         if (updateStreamings) {
-            let id: string = '';
+            let streamingId: string = '';
             let streamingObj: any = null;
-            for ([id, streamingObj] of Object.entries(updateStreamings)) {
-                // const podAddress = mediaObj.PodAddress;
-                // if (podAddress) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol), mediaObj, { merge: true });
+            for ([streamingId, streamingObj] of Object.entries(updateStreamings)) {
+                const podAddress = streamingObj.PodAddress;
+                const mediaSymbol = streamingObj.MediaSymbol;
+                if (podAddress && mediaSymbol) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias)
+                    .doc(mediaSymbol).collection(collections.mediaStreamings).doc(streamingId), streamingObj, { merge: true });
             }
         }
         // update pools

@@ -52,10 +52,14 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         const royalty = body.Royalty;
         const fundingToken = body.FundingToken;
         const tokenType = body.TokenType;
+        const paymentType = body.PaymentType;
         const price = body.Price;
+        const pricePerSecond = body.PricePerSecond;
+        const endingDate = body.EndingDate;
         const hash = body.Hash;
         const signature = body.Signature;
-        const blockchainRes = await mediaPod.registerMedia(requester, podAddress, mediaSymbol, copies, royalty, fundingToken, tokenType, price, hash, signature, apiKey);
+        const blockchainRes = await mediaPod.registerMedia(requester, podAddress, mediaSymbol, copies, royalty, fundingToken, tokenType, paymentType, price, pricePerSecond,
+            endingDate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             updateFirebase(output);

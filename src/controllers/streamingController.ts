@@ -35,7 +35,47 @@ enum ERROR_MSG {
 }
 // ----------------------------------- POST -------------------------------------------
 
-// user stakes in a token
+// viewer joins to a live streaming (a call per viewer)
+exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const listener = body.Listener;
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    const blockchainRes = await streaming.initiateMediaLiveStreaming(
+      listener,
+      podAddress,
+      mediaSymbol,
+      hash,
+      signature,
+      apiKey
+    );
+    if (blockchainRes && blockchainRes.success) {
+      // update streaming doc manually
+      const output = blockchainRes.output;
+      const updateStreaming = output.UpdateStreaming;
+      let streamingId = '';
+      let streamingObj: any = null;
+      for ([streamingId, streamingObj] of Object.entries(updateStreaming)) {
+        db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.mediaStreamings).doc(streamingId).set({
+          streamingObj
+        }, { merge: true });
+      }
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.', blockchainRes.message);
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
+
+// viewer joins to the steaming (a call per viewer)
 exports.initiateStreaming = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
@@ -62,7 +102,7 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
     );
 
     if (blockchainRes && blockchainRes.success) {
-      res.send({ success: true, data: { id: '' } });
+      res.send({ success: true });
     } else {
       console.log('Error in controllers/streaming -> createStreaming(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
@@ -160,8 +200,8 @@ exports.scheduleVideoStreaming = async (req: express.Request, res: express.Respo
 exports.createVideoStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
   const { DocId, UserId } = req.body;
-  const docRef = await db.collection(collections.streaming).doc(DocId);
-  const streamingData = (await docRef.get()).data();
+  const docSnap = await db.collection(collections.streaming).doc(DocId).get();
+  const streamingData = docSnap.data();
 
   // Check the User is MainStreamer of this streaming data
   if (streamingData && UserId === streamingData?.MainStreamer) {
@@ -185,13 +225,13 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
       const { data } = dailyResponse;
 
       try {
-        await docRef.update({
+        docSnap.ref.update({
           RoomName: data.name,
           StreamingUrl: data.url,
           StartedTime: Date.now(),
           RoomState: ROOM_STATE.GOING,
         });
-        let resData = (await docRef.get()).data();
+        let resData = docSnap.data();
         res.send({ success: true, StreamingUrl: data.url, data: resData });
       } catch (err) {
         res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
