@@ -565,13 +565,14 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
 exports.changeOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
     if(body && body.userId && body.communityId && body.status) {
 
-      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notificationId || false, null);
+      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notificationId || false, null, 'community');
 
       res.send({ success: true, data: community });
 
@@ -2780,10 +2781,10 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
   });
 }
 
-const changeOfferToWorkInProgress = (userId, communityId, status, token, amount, notificationId, paymentDate) => {
+const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userId, typeId, status, token, amount, notificationId, paymentDate, type) => {
   return new Promise(async (resolve, reject) => {
     try{
-      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressRef = db.collection(collections.workInProgress).doc(typeId);
       const workInProgressGet = await workInProgressRef.get();
       let workInProgress : any = workInProgressGet.data();
 
@@ -2822,10 +2823,16 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
 
       if(status === 'accepted') {
         // ACCEPTED OFFER NOTIFICATION
+        let numTypeNotification : number;
+        if(type === 'Community') {
+          numTypeNotification = 98
+        } else {
+          numTypeNotification = 103
+        }
         await notificationsController.addNotification({
           userId: workInProgress.Creator,
           notification: {
-            type: 98,
+            type: numTypeNotification,
             typeItemId: 'user',
             itemId: offers[offerIndex].userId,
             follower: user.firstName,
@@ -2834,15 +2841,21 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: communityId
+            otherItemId: typeId
           }
         });
       } else if(status === 'declined') {
         // DECLINED OFFER NOTIFICATION
+        let numTypeNotification : number;
+        if(type === 'Community') {
+          numTypeNotification = 96
+        } else {
+          numTypeNotification = 101
+        }
         await notificationsController.addNotification({
           userId: workInProgress.Creator,
           notification: {
-            type: 96,
+            type: numTypeNotification,
             typeItemId: 'user',
             itemId: offers[offerIndex].userId,
             follower: user.firstName,
@@ -2851,7 +2864,7 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: communityId
+            otherItemId: typeId
           }
         });
         if (notificationId) {
@@ -2864,9 +2877,9 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
         let room : string = '';
         if (user && user.firstName && creator && creator.firstName
           && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
-          room = "" + communityId + "" + userSavedId + "" + workInProgress.Creator;
+          room = "" + typeId + "" + userSavedId + "" + workInProgress.Creator;
         } else {
-          room = "" + communityId + "" + workInProgress.Creator + "" + userSavedId;
+          room = "" + typeId + "" + workInProgress.Creator + "" + userSavedId;
         }
         const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
         if (!chatQuery.empty) {
@@ -2884,10 +2897,16 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
       } else if(status === 'negotiating') {
         if(token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
+          let numTypeNotification : number;
+          if(type === 'Community') {
+            numTypeNotification = 97
+          } else {
+            numTypeNotification = 102
+          }
           await notificationsController.addNotification({
             userId: workInProgress.Creator,
             notification: {
-              type: 97,
+              type: numTypeNotification,
               typeItemId: 'user',
               itemId: offers[offerIndex].userId,
               follower: user.firstName,
@@ -2896,13 +2915,13 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
               token: offers[offerIndex].token,
               amount: offers[offerIndex].amount,
               onlyInformation: false,
-              otherItemId: communityId
+              otherItemId: typeId
             }
           });
         } else {
           if(previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
-            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
+            chatController.createChatWIPFromUsers(typeId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
 
             if (notificationId) {
               await notificationsController.removeNotification({
@@ -2911,7 +2930,7 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
               });
             }
           } else {
-            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === communityId && not.type === 97)
+            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === typeId && not.type === 97)
             if (notificationIndex !== -1) {
               await notificationsController.removeNotification({
                 userId: workInProgress.Creator,
@@ -2919,10 +2938,16 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
               });
             }
             // ANOTHER OFFER NOTIFICATION
+            let numTypeNotification : number;
+            if(type === 'Community') {
+              numTypeNotification = 95
+            } else {
+              numTypeNotification = 100
+            }
             await notificationsController.addNotification({
               userId: offers[offerIndex].userId,
               notification: {
-                type: 95,
+                type: numTypeNotification,
                 typeItemId: 'user',
                 itemId: workInProgress.Creator,
                 follower: creator.firstName,
@@ -2931,17 +2956,23 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
                 token: offers[offerIndex].token,
                 amount: offers[offerIndex].amount,
                 onlyInformation: false,
-                otherItemId: communityId
+                otherItemId: typeId
               }
             });
           }
         }
       } else if(status === 'pending') {
         //First offer - WIP already created
+        let numTypeNotification : number;
+        if(type === 'Community') {
+          numTypeNotification = 94
+        } else {
+          numTypeNotification = 99
+        }
         await notificationsController.addNotification({
           userId: userSavedId,
           notification: {
-            type: 94,
+            type: numTypeNotification,
             typeItemId: 'user',
             itemId: workInProgress.Creator,
             follower: creator.firstName,
@@ -2950,7 +2981,7 @@ const changeOfferToWorkInProgress = (userId, communityId, status, token, amount,
             token: token,
             amount: amount,
             onlyInformation: false,
-            otherItemId: communityId
+            otherItemId: typeId
           }
         });
       }
@@ -3057,7 +3088,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
               && item2.amount === item1.amount && item2.token === item1.token)));
 
           for(let offer of diffOffers) {
-            await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+            await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate, 'community');
           }
         }
       } else {

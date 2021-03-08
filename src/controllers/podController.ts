@@ -21,9 +21,11 @@ import fs from 'fs';
 import path from 'path';
 import priviGovernance from '../blockchain/priviGovernance';
 import coinBalance from '../blockchain/coinBalance.js';
+import streaming from "../blockchain/streaming";
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
+const communityController = require('./communityController');
 const tasks = require('./tasksController');
 require('dotenv').config();
 const apiKey = 'PRIVI'; // process.env.API_KEY;
@@ -1948,6 +1950,122 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 }
+
+exports.addOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.offer && body.offer.token && body.offer.amount
+      && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
+
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      let mediaNFT: any;
+      for(let offer of body.Offers) {
+        const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+        const userData: any = userSnap.data();
+
+        mediaNFT = await communityController.addOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.offer);
+        chatController.createChatWIPFromUsers(body.offer.wipId, body.Creator, offer.userId, creator.firstName, userData.firstName);
+      }
+      res.send({ success: true, data: mediaNFT });
+
+    } else {
+      console.log('Error in controllers/podController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.changeOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.communityId && body.status) {
+
+      let mediaNFT : any = await communityController.changeOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.status, body.token, body.amount, body.notificationId || false, null, 'mediaNFT');
+
+      res.send({ success: true, data: mediaNFT });
+
+    } else {
+      console.log('Error in controllers/podController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.sender && body.receiver && body.amountPeriod && body.token &&
+      body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.mediaIdNFT) {
+
+      const blockchainRes = await streaming.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+      if (blockchainRes && blockchainRes.success) {
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let notificationIndex = user.notifications.findIndex(not => not.otherItemId === body.mediaIdNFT && not.type === 103)
+        if (notificationIndex !== -1) {
+          await notificationsController.removeNotification({
+            userId: body.userId,
+            notificationId: user.notifications[notificationIndex].id,
+          });
+        }
+        res.send({ success: true });
+
+      } else {
+        console.log('Error in controllers/podController -> signTransactionAcceptOffer(): success = false',
+          blockchainRes.message);
+        res.send({ success: false, error: "Blockchain error" });
+      }
+    } else {
+      console.log('Error in controllers/podController -> signTransactionAcceptOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> signTransactionAcceptOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    const params = req.params;
+
+    if(params.communityId) {
+      const workInProgressRef = db.collection(collections.workInProgress).doc(params.mediaIdNFT);
+      const workInProgressGet = await workInProgressRef.get();
+      const workInProgress : any = workInProgressGet.data();
+
+      if(params.notificationId && params.userId) {
+        await notificationsController.removeNotification({
+          userId: params.userId,
+          notificationId: params.notificationId,
+        });
+      }
+
+      res.send({ success: true, data: workInProgress });
+
+    } else {
+      console.log('Error in controllers/podController -> getWIP()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getWIP()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 
 //TODO: Modify for NFTPod
 const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, amount, notificationId, paymentDate) => {

@@ -128,7 +128,11 @@ router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherP
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.post('/changeNFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeNFTPodPhoto);
 
-router.post('/NFT/saveMedia', authenticateJWT, podController.saveNFTMedia);
+router.post('/NFT/saveMediaPod', authenticateJWT, podController.saveNFTMedia);
+router.post('/NFT/addOffer', authenticateJWT, podController.addOffer);
+router.post('/NFT/changeOffer', authenticateJWT, podController.changeOffer);
+router.post('/NFT/signTransactionAcceptOffer', authenticateJWT, podController.signTransactionAcceptOffer);
+router.get('/NFT/getWIP/:mediaIdNFT/:userId/:notificationId', authenticateJWT, podController.getWIP);
 
 
 //wall
