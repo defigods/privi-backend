@@ -372,6 +372,55 @@ exports.changeNFTPodPhoto = async (req: express.Request, res: express.Response) 
   }
 };
 
+exports.changeWIPPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const workInProgressRef = db.collection(collections.workInProgress).doc(req.file.originalname);
+
+      const workInProgressGet = await workInProgressRef.get();
+      const workInProgress: any = await workInProgressGet.data();
+
+      if (workInProgress.HasPhoto !== undefined) {
+        await workInProgressRef.update({
+          HasPhoto: true
+        });
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/podController -> changeWIPPhoto()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> changeWIPPhoto()', err);
+    res.send({ success: false, error: err });
+  }
+};
+exports.changeWIPPhotoToken = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const workInProgressRef = db.collection(collections.workInProgress).doc(req.file.originalname);
+
+      const workInProgressGet = await workInProgressRef.get();
+      const workInProgress: any = await workInProgressGet.data();
+
+      if (workInProgress.HasPhoto !== undefined) {
+        await workInProgressRef.update({
+          HasPhotoToken: true
+        });
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/podController -> changeWIPPhotoToken()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> changeWIPPhotoToken()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
 /**
  * Function used to retrieve a pod's photo from server, if the pod has image then this image is stored with name = podId
  * @param req podId as params
@@ -1853,6 +1902,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
     if (body) {
       const nftMediaObj : any = {
         HasPhoto: body.HasPhoto ?? false,
+        HasPhotoToken: body.HasPhotoToken ?? false,
         Name: body.Name ?? '',
         Description: body.Description ?? '',
         Date: new Date().getTime(),
