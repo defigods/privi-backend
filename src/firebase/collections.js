@@ -136,10 +136,11 @@ module.exports = {
 
   workInProgress: 'WorkInProgress',
 
-  growthPredictions: "GrowthPredictions",
+  growthPredictions: 'GrowthPredictions',
 
-  collabs: "Collabs",
+  collabs: 'Collabs',
 
-  streaming: "Streaming",
+  streaming: 'Streaming',
 
+  ethMedia: 'EthMedia',
 };
