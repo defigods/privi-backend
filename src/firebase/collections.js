@@ -67,7 +67,8 @@ module.exports = {
   podRoleInvitation: 'PodRoleInvitation',
   mediaPods: "MediaPods",
   medias: "Medias",
-  mediaStreamings: "MediaStreamings",
+  streamingListeners: "StreamingListeners",
+  streamings: "Streamings",
 
   podViewInvitation: 'PodViewInvitation',
   insurancePools: 'InsurancePools',
