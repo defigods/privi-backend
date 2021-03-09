@@ -65,6 +65,9 @@ module.exports = {
   priceHistory: 'PriceHistory',
   supplyHistory: 'SupplyHistory',
   podRoleInvitation: 'PodRoleInvitation',
+  mediaPods: "MediaPods",
+  medias: "Medias",
+  mediaStreamings: "MediaStreamings",
 
   podViewInvitation: 'PodViewInvitation',
   insurancePools: 'InsurancePools',
