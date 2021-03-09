@@ -1,6 +1,6 @@
 import express from 'express';
 import social from '../blockchain/social';
-import streaming from '../blockchain/streaming';
+import mediaPod from '../blockchain/mediaPod';
 import { updateFirebase, getMarketPrice, getSellTokenAmount, getBuyTokenAmount } from '../functions/functions';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
@@ -35,8 +35,36 @@ enum ERROR_MSG {
 }
 // ----------------------------------- POST -------------------------------------------
 
-// viewer joins to a live streaming (a call per viewer)
+// streamer starts the live streaming
 exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
+      podAddress,
+      mediaSymbol,
+      hash,
+      signature,
+      apiKey
+    );
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);  // update the media status => IsStreamingLive: true
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.', blockchainRes.message);
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
+// a listener joins the streaming
+exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const listener = body.Listener;
@@ -44,7 +72,7 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await streaming.initiateMediaLiveStreaming(
+    const blockchainRes = await mediaPod.enterMediaLiveStreaming(
       listener,
       podAddress,
       mediaSymbol,
@@ -53,23 +81,48 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
       apiKey
     );
     if (blockchainRes && blockchainRes.success) {
-      // update streaming doc manually
       const output = blockchainRes.output;
       const updateStreaming = output.UpdateStreaming;
       let streamingId = '';
       let streamingObj: any = null;
       for ([streamingId, streamingObj] of Object.entries(updateStreaming)) {
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.mediaStreamings).doc(streamingId).set({
-          streamingObj
-        }, { merge: true });
+        db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.mediaStreamings).doc(listener)
+          .set(streamingObj, { merge: true });
       }
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.', blockchainRes.message);
+      console.log('Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
-    console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
+    console.log('Error in controllers/streaming -> enterMediaLiveStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
+// a listener leaves the streaming
+exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const listener = body.Listener;
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const blockchainRes = await mediaPod.exitMediaLiveStreaming(
+      listener,
+      podAddress,
+      mediaSymbol,
+      apiKey
+    );
+    if (blockchainRes && blockchainRes.success) {
+      // delete listener doc inside media 
+      db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.mediaStreamings).doc(listener).delete();
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/streaming -> exitMediaLiveStreaming(): success = false.', blockchainRes.message);
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> exitMediaLiveStreaming(): ', err);
     res.send({ success: false });
   }
 };
@@ -89,7 +142,7 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
     const hash = body.Hash;
     const signature = body.Signature;
 
-    const blockchainRes = await streaming.createStreaming(
+    const blockchainRes = await mediaPod.createStreaming(
       sender,
       receiver,
       amountPeriod,
