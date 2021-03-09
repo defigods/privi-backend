@@ -170,7 +170,7 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
 };
 
 /*
- ** Schedule Video Streaming **
+ ** Schedule Streaming **
  
  ** Request Body **
   StreamingToken,
@@ -184,6 +184,7 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
   StartingTime,
   EndingTime,
   Rewards,
+  Video
  
  ** Response **
   success: API call succeed or not
@@ -192,7 +193,7 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
  ** **
 */
 
-exports.scheduleVideoStreaming = async (req: express.Request, res: express.Response) => {
+exports.scheduleStreaming = async (req: express.Request, res: express.Response) => {
   const {
     StreamingToken,
     UserId, // MainStreamer
@@ -205,6 +206,7 @@ exports.scheduleVideoStreaming = async (req: express.Request, res: express.Respo
     StartingTime,
     EndingTime,
     Rewards,
+    Video,
   } = req.body;
 
   try {
@@ -220,7 +222,7 @@ exports.scheduleVideoStreaming = async (req: express.Request, res: express.Respo
       StreamingToken,
       StreamingUrl: '',
       TotalWatchers: 0,
-      Video: true,
+      Video: Video || true,
       Watchers: [],
       OnlineModerators: [],
       Moderators,
@@ -240,7 +242,7 @@ exports.scheduleVideoStreaming = async (req: express.Request, res: express.Respo
 };
 
 /*
- ** Create Video Streaming **
+ ** Create Streaming **
  
  ** Request Body **
  DocId
@@ -253,7 +255,7 @@ exports.scheduleVideoStreaming = async (req: express.Request, res: express.Respo
  ** **
 */
 
-exports.createVideoStreaming = async (req: express.Request, res: express.Response) => {
+exports.createStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
   const { DocId, UserId } = req.body;
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
@@ -314,7 +316,7 @@ exports.createVideoStreaming = async (req: express.Request, res: express.Respons
  ** **
 */
 
-exports.endVideoStreaming = async (req: express.Request, res: express.Response) => {
+exports.endStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
   const { DocId, UserId } = req.body;
   const docRef = await db.collection(collections.streaming).doc(DocId);

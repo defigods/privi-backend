@@ -1,18 +1,17 @@
-import express from "express";
+import express from 'express';
 const router = express.Router();
 
-import { authenticateJWT } from "../middlewares/jwtAuthMiddleware";
-const streamingController = require("../controllers/streamingController");
+import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
+const streamingController = require('../controllers/streamingController');
 
 // called from postman
-router.post("/initiateMediaLiveStreaming", authenticateJWT, streamingController.initiateMediaLiveStreaming)
-router.post("/exitMediaLiveStreaming", authenticateJWT, streamingController.exitMediaLiveStreaming)
-router.post("/createVideoStreaming", authenticateJWT, streamingController.createVideoStreaming)
+router.post('/initiateMediaLiveStreaming', authenticateJWT, streamingController.initiateMediaLiveStreaming);
+router.post('/exitMediaLiveStreaming', authenticateJWT, streamingController.exitMediaLiveStreaming);
 
-router.post("/initiateStreaming", authenticateJWT, streamingController.initiateStreaming)
-router.post("/endVideoStreaming", authenticateJWT, streamingController.endVideoStreaming)
-router.post("/scheduleVideoStreaming", authenticateJWT, streamingController.scheduleVideoStreaming)
-router.get("/listStreaming", authenticateJWT, streamingController.listStreaming)
-
+router.post('/initiateStreaming', authenticateJWT, streamingController.initiateStreaming);
+router.post('/createStreaming', authenticateJWT, streamingController.createStreaming);
+router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleStreaming);
+router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
+router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
 
 module.exports = router;
