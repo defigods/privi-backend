@@ -83,11 +83,14 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
     if (blockchainRes && blockchainRes.success) {
       const output = blockchainRes.output;
       const updateStreaming = output.UpdateStreaming;
+      await db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).set({
+        JoinedAt: Date.now()
+      });
       let streamingId = '';
       let streamingObj: any = null;
       for ([streamingId, streamingObj] of Object.entries(updateStreaming)) {
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.mediaStreamings).doc(listener)
-          .set(streamingObj, { merge: true });
+        db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener)
+          .collection(collections.streamings).doc(streamingId).set(streamingObj, { merge: true });
       }
       res.send({ success: true });
     } else {
@@ -115,7 +118,7 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
     );
     if (blockchainRes && blockchainRes.success) {
       // delete listener doc inside media 
-      db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.mediaStreamings).doc(listener).delete();
+      db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).delete();
       res.send({ success: true });
     } else {
       console.log('Error in controllers/streaming -> exitMediaLiveStreaming(): success = false.', blockchainRes.message);
