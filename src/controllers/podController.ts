@@ -421,6 +421,78 @@ exports.changeWIPPhotoToken = async (req: express.Request, res: express.Response
   }
 };
 
+exports.getPhotoWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    let wipId = req.params.wipId;
+    if (wipId) {
+      const directoryPath = path.join('uploads', 'wip');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wip', wipId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoWIP()', "There's no post id...");
+      res.send({ success: false, error: "There's no post id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoWIP()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getPhotoTokenWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    let wipId = req.params.wipId;
+    if (wipId) {
+      const directoryPath = path.join('uploads', 'wipToken');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wipToken', wipId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoTokenWIP()', "There's no post id...");
+      res.send({ success: false, error: "There's no post id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoTokenWIP()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
 /**
  * Function used to retrieve a pod's photo from server, if the pod has image then this image is stored with name = podId
  * @param req podId as params
@@ -1923,7 +1995,15 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         DividendFreq: body.DividendFreq ?? '',
         TargetSupply: body.TargetSupply ?? 0,
         InitialSupply: body.InitialSupply ?? 0,
-        AMM: body.AMM ?? ''
+        AMM: body.AMM ?? '',
+
+        TokenNameValidation: body.TokenNameValidation ?? false,
+        TokenSymbolValidation: body.TokenSymbolValidation ?? false,
+        TokenDescriptionValidation: body.TokenDescriptionValidation ?? false,
+        TargetSpreadValidation: body.TargetSpreadValidation ?? false,
+        TargetPriceValidation: body.TargetPriceValidation ?? false,
+        TargetSupplyValidation: body.TargetSupplyValidation ?? false,
+        InitialSupplyValidation: body.InitialSupplyValidation ?? false
       };
 
       let mediaIdNFT = body.id;
@@ -1947,7 +2027,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
               && item2.amount === item1.amount && item2.token === item1.token)));
 
           for(let offer of diffOffers) {
-            await changeOfferToWorkInProgressNFTPod(offer.userId, body.MediaIdNFT, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+            await changeOfferToWorkInProgressNFTPod(offer.userId, body.id, offer.status, offer.token, offer.amount, false, offer.paymentDate);
           }
         }
       } else {
@@ -2092,7 +2172,9 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
   try {
     const params = req.params;
 
-    if(params.communityId) {
+    console.log(params);
+
+    if(params.mediaIdNFT) {
       const workInProgressRef = db.collection(collections.workInProgress).doc(params.mediaIdNFT);
       const workInProgressGet = await workInProgressRef.get();
       const workInProgress : any = workInProgressGet.data();
@@ -2118,10 +2200,10 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
 
 
 //TODO: Modify for NFTPod
-const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, amount, notificationId, paymentDate) => {
+const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount, notificationId, paymentDate) => {
   return new Promise(async (resolve, reject) => {
     try{
-      const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
+      const workInProgressRef = db.collection(collections.workInProgress).doc(wipId);
       const workInProgressGet = await workInProgressRef.get();
       let workInProgress : any = workInProgressGet.data();
 
@@ -2172,7 +2254,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: communityId
+            otherItemId: wipId
           }
         });
       } else if(status === 'declined') {
@@ -2189,7 +2271,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: communityId
+            otherItemId: wipId
           }
         });
         if (notificationId) {
@@ -2202,9 +2284,9 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
         let room : string = '';
         if (user && user.firstName && creator && creator.firstName
           && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
-          room = "" + communityId + "" + userSavedId + "" + workInProgress.Creator;
+          room = "" + wipId + "" + userSavedId + "" + workInProgress.Creator;
         } else {
-          room = "" + communityId + "" + workInProgress.Creator + "" + userSavedId;
+          room = "" + wipId + "" + workInProgress.Creator + "" + userSavedId;
         }
         const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
         if (!chatQuery.empty) {
@@ -2234,13 +2316,13 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
               token: offers[offerIndex].token,
               amount: offers[offerIndex].amount,
               onlyInformation: false,
-              otherItemId: communityId
+              otherItemId: wipId
             }
           });
         } else {
           if(previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
-            chatController.createChatWIPFromUsers(communityId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
+            chatController.createChatWIPFromUsers(wipId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
 
             if (notificationId) {
               await notificationsController.removeNotification({
@@ -2249,7 +2331,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
               });
             }
           } else {
-            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === communityId && not.type === 97)
+            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === wipId && not.type === 97)
             if (notificationIndex !== -1) {
               await notificationsController.removeNotification({
                 userId: workInProgress.Creator,
@@ -2269,7 +2351,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
                 token: offers[offerIndex].token,
                 amount: offers[offerIndex].amount,
                 onlyInformation: false,
-                otherItemId: communityId
+                otherItemId: wipId
               }
             });
           }
@@ -2288,7 +2370,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, communityId, status, token, a
             token: token,
             amount: amount,
             onlyInformation: false,
-            otherItemId: communityId
+            otherItemId: wipId
           }
         });
       }
