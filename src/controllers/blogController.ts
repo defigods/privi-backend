@@ -197,7 +197,7 @@ exports.addVideoPost = async (req: express.Request, res: express.Response) => {
 
       res.send({
         success: true,
-        data: `/blog/getVideo/${req.params.blogPostId}/${req.file.originalname}`
+        data: `/community/blog/getVideo/${req.params.blogPostId}/${req.file.originalname}`
       });
     } else {
       console.log("Error in controllers/blogController -> addVideoPost()", 'No file provided');

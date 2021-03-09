@@ -103,6 +103,12 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         fs.mkdirSync(dir);
       }
 
+      let dir1 = "uploads/userWallPost/" + "videos-" + req.file.originalname;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
+
       res.send({ success: true });
     } else {
       console.log('Error in controllers/userWallController -> changePostPhoto()', "There's no file...");
@@ -145,6 +151,59 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
   } catch (err) {
     console.log('Error in controllers/userWallController -> changePostDescriptionPhotos()', err);
     res.send({ success: false });
+  }
+};
+
+exports.addVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.file && req.file.originalname && req.params && req.params.userWallPostId) {
+
+      res.send({
+        success: true,
+        data: `/user/wall/getVideo/${req.params.userWallPostId}/${req.file.originalname}`
+      });
+    } else {
+      console.log("Error in controllers/userWallController -> addVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userWallController -> addVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.params && req.params.userWallPostId && req.params.videoId) {
+
+      const directoryPath = path.join('uploads', 'userWallPostId', 'user-' + req.params.userWallPostId, req.params.videoId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'video');
+      let raw = fs.createReadStream(path.join('uploads', 'userWallPostId', 'videos-' + req.params.userWallPostId, req.params.videoId + '.mp4'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log("Error in controllers/userWallController -> getVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/userWallController -> getVideoPost()", err);
+    res.send({ success: false, error: err });
   }
 };
 
