@@ -74,6 +74,32 @@ let upload4 = multer({
   storage: storage4,
 });
 
+let storage6 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/wip');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload6 = multer({
+  storage: storage6
+});
+
+let storage7 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/wipToken');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload7 = multer({
+  storage: storage7
+});
+
 // COMMON
 
 router.get('/FT/getPhoto/:podId', podController.getPhotoById);
@@ -127,6 +153,15 @@ router.get('/NFT/getTrendingPods', authenticateJWT, podController.getTrendingPod
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
 router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.post('/changeNFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeNFTPodPhoto);
+
+router.post('/NFT/saveMediaPod', authenticateJWT, podController.saveNFTMedia);
+router.post('/NFT/addOffer', authenticateJWT, podController.addOffer);
+router.post('/NFT/changeOffer', authenticateJWT, podController.changeOffer);
+router.post('/NFT/signTransactionAcceptOffer', authenticateJWT, podController.signTransactionAcceptOffer);
+router.get('/NFT/getWIP/:mediaIdNFT/:userId/:notificationId', authenticateJWT, podController.getWIP);
+
+router.post('/WIP/changePhoto', authenticateJWT, upload6.single('image'), podController.changeWIPPhoto);
+router.post('/WIP/changePhotoToken', authenticateJWT, upload7.single('image'), podController.changeWIPPhotoToken);
 
 //wall
 router.post('/wall/createPost', authenticateJWT, podWallController.postCreate);
