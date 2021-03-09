@@ -21,9 +21,11 @@ import fs from 'fs';
 import path from 'path';
 import priviGovernance from '../blockchain/priviGovernance';
 import coinBalance from '../blockchain/coinBalance.js';
+import streaming from "../blockchain/streaming";
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
+const communityController = require('./communityController');
 const tasks = require('./tasksController');
 require('dotenv').config();
 const apiKey = 'PRIVI'; // process.env.API_KEY;
@@ -367,6 +369,127 @@ exports.changeNFTPodPhoto = async (req: express.Request, res: express.Response) 
   } catch (err) {
     console.log('Error in controllers/podController -> changePodPhoto()', err);
     res.send({ success: false });
+  }
+};
+
+exports.changeWIPPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const workInProgressRef = db.collection(collections.workInProgress).doc(req.file.originalname);
+
+      const workInProgressGet = await workInProgressRef.get();
+      const workInProgress: any = await workInProgressGet.data();
+
+      if (workInProgress.HasPhoto !== undefined) {
+        await workInProgressRef.update({
+          HasPhoto: true
+        });
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/podController -> changeWIPPhoto()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> changeWIPPhoto()', err);
+    res.send({ success: false, error: err });
+  }
+};
+exports.changeWIPPhotoToken = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file) {
+      const workInProgressRef = db.collection(collections.workInProgress).doc(req.file.originalname);
+
+      const workInProgressGet = await workInProgressRef.get();
+      const workInProgress: any = await workInProgressGet.data();
+
+      if (workInProgress.HasPhoto !== undefined) {
+        await workInProgressRef.update({
+          HasPhotoToken: true
+        });
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/podController -> changeWIPPhotoToken()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> changeWIPPhotoToken()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getPhotoWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    let wipId = req.params.wipId;
+    if (wipId) {
+      const directoryPath = path.join('uploads', 'wip');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wip', wipId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoWIP()', "There's no post id...");
+      res.send({ success: false, error: "There's no post id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoWIP()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getPhotoTokenWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    let wipId = req.params.wipId;
+    if (wipId) {
+      const directoryPath = path.join('uploads', 'wipToken');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'wipToken', wipId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err)
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/podController -> getPhotoTokenWIP()', "There's no post id...");
+      res.send({ success: false, error: "There's no post id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getPhotoTokenWIP()', err);
+    res.send({ success: false, error: err });
   }
 };
 
@@ -1843,6 +1966,421 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
     res.send({ success: false });
   }
 };
+
+exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if (body) {
+      const nftMediaObj : any = {
+        HasPhoto: body.HasPhoto ?? false,
+        HasPhotoToken: body.HasPhotoToken ?? false,
+        Name: body.Name ?? '',
+        Description: body.Description ?? '',
+        Date: new Date().getTime(),
+
+        MainHashtag: body.MainHashtag ?? '',
+        Hashtags: body.Hashtags ?? [],
+        OpenAdvertising: body.OpenAdvertising ?? false,
+        OpenInvestment: body.openInvestment ?? false,
+
+        Media: body.Media ?? 0,
+
+        TokenName: body.TokenName ?? '',
+        TokenSymbol: body.TokenSymbol ?? '',
+        TokenDescription: body.TokenDescription ?? '',
+        InvestmentToken: body.InvestmentToken ?? '',
+        TargetSpread: body.TargetSpread ?? '',
+        TargetPrice: body.TargetPrice ?? 0,
+        DividendFreq: body.DividendFreq ?? '',
+        TargetSupply: body.TargetSupply ?? 0,
+        InitialSupply: body.InitialSupply ?? 0,
+        AMM: body.AMM ?? '',
+
+        TokenNameValidation: body.TokenNameValidation ?? false,
+        TokenSymbolValidation: body.TokenSymbolValidation ?? false,
+        TokenDescriptionValidation: body.TokenDescriptionValidation ?? false,
+        TargetSpreadValidation: body.TargetSpreadValidation ?? false,
+        TargetPriceValidation: body.TargetPriceValidation ?? false,
+        TargetSupplyValidation: body.TargetSupplyValidation ?? false,
+        InitialSupplyValidation: body.InitialSupplyValidation ?? false
+      };
+
+      let mediaIdNFT = body.id;
+
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      if (body.id) {
+        const workInProgressRef = db.collection(collections.workInProgress).doc(mediaIdNFT);
+        const workInProgressGet = await workInProgressRef.get();
+        const workInProgress: any = workInProgressGet.data();
+
+        if(body.directlyUpdate) {
+          nftMediaObj.Offers =  body.Offers
+          await workInProgressRef.update(nftMediaObj);
+        } else {
+          await workInProgressRef.update(nftMediaObj);
+
+          let diffOffers = body.Offers.filter(item1 =>
+            !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
+              && item2.amount === item1.amount && item2.token === item1.token)));
+
+          for(let offer of diffOffers) {
+            await changeOfferToWorkInProgressNFTPod(offer.userId, body.id, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+          }
+        }
+      } else {
+        mediaIdNFT = generateUniqueId();
+
+        db.collection(collections.workInProgress)
+          .doc(mediaIdNFT)
+          .set({
+            ...nftMediaObj,
+            Creator: body.Creator,
+            Offers: body.Offers ?? [],
+            WIPType: 'NFTMedia'
+          });
+
+        for(let offer of body.Offers) {
+          const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+          const userData: any = userSnap.data();
+          chatController.createChatWIPFromUsers(mediaIdNFT, body.Creator, offer.userId, creator.firstName, userData.firstName)
+
+          await notificationsController.addNotification({
+            userId: offer.userId,
+            notification: {
+              type: 99,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: creator.firstName,
+              pod: '',
+              comment: '',
+              token: offer.token,
+              amount: offer.amount,
+              onlyInformation: false,
+              otherItemId: mediaIdNFT
+            }
+          });
+        }
+      }
+
+      res.send({
+        success: true,
+        data: {
+          nftPodId: mediaIdNFT
+        },
+      });
+    } else {
+      console.log('Error in controllers/podController -> saveNFTMedia(): success = false');
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> saveNFTMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+}
+
+exports.addOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.offer && body.offer.token && body.offer.amount
+      && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
+
+      const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      let mediaNFT: any;
+      for(let offer of body.Offers) {
+        const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+        const userData: any = userSnap.data();
+
+        mediaNFT = await communityController.addOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.offer);
+        chatController.createChatWIPFromUsers(body.offer.wipId, body.Creator, offer.userId, creator.firstName, userData.firstName);
+      }
+      res.send({ success: true, data: mediaNFT });
+
+    } else {
+      console.log('Error in controllers/podController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.changeOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.userId && body.mediaIdNFT && body.status) {
+
+      let mediaNFT : any = await communityController.changeOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.status, body.token, body.amount, body.notificationId || false, null, 'mediaNFT');
+
+      res.send({ success: true, data: mediaNFT });
+
+    } else {
+      console.log('Error in controllers/podController -> addOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+    if(body && body.sender && body.receiver && body.amountPeriod && body.token &&
+      body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.mediaIdNFT) {
+
+      const blockchainRes = await streaming.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+      if (blockchainRes && blockchainRes.success) {
+        const userRef = db.collection(collections.user).doc(body.userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let notificationIndex = user.notifications.findIndex(not => not.otherItemId === body.mediaIdNFT && not.type === 103)
+        if (notificationIndex !== -1) {
+          await notificationsController.removeNotification({
+            userId: body.userId,
+            notificationId: user.notifications[notificationIndex].id,
+          });
+        }
+        res.send({ success: true });
+
+      } else {
+        console.log('Error in controllers/podController -> signTransactionAcceptOffer(): success = false',
+          blockchainRes.message);
+        res.send({ success: false, error: "Blockchain error" });
+      }
+    } else {
+      console.log('Error in controllers/podController -> signTransactionAcceptOffer()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> signTransactionAcceptOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getWIP = async (req: express.Request, res: express.Response) => {
+  try {
+    const params = req.params;
+
+    console.log(params);
+
+    if(params.mediaIdNFT) {
+      const workInProgressRef = db.collection(collections.workInProgress).doc(params.mediaIdNFT);
+      const workInProgressGet = await workInProgressRef.get();
+      const workInProgress : any = workInProgressGet.data();
+
+      if(params.notificationId && params.userId) {
+        await notificationsController.removeNotification({
+          userId: params.userId,
+          notificationId: params.notificationId,
+        });
+      }
+
+      res.send({ success: true, data: workInProgress });
+
+    } else {
+      console.log('Error in controllers/podController -> getWIP()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/podController -> getWIP()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
+
+//TODO: Modify for NFTPod
+const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount, notificationId, paymentDate) => {
+  return new Promise(async (resolve, reject) => {
+    try{
+      const workInProgressRef = db.collection(collections.workInProgress).doc(wipId);
+      const workInProgressGet = await workInProgressRef.get();
+      let workInProgress : any = workInProgressGet.data();
+
+      let offers = [...workInProgress.Offers];
+      let previousStatus : string = '';
+      let userSavedId : string = '';
+
+      let offerIndex = offers.findIndex(off => off.userId === userId);
+      if (offerIndex !== -1) {
+        previousStatus = offers[offerIndex].status
+        offers[offerIndex].status = status;
+        offers[offerIndex].token = token;
+        offers[offerIndex].amount = amount;
+        userSavedId = offers[offerIndex].userId;
+      } else {
+        userSavedId = userId;
+        offers.push({
+          status: 'pending',
+          token: token,
+          amount: amount,
+          paymentDate: paymentDate,
+          userId: userId
+        })
+      }
+
+      workInProgress.Offers = offers;
+      await workInProgressRef.update({
+        Offers: offers
+      });
+
+      const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
+      const creator: any = creatorSnap.data();
+
+      const userSnap = await db.collection(collections.user).doc(userSavedId).get();
+      const user: any = userSnap.data();
+
+      if(status === 'accepted') {
+        // ACCEPTED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 98,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: user.address, //userAddress
+            comment: offers[offerIndex].paymentDate, //endDate
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: wipId
+          }
+        });
+      } else if(status === 'declined') {
+        // DECLINED OFFER NOTIFICATION
+        await notificationsController.addNotification({
+          userId: workInProgress.Creator,
+          notification: {
+            type: 96,
+            typeItemId: 'user',
+            itemId: offers[offerIndex].userId,
+            follower: user.firstName,
+            pod: '',
+            comment: '',
+            token: offers[offerIndex].token,
+            amount: offers[offerIndex].amount,
+            onlyInformation: false,
+            otherItemId: wipId
+          }
+        });
+        if (notificationId) {
+          await notificationsController.removeNotification({
+            userId: userId,
+            notificationId: notificationId,
+          });
+        }
+
+        let room : string = '';
+        if (user && user.firstName && creator && creator.firstName
+          && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
+          room = "" + wipId + "" + userSavedId + "" + workInProgress.Creator;
+        } else {
+          room = "" + wipId + "" + workInProgress.Creator + "" + userSavedId;
+        }
+        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        if (!chatQuery.empty) {
+          for (const doc of chatQuery.docs) {
+            let data = doc.data();
+            await db.collection(collections.chat).doc(doc.id).delete();
+            if(data.messages && data.messages.length > 0) {
+              for (const msg of data.messages) {
+                await db.collection(collections.message).doc(msg).delete();
+              }
+            }
+          }
+        }
+
+      } else if(status === 'negotiating') {
+        if(token === null || amount === null) {
+          // REFUSED OFFER NOTIFICATION
+          await notificationsController.addNotification({
+            userId: workInProgress.Creator,
+            notification: {
+              type: 97,
+              typeItemId: 'user',
+              itemId: offers[offerIndex].userId,
+              follower: user.firstName,
+              pod: '',
+              comment: '',
+              token: offers[offerIndex].token,
+              amount: offers[offerIndex].amount,
+              onlyInformation: false,
+              otherItemId: wipId
+            }
+          });
+        } else {
+          if(previousStatus === 'pending') {
+            // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
+            chatController.createChatWIPFromUsers(wipId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
+
+            if (notificationId) {
+              await notificationsController.removeNotification({
+                userId: userId,
+                notificationId: notificationId,
+              });
+            }
+          } else {
+            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === wipId && not.type === 97)
+            if (notificationIndex !== -1) {
+              await notificationsController.removeNotification({
+                userId: workInProgress.Creator,
+                notificationId: user.notifications[notificationIndex].id,
+              });
+            }
+            // ANOTHER OFFER NOTIFICATION
+            await notificationsController.addNotification({
+              userId: offers[offerIndex].userId,
+              notification: {
+                type: 95,
+                typeItemId: 'user',
+                itemId: workInProgress.Creator,
+                follower: creator.firstName,
+                pod: '',
+                comment: '',
+                token: offers[offerIndex].token,
+                amount: offers[offerIndex].amount,
+                onlyInformation: false,
+                otherItemId: wipId
+              }
+            });
+          }
+        }
+      } else if(status === 'pending') {
+        //First offer - WIP already created
+        await notificationsController.addNotification({
+          userId: userSavedId,
+          notification: {
+            type: 94,
+            typeItemId: 'user',
+            itemId: workInProgress.Creator,
+            follower: creator.firstName,
+            pod: '',
+            comment: '',
+            token: token,
+            amount: amount,
+            onlyInformation: false,
+            otherItemId: wipId
+          }
+        });
+      }
+
+      resolve(workInProgress)
+    } catch (e) {
+      reject(e)
+    }
+  });
+}
 
 /**
  * Blockchain-Backend function, a user request a buy offer specifying the conditions

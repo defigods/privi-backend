@@ -3,7 +3,7 @@ import express from "express";
 import path from "path";
 import helmet from "helmet";
 import { db } from "../firebase/firebase";
-import collections from "../firebase/collections";
+import collections, { mediaPods } from "../firebase/collections";
 import { generateUniqueId } from "../functions/functions";
 
 const logger = require("morgan");
@@ -33,10 +33,9 @@ const socialRoutes = require("../routes/socialRoutes");
 const tasksRoutes = require("../routes/tasksRoutes");
 const collabRoutes = require("../routes/collabRoutes");
 const mediaRoutes = require("../routes/mediaRoutes");
+const mediaPodRoutes = require("../routes/mediaPodRoutes");
 
 const notificationsController = require("../controllers/notificationsController");
-
-const crons = require("../controllers/crons");
 
 type Env = "dev" | "prod" | "devssl";
 
@@ -88,6 +87,7 @@ export const startServer = (env: Env) => {
   app.use("/tasks", tasksRoutes);
   app.use("/collab", collabRoutes);
   app.use("/media", mediaRoutes);
+  app.use("/mediaPod", mediaPodRoutes);
 
   // start all cron jobs
   // let name: string;
