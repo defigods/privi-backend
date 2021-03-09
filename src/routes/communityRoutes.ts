@@ -34,6 +34,19 @@ let upload2 = multer({
   storage: storage2,
 });
 
+let storage22 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/blogPost/' + 'videos-' + req.params.blogPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4');
+  },
+});
+let upload22 = multer({
+  storage: storage22,
+});
+
 let storage3 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
     cb(null, 'uploads/blogPost');
@@ -220,6 +233,8 @@ router.get('/blog/getDescriptionPostPhoto/:blogPostId/:photoId', blogController.
 router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBlogPost);
 router.post('/blog/likePost', authenticateJWT, blogController.likePost);
 router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
+router.post('/blog/addVideo/:blogPostId', authenticateJWT, upload22.array('video'), blogController.addVideoPost);
+router.post('/blog/getVideo/:blogPostId/:videoId', authenticateJWT, upload22.array('video'), blogController.getVideoPost);
 
 router.post('/discussions/createPost', authenticateJWT, blogController.discussionsCreate);
 router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
