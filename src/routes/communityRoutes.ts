@@ -44,7 +44,7 @@ let storage22 = multer.diskStorage({
   },
 });
 let upload22 = multer({
-  storage: storage22,
+  storage: storage22
 });
 
 let storage3 = multer.diskStorage({
@@ -72,6 +72,19 @@ let storage4 = multer.diskStorage({
 
 let upload4 = multer({
   storage: storage4,
+});
+let storage44 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/communityWallPost/' + 'videos-' + req.params.communityWallPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4');
+  },
+});
+
+let upload44 = multer({
+  storage: storage44
 });
 
 let storage5 = multer.diskStorage({
@@ -234,7 +247,7 @@ router.post('/blog/makeResponse', authenticateJWT, blogController.makeResponseBl
 router.post('/blog/likePost', authenticateJWT, blogController.likePost);
 router.post('/blog/dislikePost', authenticateJWT, blogController.dislikePost);
 router.post('/blog/addVideo/:blogPostId', authenticateJWT, upload22.array('video'), blogController.addVideoPost);
-router.post('/blog/getVideo/:blogPostId/:videoId', authenticateJWT, upload22.array('video'), blogController.getVideoPost);
+router.post('/blog/getVideo/:blogPostId/:videoId', authenticateJWT, blogController.getVideoPost);
 
 router.post('/discussions/createPost', authenticateJWT, blogController.discussionsCreate);
 router.post('/discussions/deletePost', authenticateJWT, blogController.discussionsDelete);
@@ -260,6 +273,8 @@ router.post('/wall/makeResponse', authenticateJWT, communityWallController.makeR
 router.post('/wall/likePost', authenticateJWT, communityWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, communityWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, communityWallController.pinPost);
+router.post('/wall/addVideo/:communityWallPostId', authenticateJWT, upload44.array('video'), communityWallController.addVideoPost);
+router.post('/wall/getVideo/:communityWallPostId/:videoId', authenticateJWT, communityWallController.getVideoPost);
 
 router.post('/acceptRoleInvitation', authenticateJWT, communityController.acceptRoleInvitation);
 router.post('/declineRoleInvitation', authenticateJWT, communityController.declineRoleInvitation);

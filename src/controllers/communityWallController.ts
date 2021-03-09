@@ -119,6 +119,12 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         fs.mkdirSync(dir);
       }
 
+      let dir1 = "uploads/communityWallPost/" + "videos-" + req.file.originalname;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
+
       res.send({ success: true });
     } else {
       console.log('Error in controllers/communityWallController -> changePostPhoto()', "There's no file...");
@@ -164,6 +170,59 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
     res.send({ success: false });
   }
 }
+
+exports.addVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.file && req.file.originalname && req.params && req.params.communityWallPostId) {
+
+      res.send({
+        success: true,
+        data: `/community/wall/getVideo/${req.params.communityWallPostId}/${req.file.originalname}`
+      });
+    } else {
+      console.log("Error in controllers/communityWallController -> addVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/communityWallController -> addVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.params && req.params.communityWallPostId && req.params.videoId) {
+
+      const directoryPath = path.join('uploads', 'communityWallPost', 'videos-' + req.params.communityWallPostId, req.params.videoId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'video');
+      let raw = fs.createReadStream(path.join('uploads', 'communityWallPost', 'videos-' + req.params.communityWallPostId, req.params.videoId + '.mp4'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log("Error in controllers/communityWallController -> getVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/communityWallController -> getVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
 
 exports.getCommunityPost =  async (req: express.Request, res: express.Response) => {
   try {

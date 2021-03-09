@@ -33,6 +33,19 @@ let upload2 = multer({
   storage: storage2
 });
 
+let storage22 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/insuranceWallPost/' + 'videos-' + req.params.insuranceWallPostId)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4')
+  }
+});
+let upload22 = multer({
+  storage: storage22
+});
+
 
 // FT
 router.post('/FT/initiateInsurancePool', authenticateJWT, insuranceController.initiateInsurancePool);
@@ -61,5 +74,7 @@ router.post('/wall/makeResponse', authenticateJWT, insuranceWallController.makeR
 router.post('/wall/likePost', authenticateJWT, insuranceWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, insuranceWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, insuranceWallController.pinPost);
+router.post('/wall/addVideo/:insuranceWallPostId', authenticateJWT, upload22.array('video'), insuranceWallController.addVideoPost);
+router.post('/wall/getVideo/:insuranceWallPostId/:videoId', authenticateJWT, insuranceWallController.getVideoPost);
 
 module.exports = router;
