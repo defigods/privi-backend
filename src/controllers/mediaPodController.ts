@@ -48,8 +48,6 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             const hashtags = body.Hashtags;
             const hasPhoto = body.HasPhoto;
             const openAdvertising = body.OpenAdvertising;
-            const openInvestment = body.OpenInvestment;
-            const media = body.Media;
 
             await db.collection(collections.mediaPods).doc(podId).set(
               {
@@ -59,13 +57,8 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
                   MainHashtag: mainHashtag || '',
                   Hashtags: hashtags || [],
                   OpenAdvertising: openAdvertising || false,
-                  OpenInvestment: openInvestment || false,
                   JarrId: discordChatJarrCreation.id || '',
-                  Date: new Date().getTime(),
-
-                  Media: media || [],
-
-                  Offers: media || []
+                  Date: new Date().getTime()
 
               }, { merge: true }
             );
