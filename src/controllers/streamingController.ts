@@ -1,8 +1,8 @@
 import express from 'express';
 import social from '../blockchain/social';
 import mediaPod from '../blockchain/mediaPod';
-import { updateFirebase, getMarketPrice, getSellTokenAmount, getBuyTokenAmount } from '../functions/functions';
-import collections from '../firebase/collections';
+import { updateFirebase, getAddresUidMap } from '../functions/functions';
+import collections, { medias } from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
@@ -51,7 +51,25 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
       apiKey
     );
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);  // update the media status => IsStreamingLive: true
+      updateFirebase(blockchainRes);  // update media inside pod obj
+      // add media in an outer colection "Streaming"
+      const output = blockchainRes.output;
+      const updateMedias = output.UpdateMedias;
+      let mediaSymbol: string = '';
+      let mediaObj: any = null;
+      for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
+        db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
+        const streamerPrortions = mediaObj.StreamingProportions;
+        const streamerAddresses = Object.keys(streamerPrortions);
+        // add the streamer docs for accumulated price tracking
+        streamerAddresses.forEach((streamerAddress) => {
+          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamers).doc(streamerAddress).set({
+            AccumulatedAmount: 0,
+            PricePerSecond: 0,
+            LastUpdate: Date.now()
+          });
+        });
+      }
       res.send({ success: true });
     } else {
       console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.', blockchainRes.message);
@@ -67,7 +85,7 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
 exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    const listener = body.Listener;
+    const listener = body.Listener; // userId
     const podAddress = body.PodAddress;
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
@@ -81,17 +99,45 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
       apiKey
     );
     if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);  // update media inside pod
+      // update media in "Streaming"
       const output = blockchainRes.output;
       const updateStreaming = output.UpdateStreaming;
-      await db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).set({
-        JoinedAt: Date.now()
-      });
+      let totalPricePerSecond = 0;
       let streamingId = '';
       let streamingObj: any = null;
       for ([streamingId, streamingObj] of Object.entries(updateStreaming)) {
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener)
+        const receiverAddress = streamingObj.ReceiverAddress;
+        const pricePerSecond = streamingObj.AmountPerPeriod; // price per second
+        totalPricePerSecond += pricePerSecond;
+        // update the receiver (streamers)
+        if (receiverAddress && pricePerSecond) {
+          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamers).doc(receiverAddress).get()
+            .then((streamerSnap) => {
+              // store curr accumulated price, update LastUpadte field and pricePerSecond
+              const data: any = streamerSnap;
+              let newAccumulatedAmount = data.AccumulatedAmount ?? 0;
+              let newLastUpdate = data.LastUpdate ?? Date.now();
+              let newPricePerSecond = data.PricePerSecond ?? 0;
+              const timeDiff = Math.floor((Date.now() - newLastUpdate) / 1000); // in secs
+              newAccumulatedAmount += newPricePerSecond * timeDiff;
+              newLastUpdate = Date.now();
+              newPricePerSecond += pricePerSecond;
+              streamerSnap.ref.update({
+                AccumulatedAmount: newAccumulatedAmount,
+                PricePerSecond: newPricePerSecond,
+                LastUpdate: newLastUpdate
+              })
+            })
+        }
+        db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener)
           .collection(collections.streamings).doc(streamingId).set(streamingObj, { merge: true });
       }
+      // update listener (watcher)
+      await db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).set({
+        JoinedAt: Date.now(),
+        PricePerSecond: totalPricePerSecond
+      });
       res.send({ success: true });
     } else {
       console.log('Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.', blockchainRes.message);
@@ -117,8 +163,37 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
       apiKey
     );
     if (blockchainRes && blockchainRes.success) {
-      // delete listener doc inside media 
-      db.collection(collections.mediaPods).doc(podAddress).collection(collections.mediaPods).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).delete();
+      updateFirebase(blockchainRes);
+      // delete listener doc inside media and updating streamer doc fields
+      const listenerStreamingSnap = await db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners)
+        .doc(listener).collection(collections.streamings).get();
+      listenerStreamingSnap.forEach((doc) => {
+        const data: any = doc.data();
+        const receiverAddress = data.ReceiverAddress;
+        const pricePerSecond = data.AmountPerPeriod; // price per second
+        // update the receivers (streamers)
+        if (receiverAddress && pricePerSecond) {
+          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamers).doc(receiverAddress).get()
+            .then((streamerSnap) => {
+              // store curr accumulated price, update LastUpadte field and pricePerSecond
+              const data: any = streamerSnap;
+              let newAccumulatedAmount = data.AccumulatedAmount ?? 0;
+              let newLastUpdate = data.LastUpdate ?? Date.now();
+              let newPricePerSecond = data.PricePerSecond ?? 0;
+              const timeDiff = Math.floor((Date.now() - newLastUpdate) / 1000); // in secs
+              newAccumulatedAmount += newPricePerSecond * timeDiff;
+              newLastUpdate = Date.now();
+              newPricePerSecond -= pricePerSecond;
+              streamerSnap.ref.update({
+                AccumulatedAmount: newAccumulatedAmount,
+                PricePerSecond: newPricePerSecond,
+                LastUpdate: newLastUpdate
+              })
+            })
+        }
+        doc.ref.delete();
+      })
+      db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).delete();
       res.send({ success: true });
     } else {
       console.log('Error in controllers/streaming -> exitMediaLiveStreaming(): success = false.', blockchainRes.message);
