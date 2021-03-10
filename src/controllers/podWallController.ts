@@ -106,6 +106,12 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         fs.mkdirSync(dir);
       }
 
+      let dir1 = "uploads/podWallPost/" + "videos-" + req.file.originalname;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
+
       res.send({ success: true });
     } else {
       console.log('Error in controllers/podWallController -> changePostPhoto()', "There's no file...");
@@ -151,6 +157,59 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
     res.send({ success: false });
   }
 }
+
+exports.addVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.file && req.file.originalname && req.params && req.params.podWallPostId) {
+
+      res.send({
+        success: true,
+        data: `/pod/wall/getVideo/${req.params.podWallPostId}/${req.file.originalname}`
+      });
+    } else {
+      console.log("Error in controllers/podWallController -> addVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/podWallController -> addVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.params && req.params.podWallPostId && req.params.videoId) {
+
+      const directoryPath = path.join('uploads', 'podWallPost', 'videos-' + req.params.podWallPostId, req.params.videoId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'video');
+      let raw = fs.createReadStream(path.join('uploads', 'podWallPost', 'videos-' + req.params.podWallPostId, req.params.videoId + '.mp4'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log("Error in controllers/podWallController -> getVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/podWallController -> getVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
 
 exports.getPodPosts =  async (req: express.Request, res: express.Response) => {
   try {
@@ -582,6 +641,59 @@ exports.changePostDescriptionPhotosNFT = async (req: express.Request, res: expre
     res.send({ success: false });
   }
 }
+
+exports.addVideoPostNFT = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.file && req.file.originalname && req.params && req.params.podNFTWallPostId) {
+
+      res.send({
+        success: true,
+        data: `/pod/NFT/wall/getVideo/${req.params.podNFTWallPostId}/${req.file.originalname}`
+      });
+    } else {
+      console.log("Error in controllers/podWallController -> addVideoPostNFT()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/podWallController -> addVideoPostNFT()", err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getVideoPostNFT = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.params && req.params.podNFTWallPostId && req.params.videoId) {
+
+      const directoryPath = path.join('uploads', 'podNFTWallPost', 'videos-' + req.params.podNFTWallPostId, req.params.videoId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'video');
+      let raw = fs.createReadStream(path.join('uploads', 'podNFTWallPost', 'videos-' + req.params.podNFTWallPostId, req.params.videoId + '.mp4'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log("Error in controllers/podWallController -> getVideoPostNFT()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/podWallController -> getVideoPostNFT()", err);
+    res.send({ success: false, error: err });
+  }
+};
 
 exports.getPodPostsNFT =  async (req: express.Request, res: express.Response) => {
   try {

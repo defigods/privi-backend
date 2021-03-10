@@ -47,6 +47,18 @@ let storage2 = multer.diskStorage({
 let upload2 = multer({
   storage: storage2,
 });
+let storage22 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/podWallPost/' + 'videos-' + req.params.podWallPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4');
+  },
+});
+let upload22 = multer({
+  storage: storage22
+});
 
 let storage5 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
@@ -72,6 +84,19 @@ let storage4 = multer.diskStorage({
 });
 let upload4 = multer({
   storage: storage4,
+});
+
+let storage44 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/podNFTWallPost/' + 'videos-' + req.params.podNFTWallPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4');
+  },
+});
+let upload44 = multer({
+  storage: storage44
 });
 
 let storage6 = multer.diskStorage({
@@ -171,48 +196,31 @@ router.post('/wall/deletePost', authenticateJWT, podWallController.postDelete);
 router.get('/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPosts);
 router.get('/wall/getPodPost/:postId', authenticateJWT, podWallController.getPodPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), podWallController.changePostPhoto);
-router.post(
-  '/wall/changePostDescriptionPhotos/:podWallPostId',
-  authenticateJWT,
-  upload2.array('image'),
-  podWallController.changePostDescriptionPhotos
-);
+router.post('/wall/changePostDescriptionPhotos/:podWallPostId', authenticateJWT, upload2.array('image'), podWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:podWallPostId', podWallController.getPodWallPostPhotoById);
-router.get(
-  '/wall/getDescriptionPostPhoto/:podWallPostId/:photoId',
-  podWallController.getPodWallPostDescriptionPhotoById
-);
+router.get('/wall/getDescriptionPostPhoto/:podWallPostId/:photoId', podWallController.getPodWallPostDescriptionPhotoById);
 router.post('/wall/makeResponse', authenticateJWT, podWallController.makeResponsePodWallPost);
 router.post('/wall/likePost', authenticateJWT, podWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, podWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, podWallController.pinPost);
+router.post('/wall/addVideo/:podWallPostId', authenticateJWT, upload22.array('video'), podWallController.addVideoPost);
+router.post('/wall/getVideo/:podWallPostId/:videoId', authenticateJWT, podWallController.getVideoPost);
 
 //wall NFT
 router.post('/NFT/wall/createPost', authenticateJWT, podWallController.postCreateNFT);
 router.post('/NFT/wall/deletePost', authenticateJWT, podWallController.postDeleteNFT);
 router.get('/NFT/wall/getPodPosts/:podId', authenticateJWT, podWallController.getPodPostsNFT);
 router.get('/NFT/wall/getPodPost/:postId', authenticateJWT, podWallController.getPodPostByIdNFT);
-router.post(
-  '/NFT/wall/changePostPhoto',
-  authenticateJWT,
-  upload5.single('image'),
-  podWallController.changePostPhotoNFT
-);
-router.post(
-  '/NFT/wall/changePostDescriptionPhotos/:podNFTWallPostId',
-  authenticateJWT,
-  upload4.array('image'),
-  podWallController.changePostDescriptionPhotosNFT
-);
+router.post('/NFT/wall/changePostPhoto', authenticateJWT, upload5.single('image'), podWallController.changePostPhotoNFT);
+router.post('/NFT/wall/changePostDescriptionPhotos/:podNFTWallPostId', authenticateJWT, upload4.array('image'), podWallController.changePostDescriptionPhotosNFT);
 router.get('/NFT/wall/getPostPhoto/:podNFTWallPostId', podWallController.getPodWallPostPhotoByIdNFT);
-router.get(
-  '/NFT/wall/getDescriptionPostPhoto/:podNFTWallPostId/:photoId',
-  podWallController.getPodWallPostDescriptionPhotoByIdNFT
-);
+router.get('/NFT/wall/getDescriptionPostPhoto/:podNFTWallPostId/:photoId', podWallController.getPodWallPostDescriptionPhotoByIdNFT);
 router.post('/NFT/wall/makeResponse', authenticateJWT, podWallController.makeResponsePodWallPostNFT);
 router.post('/NFT/wall/likePost', authenticateJWT, podWallController.likePostNFT);
 router.post('/NFT/wall/dislikePost', authenticateJWT, podWallController.dislikePostNFT);
 router.post('/NFT/wall/pinPost', authenticateJWT, podWallController.pinPostNFT);
+router.post('/NFT/wall/addVideo/:podNFTWallPostId', authenticateJWT, upload44.array('video'), podWallController.addVideoPostNFT);
+router.post('/NFT/wall/getVideo/:podNFTWallPostId/:videoId', authenticateJWT, podWallController.getVideoPostNFT);
 
 //POD SLUG
 router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);

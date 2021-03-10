@@ -106,6 +106,12 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         fs.mkdirSync(dir);
       }
 
+      let dir1 = "uploads/insuranceWallPost/" + "videos-" + req.file.originalname;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
+
       res.send({ success: true });
     } else {
       console.log('Error in controllers/insuranceWallController -> changePostPhoto()', "There's no file...");
@@ -151,6 +157,59 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
     res.send({ success: false, error: err });
   }
 }
+
+exports.addVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.file && req.file.originalname && req.params && req.params.insuranceWallPostId) {
+
+      res.send({
+        success: true,
+        data: `/insurance/wall/getVideo/${req.params.insuranceWallPostId}/${req.file.originalname}`
+      });
+    } else {
+      console.log("Error in controllers/insuranceWallController -> addVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/insuranceWallController -> addVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getVideoPost = async (req: express.Request, res: express.Response) => {
+  try{
+    if (req.params && req.params.insuranceWallPostId && req.params.videoId) {
+
+      const directoryPath = path.join('uploads', 'insuranceWallPost', 'videos-' + req.params.insuranceWallPostId, req.params.videoId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'video');
+      let raw = fs.createReadStream(path.join('uploads', 'insuranceWallPost', 'videos-' + req.params.insuranceWallPostId, req.params.videoId + '.mp4'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log("Error in controllers/insuranceWallController -> getVideoPost()", 'No file provided');
+      res.send({ success: false, error: 'No file provided' });
+    }
+  } catch (err) {
+    console.log("Error in controllers/insuranceWallController -> getVideoPost()", err);
+    res.send({ success: false, error: err });
+  }
+};
 
 exports.getInsurancePost =  async (req: express.Request, res: express.Response) => {
   try {

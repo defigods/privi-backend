@@ -21,7 +21,7 @@ import fs from 'fs';
 import path from 'path';
 import priviGovernance from '../blockchain/priviGovernance';
 import coinBalance from '../blockchain/coinBalance.js';
-import streaming from "../blockchain/streaming";
+import mediaPod from "../blockchain/mediaPod";
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
@@ -138,7 +138,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const userLikes = userData.Likes ?? [];
     const podLikes = podData.Likes ?? [];
 
-    if(body.liked){
+    if (body.liked) {
       userLikes.push({
         date: Date.now(),
         type: collection,
@@ -149,17 +149,17 @@ exports.like = async (req: express.Request, res: express.Response) => {
         userId: userAddress
       })
     }
-    else{
-       userLikes.forEach((item, index) => {
-          if(podAddress === item.id) userLikes.splice(index, 1)
-        })
-        podLikes.forEach((item, index2) => {
-          if(userAddress === item.userId) podLikes.splice(index2, 1)
-        }) 
+    else {
+      userLikes.forEach((item, index) => {
+        if (podAddress === item.id) userLikes.splice(index, 1)
+      })
+      podLikes.forEach((item, index2) => {
+        if (userAddress === item.userId) podLikes.splice(index2, 1)
+      })
     }
-   
+
     userSnap.ref.update({
-        Likes: userLikes
+      Likes: userLikes
     });
     podSnap.ref.update({
       Likes: podLikes
@@ -1399,10 +1399,10 @@ exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) 
   try {
     const trendingFTPods: any[] = [];
     const ftPodsSnap = await db.collection(collections.trendingPodsFT).get();
-    for(let podSnap of ftPodsSnap.docs) {
+    for (let podSnap of ftPodsSnap.docs) {
       let podData = podSnap.data()
       let ftPod = await db.collection(collections.podsFT).doc(podData.id).get();
-      if(ftPod.exists) {
+      if (ftPod.exists) {
         trendingFTPods.push(ftPod.data());
       }
     }
@@ -1437,7 +1437,7 @@ exports.setTrendingPodsFT = cron.schedule('* * * * *', async () => {
       });
     await trendingFTPods.forEach((doc) => {
       let docRef = db.collection(collections.trendingPodsFT).doc();
-      batch.set(docRef, {id: doc.id});
+      batch.set(docRef, { id: doc.id });
     });
     await batch.commit();
   } catch (err) {
@@ -1539,11 +1539,11 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
       }
 
       // add url if empty //
-      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "")  {
+      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "") {
         await db.collection(collections.podsFT).doc(podId).update({
-              "urlSlug": pod.Name.split(' ').join('')
-            })
-        }
+          "urlSlug": pod.Name.split(' ').join('')
+        })
+      }
 
       res.send({ success: true, data: pod });
     } else {
@@ -1567,7 +1567,7 @@ exports.getFTPodTransactions = async (req: express.Request, res: express.Respons
         .doc(podId)
         .collection(collections.podTransactions)
         .get();
-      
+
       if (!podTxnSnapshot.empty) {
         // console.log('getFTPodTransactions snap', podTxnSnapshot.docs)
         podTxnSnapshot.docs.forEach((doc) => {
@@ -1744,10 +1744,10 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
   try {
     const trendingNFTPods: any[] = [];
     const nftPodsSnap = await db.collection(collections.trendingPodsNFT).get();
-    for(let podSnap of nftPodsSnap.docs) {
+    for (let podSnap of nftPodsSnap.docs) {
       let podData = podSnap.data()
       let nftPod = await db.collection(collections.podsNFT).doc(podData.id).get();
-      if(nftPod.exists) {
+      if (nftPod.exists) {
         trendingNFTPods.push(nftPod.data());
       }
     }
@@ -1782,7 +1782,7 @@ exports.setTrendingPodsNFT = cron.schedule('* * * * *', async () => {
       });
     await trendingNFTPods.forEach((doc) => {
       let docRef = db.collection(collections.trendingPodsNFT).doc();
-      batch.set(docRef, {id: doc.id});
+      batch.set(docRef, { id: doc.id });
     });
     await batch.commit();
   } catch (err) {
@@ -1840,10 +1840,10 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
       }
 
       // add url if empty //
-      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "")  {
-      await db.collection(collections.podsNFT).doc(podId).update({
-            "urlSlug": pod.Name.split(' ').join('')
-          })
+      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "") {
+        await db.collection(collections.podsNFT).doc(podId).update({
+          "urlSlug": pod.Name.split(' ').join('')
+        })
       }
 
       res.send({
@@ -1972,7 +1972,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if (body) {
-      const nftMediaObj : any = {
+      const nftMediaObj: any = {
         HasPhoto: body.HasPhoto ?? false,
         HasPhotoToken: body.HasPhotoToken ?? false,
         Name: body.Name ?? '',
@@ -2016,8 +2016,8 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         const workInProgressGet = await workInProgressRef.get();
         const workInProgress: any = workInProgressGet.data();
 
-        if(body.directlyUpdate) {
-          nftMediaObj.Offers =  body.Offers
+        if (body.directlyUpdate) {
+          nftMediaObj.Offers = body.Offers
           await workInProgressRef.update(nftMediaObj);
         } else {
           await workInProgressRef.update(nftMediaObj);
@@ -2026,7 +2026,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
             !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
               && item2.amount === item1.amount && item2.token === item1.token)));
 
-          for(let offer of diffOffers) {
+          for (let offer of diffOffers) {
             await changeOfferToWorkInProgressNFTPod(offer.userId, body.id, offer.status, offer.token, offer.amount, false, offer.paymentDate);
           }
         }
@@ -2042,7 +2042,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
             WIPType: 'NFTMedia'
           });
 
-        for(let offer of body.Offers) {
+        for (let offer of body.Offers) {
           const userSnap = await db.collection(collections.user).doc(offer.userId).get();
           const userData: any = userSnap.data();
           chatController.createChatWIPFromUsers(mediaIdNFT, body.Creator, offer.userId, creator.firstName, userData.firstName)
@@ -2085,14 +2085,14 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.userId && body.offer && body.offer.token && body.offer.amount
+    if (body && body.userId && body.offer && body.offer.token && body.offer.amount
       && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
 
       const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
       const creator: any = creatorSnap.data();
 
       let mediaNFT: any;
-      for(let offer of body.Offers) {
+      for (let offer of body.Offers) {
         const userSnap = await db.collection(collections.user).doc(offer.userId).get();
         const userData: any = userSnap.data();
 
@@ -2115,9 +2115,9 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.userId && body.mediaIdNFT && body.status) {
+    if (body && body.userId && body.mediaIdNFT && body.status) {
 
-      let mediaNFT : any = await communityController.changeOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.status, body.token, body.amount, body.notificationId || false, null, 'mediaNFT');
+      let mediaNFT: any = await communityController.changeOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.status, body.token, body.amount, body.notificationId || false, null, 'mediaNFT');
 
       res.send({ success: true, data: mediaNFT });
 
@@ -2135,10 +2135,10 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
   try {
     const body = req.body;
 
-    if(body && body.sender && body.receiver && body.amountPeriod && body.token &&
+    if (body && body.sender && body.receiver && body.amountPeriod && body.token &&
       body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.mediaIdNFT) {
 
-      const blockchainRes = await streaming.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+      const blockchainRes = await mediaPod.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
       if (blockchainRes && blockchainRes.success) {
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
@@ -2174,12 +2174,12 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
 
     console.log(params);
 
-    if(params.mediaIdNFT) {
+    if (params.mediaIdNFT) {
       const workInProgressRef = db.collection(collections.workInProgress).doc(params.mediaIdNFT);
       const workInProgressGet = await workInProgressRef.get();
-      const workInProgress : any = workInProgressGet.data();
+      const workInProgress: any = workInProgressGet.data();
 
-      if(params.notificationId && params.userId) {
+      if (params.notificationId && params.userId) {
         await notificationsController.removeNotification({
           userId: params.userId,
           notificationId: params.notificationId,
@@ -2202,14 +2202,14 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
 //TODO: Modify for NFTPod
 const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount, notificationId, paymentDate) => {
   return new Promise(async (resolve, reject) => {
-    try{
+    try {
       const workInProgressRef = db.collection(collections.workInProgress).doc(wipId);
       const workInProgressGet = await workInProgressRef.get();
-      let workInProgress : any = workInProgressGet.data();
+      let workInProgress: any = workInProgressGet.data();
 
       let offers = [...workInProgress.Offers];
-      let previousStatus : string = '';
-      let userSavedId : string = '';
+      let previousStatus: string = '';
+      let userSavedId: string = '';
 
       let offerIndex = offers.findIndex(off => off.userId === userId);
       if (offerIndex !== -1) {
@@ -2240,7 +2240,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
       const userSnap = await db.collection(collections.user).doc(userSavedId).get();
       const user: any = userSnap.data();
 
-      if(status === 'accepted') {
+      if (status === 'accepted') {
         // ACCEPTED OFFER NOTIFICATION
         await notificationsController.addNotification({
           userId: workInProgress.Creator,
@@ -2257,7 +2257,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             otherItemId: wipId
           }
         });
-      } else if(status === 'declined') {
+      } else if (status === 'declined') {
         // DECLINED OFFER NOTIFICATION
         await notificationsController.addNotification({
           userId: workInProgress.Creator,
@@ -2281,7 +2281,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
           });
         }
 
-        let room : string = '';
+        let room: string = '';
         if (user && user.firstName && creator && creator.firstName
           && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
           room = "" + wipId + "" + userSavedId + "" + workInProgress.Creator;
@@ -2293,7 +2293,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
           for (const doc of chatQuery.docs) {
             let data = doc.data();
             await db.collection(collections.chat).doc(doc.id).delete();
-            if(data.messages && data.messages.length > 0) {
+            if (data.messages && data.messages.length > 0) {
               for (const msg of data.messages) {
                 await db.collection(collections.message).doc(msg).delete();
               }
@@ -2301,8 +2301,8 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
           }
         }
 
-      } else if(status === 'negotiating') {
-        if(token === null || amount === null) {
+      } else if (status === 'negotiating') {
+        if (token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
           await notificationsController.addNotification({
             userId: workInProgress.Creator,
@@ -2320,7 +2320,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             }
           });
         } else {
-          if(previousStatus === 'pending') {
+          if (previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
             chatController.createChatWIPFromUsers(wipId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
 
@@ -2356,7 +2356,7 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             });
           }
         }
-      } else if(status === 'pending') {
+      } else if (status === 'pending') {
         //First offer - WIP already created
         await notificationsController.addNotification({
           userId: userSavedId,

@@ -61,6 +61,20 @@ let upload4 = multer({
   storage: storage4,
 });
 
+let storage44 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/userWallPost/' + 'video-' + req.params.userWallPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4');
+  },
+});
+
+let upload44 = multer({
+  storage: storage44
+});
+
 let storage5 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
     cb(null, 'uploads/userWallPost');
@@ -158,21 +172,15 @@ router.post('/wall/deletePost', authenticateJWT, userWallController.postDelete);
 router.get('/wall/getUserPosts/:userId', authenticateJWT, userWallController.getUserPosts);
 router.get('/wall/getUserPost/:postId', authenticateJWT, userWallController.getUserPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), userWallController.changePostPhoto);
-router.post(
-  '/wall/changePostDescriptionPhotos/:userWallPostId',
-  authenticateJWT,
-  upload4.array('image'),
-  userWallController.changePostDescriptionPhotos
-);
+router.post('/wall/changePostDescriptionPhotos/:userWallPostId', authenticateJWT, upload4.array('image'), userWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:userWallPostId', userWallController.getUserWallPostPhotoById);
-router.get(
-  '/wall/getDescriptionPostPhoto/:userWallPostId/:photoId',
-  userWallController.getUserWallPostDescriptionPhotoById
-);
+router.get('/wall/getDescriptionPostPhoto/:userWallPostId/:photoId', userWallController.getUserWallPostDescriptionPhotoById);
 router.post('/wall/makeResponse', authenticateJWT, userWallController.makeResponseUserWallPost);
 router.post('/wall/likePost', authenticateJWT, userWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
+router.post('/wall/addVideo/:userWallPostId', authenticateJWT, upload44.array('video'), userWallController.addVideoPost);
+router.post('/wall/getVideo/:userWallPostId/:videoId', authenticateJWT, userWallController.getVideoPost);
 
 router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
 

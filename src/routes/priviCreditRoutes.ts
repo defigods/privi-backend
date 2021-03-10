@@ -33,6 +33,19 @@ let upload2 = multer({
   storage: storage2,
 });
 
+let storage22 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/creditWallPost/' + 'videos-' + req.params.creditWallPostId);
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4');
+  },
+});
+let upload22 = multer({
+  storage: storage22
+});
+
 let storage4 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
     cb(null, 'uploads/creditPools');
@@ -68,31 +81,21 @@ router.post(
   priviCreditController.changeCreditPoolPhoto
 );
 router.post('/editPriviCredit', authenticateJWT, priviCreditController.editPriviCredit);
+
 router.post('/wall/createPost', authenticateJWT, priviCreditWallController.postCreate);
 router.post('/wall/deletePost', authenticateJWT, priviCreditWallController.postDelete);
 router.get('/wall/getCreditPosts/:priviCreditId', authenticateJWT, priviCreditWallController.getCreditPost);
 router.get('/wall/getCreditPost/:postId', authenticateJWT, priviCreditWallController.getCreditPostById);
-router.post(
-  '/wall/changePostPhoto',
-  authenticateJWT,
-  upload3.single('image'),
-  priviCreditWallController.changePostPhoto
-);
-router.post(
-  '/wall/changePostDescriptionPhotos/:creditWallPostId',
-  authenticateJWT,
-  upload2.array('image'),
-  priviCreditWallController.changePostDescriptionPhotos
-);
+router.post('/wall/changePostPhoto', authenticateJWT, upload3.single('image'), priviCreditWallController.changePostPhoto);
+router.post('/wall/changePostDescriptionPhotos/:creditWallPostId', authenticateJWT, upload2.array('image'), priviCreditWallController.changePostDescriptionPhotos);
 router.get('/wall/getPostPhoto/:creditWallPostId', priviCreditWallController.getCreditWallPostPhotoById);
-router.get(
-  '/wall/getDescriptionPostPhoto/:creditWallPostId/:photoId',
-  priviCreditWallController.getCreditWallPostDescriptionPhotoById
-);
+router.get('/wall/getDescriptionPostPhoto/:creditWallPostId/:photoId', priviCreditWallController.getCreditWallPostDescriptionPhotoById);
 router.post('/wall/makeResponse', authenticateJWT, priviCreditWallController.makeResponseCreditWallPost);
 router.post('/wall/likePost', authenticateJWT, priviCreditWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, priviCreditWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, priviCreditWallController.pinPost);
+router.post('/wall/addVideo/:creditWallPostId', authenticateJWT, upload22.array('video'), priviCreditWallController.addVideoPost);
+router.post('/wall/getVideo/:creditWallPostId/:videoId', authenticateJWT, priviCreditWallController.getVideoPost);
 
 //CREDIT SLUG
 router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);

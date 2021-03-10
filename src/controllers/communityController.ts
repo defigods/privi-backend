@@ -14,7 +14,7 @@ import {
 import badge from '../blockchain/badge';
 import community from '../blockchain/community';
 import coinBalance from '../blockchain/coinBalance';
-import streaming from '../blockchain/streaming';
+import mediaPod from '../blockchain/mediaPod';
 import notificationTypes from '../constants/notificationType';
 import { db } from '../firebase/firebase';
 import collections, { communityToken } from '../firebase/collections';
@@ -373,7 +373,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         }
       }
 
-      if(body.workInProgressId) {
+      if (body.workInProgressId) {
         await db.collection(collections.workInProgress).doc(body.workInProgressId).delete();
       }
 
@@ -540,14 +540,14 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.userId && body.offer && body.offer.token && body.offer.amount
+    if (body && body.userId && body.offer && body.offer.token && body.offer.amount
       && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
 
       const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
       const creator: any = creatorSnap.data();
 
       let community: any;
-      for(let offer of body.Offers) {
+      for (let offer of body.Offers) {
         const userSnap = await db.collection(collections.user).doc(offer.userId).get();
         const userData: any = userSnap.data();
 
@@ -570,9 +570,9 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if(body && body.userId && body.communityId && body.status) {
+    if (body && body.userId && body.communityId && body.status) {
 
-      let community : any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notificationId || false, null, 'community');
+      let community: any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notificationId || false, null, 'community');
 
       res.send({ success: true, data: community });
 
@@ -590,10 +590,10 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
   try {
     const body = req.body;
 
-    if(body && body.sender && body.receiver && body.amountPeriod && body.token &&
+    if (body && body.sender && body.receiver && body.amountPeriod && body.token &&
       body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.communityId) {
 
-      const blockchainRes = await streaming.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+      const blockchainRes = await mediaPod.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
       if (blockchainRes && blockchainRes.success) {
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
@@ -627,12 +627,12 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
   try {
     const params = req.params;
 
-    if(params.communityId) {
+    if (params.communityId) {
       const workInProgressRef = db.collection(collections.workInProgress).doc(params.communityId);
       const workInProgressGet = await workInProgressRef.get();
-      const workInProgress : any = workInProgressGet.data();
+      const workInProgress: any = workInProgressGet.data();
 
-      if(params.notificationId && params.userId) {
+      if (params.notificationId && params.userId) {
         await notificationsController.removeNotification({
           userId: params.userId,
           notificationId: params.notificationId,
@@ -921,7 +921,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const userLikes = userData.Likes ?? [];
     const communityLikes = communityData.Likes ?? [];
 
-    if(body.liked){
+    if (body.liked) {
       userLikes.push({
         date: Date.now(),
         type: "community",
@@ -931,17 +931,17 @@ exports.like = async (req: express.Request, res: express.Response) => {
         date: Date.now(),
         userId: userAddress
       })
-    } else{
-         userLikes.forEach((item, index) => {
-          if(communityAddress === item.id) userLikes.splice(index, 1)
-        })
-        communityLikes.forEach((item, index2) => {
-          if(userAddress === item.userId) communityLikes.splice(index2, 1)
-        }) 
+    } else {
+      userLikes.forEach((item, index) => {
+        if (communityAddress === item.id) userLikes.splice(index, 1)
+      })
+      communityLikes.forEach((item, index2) => {
+        if (userAddress === item.userId) communityLikes.splice(index2, 1)
+      })
     }
 
     userSnap.ref.update({
-        Likes: userLikes
+      Likes: userLikes
     });
     communitySnap.ref.update({
       Likes: communityLikes
@@ -2061,7 +2061,7 @@ exports.setTrendingCommunities = cron.schedule('0 0  * * *', async () => {
       });
     await trendingCommunities.forEach((doc: any) => {
       let docRef = db.collection(collections.trendingCommunity).doc(); //automatically generate unique id
-      batch.set(docRef, {id: doc.id});
+      batch.set(docRef, { id: doc.id });
     });
     await batch.commit();
   } catch (err) {
@@ -2729,7 +2729,7 @@ const getArrayIdCommunityMembers = async (data: any) => {
 
 const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
   return new Promise(async (resolve, reject) => {
-    try{
+    try {
       const data: any = {
         paymentDate: offer.paymentDate,
         token: offer.token,
@@ -2740,7 +2740,7 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
 
       const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
       const workInProgressGet = await workInProgressRef.get();
-      let workInProgress : any = workInProgressGet.data();
+      let workInProgress: any = workInProgressGet.data();
 
       let offers = [...workInProgress.Offers];
 
@@ -2783,14 +2783,14 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
 
 const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userId, typeId, status, token, amount, notificationId, paymentDate, type) => {
   return new Promise(async (resolve, reject) => {
-    try{
+    try {
       const workInProgressRef = db.collection(collections.workInProgress).doc(typeId);
       const workInProgressGet = await workInProgressRef.get();
-      let workInProgress : any = workInProgressGet.data();
+      let workInProgress: any = workInProgressGet.data();
 
       let offers = [...workInProgress.Offers];
-      let previousStatus : string = '';
-      let userSavedId : string = '';
+      let previousStatus: string = '';
+      let userSavedId: string = '';
 
       let offerIndex = offers.findIndex(off => off.userId === userId);
       if (offerIndex !== -1) {
@@ -2821,10 +2821,10 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
       const userSnap = await db.collection(collections.user).doc(userSavedId).get();
       const user: any = userSnap.data();
 
-      if(status === 'accepted') {
+      if (status === 'accepted') {
         // ACCEPTED OFFER NOTIFICATION
-        let numTypeNotification : number;
-        if(type === 'Community') {
+        let numTypeNotification: number;
+        if (type === 'Community') {
           numTypeNotification = 98
         } else {
           numTypeNotification = 103
@@ -2844,10 +2844,10 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             otherItemId: typeId
           }
         });
-      } else if(status === 'declined') {
+      } else if (status === 'declined') {
         // DECLINED OFFER NOTIFICATION
-        let numTypeNotification : number;
-        if(type === 'Community') {
+        let numTypeNotification: number;
+        if (type === 'Community') {
           numTypeNotification = 96
         } else {
           numTypeNotification = 101
@@ -2874,7 +2874,7 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
           });
         }
 
-        let room : string = '';
+        let room: string = '';
         if (user && user.firstName && creator && creator.firstName
           && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
           room = "" + typeId + "" + userSavedId + "" + workInProgress.Creator;
@@ -2886,7 +2886,7 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
           for (const doc of chatQuery.docs) {
             let data = doc.data();
             await db.collection(collections.chat).doc(doc.id).delete();
-            if(data.messages && data.messages.length > 0) {
+            if (data.messages && data.messages.length > 0) {
               for (const msg of data.messages) {
                 await db.collection(collections.message).doc(msg).delete();
               }
@@ -2894,11 +2894,11 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
           }
         }
 
-      } else if(status === 'negotiating') {
-        if(token === null || amount === null) {
+      } else if (status === 'negotiating') {
+        if (token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
-          let numTypeNotification : number;
-          if(type === 'Community') {
+          let numTypeNotification: number;
+          if (type === 'Community') {
             numTypeNotification = 97
           } else {
             numTypeNotification = 102
@@ -2919,7 +2919,7 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             }
           });
         } else {
-          if(previousStatus === 'pending') {
+          if (previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
             chatController.createChatWIPFromUsers(typeId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
 
@@ -2938,8 +2938,8 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
               });
             }
             // ANOTHER OFFER NOTIFICATION
-            let numTypeNotification : number;
-            if(type === 'Community') {
+            let numTypeNotification: number;
+            if (type === 'Community') {
               numTypeNotification = 95
             } else {
               numTypeNotification = 100
@@ -2961,10 +2961,10 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             });
           }
         }
-      } else if(status === 'pending') {
+      } else if (status === 'pending') {
         //First offer - WIP already created
-        let numTypeNotification : number;
-        if(type === 'Community') {
+        let numTypeNotification: number;
+        if (type === 'Community') {
           numTypeNotification = 94
         } else {
           numTypeNotification = 99
@@ -3000,7 +3000,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if (body) {
-      const communityObj : any = {
+      const communityObj: any = {
         HasPhoto: body.HasPhoto ?? false,
         Name: body.Name ?? '',
         Description: body.Description ?? '',
@@ -3077,8 +3077,8 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         const workInProgressGet = await workInProgressRef.get();
         const workInProgress: any = workInProgressGet.data();
 
-        if(body.directlyUpdate) {
-          communityObj.Offers =  body.Offers
+        if (body.directlyUpdate) {
+          communityObj.Offers = body.Offers
           await workInProgressRef.update(communityObj);
         } else {
           await workInProgressRef.update(communityObj);
@@ -3087,7 +3087,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
               && item2.amount === item1.amount && item2.token === item1.token)));
 
-          for(let offer of diffOffers) {
+          for (let offer of diffOffers) {
             await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate, 'community');
           }
         }
@@ -3104,7 +3104,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             WIPType: 'Community'
           });
 
-        for(let offer of body.Offers) {
+        for (let offer of body.Offers) {
           const userSnap = await db.collection(collections.user).doc(offer.userId).get();
           const userData: any = userSnap.data();
           chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
