@@ -97,9 +97,9 @@ router.post('/signUp', userController.signUp);
 router.get('/email_validation/:validation_slug', userController.emailValidation);
 router.post('/resend_email_validation', userController.resendEmailValidation);
 
-router.get('/getBasicInfo/:userId', authenticateJWT, userController.getBasicInfo);
+router.get('/getBasicInfo/:userId', userController.getBasicInfo);
 router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
-router.get('/getAllInfoProfile/:userId/:address', authenticateJWT, userController.getAllInfoProfile);
+router.get('/getAllInfoProfile/:userId/:address', userController.getAllInfoProfile);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);

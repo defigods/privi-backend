@@ -618,6 +618,7 @@ interface BasicInfo {
   hasPhoto: boolean;
   verified: boolean;
   urlSlug: string;
+  address: string;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -648,6 +649,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       hasPhoto: false,
       verified: false,
       urlSlug: userId,
+      address: '',
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -698,6 +700,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.urlSlug =
         userData.urlSlug ||
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
+      basicInfo.address = userData.address || '';
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
