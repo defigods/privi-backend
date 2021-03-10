@@ -7,6 +7,8 @@ import { mint as swapFab, burn as withdrawFab } from '../blockchain/coinBalance.
 import { updateFirebase, updateStatusOneToOneSwap, updateTxOneToOneSwap, updatePriviTxOneToOneSwap, getRecentSwaps as loadRecentSwaps } from '../functions/functions';
 import { ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP } from '../constants/configuration';
 import ERC20Balance from '../contracts/ERC20Balance.json';
+import { ethers }              from "ethers";
+import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
 const fs = require('fs');
 const path = require('path');
 require('dotenv').config();
@@ -42,6 +44,10 @@ const Action = {
     SWAP_APPROVE_ERC20: 'SWAP_APPROVE_ERC20',
     WITHDRAW_ETH: 'WITHDRAW_ETH',
     WITHDRAW_ERC20: 'WITHDRAW_ERC20',
+
+    SWAP_APPROVE_ERC721: 'SWAP_APPROVE_ERC721',
+    SWAP_TRANSFER_ERC721: 'SWAP_TRANSFER_ERC721',
+    WITHDRAW_ERC721: 'WITHDRAW_ERC721'
 };
 
 // Promise return type for ethereum transactions
@@ -136,13 +142,16 @@ const wsListen = () => {
     };
 };
 
-const getWeb3forChain = (chainId: string): Web3 => {
-    if(chainId === '0x3' || chainId === '3'){
+const getWeb3forChain = (chainId: any): Web3 => {
+    if(chainId === '0x3' || chainId === '3' || chainId === 3){
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
-    } else if (chainId === '0x4' || chainId === '4') {
+    } else if (chainId === '0x4' || chainId === '4' || chainId === 4) {
         console.log('getWeb3forChain', chainId)
         return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
+    } else if (chainId === '0x97' || chainId === '97' || chainId === 97) {
+        console.log('getWeb3forChain', chainId)
+        return new Web3(new Web3.providers.HttpProvider(`https://data-seed-prebsc-1-s1.binance.org:8545`))
     } else {
         return new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${ETH_INFURA_KEY}`))
     }        
@@ -218,56 +227,128 @@ const executeTX = (params: any) => {
     });
 };
 
-const getERC20BalnceOf = (contractAddress: string, address: any, chainId: any) => {
-    return new Promise<number>(async (resolve) => {
-        if (contractAddress !== ZERO_ADDRESS) {
-            const web3_l: Web3 = getWeb3forChain(chainId);
-            const abi: any =  ERC20Balance.abi;
-            let contract = new web3_l.eth.Contract(abi, contractAddress);
-            await contract.methods.balanceOf(address).call()
-                .then(result => {
-                    resolve(Number(web3_l.utils.fromWei((result), 'ether')));
-                })
-                .catch(err => {
-                    console.log('Error in connectController.ts -> callBalance(): [call]', err);
-                    resolve(0);
-                })
-        } else {
-            resolve(0);
-        };
-    });
+// get price
+
+
+const getMainNetPrices =  async () => {
+    const WBTC = new Token(ChainId.MAINNET, '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', 8)
+    const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6)
+    try {
+        const provider = new ethers.providers.InfuraProvider('mainnet', ETH_INFURA_KEY);
+
+        // const pair = await Fetcher.fetchPairData(WBTC, WETH[WBTC.chainId], provider)
+        // const route = new Route([pair], WETH[WBTC.chainId])
+        // // console.log('ETH-wbtc',route.midPrice.toSignificant(6)) // 201.306
+        // // console.log('ETH-wbtc inverted',route.midPrice.invert().toSignificant(6)) // 0.00496756
+        // const ETH_WBTC_Price = route.midPrice.toSignificant(6);
+
+        const pair2 = await Fetcher.fetchPairData(USDC, WETH[USDC.chainId], provider)
+        const route2 = new Route([pair2], WETH[USDC.chainId])
+        // console.log('Eth-USDC',route2.midPrice.toSignificant(6)) // 201.306
+        // console.log('Eth-USDC inverted',route2.midPrice.invert().toSignificant(6)) // 0.00496756
+        const ETH_USD_Price = route2.midPrice.toSignificant(10);
+
+        const pair3 = await Fetcher.fetchPairData(USDC, WBTC, provider)
+        const route3 = new Route([pair3], WBTC)
+        // console.log('wbtc-USDC',route3.midPrice.toSignificant(6)) // 201.306
+        // console.log('wbtc-USDC inverted',route3.midPrice.invert().toSignificant(6)) // 0.00496756
+        const WBTC_USD_Price = route3.midPrice.toSignificant(10);
+
+        return {EthInUsd: parseFloat(ETH_USD_Price), BtcInUsd: parseFloat(WBTC_USD_Price)};
+    } catch (error) {
+        console.log('connectController --> getMainNetPrices error', error)
+        return {EthInUsd: 0, BtcInUsd: 0};
+    }
 };
 
-const getEthBalanceOf = async (address: string, chainId: string): Promise<Number> => {
-    const web3_l: Web3 = getWeb3forChain(chainId);
-    const balanceWei = await web3_l.eth.getBalance(address);
-    const balance = Number(web3_l.utils.fromWei(balanceWei, 'ether'));
-    return balance;
+const getTokenUniSwapPrices =  async (chainId, token0Address, decimals) => {
+    const token0 = new Token(chainId, token0Address, decimals);
+    // it is more efecient, is to use what coin it is paired with.. however for the lack of time we go with weth
+    const token1 = new Token(chainId, chainId === 1 ? '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' : '0xc778417E063141139Fce010982780140Aa0cD5Ab', 18)
+    try {
+        const netName = chainId === 3 ? 'ropsten' : chainId == 4 ? 'rinkeby' : 'mainnet';
+        const provider = new ethers.providers.InfuraProvider(netName, ETH_INFURA_KEY);
+        // console.log('-------------------------------------getTokenUniSwapPrices chain id', chainId, token0)
+        const pair = await Fetcher.fetchPairData(token0, token1, provider)
+        const route = new Route([pair], token0);
+        const tokenInEth = parseFloat(route.midPrice.toSignificant(10));
+        const mainNetPrices = await getMainNetPrices();
+        const tokenInUsd = tokenInEth * mainNetPrices.EthInUsd;
+        return {priceInEth: tokenInEth, priceInUsd: tokenInUsd};
+    } catch (error) {
+        console.log('connectController --> getTokenUniSwapPrices error', error)
+        return {priceInEth: 0, priceInUsd: 0};
+    }
+};
+
+const getUniSwapPrices = async (req: express.Request, res: express.Response) => {
+    try {
+        const { chainId, token0Address, decimals} = req.query;
+        console.log('getUniSwapPrices req:', chainId, token0Address, decimals)
+        const _chain: any = chainId?.toString();
+        const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
+        const _token0Address: any = token0Address?.toString();
+        const _decimals: number = parseFloat(decimals ? decimals.toString() : '18');
+        
+        res.send(await getTokenUniSwapPrices(_chainId, _token0Address, _decimals));
+    } catch (error) {
+        res.send({priceInEth: 0, priceInUsd: 0});
+        console.log('connectController --> getUniSwapPrices error', error)
+    }
+    
+    
 }
 
-const mintERC20PodToken = async (podAddress:string, toAddress: string, amount: string, chainId: string) => {
-    const web3_l: Web3 = getWeb3forChain(chainId);
-    // get factory
-    let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
-    const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
+// const getERC20BalnceOf = (contractAddress: string, address: any, chainId: any) => {
+//     return new Promise<number>(async (resolve) => {
+//         if (contractAddress !== ZERO_ADDRESS) {
+//             const web3_l: Web3 = getWeb3forChain(chainId);
+//             const abi: any =  ERC20Balance.abi;
+//             let contract = new web3_l.eth.Contract(abi, contractAddress);
+//             await contract.methods.balanceOf(address).call()
+//                 .then(result => {
+//                     resolve(Number(web3_l.utils.fromWei((result), 'ether')));
+//                 })
+//                 .catch(err => {
+//                     console.log('Error in connectController.ts -> callBalance(): [call]', err);
+//                     resolve(0);
+//                 })
+//         } else {
+//             resolve(0);
+//         };
+//     });
+// };
+
+// const getEthBalanceOf = async (address: string, chainId: string): Promise<Number> => {
+//     const web3_l: Web3 = getWeb3forChain(chainId);
+//     const balanceWei = await web3_l.eth.getBalance(address);
+//     const balance = Number(web3_l.utils.fromWei(balanceWei, 'ether'));
+//     return balance;
+// }
+
+// const mintERC20PodToken = async (podAddress:string, toAddress: string, amount: string, chainId: string) => {
+//     const web3_l: Web3 = getWeb3forChain(chainId);
+//     // get factory
+//     let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
+//     const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
     
-    // mint token amount
-    // Choose method from PRIVIPodERC20Factory to be called
-    const amountWei = web3_l.utils.toWei(amount, 'ether');
-    const method = factoryContract.methods.podMint(podAddress, toAddress, amountWei).encodeABI();
-    // Transaction parameters
-    const paramsTX = {
-        chainId: chainId,
-        fromAddress: ETH_PRIVI_ADDRESS,
-        fromAddressKey: ETH_PRIVI_KEY,
-        encodedABI: method,
-        toAddress: factoryContract.options.address,
-    };
-    // Execute transaction 
-    const { success, data } = await executeTX(paramsTX);
-    // console.log('mintERC20PodToken', success, data)
-    return { success, data };
-}
+//     // mint token amount
+//     // Choose method from PRIVIPodERC20Factory to be called
+//     const amountWei = web3_l.utils.toWei(amount, 'ether');
+//     const method = factoryContract.methods.podMint(podAddress, toAddress, amountWei).encodeABI();
+//     // Transaction parameters
+//     const paramsTX = {
+//         chainId: chainId,
+//         fromAddress: ETH_PRIVI_ADDRESS,
+//         fromAddressKey: ETH_PRIVI_KEY,
+//         encodedABI: method,
+//         toAddress: factoryContract.options.address,
+//     };
+//     // Execute transaction 
+//     const { success, data } = await executeTX(paramsTX);
+//     // console.log('mintERC20PodToken', success, data)
+//     return { success, data };
+// }
 
 const getPodTokenDeployedAddress = async (podAddress:string, chainId: string): Promise<string> => {
     const web3_l: Web3 = getWeb3forChain(chainId);
@@ -404,20 +485,21 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                 const docId = snapshot.docs[i].id;
                 if (/*doc.action === Action.SWAP_APPROVE_ERC20 ||*/
                     doc.action === Action.WITHDRAW_ETH ||
-                    doc.action === Action.WITHDRAW_ERC20) {
-                    console.log('performing withdraw');
+                    doc.action === Action.WITHDRAW_ERC20 || 
+                    doc.action === Action.WITHDRAW_ERC721) {
+                    console.log('performing withdraw', docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId);
                     withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId)
-                } else if (doc.action === Action.SWAP_APPROVE_ERC20) {
+                } else if (doc.action === Action.SWAP_APPROVE_ERC20 || doc.action === Action.SWAP_APPROVE_ERC721) {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
                     console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                     /* 
                         confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                     */
-                if (confirmations > MIN_ETH_CONFIRMATION) {
-                    console.log('approve should be set to confirmed');
-                    updateStatusOneToOneSwap(docId, 'confirmed');
-                    return;
-                };
+                    if (confirmations > MIN_ETH_CONFIRMATION) {
+                        console.log('approve should be set to confirmed');
+                        updateStatusOneToOneSwap(docId, 'confirmed');
+                        return;
+                    };
                 } else {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
                     console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
@@ -463,13 +545,13 @@ const swap = async (
     chainId: string) => {
 
     try {
-        console.log('--> Swap: TX confirmed in Ethereum');
+        console.log('--> Swap: TX confirmed in Ethereum', swapDocId, token, amount, 'action', action);
 
-        const response = await swapFab(
+        const response: any = await swapFab(
             action,
             from,
             userAddress,
-            amount,
+            action === Action.SWAP_TRANSFER_ERC721 ? 1 : amount,
             token,
             'PRIVI'
         );
@@ -516,18 +598,18 @@ const withdraw = async (
     date: string,
     chainId: string
 ) => {
-    console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date)
+    console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date, chainId)
 
     const web3_l = getWeb3forChain(chainId);
     // set swap doc to in progress
     updateStatusOneToOneSwap(swapDocId, 'inProgress');
     // first burn fabric token
     // Withdraw in Fabric
-    const response = await withdrawFab(
+    const response: any = await withdrawFab(
         action,
         fromFabricAddress,
         toEthAddress,
-        amount,
+        action === Action.WITHDRAW_ERC721 ? 1 : amount,
         token,
         'PRIVI'
     );
@@ -540,23 +622,25 @@ const withdraw = async (
         updatePriviTxOneToOneSwap(swapDocId, response.hash);
 
         // Convert value into wei
-        const amountWei = web3_l.utils.toWei(String(amount));
+        // const amountWei = web3_l.utils.toWei(String(amount));
 
         let swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
 
         // console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
-
+        const _chain: any = chainId?.toString();
+        const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
         // Get SwapManager contract code
-        const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[String(chainId.split('x')[1])]["address"]);
+        const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[_chainId]["address"]);
 
         // check if contract has balance
         // let contractBalanceWei = web3.eth.getBalance(contract.address);
-        console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amountWei', amountWei)
+        console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amount', amount)
 
         // Choose method from SwapManager to be called
-        const method = (action === Action.WITHDRAW_ETH)
-            ? contract.methods.withdrawEther(toEthAddress, amountWei).encodeABI()
-            : contract.methods.withdrawERC20Token(token, toEthAddress, amountWei).encodeABI();
+        const method = 
+            (action === Action.WITHDRAW_ETH) ? contract.methods.withdrawEther(toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
+            : (action === Action.WITHDRAW_ERC20) ? contract.methods.withdrawERC20Token(token, toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
+            : contract.methods.withdrawERC721Token(token, toEthAddress, amount === 'NO_ID' ? '999999999' : amount, amount === 'NO_ID' ? true : false).encodeABI(); // hopefully this id won't exist, swapmanager needs update to account for minting pods
 
         // Transaction parameters
         const paramsTX = {
@@ -584,10 +668,10 @@ const withdraw = async (
             updateTxOneToOneSwap(swapDocId, txHash);
 
             const mintBack = await swapFab(
-                'CRYPTO',
+                action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
                 '0x0000000000000000000000000000000000000000',
                 fromFabricAddress,
-                amount,
+                action === Action.WITHDRAW_ERC721 ? 1 : amount,
                 token,
                 'PRIVI'
             );
@@ -701,6 +785,7 @@ const getBridgeRegisteredToken = async (req: express.Request, res: express.Respo
 
 module.exports = {
     // registerNewERC20TokenOnSwapManager, 
+    getUniSwapPrices,
     getBridgeRegisteredToken,
     send,
     checkTx,

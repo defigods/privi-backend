@@ -68,6 +68,7 @@ module.exports = {
   mediaPods: "MediaPods",
   medias: "Medias",
   streamingListeners: "StreamingListeners",
+  streamers: "Streamers",
   streamings: "Streamings",
 
   podViewInvitation: 'PodViewInvitation',

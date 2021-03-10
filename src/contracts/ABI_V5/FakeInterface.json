@@ -1,0 +1,331 @@
+{
+  "contractName": "FakeInterface",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "user",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "mintForUser",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"user\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"mintForUser\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"details\":\"Interface of the ERC20 standard as defined in the EIP.\",\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol\":\"FakeInterface\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":500},\"remappings\":[]},\"sources\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol\":{\"keccak256\":\"0xeb782dd3ad5c9c1e38032ce450bb2861ebe76303af0285b2a1083ebc10102b89\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://84fb670db1ffc9b51acf79bab8fd3cb2dedbb6a60b0b914ca67bf85fb74825c2\",\"dweb:/ipfs/QmQttLdjL6mgccefXr8YsBG3BW3rjKerawWFV6buXKXMA7\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.7.6;\n\n/**\n * @dev Interface of the ERC20 standard as defined in the EIP.\n */\ninterface FakeInterface {\n    function mintForUser(address user, uint256 amount) external;\n}",
+  "sourcePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
+  "ast": {
+    "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
+    "exportedSymbols": {
+      "FakeInterface": [
+        3380
+      ]
+    },
+    "id": 3381,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3371,
+        "literals": [
+          "solidity",
+          "^",
+          "0.7",
+          ".6"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:23:24"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": {
+          "id": 3372,
+          "nodeType": "StructuredDocumentation",
+          "src": "58:70:24",
+          "text": " @dev Interface of the ERC20 standard as defined in the EIP."
+        },
+        "fullyImplemented": false,
+        "id": 3380,
+        "linearizedBaseContracts": [
+          3380
+        ],
+        "name": "FakeInterface",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "functionSelector": "d0dbc833",
+            "id": 3379,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "mintForUser",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3377,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3374,
+                  "mutability": "mutable",
+                  "name": "user",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3379,
+                  "src": "180:12:24",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3373,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "180:7:24",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3376,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3379,
+                  "src": "194:14:24",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3375,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "194:7:24",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "179:30:24"
+            },
+            "returnParameters": {
+              "id": 3378,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "218:0:24"
+            },
+            "scope": 3380,
+            "src": "159:60:24",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3381,
+        "src": "129:92:24"
+      }
+    ],
+    "src": "33:188:24"
+  },
+  "legacyAST": {
+    "attributes": {
+      "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
+      "exportedSymbols": {
+        "FakeInterface": [
+          3380
+        ]
+      },
+      "license": "MIT"
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.7",
+            ".6"
+          ]
+        },
+        "id": 3371,
+        "name": "PragmaDirective",
+        "src": "33:23:24"
+      },
+      {
+        "attributes": {
+          "abstract": false,
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "interface",
+          "fullyImplemented": false,
+          "linearizedBaseContracts": [
+            3380
+          ],
+          "name": "FakeInterface",
+          "scope": 3381
+        },
+        "children": [
+          {
+            "attributes": {
+              "text": " @dev Interface of the ERC20 standard as defined in the EIP."
+            },
+            "id": 3372,
+            "name": "StructuredDocumentation",
+            "src": "58:70:24"
+          },
+          {
+            "attributes": {
+              "functionSelector": "d0dbc833",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "mintForUser",
+              "scope": 3380,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "user",
+                      "scope": 3379,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3373,
+                        "name": "ElementaryTypeName",
+                        "src": "180:7:24"
+                      }
+                    ],
+                    "id": 3374,
+                    "name": "VariableDeclaration",
+                    "src": "180:12:24"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3379,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3375,
+                        "name": "ElementaryTypeName",
+                        "src": "194:7:24"
+                      }
+                    ],
+                    "id": 3376,
+                    "name": "VariableDeclaration",
+                    "src": "194:14:24"
+                  }
+                ],
+                "id": 3377,
+                "name": "ParameterList",
+                "src": "179:30:24"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3378,
+                "name": "ParameterList",
+                "src": "218:0:24"
+              }
+            ],
+            "id": 3379,
+            "name": "FunctionDefinition",
+            "src": "159:60:24"
+          }
+        ],
+        "id": 3380,
+        "name": "ContractDefinition",
+        "src": "129:92:24"
+      }
+    ],
+    "id": 3381,
+    "name": "SourceUnit",
+    "src": "33:188:24"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.7.6+commit.7338295f.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-03-05T14:50:31.502Z",
+  "devdoc": {
+    "details": "Interface of the ERC20 standard as defined in the EIP.",
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}
