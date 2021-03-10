@@ -63,7 +63,7 @@ let upload4 = multer({
 
 let storage44 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/userWallPost/' + 'video-' + req.params.userWallPostId);
+    cb(null, 'uploads/userWallPost/' + 'videos-' + req.params.userWallPostId);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -179,7 +179,7 @@ router.post('/wall/makeResponse', authenticateJWT, userWallController.makeRespon
 router.post('/wall/likePost', authenticateJWT, userWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
-router.post('/wall/addVideo/:userWallPostId', authenticateJWT, upload44.array('video'), userWallController.addVideoPost);
+router.post('/wall/addVideo/:userWallPostId', authenticateJWT, upload44.single('video'), userWallController.addVideoPost);
 router.post('/wall/getVideo/:userWallPostId/:videoId', authenticateJWT, userWallController.getVideoPost);
 
 router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
