@@ -1,18 +1,18 @@
 import express from 'express';
 const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
-const meidaPodController = require('../controllers/mediaPodController');
+const mediaPodController = require('../controllers/mediaPodController');
 
 
 // POSTS
-router.post('/initiatePod', authenticateJWT, meidaPodController.initiatePod);
-router.post('/registerMedia', authenticateJWT, meidaPodController.registerMedia);
-router.post('/uploadMedia', authenticateJWT, meidaPodController.uploadMedia);
-router.post('/buyMediaToken', authenticateJWT, meidaPodController.buyMediaToken);
-router.post('/investPod', authenticateJWT, meidaPodController.investPod);
+router.post('/initiatePod', authenticateJWT, mediaPodController.initiatePod);
+router.post('/registerMedia', authenticateJWT, mediaPodController.registerMedia);
+router.post('/uploadMedia', authenticateJWT, mediaPodController.uploadMedia);
+router.post('/buyMediaToken', authenticateJWT, mediaPodController.buyMediaToken);
+router.post('/investPod', authenticateJWT, mediaPodController.investPod);
 
 // GETS
-
+router.post('/getMediaPod/:mediaPodId', authenticateJWT, mediaPodController.getMediaPod);
 
 
 module.exports = router;

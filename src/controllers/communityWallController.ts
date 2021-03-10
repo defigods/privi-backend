@@ -39,7 +39,19 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       await communityRef.update({
         Posts: posts
-      })
+      });
+
+      let dir = 'uploads/communityWallPost/' + 'photos-' + ret.id;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = "uploads/communityWallPost/" + "videos-" + ret.id;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
 
       res.send({success: true, data: ret});
     } else if (!isUserRole || !isCreator){
@@ -111,18 +123,6 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         await communityWallPost.update({
           HasPhoto: true
         });
-      }
-
-      let dir = 'uploads/communityWallPost/' + 'photos-' + req.file.originalname;
-
-      if (!fs.existsSync(dir)){
-        fs.mkdirSync(dir);
-      }
-
-      let dir1 = "uploads/communityWallPost/" + "videos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir1)) {
-        fs.mkdirSync(dir1);
       }
 
       res.send({ success: true });

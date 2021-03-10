@@ -35,6 +35,18 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
         Posts: posts,
       });
 
+      let dir = 'uploads/userWallPost/' + 'photos-' + ret.id;
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = "uploads/userWallPost/" + "videos-" + ret.id;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
+
       res.send({ success: true, data: ret });
     } else if (!isFollower) {
       console.log('Error in controllers/userWallController -> postCreate()', "You can't create a post");
@@ -95,18 +107,6 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         await userWallPostRef.update({
           hasPhoto: true,
         });
-      }
-
-      let dir = 'uploads/userWallPost/' + 'photos-' + req.file.originalname;
-
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-      }
-
-      let dir1 = "uploads/userWallPost/" + "videos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir1)) {
-        fs.mkdirSync(dir1);
       }
 
       res.send({ success: true });

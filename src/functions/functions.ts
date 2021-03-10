@@ -82,7 +82,7 @@ export async function updateFirebase(blockchainRes) {
         const updateBuyingOffers = output.UpdateBuyingOffers;
         const updateSellingOffers = output.UpdateSellingOffers;
         const updateMedias = output.UpdateMedias;
-        const updateStreamings = output.UpdateStreamings;
+        // const updateStreamings = output.UpdateStreamings;
         // Insurance
         const updateInsurancePools = output.UpdateInsurancePools;
         const updateInsuranceStates = output.UpdateInsuranceStates;
@@ -247,16 +247,16 @@ export async function updateFirebase(blockchainRes) {
             }
         }
         // update streamings
-        if (updateStreamings) {
-            let streamingId: string = '';
-            let streamingObj: any = null;
-            for ([streamingId, streamingObj] of Object.entries(updateStreamings)) {
-                const podAddress = streamingObj.PodAddress;
-                const mediaSymbol = streamingObj.MediaSymbol;
-                if (podAddress && mediaSymbol) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias)
-                    .doc(mediaSymbol).collection(collections.mediaStreamings).doc(streamingId), streamingObj, { merge: true });
-            }
-        }
+        // if (updateStreamings) {
+        //     let streamingId: string = '';
+        //     let streamingObj: any = null;
+        //     for ([streamingId, streamingObj] of Object.entries(updateStreamings)) {
+        //         const podAddress = streamingObj.PodAddress;
+        //         const mediaSymbol = streamingObj.MediaSymbol;
+        //         if (podAddress && mediaSymbol) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias)
+        //             .doc(mediaSymbol).collection(collections.mediaStreamings).doc(streamingId), streamingObj, { merge: true });
+        //     }
+        // }
         // update pools
         if (updatePools) {
             let poolId: string = '';

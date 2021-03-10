@@ -197,24 +197,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);*/
 
       const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Discussions',
-        creator,
-        user.firstName,
-        'general',
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Information',
-        creator,
-        user.firstName,
-        'announcements',
-        false,
-        []
-      );
+      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
 
       db.collection(collections.community)
         .doc(communityAddress)

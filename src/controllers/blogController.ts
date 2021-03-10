@@ -23,7 +23,6 @@ const communityWallController = require("./communityWallController");
 exports.blogCreate = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    console.log(body);
 
     const userSnap = await db.collection(collections.user).doc(body.author).get();
     const userData: any = userSnap.data();
@@ -32,7 +31,20 @@ exports.blogCreate = async (req: express.Request, res: express.Response) => {
     let isUserRole = await communityWallController.checkUserRole(body.author, userData.email, body.communityId, true, false, []);
 
     if (body && body.communityId && (isCreator || isUserRole.checked )) {
-      let ret = await createPost(body, "blogPost", body.priviUser.id);
+      let ret : any = await createPost(body, "blogPost", body.priviUser.id);
+
+      let dir = "uploads/blogPost/" + "photos-" + ret.id;
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = "uploads/blogPost/" + "videos-" + ret.id;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
+
       res.send({ success: true, data: ret });
     } else if (!isCreator) {
       console.log(
@@ -102,10 +114,7 @@ exports.blogDelete = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.changePostPhoto = async (
-  req: express.Request,
-  res: express.Response
-) => {
+exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
       const blogPostRef = db
@@ -117,18 +126,6 @@ exports.changePostPhoto = async (
         await blogPostRef.update({
           hasPhoto: true,
         });
-      }
-
-      let dir = "uploads/blogPost/" + "photos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir);
-      }
-
-      let dir1 = "uploads/blogPost/" + "videos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir1)) {
-        fs.mkdirSync(dir1);
       }
 
       res.send({ success: true });

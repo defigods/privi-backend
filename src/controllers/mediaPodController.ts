@@ -26,11 +26,50 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         const medias = body.Medias;
         const hash = body.Hash;
         const signature = body.Signature;
+        const creator = body.Creator;
         const blockchainRes = await mediaPod.initiatePod(podInfo, medias, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
+            const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
+
             updateFirebase(output);
-            // TODO: add Name, Description... to doc
+
+            const userRef = db.collection(collections.user).doc(creator);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
+
+            const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
+            await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
+
+            const name = body.Name;
+            const description = body.Description;
+            const mainHashtag = body.MainHashtag;
+            const hashtags = body.Hashtags;
+            const hasPhoto = body.HasPhoto;
+            const openAdvertising = body.OpenAdvertising;
+            const openInvestment = body.OpenInvestment;
+            const media = body.Media;
+
+            await db.collection(collections.mediaPods).doc(podId).set(
+              {
+                  HasPhoto: hasPhoto || false,
+                  Name: name || '',
+                  Description: description || '',
+                  MainHashtag: mainHashtag || '',
+                  Hashtags: hashtags || [],
+                  OpenAdvertising: openAdvertising || false,
+                  OpenInvestment: openInvestment || false,
+                  JarrId: discordChatJarrCreation.id || '',
+                  Date: new Date().getTime(),
+
+                  Media: media || [],
+
+                  Offers: media || []
+
+              }, { merge: true }
+            );
+
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> initiatePod(): ', blockchainRes.message);
@@ -38,7 +77,46 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         }
     } catch (err) {
         console.log('Error in controllers/mediaPodController -> initiatePod(): ', err);
-        res.send({ success: false });
+        res.send({ success: false, error: "Error making request" });
+    }
+};
+
+exports.getMediaPod = async (req: express.Request, res: express.Response) => {
+    try {
+        let params = req.params;
+
+        if(params && params.mediaPodId) {
+            const mediaPodSnap = await db.collection(collections.mediaPods).doc(params.mediaPodId).get();
+
+            // add selling orders
+            const medias: any[] = [];
+            const mediasSnap = await mediaPodSnap.ref.collection(collections.medias).get();
+            mediasSnap.forEach((doc) => medias.push(doc.data()));
+
+            let mediaPod: any = mediaPodSnap.data();
+
+            // add url if empty //
+            if (!mediaPod.hasOwnProperty('urlSlug') || mediaPod.urlSlug == "") {
+                await db.collection(collections.mediaPods).doc(params.mediaPodId).update({
+                    "urlSlug": mediaPod.Name.split(' ').join('')
+                })
+            }
+
+            res.send({
+                success: true,
+                data: {
+                    mediaPod: mediaPod,
+                    medias: medias
+                },
+            });
+
+        } else {
+            console.log('Error in controllers/mediaPodController -> initiatePod(): Media Pod Id not provided');
+            res.send({ success: false, error: 'Media Pod Id not provided' });
+        }
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> registerMedia(): ', err);
+        res.send({ success: false, error: "Error making request" });
     }
 };
 
