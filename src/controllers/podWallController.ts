@@ -34,7 +34,19 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       await podRef.update({
         Posts: posts
-      })
+      });
+
+      let dir = 'uploads/podWallPost/' + 'photos-' + ret.id;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = "uploads/podWallPost/" + "videos-" + ret.id;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
 
       res.send({success: true, data: ret});
     } else if (!isCreator){
@@ -98,18 +110,6 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         await podWallPostRef.update({
           HasPhoto: true
         });
-      }
-
-      let dir = 'uploads/podWallPost/' + 'photos-' + req.file.originalname;
-
-      if (!fs.existsSync(dir)){
-        fs.mkdirSync(dir);
-      }
-
-      let dir1 = "uploads/podWallPost/" + "videos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir1)) {
-        fs.mkdirSync(dir1);
       }
 
       res.send({ success: true });
@@ -525,7 +525,19 @@ exports.postCreateNFT = async (req: express.Request, res: express.Response) => {
 
       await podRef.update({
         Posts: posts
-      })
+      });
+
+      let dir = 'uploads/podNFTWallPost/' + 'photos-' + ret.id;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = 'uploads/podNFTWallPost/' + 'videos-' + ret.id;
+
+      if (!fs.existsSync(dir1)){
+        fs.mkdirSync(dir1);
+      }
 
       res.send({success: true, data: ret});
     } else if (!isCreator){
@@ -588,12 +600,6 @@ exports.changePostPhotoNFT = async (req: express.Request, res: express.Response)
         await podNFTWallPostRef.update({
           HasPhoto: true
         });
-      }
-
-      let dir = 'uploads/podNFTWallPost/' + 'photos-' + req.file.originalname;
-
-      if (!fs.existsSync(dir)){
-        fs.mkdirSync(dir);
       }
 
       res.send({ success: true });

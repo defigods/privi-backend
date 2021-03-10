@@ -33,7 +33,19 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       await insuranceRef.update({
         Posts: posts
-      })
+      });
+
+      let dir = 'uploads/insuranceWallPost/' + 'photos-' + ret.id;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = "uploads/insuranceWallPost/" + "videos-" + ret.id;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
 
       res.send({success: true, data: ret});
     } else if (!isCreator){
@@ -98,18 +110,6 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         await insuranceWallPostRef.update({
           HasPhoto: true
         });
-      }
-
-      let dir = 'uploads/insuranceWallPost/' + 'photos-' + req.file.originalname;
-
-      if (!fs.existsSync(dir)){
-        fs.mkdirSync(dir);
-      }
-
-      let dir1 = "uploads/insuranceWallPost/" + "videos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir1)) {
-        fs.mkdirSync(dir1);
       }
 
       res.send({ success: true });

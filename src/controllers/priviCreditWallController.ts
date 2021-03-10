@@ -33,7 +33,19 @@ exports.postCreate = async (req: express.Request, res: express.Response) => {
 
       await priviCreditsRef.update({
         Posts: posts
-      })
+      });
+
+      let dir = 'uploads/creditWallPost/' + 'photos-' + ret.id;
+
+      if (!fs.existsSync(dir)){
+        fs.mkdirSync(dir);
+      }
+
+      let dir1 = "uploads/creditWallPost/" + "videos-" + ret.id;
+
+      if (!fs.existsSync(dir1)) {
+        fs.mkdirSync(dir1);
+      }
 
       res.send({success: true, data: ret});
     } else if (!isCreator){
@@ -96,18 +108,6 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
         await creditWallPostRef.update({
           HasPhoto: true
         });
-      }
-
-      let dir = 'uploads/creditWallPost/' + 'photos-' + req.file.originalname;
-
-      if (!fs.existsSync(dir)){
-        fs.mkdirSync(dir);
-      }
-
-      let dir1 = "uploads/creditWallPost/" + "videos-" + req.file.originalname;
-
-      if (!fs.existsSync(dir1)) {
-        fs.mkdirSync(dir1);
       }
 
       res.send({ success: true });
