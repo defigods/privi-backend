@@ -53,17 +53,17 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             const openAdvertising = body.OpenAdvertising;
 
             await db.collection(collections.mediaPods).doc(podId).set(
-              {
-                  HasPhoto: hasPhoto || false,
-                  Name: name || '',
-                  Description: description || '',
-                  MainHashtag: mainHashtag || '',
-                  Hashtags: hashtags || [],
-                  OpenAdvertising: openAdvertising || false,
-                  JarrId: discordChatJarrCreation.id || '',
-                  Date: new Date().getTime()
+                {
+                    HasPhoto: hasPhoto || false,
+                    Name: name || '',
+                    Description: description || '',
+                    MainHashtag: mainHashtag || '',
+                    Hashtags: hashtags || [],
+                    OpenAdvertising: openAdvertising || false,
+                    JarrId: discordChatJarrCreation.id || '',
+                    Date: new Date().getTime()
 
-              }, { merge: true }
+                }, { merge: true }
             );
 
             res.send({ success: true, data: podId });
@@ -81,7 +81,7 @@ exports.getMediaPod = async (req: express.Request, res: express.Response) => {
     try {
         let params = req.params;
 
-        if(params && params.mediaPodId) {
+        if (params && params.mediaPodId) {
             const mediaPodSnap = await db.collection(collections.mediaPods).doc(params.mediaPodId).get();
 
             // add selling orders
@@ -216,6 +216,53 @@ exports.buyMediaToken = async (req: express.Request, res: express.Response) => {
         res.send({ success: false });
     }
 };
+
+exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.Trader;
+        const podAddress = body.PodAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await mediaPod.buyPodTokens(trader, podAddress, amount, hash, signature, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const output = blockchainRes.output;
+            updateFirebase(output);
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/mediaPodController -> buyPodTokens(): ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> buyPodTokens(): ', err);
+        res.send({ success: false });
+    }
+};
+
+exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const trader = body.Trader;
+        const podAddress = body.PodAddress;
+        const amount = body.Amount;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await mediaPod.sellPodTokens(trader, podAddress, amount, hash, signature, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+            const output = blockchainRes.output;
+            updateFirebase(output);
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/mediaPodController -> sellPodTokens(): ', blockchainRes.message);
+            res.send({ success: false });
+        }
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> sellPodTokens(): ', err);
+        res.send({ success: false });
+    }
+};
+
 
 exports.changeMediaPodPhoto = async (req: express.Request, res: express.Response) => {
     try {
