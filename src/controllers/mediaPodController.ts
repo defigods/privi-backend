@@ -27,12 +27,15 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         const hash = body.Hash;
         const signature = body.Signature;
         const creator = body.Creator;
+        console.log(podInfo, medias, hash, signature, apiKey);
         const blockchainRes = await mediaPod.initiatePod(podInfo, medias, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
 
-            updateFirebase(output);
+            console.log(output);
+
+            updateFirebase(blockchainRes);
 
             const userRef = db.collection(collections.user).doc(creator);
             const userGet = await userRef.get();
@@ -48,8 +51,6 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             const hashtags = body.Hashtags;
             const hasPhoto = body.HasPhoto;
             const openAdvertising = body.OpenAdvertising;
-            const openInvestment = body.OpenInvestment;
-            const media = body.Media;
 
             await db.collection(collections.mediaPods).doc(podId).set(
               {
@@ -59,18 +60,13 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
                   MainHashtag: mainHashtag || '',
                   Hashtags: hashtags || [],
                   OpenAdvertising: openAdvertising || false,
-                  OpenInvestment: openInvestment || false,
                   JarrId: discordChatJarrCreation.id || '',
-                  Date: new Date().getTime(),
-
-                  Media: media || [],
-
-                  Offers: media || []
+                  Date: new Date().getTime()
 
               }, { merge: true }
             );
 
-            res.send({ success: true });
+            res.send({ success: true, data: podId });
         } else {
             console.log('Error in controllers/mediaPodController -> initiatePod(): ', blockchainRes.message);
             res.send({ success: false });
@@ -218,5 +214,30 @@ exports.buyMediaToken = async (req: express.Request, res: express.Response) => {
     } catch (err) {
         console.log('Error in controllers/mediaPodController -> buyMediaToken(): ', err);
         res.send({ success: false });
+    }
+};
+
+exports.changeMediaPodPhoto = async (req: express.Request, res: express.Response) => {
+    try {
+        if (req.file) {
+            const mediaPodRef = db.collection(collections.mediaPods).doc(req.file.originalname);
+
+            const mediaPodGet = await mediaPodRef.get();
+            const mediaPod: any = await mediaPodGet.data();
+
+            if (mediaPod.HasPhoto !== undefined) {
+                await mediaPodRef.update({
+                    HasPhoto: true
+                });
+            }
+
+            res.send({ success: true });
+        } else {
+            console.log('Error in controllers/podController -> changeMediaPodPhoto()', "There's no file...");
+            res.send({ success: false, error: "There's no file..." });
+        }
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> changeMediaPodPhoto(): ', err);
+        res.send({ success: false, error: err });
     }
 };

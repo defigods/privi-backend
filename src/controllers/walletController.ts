@@ -20,7 +20,7 @@ import cron from 'node-cron';
 import { user } from 'firebase-functions/lib/providers/auth';
 import { Address } from 'ethereumjs-util';
 import path from 'path';
-import fs from 'fs';
+import fs, { promises } from 'fs';
 import { AMBERDATA_API_KEY, MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE } from '../constants/configuration';
 
 require('dotenv').config();
@@ -438,7 +438,56 @@ async function getImageURLFromCoinGeco(symbol: string): Promise<any> {
   return undefined;
 }
 
+async function checkRoll(tokenSymbol:string) : Promise<any>{
+  console.log('--------------------------------calling checkRoll-----------------------------')
+  const config: AxiosRequestConfig = {
+    method: 'get',
+    // headers: { 'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY },
+    url: 'https://app.tryroll.com/token/' + tokenSymbol
+  }
+
+  /**
+   *  for the momento we didn't find a official api for rarible,
+   *  so we implent this quick dirty hack :(  
+   *  we check via this url if the token exist on rarible
+   *  if exit the ok we say it exist 
+   *  if fail we say it does not exist
+   *  that is it.
+   * 
+   * */ 
+  try {
+    await axios(config);
+    console.log('--------------------------------checkRoll try pass', tokenSymbol)
+    return {exist: true, url: 'https://app.tryroll.com/token/' + tokenSymbol};
+  } catch (error) {
+    console.log('---------------------------------checkRoll try fail', error );
+    return {exist: false, url: null};
+  }
+  
+}
+
+async function checkOpenSea(contractAddress:string) : Promise<any>{
+  console.log('--------------------------------calling open Sea-----------------------------')
+  const config: AxiosRequestConfig = {
+    method: 'get',
+    // headers: { 'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY },
+    url: 'https://api.opensea.io/api/v1/asset_contract/' + contractAddress
+  }
+  
+  let openSeaRes = await axios(config);
+  // console.log('--------------------------------checkOpenSea', openSeaRes.data)
+  if (openSeaRes && openSeaRes.data) {
+    return {
+      openSeaPage: 'https://opensea.io/assets/' + openSeaRes.data.collection.slug,
+      openSeaImageUrl: openSeaRes.data.image_url
+    };
+  } else {
+    return null;
+  }
+}
+
 async function getTokenListFromAmberData(address: string): Promise<any> {
+  console.log('----------------------------------getTokenListFromAmberData called')
   const config: AxiosRequestConfig = {
     method: 'get',
     headers: { 'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY },
@@ -448,17 +497,25 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
   let amberdataRes = await axios(config);
   if (amberdataRes.data.payload && parseFloat(amberdataRes.data.payload.totalRecords) > 0) {
     // console.log('registerUserEthAccount records', amberdataRes.data.payload.records)
+    console.log('----------------------------------getTokenListFromAmberData has amber')
     const records = amberdataRes.data.payload.records;
     const preparedTokenListPromise = Promise.all(records.map(async (element) => {
       const imageUrlObj = await getImageURLFromCoinGeco(element.symbol);
+      const roll = element.isERC721 ? await checkRoll(element.symbol) : null;
+      const openSea = element.isERC721 ? await checkOpenSea(element.address) : null; // test erc721 contract 0xf766b3e7073f5a6483e27de20ea6f59b30b28f87
       return {
         tokenContractAddress: element.address,
         tokenName: element.name,
         tokenSymbol: element.symbol,
         tokenDecimal: element.decimals,
-        tokenType: element.isERC20 ? 'ERC20' : element.isERC721 ? 'ERC721' : 'UNKNOWN',
+        tokenType: element.isERC20 ? 'CRYPTO' : element.isERC721 ? 'NFT' : element.isERC721 && roll && roll.exist ? 'SOCIAL' : 'UNKNOWN',
         balance: element.amount,
-        images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND'
+        images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND',
+        isOpenSea: element.isERC721 && openSea,
+        openSeaImage: element.isERC721 && openSea ? openSea.openSeaImageUrl : 'NO_OPENSEA',
+        openSeaPage: element.isERC721 && openSea ? openSea.openSeaPage : 'NO_OPENSEA',
+        isRoll: roll && roll.exist ? roll.exist : false,
+        rollPage: roll && roll.exist ? roll.url : 'NO_RARIBLE'
       }
     })
     );
@@ -486,7 +543,7 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
     if (walletRegisteredEthAddrSnap.exists) {
       console.log('registerUserEthAccount: already exist, address', address, 'user', userId)
       const doc: any = walletRegisteredEthAddrSnap.data();
-      console.log('existing doc', doc, (Date.now() - doc.lastUpdate), MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
+      // console.log('existing doc', doc, (Date.now() - doc.lastUpdate), MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
       if (doc.lastUpdate && ((Date.now() - doc.lastUpdate) > MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)) {
         const preparedTokenList = await getTokenListFromAmberData(address);
         await db.collection(collections.wallet)
