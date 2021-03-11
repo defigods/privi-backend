@@ -191,6 +191,17 @@ exports.changePostDescriptionPhotos = async (
 exports.addVideoPost = async (req: express.Request, res: express.Response) => {
   try{
     if (req.file && req.file.originalname && req.params && req.params.blogPostId) {
+      const blogPostRef = db
+        .collection(collections.blogPost)
+        .doc(req.params.blogPostId);
+      const blogPostGet = await blogPostRef.get();
+      const blogPost: any = blogPostGet.data();
+
+      let videosArray = blogPost.videosId || [];
+      videosArray.push(req.file.originalname);
+      await blogPostRef.update({
+        videosId: videosArray
+      });
 
       res.send({
         success: true,
@@ -1277,6 +1288,7 @@ const createPost = (exports.createPost = (body, collection, userId) => {
           responses: [],
           pinned: false,
           hasPhoto: hasPhoto,
+          videosId: [],
           createdBy: userId,
           createdAt: Date.now(),
           updatedAt: null,

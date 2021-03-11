@@ -161,6 +161,16 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
 exports.addVideoPost = async (req: express.Request, res: express.Response) => {
   try{
     if (req.file && req.file.originalname && req.params && req.params.insuranceWallPostId) {
+      const insuranceWallPostRef = db.collection(collections.insuranceWallPost)
+        .doc(req.params.insuranceWallPostId);
+      const insuranceWallPostGet = await insuranceWallPostRef.get();
+      const insuranceWallPost: any = insuranceWallPostGet.data();
+
+      let videosArray = insuranceWallPost.videosId || [];
+      videosArray.push(req.file.originalname);
+      await insuranceWallPostRef.update({
+        videosId: videosArray
+      });
 
       res.send({
         success: true,

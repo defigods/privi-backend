@@ -157,6 +157,15 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
 exports.addVideoPost = async (req: express.Request, res: express.Response) => {
   try{
     if (req.file && req.file.originalname && req.params && req.params.userWallPostId) {
+      const userWallPostRef = db.collection(collections.userWallPost).doc(req.params.userWallPostId);
+      const userWallPostGet = await userWallPostRef.get();
+      const userWallPost: any = userWallPostGet.data();
+
+      let videosArray = userWallPost.videosId || [];
+      videosArray.push(req.file.originalname);
+      await userWallPostRef.update({
+        videosId: videosArray
+      });
 
       res.send({
         success: true,

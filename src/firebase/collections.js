@@ -66,6 +66,7 @@ module.exports = {
   supplyHistory: 'SupplyHistory',
   podRoleInvitation: 'PodRoleInvitation',
   mediaPods: "MediaPods",
+  trendingMediaPods: 'TrendingMediaPods',
   medias: "Medias",
   streamingListeners: "StreamingListeners",
   streamers: "Streamers",
