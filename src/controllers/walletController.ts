@@ -6,21 +6,15 @@ import {
   getEmailUidMap,
   getTokenToTypeMap,
   getEmailAddressMap,
-  getUidAddressMap,
+  getMarketPrice,
 } from '../functions/functions';
-import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
-import coinBalance, { balanceOf } from '../blockchain/coinBalance.js';
+import coinBalance from '../blockchain/coinBalance.js';
 import express from 'express';
-const currencySymbol = require('currency-symbol');
-import { countDecimals } from '../functions/utilities';
-import { identifyTypeOfToken } from '../functions/functions';
 import cron from 'node-cron';
-import { user } from 'firebase-functions/lib/providers/auth';
-import { Address } from 'ethereumjs-util';
 import path from 'path';
-import fs, { promises } from 'fs';
+import fs from 'fs';
 import { AMBERDATA_API_KEY, MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE } from '../constants/configuration';
 
 require('dotenv').config();
@@ -438,7 +432,7 @@ async function getImageURLFromCoinGeco(symbol: string): Promise<any> {
   return undefined;
 }
 
-async function checkRoll(tokenSymbol:string) : Promise<any>{
+async function checkRoll(tokenSymbol: string): Promise<any> {
   console.log('--------------------------------calling checkRoll-----------------------------')
   const config: AxiosRequestConfig = {
     method: 'get',
@@ -454,26 +448,26 @@ async function checkRoll(tokenSymbol:string) : Promise<any>{
    *  if fail we say it does not exist
    *  that is it.
    * 
-   * */ 
+   * */
   try {
     await axios(config);
     console.log('--------------------------------checkRoll try pass', tokenSymbol)
-    return {exist: true, url: 'https://app.tryroll.com/token/' + tokenSymbol};
+    return { exist: true, url: 'https://app.tryroll.com/token/' + tokenSymbol };
   } catch (error) {
-    console.log('---------------------------------checkRoll try fail', error );
-    return {exist: false, url: null};
+    console.log('---------------------------------checkRoll try fail', error);
+    return { exist: false, url: null };
   }
-  
+
 }
 
-async function checkOpenSea(contractAddress:string) : Promise<any>{
+async function checkOpenSea(contractAddress: string): Promise<any> {
   console.log('--------------------------------calling open Sea-----------------------------')
   const config: AxiosRequestConfig = {
     method: 'get',
     // headers: { 'x-amberdata-blockchain-id': 'ethereum-mainnet', 'x-api-key': AMBERDATA_API_KEY },
     url: 'https://api.opensea.io/api/v1/asset_contract/' + contractAddress
   }
-  
+
   let openSeaRes = await axios(config);
   // console.log('--------------------------------checkOpenSea', openSeaRes.data)
   if (openSeaRes && openSeaRes.data) {
@@ -589,6 +583,10 @@ module.exports.getUserTokenTypeBalanceHistory = async (req: express.Request, res
     const socialHistory: any[] = [];
     const ftHistory: any[] = [];
     const nftHistory: any[] = [];
+    const cryptoList: any[] = [];
+    const socialList: any[] = [];
+    const ftList: any[] = [];
+    const nftList: any[] = [];
 
     const cryptoHistorySnap = await db.collection(collections.user).doc(userId).collection(collections.historyCrypto).orderBy('date', 'asc').get();
     const socialHistorySnap = await db.collection(collections.user).doc(userId).collection(collections.historySocial).orderBy('date', 'asc').get();
@@ -603,11 +601,79 @@ module.exports.getUserTokenTypeBalanceHistory = async (req: express.Request, res
       cryptoHistory: cryptoHistory,
       socialHistory: socialHistory,
       ftHistory: ftHistory,
-      nftHistory: nftHistory
+      nftHistory: nftHistory,
+      cryptoList: cryptoList,
+      socialList: socialList,
+      ftList: ftList,
+      nftList: nftList
     };
     res.send({ success: true, data: retData });
   } catch (err) {
     console.log('Error in controllers/walletController -> getUserTokenTypeBalanceHistory()', err);
+    res.send({ success: false });
+  }
+};
+
+module.exports.getUserTokenListByType = async (req: express.Request, res: express.Response) => {
+  try {
+    let { address } = req.query;
+    address = address!.toString();
+    let typeToTokenListMap: any = {};
+    // const cryptoList: any[] = [];
+    const communityList: any[] = [];
+    const socialList: any[] = [];
+    const ftList: any[] = [];
+    // const nftList: any[] = [];
+    let blockchainRes = await coinBalance.getTokensOfAddress(address);
+    if (blockchainRes && blockchainRes.success) {
+      typeToTokenListMap = blockchainRes.output;
+    }
+    const communitySnaps = typeToTokenListMap.COMMUNITY ? await db.collection(collections.community).where('TokenSymbol', 'in', typeToTokenListMap.COMMUNITY).get() : [];
+    const socialSnaps = typeToTokenListMap.SOCIAL ? await db.collection(collections.socialPools).where('TokenSymbol', 'in', typeToTokenListMap.SOCIAL).get() : [];
+    const ftSnaps = typeToTokenListMap.FTPOD ? await db.collection(collections.podsFT).where('TokenSymbol', 'in', typeToTokenListMap.FTPOD).get() : [];
+    communitySnaps.forEach((doc) => {
+      const data: any = doc.data();
+      const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
+      communityList.push({
+        Token: data.TokenSymbol,
+        Name: data.TokenName,
+        Type: 'COMMUNITY',
+        Price: price,
+        ChangeRate: 0
+      })
+    });
+    socialSnaps.forEach((doc) => {
+      const data: any = doc.data();
+      const price = getMarketPrice(data.AMM, data.SupplyReleased, data.InitialSupply, data.TargetPrice, data.TargetSupply);
+      socialList.push({
+        Token: data.TokenSymbol,
+        Name: data.TokenName,
+        Type: 'SOCIAL',
+        Price: price,
+        ChangeRate: 0
+      })
+    });
+    ftSnaps.forEach((doc) => {
+      const data: any = doc.data();
+      console.log(data);
+      const price = getMarketPrice(data.AMM, data.SupplyReleased);
+      ftList.push({
+        Token: data.TokenSymbol,
+        Name: data.TokenName,
+        Type: 'FTPOD',
+        Price: price,
+        ChangeRate: 0
+      })
+    });
+    const retData = {
+      // cryptoList: cryptoList,
+      socialList: socialList.concat(communityList),
+      ftList: ftList,
+      // nftList: nftList
+    };
+    res.send({ success: true, data: retData });
+  } catch (err) {
+    console.log('Error in controllers/walletController -> getUserTokenListByType()', err);
     res.send({ success: false });
   }
 };

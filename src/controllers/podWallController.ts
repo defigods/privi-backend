@@ -161,6 +161,16 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
 exports.addVideoPost = async (req: express.Request, res: express.Response) => {
   try{
     if (req.file && req.file.originalname && req.params && req.params.podWallPostId) {
+      const podWallPostRef = db.collection(collections.podWallPost)
+        .doc(req.params.podWallPostId);
+      const podWallPostGet = await podWallPostRef.get();
+      const podWallPost: any = podWallPostGet.data();
+
+      let videosArray = podWallPost.videosId || [];
+      videosArray.push(req.file.originalname);
+      await podWallPostRef.update({
+        videosId: videosArray
+      });
 
       res.send({
         success: true,
@@ -651,6 +661,16 @@ exports.changePostDescriptionPhotosNFT = async (req: express.Request, res: expre
 exports.addVideoPostNFT = async (req: express.Request, res: express.Response) => {
   try{
     if (req.file && req.file.originalname && req.params && req.params.podNFTWallPostId) {
+      const podNFTWallPostRef = db.collection(collections.podNFTWallPost)
+        .doc(req.params.podNFTWallPostId);
+      const podNFTWallPostGet = await podNFTWallPostRef.get();
+      const podNFTWallPost: any = podNFTWallPostGet.data();
+
+      let videosArray = podNFTWallPost.videosId || [];
+      videosArray.push(req.file.originalname);
+      await podNFTWallPostRef.update({
+        videosId: videosArray
+      });
 
       res.send({
         success: true,

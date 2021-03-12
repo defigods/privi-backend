@@ -46,7 +46,8 @@ router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.ge
 router.get('/getAllTokenBalances/:address', authenticateJWT, walletController.getAllTokenBalances); // all token balances of the user with extra data (Type, ...)
 router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.getAllTokensWithBuyingPrice);
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
-router.get('/getUserTokenTypeBalanceHistory', walletController.getUserTokenTypeBalanceHistory);
+router.get('/getUserTokenTypeBalanceHistory', authenticateJWT, walletController.getUserTokenTypeBalanceHistory);
+router.get('/getUserTokenListByType', authenticateJWT, walletController.getUserTokenListByType);
 
 //token images
 router.get('/getTokenPhoto/:tokenSymbol', walletController.getTokenPhotoById);

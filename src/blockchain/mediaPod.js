@@ -69,6 +69,41 @@ module.exports.buyMediaToken = async (buyer, podAddress, mediaSymbol, amount, ha
     return blockchainRes.data;
 };
 
+module.exports.buyPodTokens = async (trader, podAddress, amount, hash, signature, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/buyPodTokens", {
+        Trader: trader,
+        PodAddress: podAddress,
+        Amount: amount,
+        Hash: hash,
+        Signature: signature,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
+
+module.exports.sellPodTokens = async (trader, podAddress, amount, hash, signature, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/sellPodTokens", {
+        Trader: trader,
+        PodAddress: podAddress,
+        Amount: amount,
+        Hash: hash,
+        Signature: signature,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
+
+module.exports.updateCollabs = async (podAddress, mediaSymbol, collabs, hash, signature, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/updateCollabs", {
+        PodAddress: podAddress,
+        MediaSymbol: mediaSymbol,
+        Collabs: collabs,
+        Hash: hash,
+        Signature: signature,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
 
 
 

@@ -159,6 +159,16 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
 exports.addVideoPost = async (req: express.Request, res: express.Response) => {
   try{
     if (req.file && req.file.originalname && req.params && req.params.creditWallPostId) {
+      const creditWallPostRef = db.collection(collections.creditWallPost)
+        .doc(req.params.creditWallPostId);
+      const creditWallPostGet = await creditWallPostRef.get();
+      const creditWallPost: any = creditWallPostGet.data();
+
+      let videosArray = creditWallPost.videosId || [];
+      videosArray.push(req.file.originalname);
+      await creditWallPostRef.update({
+        videosId: videosArray
+      });
 
       res.send({
         success: true,
