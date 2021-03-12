@@ -43,15 +43,9 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
-      podAddress,
-      mediaSymbol,
-      hash,
-      signature,
-      apiKey
-    );
+    const blockchainRes = await mediaPod.initiateMediaLiveStreaming(podAddress, mediaSymbol, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);  // update media inside pod obj
+      updateFirebase(blockchainRes); // update media inside pod obj
       // add media in an outer colection "Streaming"
       const output = blockchainRes.output;
       const updateMedias = output.UpdateMedias;
@@ -63,16 +57,23 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
         const streamerAddresses = Object.keys(streamerPrortions);
         // add the streamer docs for accumulated price tracking
         streamerAddresses.forEach((streamerAddress) => {
-          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamers).doc(streamerAddress).set({
-            AccumulatedAmount: 0,
-            PricePerSecond: 0,
-            LastUpdate: Date.now()
-          });
+          db.collection(collections.streaming)
+            .doc(mediaSymbol)
+            .collection(collections.streamers)
+            .doc(streamerAddress)
+            .set({
+              AccumulatedAmount: 0,
+              PricePerSecond: 0,
+              LastUpdate: Date.now(),
+            });
         });
       }
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.', blockchainRes.message);
+      console.log(
+        'Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.',
+        blockchainRes.message
+      );
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -99,7 +100,7 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
       apiKey
     );
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);  // update media inside pod
+      updateFirebase(blockchainRes); // update media inside pod
       // update media in "Streaming"
       const output = blockchainRes.output;
       const updateStreaming = output.UpdateStreaming;
@@ -112,7 +113,11 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
         totalPricePerSecond += pricePerSecond;
         // update the receiver (streamers)
         if (receiverAddress && pricePerSecond) {
-          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamers).doc(receiverAddress).get()
+          db.collection(collections.streaming)
+            .doc(mediaSymbol)
+            .collection(collections.streamers)
+            .doc(receiverAddress)
+            .get()
             .then((streamerSnap) => {
               // store curr accumulated price, update LastUpadte field and pricePerSecond
               const data: any = streamerSnap;
@@ -126,21 +131,34 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
               streamerSnap.ref.update({
                 AccumulatedAmount: newAccumulatedAmount,
                 PricePerSecond: newPricePerSecond,
-                LastUpdate: newLastUpdate
-              })
-            })
+                LastUpdate: newLastUpdate,
+              });
+            });
         }
-        db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener)
-          .collection(collections.streamings).doc(streamingId).set(streamingObj, { merge: true });
+        db.collection(collections.streaming)
+          .doc(mediaSymbol)
+          .collection(collections.streamingListeners)
+          .doc(listener)
+          .collection(collections.streamings)
+          .doc(streamingId)
+          .set(streamingObj, { merge: true });
       }
       // update listener (watcher)
-      await db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).set({
-        JoinedAt: Date.now(),
-        PricePerSecond: totalPricePerSecond
-      });
+      await db
+        .collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .set({
+          JoinedAt: Date.now(),
+          PricePerSecond: totalPricePerSecond,
+        });
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.', blockchainRes.message);
+      console.log(
+        'Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.',
+        blockchainRes.message
+      );
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -156,24 +174,28 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
     const listener = body.Listener;
     const podAddress = body.PodAddress;
     const mediaSymbol = body.MediaSymbol;
-    const blockchainRes = await mediaPod.exitMediaLiveStreaming(
-      listener,
-      podAddress,
-      mediaSymbol,
-      apiKey
-    );
+    const blockchainRes = await mediaPod.exitMediaLiveStreaming(listener, podAddress, mediaSymbol, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // delete listener doc inside media and updating streamer doc fields
-      const listenerStreamingSnap = await db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners)
-        .doc(listener).collection(collections.streamings).get();
+      const listenerStreamingSnap = await db
+        .collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .collection(collections.streamings)
+        .get();
       listenerStreamingSnap.forEach((doc) => {
         const data: any = doc.data();
         const receiverAddress = data.ReceiverAddress;
         const pricePerSecond = data.AmountPerPeriod; // price per second
         // update the receivers (streamers)
         if (receiverAddress && pricePerSecond) {
-          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamers).doc(receiverAddress).get()
+          db.collection(collections.streaming)
+            .doc(mediaSymbol)
+            .collection(collections.streamers)
+            .doc(receiverAddress)
+            .get()
             .then((streamerSnap) => {
               // store curr accumulated price, update LastUpadte field and pricePerSecond
               const data: any = streamerSnap;
@@ -187,16 +209,23 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
               streamerSnap.ref.update({
                 AccumulatedAmount: newAccumulatedAmount,
                 PricePerSecond: newPricePerSecond,
-                LastUpdate: newLastUpdate
-              })
-            })
+                LastUpdate: newLastUpdate,
+              });
+            });
         }
         doc.ref.delete();
-      })
-      db.collection(collections.streaming).doc(mediaSymbol).collection(collections.streamingListeners).doc(listener).delete();
+      });
+      db.collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .delete();
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> exitMediaLiveStreaming(): success = false.', blockchainRes.message);
+      console.log(
+        'Error in controllers/streaming -> exitMediaLiveStreaming(): success = false.',
+        blockchainRes.message
+      );
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -204,7 +233,6 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
     res.send({ success: false });
   }
 };
-
 
 // viewer joins to the steaming (a call per viewer)
 exports.initiateStreaming = async (req: express.Request, res: express.Response) => {
@@ -365,7 +393,60 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
           RoomState: ROOM_STATE.GOING,
         });
         let resData = docSnap.data();
-        res.send({ success: true, StreamingUrl: data.url, data: resData });
+
+        // BLockchain Integration part
+
+        try {
+          const body = req.body;
+          const podAddress = body.PodAddress;
+          const mediaSymbol = body.MediaSymbol;
+          const hash = body.Hash;
+          const signature = body.Signature;
+          const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
+            podAddress,
+            mediaSymbol,
+            hash,
+            signature,
+            apiKey
+          );
+          if (blockchainRes && blockchainRes.success) {
+            updateFirebase(blockchainRes); // update media inside pod obj
+            // add media in an outer colection "Streaming"
+            const output = blockchainRes.output;
+            const updateMedias = output.UpdateMedias;
+            let mediaSymbol: string = '';
+            let mediaObj: any = null;
+            for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
+              db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
+              const streamerPrortions = mediaObj.StreamingProportions;
+              const streamerAddresses = Object.keys(streamerPrortions);
+              // add the streamer docs for accumulated price tracking
+              streamerAddresses.forEach((streamerAddress) => {
+                db.collection(collections.streaming)
+                  .doc(mediaSymbol)
+                  .collection(collections.streamers)
+                  .doc(streamerAddress)
+                  .set({
+                    AccumulatedAmount: 0,
+                    PricePerSecond: 0,
+                    LastUpdate: Date.now(),
+                  });
+              });
+            }
+            res.send({ success: true, StreamingUrl: data.url, data: resData });
+          } else {
+            console.log(
+              'Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.',
+              blockchainRes.message
+            );
+            res.send({ success: false, error: blockchainRes.message });
+          }
+        } catch (err) {
+          console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
+          res.send({ success: false });
+        }
+
+        /// End Blockchain Integration Part.
       } catch (err) {
         res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
       }
