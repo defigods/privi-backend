@@ -93,6 +93,17 @@ module.exports.sellPodTokens = async (trader, podAddress, amount, hash, signatur
     return blockchainRes.data;
 };
 
+module.exports.updateCollabs = async (podAddress, mediaSymbol, collabs, hash, signature, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/updateCollabs", {
+        PodAddress: podAddress,
+        MediaSymbol: mediaSymbol,
+        Collabs: collabs,
+        Hash: hash,
+        Signature: signature,
+        Caller: caller
+    });
+    return blockchainRes.data;
+};
 
 
 
