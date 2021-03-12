@@ -1317,7 +1317,7 @@ exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
 };
 
 // filtering the top 10 pods with most followers
-const countLastWeekPods = (allPodsArray): Promise<any[]> => {
+const countLastWeekPods = exports.countLastWeekPods = (allPodsArray): Promise<any[]> => {
   return new Promise<any[]>((resolve, reject) => {
     let lastWeek = new Date();
     let pastDate = lastWeek.getDate() - 7;

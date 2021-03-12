@@ -27,7 +27,12 @@ router.post('/investPod', authenticateJWT, mediaPodController.investPod);
 router.post('/changeMediaPodPhoto', authenticateJWT, upload.single('image'), mediaPodController.changeMediaPodPhoto);
 
 // GETS
-router.post('/getMediaPod/:mediaPodId', authenticateJWT, mediaPodController.getMediaPod);
+router.get('/getMyMediaPods/:userId', authenticateJWT, mediaPodController.getMyMediaPods);
+router.get('/getTrendingMediaPods', authenticateJWT, mediaPodController.getTrendingMediaPods);
+router.get('/getOtherMediaPods/:userId', authenticateJWT, mediaPodController.getOtherMediaPods);
+router.get('/getAllMediaPodsInfo/:pagination/:lastId', authenticateJWT, mediaPodController.getAllMediaPodsInfo);
+router.get('/getMediaPod/:mediaPodId', authenticateJWT, mediaPodController.getMediaPod);
+router.get('/getPhoto/:podId', mediaPodController.getPhotoById);
 
 
 module.exports = router;

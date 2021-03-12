@@ -15,6 +15,7 @@ import mediaPod from '../blockchain/mediaPod';
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
+const podController = require('./podController');
 const tasks = require('./tasksController');
 require('dotenv').config();
 const apiKey = 'PRIVI'; // process.env.API_KEY;
@@ -76,6 +77,132 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         res.send({ success: false, error: "Error making request" });
     }
 };
+
+exports.getMyMediaPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+        const userRef = db.collection(collections.user).doc(userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+
+        res.send({ success: true, data: user.myMediaPods || [] });
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> getMyMediaPods(): ', err);
+        res.send({ success: false, error: "Error making request" });
+    }
+};
+
+exports.getTrendingMediaPods = async (req: express.Request, res: express.Response) => {
+    try {
+        const trendingMediaPods: any[] = [];
+        const MediaPodsSnap = await db.collection(collections.trendingMediaPods).get();
+        for (let podSnap of MediaPodsSnap.docs) {
+            let podData = podSnap.data()
+            let mediaPod = await db.collection(collections.mediaPods).doc(podData.id).get();
+            if (mediaPod.exists) {
+                trendingMediaPods.push(mediaPod.data());
+            }
+        }
+        res.send({ success: true, data: { trending: trendingMediaPods } });
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> getTrendingMediaPods(): ', err);
+        res.send({ success: false, error: "Error making request" });
+    }
+};
+
+exports.setTrendingMediaPods = cron.schedule('* * * * *', async () => {
+    try {
+        let allMediaPods: any[] = [];
+        let podsMedia = await db.collection(collections.mediaPods).get();
+        podsMedia.docs.forEach((p) => {
+            let data = p.data();
+            data.id = p.id;
+            allMediaPods.push(data);
+        });
+        let trendingMediaPods: any[] = await podController.countLastWeekPods(allMediaPods);
+
+        let batch = db.batch();
+
+        await db
+          .collection(collections.trendingMediaPods)
+          .listDocuments()
+          .then((val) => {
+              val.map((val) => {
+                  batch.delete(val);
+              });
+          });
+        await trendingMediaPods.forEach((doc) => {
+            let docRef = db.collection(collections.trendingMediaPods).doc();
+            batch.set(docRef, { id: doc.id });
+        });
+        await batch.commit();
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> setTrendingMediaPods()', err);
+    }
+});
+
+exports.getOtherMediaPods = async (req: express.Request, res: express.Response) => {
+    try {
+        let userId = req.params.userId;
+
+        const userRef = db.collection(collections.user).doc(userId);
+        const userGet = await userRef.get();
+        const user: any = userGet.data();
+
+        let query;
+        for (const pod of user.myMediaPods) {
+            query = db.collection(collections.mediaPods).where('PodAddress', '!=', pod.PodAddress);
+        }
+        if (!query) {
+            query = db.collection(collections.mediaPods);
+        }
+
+        let podsMediaSnap = await query.get();
+        let podsMedia: any[] = [];
+        podsMediaSnap.docs.forEach((p) => {
+            podsMedia.push(p.data());
+        });
+
+        res.send({ success: true, data: podsMedia });
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> getOtherMediaPods(): ', err);
+        res.send({ success: false, error: "Error making request" });
+    }
+};
+
+exports.getAllMediaPodsInfo = async (req: express.Request, res: express.Response) => {
+    try {
+        const mediaNFTPod = req.query.lastMediaPod;
+        let allMediaPods: any[] = await getMediaPods(mediaNFTPod);
+        res.send({
+            success: true,
+            data: allMediaPods ?? []
+        });
+    } catch (err) {
+        console.log('Error in controllers/mediaPodController -> getAllMediaPodsInfo(): ', err);
+        res.send({ success: false, error: "Error making request" });
+    }
+};
+
+
+// function to get all NFT Pods
+const getMediaPods = (exports.getNFTPods = (lastMediaPod): Promise<any[]> => {
+    return new Promise<any[]>(async (resolve, reject) => {
+        let podsMedia;
+        if (lastMediaPod) {
+            podsMedia = await db.collection(collections.mediaPods).startAfter(lastMediaPod).limit(5).get();
+        } else {
+            podsMedia = await db.collection(collections.mediaPods).limit(6).get();
+        }
+
+        let array: any[] = [];
+        podsMedia.docs.map((doc, i) => {
+            array.push(doc.data());
+        });
+        resolve(array);
+    });
+});
 
 exports.getMediaPod = async (req: express.Request, res: express.Response) => {
     try {
@@ -285,6 +412,42 @@ exports.changeMediaPodPhoto = async (req: express.Request, res: express.Response
         }
     } catch (err) {
         console.log('Error in controllers/mediaPodController -> changeMediaPodPhoto(): ', err);
+        res.send({ success: false, error: err });
+    }
+};
+
+exports.getPhotoById = async (req: express.Request, res: express.Response) => {
+    try {
+        let podId = req.params.podId;
+        console.log(podId);
+        if (podId) {
+            const directoryPath = path.join('uploads', 'mediaPod');
+            fs.readdir(directoryPath, function (err, files) {
+                //handling error
+                if (err) {
+                    return console.log('Unable to scan directory: ' + err);
+                }
+                //listing all files using forEach
+                files.forEach(function (file) {
+                    // Do whatever you want to do with the file
+                    console.log(file);
+                });
+            });
+
+            // stream the image back by loading the file
+            res.setHeader('Content-Type', 'image');
+            let raw = fs.createReadStream(path.join('uploads', 'mediaPod', podId + '.png'));
+            raw.on('error', function (err) {
+                console.log(err);
+                res.sendStatus(400);
+            });
+            raw.pipe(res);
+        } else {
+            console.log('Error in controllers/podController -> getPhotoById()', "There's no pod id...");
+            res.send({ success: false, error: "There's no pod id..." });
+        }
+    } catch (err) {
+        console.log('Error in controllers/podController -> getPhotoById()', err);
         res.send({ success: false, error: err });
     }
 };
