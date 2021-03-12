@@ -70,7 +70,6 @@ router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
 router.get('/getBlog/:mediaId/:pagination', mediaController.getMediaBlog);
 
-
 router.post('/uploadDigitalArt/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
 router.post('/uploadVideo/:mediaId', authenticateJWT, upload3.single('video'), mediaController.changeMediaVideo);
