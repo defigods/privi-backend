@@ -918,6 +918,58 @@ export function getSellTokenAmountPod(amm: string, supplyReleased: number, amoun
     return fundingPhase + exchangePhase;
 }
 
+// integral for media pod equations
+function mediaPodIntegral(amm, upper, lower, scale, shift) {
+    switch (amm) {
+        case "LINEAR":
+            var term1 = Math.max((Math.pow(upper, 2) - Math.pow(lower, 2)) / 2, 0);
+            var term2 = Math.max(upper - lower, 0);
+            return scale * (term1 + term2) / 2 + shift;
+        case "QUADRATIC":
+            var term1 = Math.max((Math.pow(upper, 3) - Math.pow(lower, 3)) / 3, 0);
+            var term2 = Math.max(upper - lower, 0);
+            return scale * (term1 + term2) / 3 + shift;
+        case "EXPONENTIAL":
+            return 0;
+        case "SIGMOID":
+            return 0;
+    }
+    return 0;
+}
+
+// return [scale, shift]
+function mediaPodGetFormulaParams(amm, initialPrice, maxPrice, maxSupply, supplyReleased) {
+    let scale = 0;
+    let shift = initialPrice;
+    switch (amm) {
+        case "LINEAR":
+            scale = (maxPrice - initialPrice) / maxSupply;
+            break;
+        case "QUADRATIC":
+            scale = (maxPrice - initialPrice) / Math.pow(maxSupply, 2);
+            break
+        case "EXPONENTIAL":
+            break;
+        case "SIGMOID":
+            break;
+    }
+    return [scale, shift];
+}
+
+// return the funding token amount to pay
+export function getMediaPodBuyingAmount(amm, initialPrice, maxPrice, maxSupply, supplyReleased, podTokenAmount) {
+    const [scale, shift] = mediaPodGetFormulaParams(amm, initialPrice, maxPrice, maxSupply, supplyReleased);
+    const newPodAmount = supplyReleased + podTokenAmount;
+    return mediaPodIntegral(amm, newPodAmount, supplyReleased, scale, shift);
+}
+
+// return the funding token amount to receive
+export function getMediaPodSellingAmount(amm, initialPrice, maxPrice, maxSupply, supplyReleased, podTokenAmount) {
+    const [scale, shift] = mediaPodGetFormulaParams(amm, initialPrice, maxPrice, maxSupply, supplyReleased);
+    const newPodAmount = Math.max(supplyReleased - podTokenAmount, 0);
+    return mediaPodIntegral(amm, supplyReleased, newPodAmount, scale, shift);
+}
+
 // -----------------------------------------
 
 // add 7 days of 0 to History
