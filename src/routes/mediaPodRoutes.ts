@@ -32,6 +32,7 @@ router.get('/getTrendingMediaPods', authenticateJWT, mediaPodController.getTrend
 router.get('/getOtherMediaPods/:userId', authenticateJWT, mediaPodController.getOtherMediaPods);
 router.get('/getAllMediaPodsInfo/:pagination/:lastId', authenticateJWT, mediaPodController.getAllMediaPodsInfo);
 router.get('/getMediaPod/:mediaPodId', authenticateJWT, mediaPodController.getMediaPod);
+router.get('/getPhoto/:podId', mediaPodController.getPhotoById);
 
 
 module.exports = router;
