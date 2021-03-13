@@ -1,9 +1,8 @@
 import express, { response } from 'express';
 import {
     updateFirebase,
-    getRateOfChangeAsMap,
-    createNotification,
-    addZerosToHistory,
+    getMediaPodBuyingAmount,
+    getMediaPodSellingAmount
 } from '../functions/functions';
 import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
@@ -224,6 +223,33 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
 };
 
 
+exports.getBuyingPodFundingTokenAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const podAddress: any = req.query.PodAddress;
+        const amount: any = req.query.Amount;
+        const podSnap = await db.collection(collections.mediaPods).doc(podAddress).get();
+        const podData: any = podSnap.data();
+        const price = getMediaPodBuyingAmount(podData.AMM, podData.FundingTokenPrice, podData.MaxPrice, podData.MaxSupply, podData.SupplyReleased, amount);
+        res.send({ success: true, data: price });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getBuyingPodFundingTokenAmount()', err);
+        res.send({ success: false, error: err });
+    }
+};
+
+exports.getSellingPodFundingTokenAmount = async (req: express.Request, res: express.Response) => {
+    try {
+        const podAddress: any = req.query.PodAddress;
+        const amount: any = req.query.Amount;
+        const podSnap = await db.collection(collections.mediaPods).doc(podAddress).get();
+        const podData: any = podSnap.data();
+        const price = getMediaPodSellingAmount(podData.AMM, podData.FundingTokenPrice, podData.MaxPrice, podData.MaxSupply, podData.SupplyReleased, amount);
+        res.send({ success: true, data: price });
+    } catch (err) {
+        console.log('Error in controllers/podController -> getBuyingPodFundingTokenAmount()', err);
+        res.send({ success: false, error: err });
+    }
+};
 
 // ------------------- POST -----------------
 
