@@ -34,7 +34,15 @@ exports.getEthMediaItem = async (req: express.Request, res: express.Response) =>
 
 exports.changeMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file) {
+    if (req.file &&  req.params && req.params.mediaId) {
+      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media : any = mediasGet.data();
+
+      let mediaEdited = {...media};
+      mediaEdited.IsUploaded = true;
+
+      await mediasRef.update(mediaEdited);
       res.send({ success: true, data: '/media/getDigitalArt/:mediaId' });
     } else {
       console.log('Error in controllers/mediaController -> changeMediaPhoto()', "There's no file...");
@@ -48,7 +56,15 @@ exports.changeMediaPhoto = async (req: express.Request, res: express.Response) =
 
 exports.changeMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file) {
+    if (req.file &&  req.params && req.params.mediaId) {
+      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media : any = mediasGet.data();
+
+      let mediaEdited = {...media};
+      mediaEdited.IsUploaded = true;
+
+      await mediasRef.update(mediaEdited);
       res.send({ success: true, data: '/media/getAudio/:mediaId' });
     } else {
       console.log('Error in controllers/mediaController -> changeMediaPodPhoto()', "There's no file...");
@@ -62,7 +78,15 @@ exports.changeMediaAudio = async (req: express.Request, res: express.Response) =
 
 exports.changeMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file) {
+    if (req.file &&  req.params && req.params.mediaId) {
+      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media : any = mediasGet.data();
+
+      let mediaEdited = {...media};
+      mediaEdited.IsUploaded = true;
+
+      await mediasRef.update(mediaEdited);
       res.send({ success: true, data: '/media/getVideo/:mediaId' });
     } else {
       console.log('Error in controllers/mediaController -> changeMediaVideo()', "There's no file...");
