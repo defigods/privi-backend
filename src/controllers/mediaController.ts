@@ -34,8 +34,9 @@ exports.getEthMediaItem = async (req: express.Request, res: express.Response) =>
 
 exports.changeMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file &&  req.params && req.params.mediaId) {
-      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+    if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
+        .collection(collections.medias).doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
       const media : any = mediasGet.data();
 
@@ -56,8 +57,9 @@ exports.changeMediaPhoto = async (req: express.Request, res: express.Response) =
 
 exports.changeMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file &&  req.params && req.params.mediaId) {
-      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+    if (req.file &&  req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
+        .collection(collections.medias).doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
       const media : any = mediasGet.data();
 
@@ -78,8 +80,9 @@ exports.changeMediaAudio = async (req: express.Request, res: express.Response) =
 
 exports.changeMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file &&  req.params && req.params.mediaId) {
-      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+    if (req.file &&  req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
+        .collection(collections.medias).doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
       const media : any = mediasGet.data();
 
@@ -101,8 +104,9 @@ exports.changeMediaVideo = async (req: express.Request, res: express.Response) =
 exports.changeMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
-    if (body && body.mediaId) {
-      const mediasRef = db.collection(collections.medias).doc(body.mediaId);
+    if (body && body.mediaId && body.mediaPod) {
+      const mediasRef = db.collection(collections.mediaPods).doc(body.mediaPod)
+        .collection(collections.medias).doc(body.mediaId);
       const mediasGet = await mediasRef.get();
       const media : any = mediasGet.data();
 
@@ -125,8 +129,9 @@ exports.changeMediaBlog = async (req: express.Request, res: express.Response) =>
 
 exports.changeMediaBlogVideo = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file && req.file.originalname && req.params && req.params.mediaId) {
-      const mediasRef = db.collection(collections.medias).doc(req.params.mediaId);
+    if (req.file && req.file.originalname && req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
+        .collection(collections.medias).doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -153,8 +158,9 @@ exports.changeMediaBlogVideo = async (req: express.Request, res: express.Respons
 exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
+    let mediaPod = req.params.mediaPod;
 
-    if (mediaId) {
+    if (mediaId && mediaPod) {
       await getMedia(mediaId, '.png', 'image', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
@@ -170,8 +176,9 @@ exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
 exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
+    let mediaPod = req.params.mediaPod;
 
-    if (mediaId) {
+    if (mediaId && mediaPod) {
       await getMedia(mediaId, '.mp3', 'audio', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
@@ -187,8 +194,9 @@ exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
 exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
+    let mediaPod = req.params.mediaPod;
 
-    if (mediaId) {
+    if (mediaId && mediaPod) {
       await getMedia(mediaId, '.mp4', 'video', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
@@ -203,10 +211,12 @@ exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
 exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
+    let mediaPod = req.params.mediaPod;
     let pagination = req.params.pagination;
 
-    if (mediaId && pagination) {
-      const mediasRef = db.collection(collections.medias).doc(mediaId);
+    if (mediaId && mediaPod && pagination) {
+      const mediasRef = db.collection(collections.mediaPods).doc(mediaPod)
+        .collection(collections.medias).doc(mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -254,4 +264,28 @@ const getMedia = (mediaId: string, extension : string, type : string, res: expre
       reject(e);
     }
   })
+}
+
+exports.editMedia =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if(params && body && params.mediaPod && params.mediaId && body.media) {
+      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
+        .collection(collections.medias).doc(params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      await mediasRef.update(body.media);
+
+      res.send({ success: true, data: body.media });
+    } else {
+      console.log('Error in controllers/mediaController -> editMedia()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> editMedia()', err);
+    res.send({ success: false, error: err });
+  }
 }

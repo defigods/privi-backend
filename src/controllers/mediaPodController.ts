@@ -157,7 +157,11 @@ exports.getMediaPod = async (req: express.Request, res: express.Response) => {
             // add selling orders
             const medias: any[] = [];
             const mediasSnap = await mediaPodSnap.ref.collection(collections.medias).get();
-            mediasSnap.forEach((doc) => medias.push(doc.data()));
+            mediasSnap.forEach((doc) => {
+                let data = doc.data();
+                data.id = doc.id;
+                medias.push(data);
+            });
 
             let mediaPod: any = mediaPodSnap.data();
 
