@@ -23,6 +23,8 @@ router.post('/registerMedia', authenticateJWT, mediaPodController.registerMedia)
 router.post('/uploadMedia', authenticateJWT, mediaPodController.uploadMedia);
 router.post('/buyMediaToken', authenticateJWT, mediaPodController.buyMediaToken);
 router.post('/investPod', authenticateJWT, mediaPodController.investPod);
+router.post('/buyPodTokens', authenticateJWT, mediaPodController.buyPodTokens);
+router.post('/sellPodTokens', authenticateJWT, mediaPodController.sellPodTokens);
 
 router.post('/changeMediaPodPhoto', authenticateJWT, upload.single('image'), mediaPodController.changeMediaPodPhoto);
 
