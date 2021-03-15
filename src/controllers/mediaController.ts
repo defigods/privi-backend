@@ -487,7 +487,7 @@ exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
+exports.acceptCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -509,6 +509,59 @@ exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
 
       let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
       if(media.SavedCollab[collabIndex].status === 'Pending') {
+        let mediaCopy = {...media};
+        mediaCopy.SavedCollab[collabIndex].status = 'Accepted';
+        await mediasRef.update(mediaCopy);
+
+        await notificationsController.addNotification({
+          userId: body.creator,
+          notification: {
+            type: 106,
+            typeItemId: 'user',
+            itemId: body.userId,
+            follower: user.firstName,
+            pod: params.mediaPod,
+            comment: '',
+            token: params.mediaId,
+            amount: '',
+            onlyInformation: false,
+            otherItemId: mediasGet.id,
+          },
+        });
+        res.send({ success: true, data: mediaCopy });
+
+      } else {
+        console.log('Error in controllers/mediaController -> refuseCollab()', "Collab status was not Pending");
+        res.send({ success: false, error: 'Collab status was not Pending' });
+      }
+    } else {
+      console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> refuseCollab()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptCollab = async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
+        .collection(collections.medias).doc(params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      await notificationsController.removeNotification({
+        userId: body.userId,
+        notificationId: body.notificationId,
+      });
+
+      let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
+      if(media.SavedCollab[collabIndex].status === 'Accepted') {
         const podAddress = body.PodAddress;
         const mediaSymbol = body.MediaSymbol;
 
@@ -520,34 +573,15 @@ exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
           const output = blockchainRes.output;
           updateFirebase(output);
 
-          let mediaCopy = {...media}
-          mediaCopy.SavedCollab[collabIndex].status === 'Accepted';
-          await mediasRef.update(mediaCopy);
+          res.send({ success: true });
 
-          await notificationsController.addNotification({
-            userId: body.creator,
-            notification: {
-              type: 106,
-              typeItemId: 'user',
-              itemId: body.userId,
-              follower: user.firstName,
-              pod: params.mediaPod,
-              comment: '',
-              token: params.mediaId,
-              amount: '',
-              onlyInformation: false,
-              otherItemId: mediasGet.id,
-            },
-          });
         } else {
           console.log('Error in controllers/mediaPodController -> removeCollab(): ', blockchainRes.message);
           res.send({ success: false, error: blockchainRes.message });
-          return;
         }
       } else {
         console.log('Error in controllers/mediaController -> refuseCollab()', "Collab status was not Pending");
-        res.send({ success: false, error: 'Collab status was not Pending' });
-        return;
+        res.send({ success: false, error: 'Collab status was not Accepted' });
       }
       res.send({ success: true });
     } else {
