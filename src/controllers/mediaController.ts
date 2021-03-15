@@ -521,7 +521,7 @@ exports.acceptCollab = async (req: express.Request, res: express.Response) => {
             itemId: body.userId,
             follower: user.firstName,
             pod: params.mediaPod,
-            comment: '',
+            comment: media.SavedCollab,
             token: params.mediaId,
             amount: '',
             onlyInformation: false,
