@@ -4,6 +4,11 @@ import { ethMedia } from '../firebase/collections';
 import path from "path";
 import fs from "fs";
 import collections from '../firebase/collections';
+import mediaPod from "../blockchain/mediaPod";
+import {updateFirebase} from "../functions/functions";
+
+const notificationsController = require('./notificationsController');
+const apiKey = 'PRIVI'; //process.env.API_KEY;
 
 exports.getEthMedia = async (req: express.Request, res: express.Response) => {
   try {
@@ -277,6 +282,63 @@ exports.editMedia =  async (req: express.Request, res: express.Response) => {
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
+      const userRef = db.collection(collections.user).doc(body.media.Creator);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      if(body.media.SavedCollabs && body.media.SavedCollabs.length > 0) {
+        if(media.SavedCollabs && media.SavedCollabs.length > 0) {
+          let newCollabs : any[] = [];
+          for(let bodyCollab of body.media.SavedCollabs) {
+            let isInBD : boolean = false;
+            for(let mediaCollab of media.SavedCollabs) {
+              if(bodyCollab.id === mediaCollab.id) {
+                isInBD = true;
+              }
+            }
+            if(!isInBD) {
+              newCollabs.push(bodyCollab)
+            }
+          }
+
+          for(let collab of newCollabs) {
+            await notificationsController.addNotification({
+              userId: collab.id,
+              notification: {
+                type: 104,
+                typeItemId: 'user',
+                itemId: body.media.Creator,
+                follower: user.firstName,
+                pod: params.mediaPod,
+                comment: '',
+                token: params.mediaId,
+                amount: '',
+                onlyInformation: false,
+                otherItemId: mediasGet.id,
+              },
+            });
+          }
+        } else {
+          for(let collab of body.media.SavedCollabs) {
+            await notificationsController.addNotification({
+              userId: collab.id,
+              notification: {
+                type: 104,
+                typeItemId: 'user',
+                itemId: body.media.Creator,
+                follower: user.firstName,
+                pod: params.mediaPod,
+                comment: '',
+                token: params.mediaId,
+                amount: '',
+                onlyInformation: false,
+                otherItemId: mediasGet.id,
+              },
+            });
+          }
+        }
+      }
+
       await mediasRef.update(body.media);
 
       res.send({ success: true, data: body.media });
@@ -289,3 +351,211 @@ exports.editMedia =  async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 }
+
+exports.removeCollab =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if(params && body && params.mediaPod && params.mediaId && body.RemovedCollab && body.Creator) {
+      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
+        .collection(collections.medias).doc(params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      const userRef = db.collection(collections.user).doc(body.Creator);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      if(body.RemovedCollab.status === 'Accepted') {
+        const podAddress = body.PodAddress;
+        const mediaSymbol = body.MediaSymbol;
+
+        const collabs = body.Collabs;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+          const output = blockchainRes.output;
+          updateFirebase(output);
+
+          await notificationsController.addNotification({
+            userId: body.RemovedCollab.id,
+            notification: {
+              type: 107,
+              typeItemId: 'user',
+              itemId: body.Creator,
+              follower: user.firstName,
+              pod: params.mediaPod,
+              comment: '',
+              token: params.mediaId,
+              amount: '',
+              onlyInformation: false,
+              otherItemId: mediasGet.id,
+            },
+          });
+        } else {
+          console.log('Error in controllers/mediaPodController -> removeCollab(): ', blockchainRes.message);
+          res.send({ success: false });
+          return;
+        }
+      } else {
+        const userCollabRef = db.collection(collections.user).doc(body.RemovedCollab.id);
+        const userCollabGet = await userCollabRef.get();
+        const userCollab: any = userCollabGet.data();
+
+        let notificationIndex = userCollab.notifications.findIndex(not => not.type === 104 && not.pod === media.MediaSymbol);
+
+        await notificationsController.removeNotification({
+          userId: body.RemovedCollab.id,
+          notificationId: userCollab.notifications[notificationIndex].id,
+        });
+      }
+
+      let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.RemovedCollab.id);
+      media.SavedCollab.splice(collabIndex, 1);
+
+      await mediasRef.update(media);
+
+      res.send({ success: true });
+
+    } else {
+      console.log('Error in controllers/mediaController -> removeCollab()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> removeCollab()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
+        .collection(collections.medias).doc(params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      await notificationsController.removeNotification({
+        userId: body.userId,
+        notificationId: body.notificationId,
+      });
+
+      let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
+      if(media.SavedCollab[collabIndex].status === 'Pending') {
+        media.SavedCollab.splice(collabIndex, 1);
+        await mediasRef.update(media);
+
+        await notificationsController.addNotification({
+          userId: body.creator,
+          notification: {
+            type: 105,
+            typeItemId: 'user',
+            itemId: body.userId,
+            follower: user.firstName,
+            pod: params.mediaPod,
+            comment: '',
+            token: params.mediaId,
+            amount: '',
+            onlyInformation: false,
+            otherItemId: mediasGet.id,
+          },
+        });
+      } else {
+        console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
+        res.send({ success: false, error: 'Collab status was not Pending' });
+        return;
+      }
+
+      res.send({ success: true });
+
+    } else {
+      console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> refuseCollab()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
+        .collection(collections.medias).doc(params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      await notificationsController.removeNotification({
+        userId: body.userId,
+        notificationId: body.notificationId,
+      });
+
+      let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
+      if(media.SavedCollab[collabIndex].status === 'Pending') {
+        const podAddress = body.PodAddress;
+        const mediaSymbol = body.MediaSymbol;
+
+        const collabs = body.Collabs;
+        const hash = body.Hash;
+        const signature = body.Signature;
+        const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
+        if (blockchainRes && blockchainRes.success) {
+          const output = blockchainRes.output;
+          updateFirebase(output);
+
+          let mediaCopy = {...media}
+          mediaCopy.SavedCollab[collabIndex].status === 'Accepted';
+          await mediasRef.update(mediaCopy);
+
+          await notificationsController.addNotification({
+            userId: body.creator,
+            notification: {
+              type: 106,
+              typeItemId: 'user',
+              itemId: body.userId,
+              follower: user.firstName,
+              pod: params.mediaPod,
+              comment: '',
+              token: params.mediaId,
+              amount: '',
+              onlyInformation: false,
+              otherItemId: mediasGet.id,
+            },
+          });
+        } else {
+          console.log('Error in controllers/mediaPodController -> removeCollab(): ', blockchainRes.message);
+          res.send({ success: false, error: blockchainRes.message });
+          return;
+        }
+      } else {
+        console.log('Error in controllers/mediaController -> refuseCollab()', "Collab status was not Pending");
+        res.send({ success: false, error: 'Collab status was not Pending' });
+        return;
+      }
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> refuseCollab()', err);
+    res.send({ success: false, error: err });
+  }
+};

@@ -77,5 +77,8 @@ router.post('/uploadBlog/:mediaPod/:mediaId', authenticateJWT, mediaController.c
 router.post('/uploadBlog/video/:mediaPod/:mediaId', authenticateJWT, upload4.single('video'), mediaController.changeMediaBlogVideo);
 
 router.post('/editMedia/:mediaPod/:mediaId', authenticateJWT, mediaController.editMedia);
+router.post('/removeCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.removeCollab);
+router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.refuseCollab);
+router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 
 module.exports = router;
