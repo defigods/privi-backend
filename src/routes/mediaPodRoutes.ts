@@ -35,8 +35,11 @@ router.get('/getOtherMediaPods/:userId', authenticateJWT, mediaPodController.get
 router.get('/getAllMediaPodsInfo/:pagination/:lastId', authenticateJWT, mediaPodController.getAllMediaPodsInfo);
 router.get('/getMediaPod/:mediaPodId', authenticateJWT, mediaPodController.getMediaPod);
 router.get('/getPhoto/:podId', mediaPodController.getPhotoById);
-router.get('/getBuyingPodFundingTokenAmount', mediaPodController.getBuyingPodFundingTokenAmount);
-router.get('/getSellingPodFundingTokenAmount', mediaPodController.getSellingPodFundingTokenAmount);
+router.get('/getBuyingPodFundingTokenAmount', authenticateJWT, mediaPodController.getBuyingPodFundingTokenAmount);
+router.get('/getSellingPodFundingTokenAmount', authenticateJWT, mediaPodController.getSellingPodFundingTokenAmount);
+router.get('/getPriceHistory', authenticateJWT, mediaPodController.getPriceHistory);
+router.get('/getSupplyHistory', authenticateJWT, mediaPodController.getSupplyHistory);
+router.get('/getMediaPodTransactions', authenticateJWT, mediaPodController.getMediaPodTransactions);
 
 
 module.exports = router;

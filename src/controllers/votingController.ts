@@ -737,6 +737,10 @@ exports.votePrediction = async (req: express.Request, res: express.Response) => 
 // called manually from postman to run this script
 exports.postVote = async (req: express.Request, res: express.Response) => {
     try {
+        const podFTTxns = await db.collection(collections.podsFT).doc("0x425443223a302E327d7D31363134383839373332").collection(collections.podTransactions).get();
+        podFTTxns.forEach((txnDoc) => {
+            db.collection(collections.mediaPods).doc("0x3631353435373438327D31363135343537373632").collection(collections.transactions).add(txnDoc.data());
+        })
         res.send({ success: true });
     } catch (err) {
         console.log("Error in controllers/votingController -> postVote()", err);
