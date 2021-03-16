@@ -271,7 +271,7 @@ const getMedia = (mediaId: string, extension : string, type : string, res: expre
   })
 }
 
-exports.editMedia =  async (req: express.Request, res: express.Response) => {
+exports.editMedia = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -396,7 +396,7 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
           });
         } else {
           console.log('Error in controllers/mediaPodController -> removeCollab(): ', blockchainRes.message);
-          res.send({ success: false });
+          res.send({ success: false, error: blockchainRes.message });
           return;
         }
       } else {
@@ -406,14 +406,16 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
 
         let notificationIndex = userCollab.notifications.findIndex(not => not.type === 104 && not.pod === media.MediaSymbol);
 
-        await notificationsController.removeNotification({
-          userId: body.RemovedCollab.id,
-          notificationId: userCollab.notifications[notificationIndex].id,
-        });
+        if(notificationIndex !== -1) {
+          await notificationsController.removeNotification({
+            userId: body.RemovedCollab.id,
+            notificationId: userCollab.notifications[notificationIndex].id,
+          });
+        }
       }
 
-      let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.RemovedCollab.id);
-      media.SavedCollab.splice(collabIndex, 1);
+      let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.RemovedCollab.id);
+      media.SavedCollabs.splice(collabIndex, 1);
 
       await mediasRef.update(media);
 
@@ -449,26 +451,29 @@ exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
         notificationId: body.notificationId,
       });
 
-      let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
-      if(media.SavedCollab[collabIndex].status === 'Pending') {
-        media.SavedCollab.splice(collabIndex, 1);
-        await mediasRef.update(media);
+      if(media.SavedCollab && media.SavedCollab.length > 0) {
+        let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
+        if(media.SavedCollab[collabIndex].status === 'Requested') {
+          media.SavedCollab.splice(collabIndex, 1);
+          await mediasRef.update(media);
 
-        await notificationsController.addNotification({
-          userId: body.creator,
-          notification: {
-            type: 105,
-            typeItemId: 'user',
-            itemId: body.userId,
-            follower: user.firstName,
-            pod: params.mediaPod,
-            comment: '',
-            token: params.mediaId,
-            amount: '',
-            onlyInformation: false,
-            otherItemId: mediasGet.id,
-          },
-        });
+          await notificationsController.addNotification({
+            userId: body.creator,
+            notification: {
+              type: 105,
+              typeItemId: 'user',
+              itemId: body.userId,
+              follower: user.firstName,
+              pod: params.mediaPod,
+              comment: '',
+              token: params.mediaId,
+              amount: '',
+              onlyInformation: false,
+              otherItemId: mediasGet.id,
+            },
+          });
+      }
+
       } else {
         console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
         res.send({ success: false, error: 'Collab status was not Pending' });
@@ -487,7 +492,7 @@ exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
+exports.acceptCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -507,8 +512,63 @@ exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
         notificationId: body.notificationId,
       });
 
+      if(media.SavedCollab && media.SavedCollab.length > 0) {
+        let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
+        if(media.SavedCollab[collabIndex].status === 'Requested') {
+          let mediaCopy = {...media};
+          mediaCopy.SavedCollab[collabIndex].status = 'Accepted';
+          await mediasRef.update(mediaCopy);
+
+          await notificationsController.addNotification({
+            userId: body.creator,
+            notification: {
+              type: 106,
+              typeItemId: 'user',
+              itemId: body.userId,
+              follower: user.firstName,
+              pod: params.mediaPod,
+              comment: media.SavedCollab,
+              token: params.mediaId,
+              amount: '',
+              onlyInformation: false,
+              otherItemId: mediasGet.id,
+            },
+          });
+          res.send({ success: true, data: mediaCopy });
+        }
+
+      } else {
+        console.log('Error in controllers/mediaController -> acceptCollab()', "Collab status was not Pending");
+        res.send({ success: false, error: 'Collab status was not Pending' });
+      }
+    } else {
+      console.log('Error in controllers/mediaController -> acceptCollab()', "Missing data");
+      res.send({ success: false, error: "Missing data" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> acceptCollab()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptCollab = async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
+        .collection(collections.medias).doc(params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      await notificationsController.removeNotification({
+        userId: body.userId,
+        notificationId: body.notificationId,
+      });
+
       let collabIndex = media.SavedCollab.findIndex(collab => collab.id === body.userId);
-      if(media.SavedCollab[collabIndex].status === 'Pending') {
+      if(media.SavedCollab[collabIndex].status === 'Accepted') {
         const podAddress = body.PodAddress;
         const mediaSymbol = body.MediaSymbol;
 
@@ -520,34 +580,15 @@ exports.acceptCollab =  async (req: express.Request, res: express.Response) => {
           const output = blockchainRes.output;
           updateFirebase(output);
 
-          let mediaCopy = {...media}
-          mediaCopy.SavedCollab[collabIndex].status === 'Accepted';
-          await mediasRef.update(mediaCopy);
+          res.send({ success: true });
 
-          await notificationsController.addNotification({
-            userId: body.creator,
-            notification: {
-              type: 106,
-              typeItemId: 'user',
-              itemId: body.userId,
-              follower: user.firstName,
-              pod: params.mediaPod,
-              comment: '',
-              token: params.mediaId,
-              amount: '',
-              onlyInformation: false,
-              otherItemId: mediasGet.id,
-            },
-          });
         } else {
           console.log('Error in controllers/mediaPodController -> removeCollab(): ', blockchainRes.message);
           res.send({ success: false, error: blockchainRes.message });
-          return;
         }
       } else {
         console.log('Error in controllers/mediaController -> refuseCollab()', "Collab status was not Pending");
-        res.send({ success: false, error: 'Collab status was not Pending' });
-        return;
+        res.send({ success: false, error: 'Collab status was not Accepted' });
       }
       res.send({ success: true });
     } else {

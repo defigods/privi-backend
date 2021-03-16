@@ -2,7 +2,7 @@ import express from 'express';
 import social from '../blockchain/social';
 import mediaPod from '../blockchain/mediaPod';
 import { updateFirebase, getAddresUidMap } from '../functions/functions';
-import collections, { medias } from '../firebase/collections';
+import collections, { medias, streaming } from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
@@ -396,57 +396,58 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
 
         // BLockchain Integration part
 
-        try {
-          const body = req.body;
-          const podAddress = body.PodAddress;
-          const mediaSymbol = body.MediaSymbol;
-          const hash = body.Hash;
-          const signature = body.Signature;
-          const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
-            podAddress,
-            mediaSymbol,
-            hash,
-            signature,
-            apiKey
-          );
-          if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes); // update media inside pod obj
-            // add media in an outer colection "Streaming"
-            const output = blockchainRes.output;
-            const updateMedias = output.UpdateMedias;
-            let mediaSymbol: string = '';
-            let mediaObj: any = null;
-            for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
-              db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
-              const streamerPrortions = mediaObj.StreamingProportions;
-              const streamerAddresses = Object.keys(streamerPrortions);
-              // add the streamer docs for accumulated price tracking
-              streamerAddresses.forEach((streamerAddress) => {
-                db.collection(collections.streaming)
-                  .doc(mediaSymbol)
-                  .collection(collections.streamers)
-                  .doc(streamerAddress)
-                  .set({
-                    AccumulatedAmount: 0,
-                    PricePerSecond: 0,
-                    LastUpdate: Date.now(),
-                  });
-              });
-            }
-            res.send({ success: true, StreamingUrl: data.url, data: resData });
-          } else {
-            console.log(
-              'Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.',
-              blockchainRes.message
-            );
-            res.send({ success: false, error: blockchainRes.message });
-          }
-        } catch (err) {
-          console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
-          res.send({ success: false });
-        }
+        // try {
+        //   const body = req.body;
+        //   const podAddress = body.PodAddress;
+        //   const mediaSymbol = body.MediaSymbol;
+        //   const hash = body.Hash;
+        //   const signature = body.Signature;
+        //   const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
+        //     podAddress,
+        //     mediaSymbol,
+        //     hash,
+        //     signature,
+        //     apiKey
+        //   );
+        //   if (blockchainRes && blockchainRes.success) {
+        //     updateFirebase(blockchainRes); // update media inside pod obj
+        //     // add media in an outer colection "Streaming"
+        //     const output = blockchainRes.output;
+        //     const updateMedias = output.UpdateMedias;
+        //     let mediaSymbol: string = '';
+        //     let mediaObj: any = null;
+        //     for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
+        //       db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
+        //       const streamerPrortions = mediaObj.StreamingProportions;
+        //       const streamerAddresses = Object.keys(streamerPrortions);
+        //       // add the streamer docs for accumulated price tracking
+        //       streamerAddresses.forEach((streamerAddress) => {
+        //         db.collection(collections.streaming)
+        //           .doc(mediaSymbol)
+        //           .collection(collections.streamers)
+        //           .doc(streamerAddress)
+        //           .set({
+        //             AccumulatedAmount: 0,
+        //             PricePerSecond: 0,
+        //             LastUpdate: Date.now(),
+        //           });
+        //       });
+        //     }
+        //     res.send({ success: true, StreamingUrl: data.url, data: resData });
+        //   } else {
+        //     console.log(
+        //       'Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.',
+        //       blockchainRes.message
+        //     );
+        //     res.send({ success: false, error: blockchainRes.message });
+        //   }
+        // } catch (err) {
+        //   console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
+        //   res.send({ success: false });
+        // }
 
         /// End Blockchain Integration Part.
+        res.send({ success: true, StreamingUrl: data.url, data: resData });
       } catch (err) {
         res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
       }
@@ -517,12 +518,10 @@ exports.endStreaming = async (req: express.Request, res: express.Response) => {
 exports.listStreaming = async (req: express.Request, res: express.Response) => {
   try {
     const collectionRef = await db.collection(collections.streaming).get();
-    const streamings = collectionRef.docs.map((doc) => {
-      return {
-        [doc.id]: doc.data(),
-      };
+    let streamings = {};
+    collectionRef.docs.forEach((doc) => {
+      streamings[doc.id] = { ...doc.data() };
     });
-
     res.send({ success: true, streamings });
   } catch (err) {
     res.send({ success: false, message: 'Error in getting firestore data' });

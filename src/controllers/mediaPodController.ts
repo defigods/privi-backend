@@ -265,7 +265,6 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         const hash = body.Hash;
         const signature = body.Signature;
         const creator = body.Creator;
-        console.log(podInfo, medias, hash, signature, apiKey);
         const blockchainRes = await mediaPod.initiatePod(podInfo, medias, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
@@ -298,7 +297,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
                     MainHashtag: mainHashtag || '',
                     Hashtags: hashtags || [],
                     OpenAdvertising: openAdvertising || false,
-                    JarrId: discordChatJarrCreation.id || '',
+                    JarrId: '',
                     Date: new Date().getTime()
 
                 }, { merge: true }

@@ -80,5 +80,6 @@ router.post('/editMedia/:mediaPod/:mediaId', authenticateJWT, mediaController.ed
 router.post('/removeCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.removeCollab);
 router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.refuseCollab);
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
+router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
 
 module.exports = router;
