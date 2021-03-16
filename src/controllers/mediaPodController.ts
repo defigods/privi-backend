@@ -2,7 +2,8 @@ import express, { response } from 'express';
 import {
     updateFirebase,
     getMediaPodBuyingAmount,
-    getMediaPodSellingAmount
+    getMediaPodSellingAmount,
+    addZerosToHistory
 } from '../functions/functions';
 import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
@@ -269,10 +270,17 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
             const podId: string = Object.keys(blockchainRes.output.UpdatePods)[0];
+            await updateFirebase(blockchainRes);
 
-            console.log(output);
-
-            updateFirebase(blockchainRes);
+            // add txns to pod
+            const updateTxns = output.Transactions;
+            let tid = '';
+            let txnArray: any = [];
+            for ([tid, txnArray] of Object.entries(updateTxns)) {
+                db.collection(collections.mediaPods).doc(podId).collection(collections.podTransactions).doc(tid).set({ Transactions: txnArray });
+            }
+            // add initial data for graph
+            // addZerosToHistory()
 
             const userRef = db.collection(collections.user).doc(creator);
             const userGet = await userRef.get();
@@ -334,7 +342,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
             endingDate, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            updateFirebase(output);
+            updateFirebase(blockchainRes);
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> registerMedia(): ', blockchainRes.message);
@@ -356,7 +364,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await mediaPod.uploadMedia(podAddress, mediaSymbol, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            updateFirebase(output);
+            updateFirebase(blockchainRes);
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> uploadMedia(): ', blockchainRes.message);
@@ -379,7 +387,10 @@ exports.investPod = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await mediaPod.investPod(investor, podAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            updateFirebase(output);
+
+            updateFirebase(blockchainRes);
+            // add txns to media pod
+
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> investPod(): ', blockchainRes.message);
@@ -403,7 +414,7 @@ exports.buyMediaToken = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await mediaPod.buyMediaToken(buyer, podAddress, mediaSymbol, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            updateFirebase(output);
+            updateFirebase(blockchainRes);
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> buyMediaToken(): ', blockchainRes.message);
@@ -426,7 +437,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await mediaPod.buyPodTokens(trader, podAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            updateFirebase(output);
+            updateFirebase(blockchainRes);
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> buyPodTokens(): ', blockchainRes.message);
@@ -449,7 +460,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await mediaPod.sellPodTokens(trader, podAddress, amount, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             const output = blockchainRes.output;
-            updateFirebase(output);
+            updateFirebase(blockchainRes);
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> sellPodTokens(): ', blockchainRes.message);
