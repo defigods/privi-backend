@@ -61,23 +61,30 @@ const addNotification = async (object: any) => {
     }
 }
 
-const removeNotification = async (object: any) => {
-    try {
-        const userRef = db.collection(collections.user)
-            .doc(object.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+const removeNotification = async(object: any) => {
+    return new Promise(async (resolve, reject) => {
+        try {
+            const userRef = db.collection(collections.user)
+              .doc(object.userId);
+            const userGet = await userRef.get();
+            const user: any = userGet.data();
 
-        let notifications : any[] = [...user.notifications];
-        let notificationIndex = user.notifications.findIndex(item => item.id === object.notificationId)
-        notifications.splice(notificationIndex, 1)
+            let notifications : any[] = [...user.notifications];
+            let notificationIndex = user.notifications.findIndex(item => item.id === object.notificationId)
 
-        await userRef.update({
-            notifications: notifications
-        });
-    } catch (e) {
-        console.log('Error removing notification: ' + e);
-    }
+            console.log('Remove notification - ID: ' + object.notificationId + ' , INDEX: ' + notificationIndex);
+
+            notifications.splice(notificationIndex, 1)
+
+            await userRef.update({
+                notifications: notifications
+            });
+            resolve(true);
+        } catch (e) {
+            console.log('Error removing notification: ' + e);
+            resolve('Error removing notification: ' + e)
+        }
+    })
 }
 
 const sendNotificationSocket = (userId, socketId, notification) => {
