@@ -592,8 +592,8 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
         const signature = body.Signature;
         const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
-          const output = blockchainRes.output;
-          updateFirebase(output);
+          console.log(blockchainRes)
+          updateFirebase(blockchainRes);
 
           await notificationsController.removeNotification({
             userId: body.userId,

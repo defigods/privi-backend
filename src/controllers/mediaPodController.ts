@@ -2,7 +2,7 @@ import express, { response } from 'express';
 import {
     updateFirebase,
     getMediaPodBuyingAmount,
-    getMediaPodSellingAmount
+    getMediaPodSellingAmount, generateUniqueId
 } from '../functions/functions';
 import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
@@ -325,7 +325,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         const copies = body.Copies;
         const royalty = body.Royalty;
         const fundingToken = body.FundingToken;
-        const releaseDate = body.ReleaseDate;
+        const releaseDate = parseInt(body.ReleaseDate);
         const pricePerSecond = body.PricePerSecond;
         const price = body.Price;
         const isRecord = body.IsRecord;
@@ -337,12 +337,37 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         const recordRoyalty = body.RecordRoyalty;
         const hash = body.Hash;
         const signature = body.Signature;
+        console.log(body, Date.now());
         const blockchainRes = await mediaPod.registerMedia(requester, podAddress, mediaSymbol, type, paymentType, copies,
           royalty, fundingToken, releaseDate, pricePerSecond, price, isRecord, recordToken, recordPaymentType,
           recordPrice, recordPricePerSecond, recordCopies, recordRoyalty, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
-            const output = blockchainRes.output;
-            updateFirebase(output);
+            updateFirebase(blockchainRes);
+
+            if(type === 'LIVE_VIDEO_TYPE' || type === 'LIVE_VIDEO_TYPE') {
+                await db.runTransaction(async (transaction) => {
+                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol), {
+                        Requester: requester,
+                        PodAddress: podAddress,
+                        MediaSymbol: mediaSymbol,
+                        Type: type,
+                        PaymentType: paymentType,
+                        Copies: copies,
+                        Royalty: royalty,
+                        FundingToken: fundingToken,
+                        ReleaseDate: releaseDate,
+                        PricePerSecond: pricePerSecond,
+                        Price: price,
+                        IsRecord: isRecord,
+                        RecordToken: recordToken,
+                        RecordPaymentType: recordPaymentType,
+                        RecordPrice: recordPrice,
+                        RecordPricePerSecond: recordPricePerSecond,
+                        RecordCopies: recordCopies,
+                        RecordRoyalty: recordRoyalty
+                    });
+                });
+            }
             res.send({ success: true });
         } else {
             console.log('Error in controllers/mediaPodController -> registerMedia(): ', blockchainRes.message);
