@@ -2,7 +2,7 @@ import express from 'express';
 import social from '../blockchain/social';
 import mediaPod from '../blockchain/mediaPod';
 import { updateFirebase, getAddresUidMap } from '../functions/functions';
-import collections, { medias } from '../firebase/collections';
+import collections, { medias, streaming } from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
@@ -518,12 +518,10 @@ exports.endStreaming = async (req: express.Request, res: express.Response) => {
 exports.listStreaming = async (req: express.Request, res: express.Response) => {
   try {
     const collectionRef = await db.collection(collections.streaming).get();
-    const streamings = collectionRef.docs.map((doc) => {
-      return {
-        [doc.id]: doc.data(),
-      };
+    let streamings = {};
+    collectionRef.docs.forEach((doc) => {
+      streamings[doc.id] = { ...doc.data() };
     });
-
     res.send({ success: true, streamings });
   } catch (err) {
     res.send({ success: false, message: 'Error in getting firestore data' });
