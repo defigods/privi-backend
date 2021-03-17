@@ -13,5 +13,6 @@ router.post('/createStreaming', authenticateJWT, streamingController.createStrea
 router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleStreaming);
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
 router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
+router.get('/getRecording', authenticateJWT, streamingController.getRecording);
 
 module.exports = router;

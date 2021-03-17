@@ -15,6 +15,7 @@ const DAILY_API_KEY = 'dd019368c1134baba69c91b9fd6852eab5b2a38d12c61b37459f0eba9
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
+const RECORDING_URL = `${ORIGIN_DAILY_API_URL}/recordings`
 
 enum ROOM_STATE {
   COMPLETED = 'COMPLETED',
@@ -376,6 +377,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${DAILY_API_KEY}`,
+              body: JSON.stringify({properties: {enable_recording: 'rtp-tracks'}})
             },
           }
         );
@@ -472,6 +474,22 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
 
  ** **
 */
+
+exports.getRecording = async (req: express.Request, res: express.Response) => {
+  const roomName = req.query.roomNumber
+  try {
+    const GET_RECORDING_URL = `${RECORDING_URL}?room_name=${roomName}`
+    let resp = await axios.get(GET_RECORDING_URL, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`,
+      },
+    })
+    res.send({success: true, data: resp})
+  } catch (e) {
+    res.send({ success: false, message: 'Failed to get recording', err: e });
+  }
+}
 
 exports.endStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
