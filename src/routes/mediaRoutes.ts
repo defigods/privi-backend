@@ -12,7 +12,7 @@ let storage1 = multer.diskStorage({
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId + '.png');
+    cb(null, req.params.mediaId.replace(/\s/g,'') + '.png');
   },
 });
 let upload1 = multer({
@@ -21,11 +21,11 @@ let upload1 = multer({
 
 let storage2 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/media/')
+    cb(null, 'uploads/media')
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId + '.mp3')
+    cb(null, req.params.mediaId.replace(/\s/g,'') + '.mp3')
   }
 });
 
@@ -35,11 +35,11 @@ let upload2 = multer({
 
 let storage3 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/media/')
+    cb(null, 'uploads/media')
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId + '.mp4')
+    cb(null, req.params.mediaId.replace(/\s/g,'') + '.mp4')
   }
 });
 
