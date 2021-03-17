@@ -1,0 +1,4170 @@
+{
+  "contractName": "ISwapManager",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "tokenURI",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DepositERC1155Token",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DepositERC20Token",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DepositERC721Token",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "from",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "DepositEther",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "tokenURI",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "WithdrawERC1155Token",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "WithdrawERC20Token",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "WithdrawERC721Token",
+      "type": "event"
+    },
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "WithdrawEther",
+      "type": "event"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositERC20Token",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawERC20Token",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "depositERC721Token",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "isPodMint",
+          "type": "bool"
+        }
+      ],
+      "name": "withdrawERC721Token",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenURI",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "depositERC1155Token",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenURI",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bytes",
+          "name": "data",
+          "type": "bytes"
+        }
+      ],
+      "name": "withdrawERC1155Token",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "depositEther",
+      "outputs": [],
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "to",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "withdrawEther",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "getBalance",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.7.6+commit.7338295f\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"tokenURI\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositERC1155Token\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositERC20Token\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositERC721Token\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"from\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"DepositEther\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"tokenURI\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"WithdrawERC1155Token\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"WithdrawERC20Token\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"WithdrawERC721Token\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"WithdrawEther\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenURI\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"depositERC1155Token\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"depositERC20Token\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"}],\"name\":\"depositERC721Token\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"depositEther\",\"outputs\":[],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getBalance\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenURI\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"withdrawERC1155Token\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"withdrawERC20Token\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"tokenId\",\"type\":\"uint256\"},{\"internalType\":\"bool\",\"name\":\"isPodMint\",\"type\":\"bool\"}],\"name\":\"withdrawERC721Token\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"to\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"withdrawEther\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"author\":\"The PRIVI Blockchain team\",\"kind\":\"dev\",\"methods\":{\"depositERC1155Token(string,address,uint256,uint256,bytes)\":{\"details\":\"- User must have TRANSFER_ROLE          - Token to be transferred must be already registered          - User has to approve first the amount to be transferred WITHIN the original ERC1155 token contract,          and not from this contract. Otherwise, transaction will always fail\",\"params\":{\"to\":\"Destination address to receive the tokens\",\"tokenId\":\"Token identifier to be transferred\",\"tokenURI\":\"Name of the token to be transferred\"}},\"depositERC20Token(string,uint256)\":{\"details\":\"- Token to be transferred must be already registered          - User has to approve first the amount to be transferred WITHIN the original ERC20 token contract,          and not from this contract. Otherwise, transaction will always fail\",\"params\":{\"amount\":\"Amount of tokens to be transferred\",\"tokenSymbol\":\"Name of the token to be transferred\"}},\"depositERC721Token(string,uint256)\":{\"details\":\"- User must have TRANSFER_ROLE          - Token to be transferred must be already registered          - User has to approve first the amount to be transferred WITHIN the original ERC721 token contract,          and not from this contract. Otherwise, transaction will always fail\",\"params\":{\"tokenId\":\"Token identifier to be transferred\",\"tokenSymbol\":\"Name of the token to be transferred\"}},\"depositEther()\":{\"details\":\"- Amount to be deposited must be greater than 0 ethers\"},\"getBalance()\":{\"returns\":{\"_0\":\"Contract balance in weis\"}},\"withdrawERC1155Token(string,address,uint256,uint256,bytes)\":{\"details\":\"- User must have TRANSFER_ROLE          - PRIVI must have enough tokens to transfer them back to User\",\"params\":{\"to\":\"Destination address to receive the tokens\",\"tokenId\":\"Token identifier to be transferred\",\"tokenURI\":\"Name of the token to be transferred\"}},\"withdrawERC20Token(string,address,uint256)\":{\"details\":\"- User must have TRANSFER_ROLE          - PRIVI must have enough tokens to transfer them back to User\",\"params\":{\"amount\":\"Amount of tokens to be transferred\",\"to\":\"Destination address to receive the tokens\",\"tokenSymbol\":\"Name of the token to be transferred\"}},\"withdrawERC721Token(string,address,uint256,bool)\":{\"details\":\"- User must have TRANSFER_ROLE          - PRIVI must have enough tokens to transfer them back to User\",\"params\":{\"isPodMint\":\"is it a withdraw from swap manager or is it minting new nft pod token\",\"to\":\"Destination address to receive the tokens\",\"tokenId\":\"Token identifier to be transferred\",\"tokenSymbol\":\"Name of the token to be transferred\"}},\"withdrawEther(address,uint256)\":{\"details\":\"- Sender must have TRANSFER_ROLE          - Contract must have enough balance to do the transfer\",\"params\":{\"amount\":\"Amount of ether to be transferred\",\"to\":\"Destination address to receive the ether\"}}},\"title\":\"Manages swap and withdraw of Ethers, ERC20 tokens and ERC721 tokens between Users and PRIVI platform\",\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{\"depositERC1155Token(string,address,uint256,uint256,bytes)\":{\"notice\":\"Transfer ERC1155 token from sender address (User) to contract address (PRIVI)\"},\"depositERC20Token(string,uint256)\":{\"notice\":\"Transfer ERC20 token from sender address (User) to contract address (PRIVI)\"},\"depositERC721Token(string,uint256)\":{\"notice\":\"Transfer ERC721 token from sender address (User) to contract address (PRIVI)\"},\"depositEther()\":{\"notice\":\"Transfer ether from sender address to contract address\"},\"withdrawERC1155Token(string,address,uint256,uint256,bytes)\":{\"notice\":\"Transfer ERC1155 token from contract address (PRIVI) to sender address (User)\"},\"withdrawERC20Token(string,address,uint256)\":{\"notice\":\"Transfer ERC20 token from contract address (PRIVI) to sender address (User)\"},\"withdrawERC721Token(string,address,uint256,bool)\":{\"notice\":\"Transfer ERC721 token from contract address (PRIVI) to sender address (User)\"},\"withdrawEther(address,uint256)\":{\"notice\":\"Transfer ether from contract address to sender address\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/ISwapManager.sol\":\"ISwapManager\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":500},\"remappings\":[]},\"sources\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/ISwapManager.sol\":{\"keccak256\":\"0xe76e878b70f07cdfe2ecc73225e8c4217799af71eca8a110f3afdfbeae4c06d2\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://4940004e9a0a12a796c446efc5be4bb3a2c972afdf037aaf45d3ee3e44e97842\",\"dweb:/ipfs/QmRwEHFMUsfgbcjoDqMXSzunsKv1jeWrKrPFZaNUBdrD6c\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "// SPDX-License-Identifier: MIT\npragma solidity ^0.7.6;\n\n/// @author The PRIVI Blockchain team\n/// @title Manages swap and withdraw of Ethers, ERC20 tokens and ERC721 tokens between Users and PRIVI platform\n\ninterface ISwapManager {\n  event DepositERC20Token(\n    string indexed tokenSymbol,\n    address from,\n    uint256 amount\n  );\n  event WithdrawERC20Token(\n    string indexed tokenSymbol,\n    address to,\n    uint256 amount\n  );\n  event DepositERC721Token(\n    string indexed tokenSymbol,\n    address from,\n    uint256 amount\n  );\n  event WithdrawERC721Token(\n    string indexed tokenSymbol,\n    address to,\n    uint256 tokenId\n  );\n  event DepositERC1155Token(\n    string indexed tokenURI,\n    address to,\n    uint256 tokenId,\n    uint256 amount\n  );\n  event WithdrawERC1155Token(\n    string indexed tokenURI,\n    address to,\n    uint256 tokenId,\n    uint256 amount\n  );\n  event DepositEther(address indexed from, uint256 amount);\n  event WithdrawEther(address indexed to, uint256 amount);\n\n  /**\n   * @notice  Transfer ERC20 token from sender address (User) to contract address (PRIVI)\n   * @dev     - Token to be transferred must be already registered\n   *          - User has to approve first the amount to be transferred WITHIN the original ERC20 token contract,\n   *          and not from this contract. Otherwise, transaction will always fail\n   * @param   tokenSymbol Name of the token to be transferred\n   * @param   amount Amount of tokens to be transferred\n   */\n  function depositERC20Token(string calldata tokenSymbol, uint256 amount)\n    external;\n\n  /**\n   * @notice  Transfer ERC20 token from contract address (PRIVI) to sender address (User)\n   * @dev     - User must have TRANSFER_ROLE\n   *          - PRIVI must have enough tokens to transfer them back to User\n   * @param   tokenSymbol Name of the token to be transferred\n   * @param   to Destination address to receive the tokens\n   * @param   amount Amount of tokens to be transferred\n   */\n  function withdrawERC20Token(\n    string calldata tokenSymbol,\n    address to,\n    uint256 amount\n  ) external;\n\n  /**\n   * @notice  Transfer ERC721 token from sender address (User) to contract address (PRIVI)\n   * @dev     - User must have TRANSFER_ROLE\n   *          - Token to be transferred must be already registered\n   *          - User has to approve first the amount to be transferred WITHIN the original ERC721 token contract,\n   *          and not from this contract. Otherwise, transaction will always fail\n   * @param   tokenSymbol Name of the token to be transferred\n   * @param   tokenId Token identifier to be transferred\n   */\n  function depositERC721Token(string calldata tokenSymbol, uint256 tokenId)\n    external;\n\n  /**\n   * @notice  Transfer ERC721 token from contract address (PRIVI) to sender address (User)\n   * @dev     - User must have TRANSFER_ROLE\n   *          - PRIVI must have enough tokens to transfer them back to User\n   * @param   tokenSymbol Name of the token to be transferred\n   * @param   to Destination address to receive the tokens\n   * @param   tokenId Token identifier to be transferred\n   * @param   isPodMint is it a withdraw from swap manager or is it minting new nft pod token\n   */\n  function withdrawERC721Token(\n    string calldata tokenSymbol,\n    address to,\n    uint256 tokenId,\n    bool isPodMint\n  ) external;\n\n  /**\n   * @notice  Transfer ERC1155 token from sender address (User) to contract address (PRIVI)\n   * @dev     - User must have TRANSFER_ROLE\n   *          - Token to be transferred must be already registered\n   *          - User has to approve first the amount to be transferred WITHIN the original ERC1155 token contract,\n   *          and not from this contract. Otherwise, transaction will always fail\n   * @param   tokenURI Name of the token to be transferred\n   * @param   to Destination address to receive the tokens\n   * @param   tokenId Token identifier to be transferred\n   */\n  function depositERC1155Token(\n    string calldata tokenURI,\n    address to,\n    uint256 tokenId,\n    uint256 amount,\n    bytes memory data\n  ) external;\n\n  /**\n   * @notice  Transfer ERC1155 token from contract address (PRIVI) to sender address (User)\n   * @dev     - User must have TRANSFER_ROLE\n   *          - PRIVI must have enough tokens to transfer them back to User\n   * @param   tokenURI Name of the token to be transferred\n   * @param   to Destination address to receive the tokens\n   * @param   tokenId Token identifier to be transferred\n   */\n  function withdrawERC1155Token(\n    string calldata tokenURI,\n    address to,\n    uint256 tokenId,\n    uint256 amount,\n    bytes memory data\n  ) external;\n\n  /**\n   * @notice  Transfer ether from sender address to contract address\n   * @dev     - Amount to be deposited must be greater than 0 ethers\n   */\n  function depositEther() external payable;\n\n  /**\n   * @notice  Transfer ether from contract address to sender address\n   * @dev     - Sender must have TRANSFER_ROLE\n   *          - Contract must have enough balance to do the transfer\n   * @param   to Destination address to receive the ether\n   * @param   amount Amount of ether to be transferred\n   */\n  function withdrawEther(address to, uint256 amount) external;\n\n  /**\n   * @return  Contract balance in weis\n   */\n  function getBalance() external view returns (uint256);\n}\n",
+  "sourcePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/ISwapManager.sol",
+  "ast": {
+    "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/ISwapManager.sol",
+    "exportedSymbols": {
+      "ISwapManager": [
+        3228
+      ]
+    },
+    "id": 3229,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3078,
+        "literals": [
+          "solidity",
+          "^",
+          "0.7",
+          ".6"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "32:23:13"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "documentation": {
+          "id": 3079,
+          "nodeType": "StructuredDocumentation",
+          "src": "57:150:13",
+          "text": "@author The PRIVI Blockchain team\n @title Manages swap and withdraw of Ethers, ERC20 tokens and ERC721 tokens between Users and PRIVI platform"
+        },
+        "fullyImplemented": false,
+        "id": 3228,
+        "linearizedBaseContracts": [
+          3228
+        ],
+        "name": "ISwapManager",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "id": 3087,
+            "name": "DepositERC20Token",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3086,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3081,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3087,
+                  "src": "264:26:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3080,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "264:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3083,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "from",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3087,
+                  "src": "296:12:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3082,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "296:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3085,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3087,
+                  "src": "314:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3084,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "314:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "258:74:13"
+            },
+            "src": "235:98:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3095,
+            "name": "WithdrawERC20Token",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3094,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3089,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3095,
+                  "src": "366:26:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3088,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "366:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3091,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3095,
+                  "src": "398:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3090,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "398:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3093,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3095,
+                  "src": "414:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3092,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "414:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "360:72:13"
+            },
+            "src": "336:97:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3103,
+            "name": "DepositERC721Token",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3102,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3097,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3103,
+                  "src": "466:26:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3096,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "466:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3099,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "from",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3103,
+                  "src": "498:12:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3098,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "498:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3101,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3103,
+                  "src": "516:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3100,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "516:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "460:74:13"
+            },
+            "src": "436:99:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3111,
+            "name": "WithdrawERC721Token",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3110,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3105,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3111,
+                  "src": "569:26:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3104,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "569:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3107,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3111,
+                  "src": "601:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3106,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "601:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3109,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3111,
+                  "src": "617:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3108,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "617:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "563:73:13"
+            },
+            "src": "538:99:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3121,
+            "name": "DepositERC1155Token",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3120,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3113,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "tokenURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3121,
+                  "src": "671:23:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3112,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "671:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3115,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3121,
+                  "src": "700:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3114,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "700:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3117,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3121,
+                  "src": "716:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3116,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "716:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3119,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3121,
+                  "src": "737:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3118,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "737:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "665:90:13"
+            },
+            "src": "640:116:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3131,
+            "name": "WithdrawERC1155Token",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3130,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3123,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "tokenURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "791:23:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3122,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "791:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3125,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "820:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3124,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "820:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3127,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "836:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3126,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "836:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3129,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3131,
+                  "src": "857:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3128,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "857:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "785:90:13"
+            },
+            "src": "759:117:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3137,
+            "name": "DepositEther",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3136,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3133,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "from",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3137,
+                  "src": "898:20:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3132,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "898:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3135,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3137,
+                  "src": "920:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3134,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "920:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "897:38:13"
+            },
+            "src": "879:57:13"
+          },
+          {
+            "anonymous": false,
+            "id": 3143,
+            "name": "WithdrawEther",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3142,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3139,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3143,
+                  "src": "959:18:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3138,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "959:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3141,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3143,
+                  "src": "979:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3140,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "979:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "958:36:13"
+            },
+            "src": "939:56:13"
+          },
+          {
+            "documentation": {
+              "id": 3144,
+              "nodeType": "StructuredDocumentation",
+              "src": "999:479:13",
+              "text": " @notice  Transfer ERC20 token from sender address (User) to contract address (PRIVI)\n @dev     - Token to be transferred must be already registered\n          - User has to approve first the amount to be transferred WITHIN the original ERC20 token contract,\n          and not from this contract. Otherwise, transaction will always fail\n @param   tokenSymbol Name of the token to be transferred\n @param   amount Amount of tokens to be transferred"
+            },
+            "functionSelector": "7de2c626",
+            "id": 3151,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "depositERC20Token",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3149,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3146,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3151,
+                  "src": "1508:27:13",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3145,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1508:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3148,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3151,
+                  "src": "1537:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3147,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1537:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1507:45:13"
+            },
+            "returnParameters": {
+              "id": 3150,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1565:0:13"
+            },
+            "scope": 3228,
+            "src": "1481:85:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3152,
+              "nodeType": "StructuredDocumentation",
+              "src": "1570:397:13",
+              "text": " @notice  Transfer ERC20 token from contract address (PRIVI) to sender address (User)\n @dev     - User must have TRANSFER_ROLE\n          - PRIVI must have enough tokens to transfer them back to User\n @param   tokenSymbol Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   amount Amount of tokens to be transferred"
+            },
+            "functionSelector": "d1af27c4",
+            "id": 3161,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawERC20Token",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3159,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3154,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3161,
+                  "src": "2003:27:13",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3153,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2003:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3156,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3161,
+                  "src": "2036:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3155,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2036:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3158,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3161,
+                  "src": "2052:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3157,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2052:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1997:73:13"
+            },
+            "returnParameters": {
+              "id": 3160,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2079:0:13"
+            },
+            "scope": 3228,
+            "src": "1970:110:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3162,
+              "nodeType": "StructuredDocumentation",
+              "src": "2084:527:13",
+              "text": " @notice  Transfer ERC721 token from sender address (User) to contract address (PRIVI)\n @dev     - User must have TRANSFER_ROLE\n          - Token to be transferred must be already registered\n          - User has to approve first the amount to be transferred WITHIN the original ERC721 token contract,\n          and not from this contract. Otherwise, transaction will always fail\n @param   tokenSymbol Name of the token to be transferred\n @param   tokenId Token identifier to be transferred"
+            },
+            "functionSelector": "412991cb",
+            "id": 3169,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "depositERC721Token",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3167,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3164,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3169,
+                  "src": "2642:27:13",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3163,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2642:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3166,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3169,
+                  "src": "2671:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3165,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "2671:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "2641:46:13"
+            },
+            "returnParameters": {
+              "id": 3168,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "2700:0:13"
+            },
+            "scope": 3228,
+            "src": "2614:87:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3170,
+              "nodeType": "StructuredDocumentation",
+              "src": "2705:493:13",
+              "text": " @notice  Transfer ERC721 token from contract address (PRIVI) to sender address (User)\n @dev     - User must have TRANSFER_ROLE\n          - PRIVI must have enough tokens to transfer them back to User\n @param   tokenSymbol Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   tokenId Token identifier to be transferred\n @param   isPodMint is it a withdraw from swap manager or is it minting new nft pod token"
+            },
+            "functionSelector": "e7f3ec38",
+            "id": 3181,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawERC721Token",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3179,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3172,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3181,
+                  "src": "3235:27:13",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3171,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3235:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3174,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3181,
+                  "src": "3268:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3173,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3268:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3176,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3181,
+                  "src": "3284:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3175,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3284:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3178,
+                  "mutability": "mutable",
+                  "name": "isPodMint",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3181,
+                  "src": "3305:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3177,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3305:4:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3229:94:13"
+            },
+            "returnParameters": {
+              "id": 3180,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "3332:0:13"
+            },
+            "scope": 3228,
+            "src": "3201:132:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3182,
+              "nodeType": "StructuredDocumentation",
+              "src": "3337:585:13",
+              "text": " @notice  Transfer ERC1155 token from sender address (User) to contract address (PRIVI)\n @dev     - User must have TRANSFER_ROLE\n          - Token to be transferred must be already registered\n          - User has to approve first the amount to be transferred WITHIN the original ERC1155 token contract,\n          and not from this contract. Otherwise, transaction will always fail\n @param   tokenURI Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   tokenId Token identifier to be transferred"
+            },
+            "functionSelector": "d406e103",
+            "id": 3195,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "depositERC1155Token",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3193,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3184,
+                  "mutability": "mutable",
+                  "name": "tokenURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3195,
+                  "src": "3959:24:13",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3183,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3959:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3186,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3195,
+                  "src": "3989:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3185,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "3989:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3188,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3195,
+                  "src": "4005:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3187,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4005:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3190,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3195,
+                  "src": "4026:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3189,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4026:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3192,
+                  "mutability": "mutable",
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3195,
+                  "src": "4046:17:13",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3191,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4046:5:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "3953:114:13"
+            },
+            "returnParameters": {
+              "id": 3194,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4076:0:13"
+            },
+            "scope": 3228,
+            "src": "3925:152:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3196,
+              "nodeType": "StructuredDocumentation",
+              "src": "4081:397:13",
+              "text": " @notice  Transfer ERC1155 token from contract address (PRIVI) to sender address (User)\n @dev     - User must have TRANSFER_ROLE\n          - PRIVI must have enough tokens to transfer them back to User\n @param   tokenURI Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   tokenId Token identifier to be transferred"
+            },
+            "functionSelector": "bb51fc97",
+            "id": 3209,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawERC1155Token",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3207,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3198,
+                  "mutability": "mutable",
+                  "name": "tokenURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3209,
+                  "src": "4516:24:13",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3197,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4516:6:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3200,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3209,
+                  "src": "4546:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3199,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4546:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3202,
+                  "mutability": "mutable",
+                  "name": "tokenId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3209,
+                  "src": "4562:15:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3201,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4562:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3204,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3209,
+                  "src": "4583:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3203,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4583:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3206,
+                  "mutability": "mutable",
+                  "name": "data",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3209,
+                  "src": "4603:17:13",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bytes_memory_ptr",
+                    "typeString": "bytes"
+                  },
+                  "typeName": {
+                    "id": 3205,
+                    "name": "bytes",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "4603:5:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bytes_storage_ptr",
+                      "typeString": "bytes"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "4510:114:13"
+            },
+            "returnParameters": {
+              "id": 3208,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4633:0:13"
+            },
+            "scope": 3228,
+            "src": "4481:153:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3210,
+              "nodeType": "StructuredDocumentation",
+              "src": "4638:147:13",
+              "text": " @notice  Transfer ether from sender address to contract address\n @dev     - Amount to be deposited must be greater than 0 ethers"
+            },
+            "functionSelector": "98ea5fca",
+            "id": 3213,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "depositEther",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3211,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4809:2:13"
+            },
+            "returnParameters": {
+              "id": 3212,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "4828:0:13"
+            },
+            "scope": 3228,
+            "src": "4788:41:13",
+            "stateMutability": "payable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3214,
+              "nodeType": "StructuredDocumentation",
+              "src": "4833:307:13",
+              "text": " @notice  Transfer ether from contract address to sender address\n @dev     - Sender must have TRANSFER_ROLE\n          - Contract must have enough balance to do the transfer\n @param   to Destination address to receive the ether\n @param   amount Amount of ether to be transferred"
+            },
+            "functionSelector": "522f6815",
+            "id": 3221,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "withdrawEther",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3219,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3216,
+                  "mutability": "mutable",
+                  "name": "to",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3221,
+                  "src": "5166:10:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3215,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "5166:7:13",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3218,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3221,
+                  "src": "5178:14:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3217,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "5178:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "5165:28:13"
+            },
+            "returnParameters": {
+              "id": 3220,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "5202:0:13"
+            },
+            "scope": 3228,
+            "src": "5143:60:13",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3222,
+              "nodeType": "StructuredDocumentation",
+              "src": "5207:48:13",
+              "text": " @return  Contract balance in weis"
+            },
+            "functionSelector": "12065fe0",
+            "id": 3227,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getBalance",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3223,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "5277:2:13"
+            },
+            "returnParameters": {
+              "id": 3226,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3225,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3227,
+                  "src": "5303:7:13",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3224,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "5303:7:13",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "5302:9:13"
+            },
+            "scope": 3228,
+            "src": "5258:54:13",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3229,
+        "src": "208:5106:13"
+      }
+    ],
+    "src": "32:5283:13"
+  },
+  "legacyAST": {
+    "attributes": {
+      "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/ISwapManager.sol",
+      "exportedSymbols": {
+        "ISwapManager": [
+          3228
+        ]
+      },
+      "license": "MIT"
+    },
+    "children": [
+      {
+        "attributes": {
+          "literals": [
+            "solidity",
+            "^",
+            "0.7",
+            ".6"
+          ]
+        },
+        "id": 3078,
+        "name": "PragmaDirective",
+        "src": "32:23:13"
+      },
+      {
+        "attributes": {
+          "abstract": false,
+          "baseContracts": [
+            null
+          ],
+          "contractDependencies": [
+            null
+          ],
+          "contractKind": "interface",
+          "fullyImplemented": false,
+          "linearizedBaseContracts": [
+            3228
+          ],
+          "name": "ISwapManager",
+          "scope": 3229
+        },
+        "children": [
+          {
+            "attributes": {
+              "text": "@author The PRIVI Blockchain team\n @title Manages swap and withdraw of Ethers, ERC20 tokens and ERC721 tokens between Users and PRIVI platform"
+            },
+            "id": 3079,
+            "name": "StructuredDocumentation",
+            "src": "57:150:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "DepositERC20Token"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3087,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3080,
+                        "name": "ElementaryTypeName",
+                        "src": "264:6:13"
+                      }
+                    ],
+                    "id": 3081,
+                    "name": "VariableDeclaration",
+                    "src": "264:26:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "from",
+                      "scope": 3087,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3082,
+                        "name": "ElementaryTypeName",
+                        "src": "296:7:13"
+                      }
+                    ],
+                    "id": 3083,
+                    "name": "VariableDeclaration",
+                    "src": "296:12:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3087,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3084,
+                        "name": "ElementaryTypeName",
+                        "src": "314:7:13"
+                      }
+                    ],
+                    "id": 3085,
+                    "name": "VariableDeclaration",
+                    "src": "314:14:13"
+                  }
+                ],
+                "id": 3086,
+                "name": "ParameterList",
+                "src": "258:74:13"
+              }
+            ],
+            "id": 3087,
+            "name": "EventDefinition",
+            "src": "235:98:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "WithdrawERC20Token"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3095,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3088,
+                        "name": "ElementaryTypeName",
+                        "src": "366:6:13"
+                      }
+                    ],
+                    "id": 3089,
+                    "name": "VariableDeclaration",
+                    "src": "366:26:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3095,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3090,
+                        "name": "ElementaryTypeName",
+                        "src": "398:7:13"
+                      }
+                    ],
+                    "id": 3091,
+                    "name": "VariableDeclaration",
+                    "src": "398:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3095,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3092,
+                        "name": "ElementaryTypeName",
+                        "src": "414:7:13"
+                      }
+                    ],
+                    "id": 3093,
+                    "name": "VariableDeclaration",
+                    "src": "414:14:13"
+                  }
+                ],
+                "id": 3094,
+                "name": "ParameterList",
+                "src": "360:72:13"
+              }
+            ],
+            "id": 3095,
+            "name": "EventDefinition",
+            "src": "336:97:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "DepositERC721Token"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3103,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3096,
+                        "name": "ElementaryTypeName",
+                        "src": "466:6:13"
+                      }
+                    ],
+                    "id": 3097,
+                    "name": "VariableDeclaration",
+                    "src": "466:26:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "from",
+                      "scope": 3103,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3098,
+                        "name": "ElementaryTypeName",
+                        "src": "498:7:13"
+                      }
+                    ],
+                    "id": 3099,
+                    "name": "VariableDeclaration",
+                    "src": "498:12:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3103,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3100,
+                        "name": "ElementaryTypeName",
+                        "src": "516:7:13"
+                      }
+                    ],
+                    "id": 3101,
+                    "name": "VariableDeclaration",
+                    "src": "516:14:13"
+                  }
+                ],
+                "id": 3102,
+                "name": "ParameterList",
+                "src": "460:74:13"
+              }
+            ],
+            "id": 3103,
+            "name": "EventDefinition",
+            "src": "436:99:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "WithdrawERC721Token"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3111,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3104,
+                        "name": "ElementaryTypeName",
+                        "src": "569:6:13"
+                      }
+                    ],
+                    "id": 3105,
+                    "name": "VariableDeclaration",
+                    "src": "569:26:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3111,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3106,
+                        "name": "ElementaryTypeName",
+                        "src": "601:7:13"
+                      }
+                    ],
+                    "id": 3107,
+                    "name": "VariableDeclaration",
+                    "src": "601:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3111,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3108,
+                        "name": "ElementaryTypeName",
+                        "src": "617:7:13"
+                      }
+                    ],
+                    "id": 3109,
+                    "name": "VariableDeclaration",
+                    "src": "617:15:13"
+                  }
+                ],
+                "id": 3110,
+                "name": "ParameterList",
+                "src": "563:73:13"
+              }
+            ],
+            "id": 3111,
+            "name": "EventDefinition",
+            "src": "538:99:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "DepositERC1155Token"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "tokenURI",
+                      "scope": 3121,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3112,
+                        "name": "ElementaryTypeName",
+                        "src": "671:6:13"
+                      }
+                    ],
+                    "id": 3113,
+                    "name": "VariableDeclaration",
+                    "src": "671:23:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3121,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3114,
+                        "name": "ElementaryTypeName",
+                        "src": "700:7:13"
+                      }
+                    ],
+                    "id": 3115,
+                    "name": "VariableDeclaration",
+                    "src": "700:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3121,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3116,
+                        "name": "ElementaryTypeName",
+                        "src": "716:7:13"
+                      }
+                    ],
+                    "id": 3117,
+                    "name": "VariableDeclaration",
+                    "src": "716:15:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3121,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3118,
+                        "name": "ElementaryTypeName",
+                        "src": "737:7:13"
+                      }
+                    ],
+                    "id": 3119,
+                    "name": "VariableDeclaration",
+                    "src": "737:14:13"
+                  }
+                ],
+                "id": 3120,
+                "name": "ParameterList",
+                "src": "665:90:13"
+              }
+            ],
+            "id": 3121,
+            "name": "EventDefinition",
+            "src": "640:116:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "WithdrawERC1155Token"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "tokenURI",
+                      "scope": 3131,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3122,
+                        "name": "ElementaryTypeName",
+                        "src": "791:6:13"
+                      }
+                    ],
+                    "id": 3123,
+                    "name": "VariableDeclaration",
+                    "src": "791:23:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3131,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3124,
+                        "name": "ElementaryTypeName",
+                        "src": "820:7:13"
+                      }
+                    ],
+                    "id": 3125,
+                    "name": "VariableDeclaration",
+                    "src": "820:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3131,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3126,
+                        "name": "ElementaryTypeName",
+                        "src": "836:7:13"
+                      }
+                    ],
+                    "id": 3127,
+                    "name": "VariableDeclaration",
+                    "src": "836:15:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3131,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3128,
+                        "name": "ElementaryTypeName",
+                        "src": "857:7:13"
+                      }
+                    ],
+                    "id": 3129,
+                    "name": "VariableDeclaration",
+                    "src": "857:14:13"
+                  }
+                ],
+                "id": 3130,
+                "name": "ParameterList",
+                "src": "785:90:13"
+              }
+            ],
+            "id": 3131,
+            "name": "EventDefinition",
+            "src": "759:117:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "DepositEther"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "from",
+                      "scope": 3137,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3132,
+                        "name": "ElementaryTypeName",
+                        "src": "898:7:13"
+                      }
+                    ],
+                    "id": 3133,
+                    "name": "VariableDeclaration",
+                    "src": "898:20:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3137,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3134,
+                        "name": "ElementaryTypeName",
+                        "src": "920:7:13"
+                      }
+                    ],
+                    "id": 3135,
+                    "name": "VariableDeclaration",
+                    "src": "920:14:13"
+                  }
+                ],
+                "id": 3136,
+                "name": "ParameterList",
+                "src": "897:38:13"
+              }
+            ],
+            "id": 3137,
+            "name": "EventDefinition",
+            "src": "879:57:13"
+          },
+          {
+            "attributes": {
+              "anonymous": false,
+              "name": "WithdrawEther"
+            },
+            "children": [
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": true,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3143,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3138,
+                        "name": "ElementaryTypeName",
+                        "src": "959:7:13"
+                      }
+                    ],
+                    "id": 3139,
+                    "name": "VariableDeclaration",
+                    "src": "959:18:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "indexed": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3143,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3140,
+                        "name": "ElementaryTypeName",
+                        "src": "979:7:13"
+                      }
+                    ],
+                    "id": 3141,
+                    "name": "VariableDeclaration",
+                    "src": "979:14:13"
+                  }
+                ],
+                "id": 3142,
+                "name": "ParameterList",
+                "src": "958:36:13"
+              }
+            ],
+            "id": 3143,
+            "name": "EventDefinition",
+            "src": "939:56:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "7de2c626",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "depositERC20Token",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ERC20 token from sender address (User) to contract address (PRIVI)\n @dev     - Token to be transferred must be already registered\n          - User has to approve first the amount to be transferred WITHIN the original ERC20 token contract,\n          and not from this contract. Otherwise, transaction will always fail\n @param   tokenSymbol Name of the token to be transferred\n @param   amount Amount of tokens to be transferred"
+                },
+                "id": 3144,
+                "name": "StructuredDocumentation",
+                "src": "999:479:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3151,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3145,
+                        "name": "ElementaryTypeName",
+                        "src": "1508:6:13"
+                      }
+                    ],
+                    "id": 3146,
+                    "name": "VariableDeclaration",
+                    "src": "1508:27:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3151,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3147,
+                        "name": "ElementaryTypeName",
+                        "src": "1537:7:13"
+                      }
+                    ],
+                    "id": 3148,
+                    "name": "VariableDeclaration",
+                    "src": "1537:14:13"
+                  }
+                ],
+                "id": 3149,
+                "name": "ParameterList",
+                "src": "1507:45:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3150,
+                "name": "ParameterList",
+                "src": "1565:0:13"
+              }
+            ],
+            "id": 3151,
+            "name": "FunctionDefinition",
+            "src": "1481:85:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "d1af27c4",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "withdrawERC20Token",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ERC20 token from contract address (PRIVI) to sender address (User)\n @dev     - User must have TRANSFER_ROLE\n          - PRIVI must have enough tokens to transfer them back to User\n @param   tokenSymbol Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   amount Amount of tokens to be transferred"
+                },
+                "id": 3152,
+                "name": "StructuredDocumentation",
+                "src": "1570:397:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3161,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3153,
+                        "name": "ElementaryTypeName",
+                        "src": "2003:6:13"
+                      }
+                    ],
+                    "id": 3154,
+                    "name": "VariableDeclaration",
+                    "src": "2003:27:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3161,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3155,
+                        "name": "ElementaryTypeName",
+                        "src": "2036:7:13"
+                      }
+                    ],
+                    "id": 3156,
+                    "name": "VariableDeclaration",
+                    "src": "2036:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3161,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3157,
+                        "name": "ElementaryTypeName",
+                        "src": "2052:7:13"
+                      }
+                    ],
+                    "id": 3158,
+                    "name": "VariableDeclaration",
+                    "src": "2052:14:13"
+                  }
+                ],
+                "id": 3159,
+                "name": "ParameterList",
+                "src": "1997:73:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3160,
+                "name": "ParameterList",
+                "src": "2079:0:13"
+              }
+            ],
+            "id": 3161,
+            "name": "FunctionDefinition",
+            "src": "1970:110:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "412991cb",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "depositERC721Token",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ERC721 token from sender address (User) to contract address (PRIVI)\n @dev     - User must have TRANSFER_ROLE\n          - Token to be transferred must be already registered\n          - User has to approve first the amount to be transferred WITHIN the original ERC721 token contract,\n          and not from this contract. Otherwise, transaction will always fail\n @param   tokenSymbol Name of the token to be transferred\n @param   tokenId Token identifier to be transferred"
+                },
+                "id": 3162,
+                "name": "StructuredDocumentation",
+                "src": "2084:527:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3169,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3163,
+                        "name": "ElementaryTypeName",
+                        "src": "2642:6:13"
+                      }
+                    ],
+                    "id": 3164,
+                    "name": "VariableDeclaration",
+                    "src": "2642:27:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3169,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3165,
+                        "name": "ElementaryTypeName",
+                        "src": "2671:7:13"
+                      }
+                    ],
+                    "id": 3166,
+                    "name": "VariableDeclaration",
+                    "src": "2671:15:13"
+                  }
+                ],
+                "id": 3167,
+                "name": "ParameterList",
+                "src": "2641:46:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3168,
+                "name": "ParameterList",
+                "src": "2700:0:13"
+              }
+            ],
+            "id": 3169,
+            "name": "FunctionDefinition",
+            "src": "2614:87:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "e7f3ec38",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "withdrawERC721Token",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ERC721 token from contract address (PRIVI) to sender address (User)\n @dev     - User must have TRANSFER_ROLE\n          - PRIVI must have enough tokens to transfer them back to User\n @param   tokenSymbol Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   tokenId Token identifier to be transferred\n @param   isPodMint is it a withdraw from swap manager or is it minting new nft pod token"
+                },
+                "id": 3170,
+                "name": "StructuredDocumentation",
+                "src": "2705:493:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenSymbol",
+                      "scope": 3181,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3171,
+                        "name": "ElementaryTypeName",
+                        "src": "3235:6:13"
+                      }
+                    ],
+                    "id": 3172,
+                    "name": "VariableDeclaration",
+                    "src": "3235:27:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3181,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3173,
+                        "name": "ElementaryTypeName",
+                        "src": "3268:7:13"
+                      }
+                    ],
+                    "id": 3174,
+                    "name": "VariableDeclaration",
+                    "src": "3268:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3181,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3175,
+                        "name": "ElementaryTypeName",
+                        "src": "3284:7:13"
+                      }
+                    ],
+                    "id": 3176,
+                    "name": "VariableDeclaration",
+                    "src": "3284:15:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "isPodMint",
+                      "scope": 3181,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "bool",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bool",
+                          "type": "bool"
+                        },
+                        "id": 3177,
+                        "name": "ElementaryTypeName",
+                        "src": "3305:4:13"
+                      }
+                    ],
+                    "id": 3178,
+                    "name": "VariableDeclaration",
+                    "src": "3305:14:13"
+                  }
+                ],
+                "id": 3179,
+                "name": "ParameterList",
+                "src": "3229:94:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3180,
+                "name": "ParameterList",
+                "src": "3332:0:13"
+              }
+            ],
+            "id": 3181,
+            "name": "FunctionDefinition",
+            "src": "3201:132:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "d406e103",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "depositERC1155Token",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ERC1155 token from sender address (User) to contract address (PRIVI)\n @dev     - User must have TRANSFER_ROLE\n          - Token to be transferred must be already registered\n          - User has to approve first the amount to be transferred WITHIN the original ERC1155 token contract,\n          and not from this contract. Otherwise, transaction will always fail\n @param   tokenURI Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   tokenId Token identifier to be transferred"
+                },
+                "id": 3182,
+                "name": "StructuredDocumentation",
+                "src": "3337:585:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenURI",
+                      "scope": 3195,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3183,
+                        "name": "ElementaryTypeName",
+                        "src": "3959:6:13"
+                      }
+                    ],
+                    "id": 3184,
+                    "name": "VariableDeclaration",
+                    "src": "3959:24:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3195,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3185,
+                        "name": "ElementaryTypeName",
+                        "src": "3989:7:13"
+                      }
+                    ],
+                    "id": 3186,
+                    "name": "VariableDeclaration",
+                    "src": "3989:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3195,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3187,
+                        "name": "ElementaryTypeName",
+                        "src": "4005:7:13"
+                      }
+                    ],
+                    "id": 3188,
+                    "name": "VariableDeclaration",
+                    "src": "4005:15:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3195,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3189,
+                        "name": "ElementaryTypeName",
+                        "src": "4026:7:13"
+                      }
+                    ],
+                    "id": 3190,
+                    "name": "VariableDeclaration",
+                    "src": "4026:14:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "data",
+                      "scope": 3195,
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "type": "bytes",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes",
+                          "type": "bytes"
+                        },
+                        "id": 3191,
+                        "name": "ElementaryTypeName",
+                        "src": "4046:5:13"
+                      }
+                    ],
+                    "id": 3192,
+                    "name": "VariableDeclaration",
+                    "src": "4046:17:13"
+                  }
+                ],
+                "id": 3193,
+                "name": "ParameterList",
+                "src": "3953:114:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3194,
+                "name": "ParameterList",
+                "src": "4076:0:13"
+              }
+            ],
+            "id": 3195,
+            "name": "FunctionDefinition",
+            "src": "3925:152:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "bb51fc97",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "withdrawERC1155Token",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ERC1155 token from contract address (PRIVI) to sender address (User)\n @dev     - User must have TRANSFER_ROLE\n          - PRIVI must have enough tokens to transfer them back to User\n @param   tokenURI Name of the token to be transferred\n @param   to Destination address to receive the tokens\n @param   tokenId Token identifier to be transferred"
+                },
+                "id": 3196,
+                "name": "StructuredDocumentation",
+                "src": "4081:397:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenURI",
+                      "scope": 3209,
+                      "stateVariable": false,
+                      "storageLocation": "calldata",
+                      "type": "string",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "string",
+                          "type": "string"
+                        },
+                        "id": 3197,
+                        "name": "ElementaryTypeName",
+                        "src": "4516:6:13"
+                      }
+                    ],
+                    "id": 3198,
+                    "name": "VariableDeclaration",
+                    "src": "4516:24:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3209,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3199,
+                        "name": "ElementaryTypeName",
+                        "src": "4546:7:13"
+                      }
+                    ],
+                    "id": 3200,
+                    "name": "VariableDeclaration",
+                    "src": "4546:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "tokenId",
+                      "scope": 3209,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3201,
+                        "name": "ElementaryTypeName",
+                        "src": "4562:7:13"
+                      }
+                    ],
+                    "id": 3202,
+                    "name": "VariableDeclaration",
+                    "src": "4562:15:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3209,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3203,
+                        "name": "ElementaryTypeName",
+                        "src": "4583:7:13"
+                      }
+                    ],
+                    "id": 3204,
+                    "name": "VariableDeclaration",
+                    "src": "4583:14:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "data",
+                      "scope": 3209,
+                      "stateVariable": false,
+                      "storageLocation": "memory",
+                      "type": "bytes",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "bytes",
+                          "type": "bytes"
+                        },
+                        "id": 3205,
+                        "name": "ElementaryTypeName",
+                        "src": "4603:5:13"
+                      }
+                    ],
+                    "id": 3206,
+                    "name": "VariableDeclaration",
+                    "src": "4603:17:13"
+                  }
+                ],
+                "id": 3207,
+                "name": "ParameterList",
+                "src": "4510:114:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3208,
+                "name": "ParameterList",
+                "src": "4633:0:13"
+              }
+            ],
+            "id": 3209,
+            "name": "FunctionDefinition",
+            "src": "4481:153:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "98ea5fca",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "depositEther",
+              "scope": 3228,
+              "stateMutability": "payable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ether from sender address to contract address\n @dev     - Amount to be deposited must be greater than 0 ethers"
+                },
+                "id": 3210,
+                "name": "StructuredDocumentation",
+                "src": "4638:147:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3211,
+                "name": "ParameterList",
+                "src": "4809:2:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3212,
+                "name": "ParameterList",
+                "src": "4828:0:13"
+              }
+            ],
+            "id": 3213,
+            "name": "FunctionDefinition",
+            "src": "4788:41:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "522f6815",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "withdrawEther",
+              "scope": 3228,
+              "stateMutability": "nonpayable",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @notice  Transfer ether from contract address to sender address\n @dev     - Sender must have TRANSFER_ROLE\n          - Contract must have enough balance to do the transfer\n @param   to Destination address to receive the ether\n @param   amount Amount of ether to be transferred"
+                },
+                "id": 3214,
+                "name": "StructuredDocumentation",
+                "src": "4833:307:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "to",
+                      "scope": 3221,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "address",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "address",
+                          "stateMutability": "nonpayable",
+                          "type": "address"
+                        },
+                        "id": 3215,
+                        "name": "ElementaryTypeName",
+                        "src": "5166:7:13"
+                      }
+                    ],
+                    "id": 3216,
+                    "name": "VariableDeclaration",
+                    "src": "5166:10:13"
+                  },
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "amount",
+                      "scope": 3221,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3217,
+                        "name": "ElementaryTypeName",
+                        "src": "5178:7:13"
+                      }
+                    ],
+                    "id": 3218,
+                    "name": "VariableDeclaration",
+                    "src": "5178:14:13"
+                  }
+                ],
+                "id": 3219,
+                "name": "ParameterList",
+                "src": "5165:28:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3220,
+                "name": "ParameterList",
+                "src": "5202:0:13"
+              }
+            ],
+            "id": 3221,
+            "name": "FunctionDefinition",
+            "src": "5143:60:13"
+          },
+          {
+            "attributes": {
+              "functionSelector": "12065fe0",
+              "implemented": false,
+              "isConstructor": false,
+              "kind": "function",
+              "modifiers": [
+                null
+              ],
+              "name": "getBalance",
+              "scope": 3228,
+              "stateMutability": "view",
+              "virtual": false,
+              "visibility": "external"
+            },
+            "children": [
+              {
+                "attributes": {
+                  "text": " @return  Contract balance in weis"
+                },
+                "id": 3222,
+                "name": "StructuredDocumentation",
+                "src": "5207:48:13"
+              },
+              {
+                "attributes": {
+                  "parameters": [
+                    null
+                  ]
+                },
+                "children": [],
+                "id": 3223,
+                "name": "ParameterList",
+                "src": "5277:2:13"
+              },
+              {
+                "children": [
+                  {
+                    "attributes": {
+                      "constant": false,
+                      "mutability": "mutable",
+                      "name": "",
+                      "scope": 3227,
+                      "stateVariable": false,
+                      "storageLocation": "default",
+                      "type": "uint256",
+                      "visibility": "internal"
+                    },
+                    "children": [
+                      {
+                        "attributes": {
+                          "name": "uint256",
+                          "type": "uint256"
+                        },
+                        "id": 3224,
+                        "name": "ElementaryTypeName",
+                        "src": "5303:7:13"
+                      }
+                    ],
+                    "id": 3225,
+                    "name": "VariableDeclaration",
+                    "src": "5303:7:13"
+                  }
+                ],
+                "id": 3226,
+                "name": "ParameterList",
+                "src": "5302:9:13"
+              }
+            ],
+            "id": 3227,
+            "name": "FunctionDefinition",
+            "src": "5258:54:13"
+          }
+        ],
+        "id": 3228,
+        "name": "ContractDefinition",
+        "src": "208:5106:13"
+      }
+    ],
+    "id": 3229,
+    "name": "SourceUnit",
+    "src": "32:5283:13"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.7.6+commit.7338295f.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-03-17T11:04:05.544Z",
+  "devdoc": {
+    "author": "The PRIVI Blockchain team",
+    "kind": "dev",
+    "methods": {
+      "depositERC1155Token(string,address,uint256,uint256,bytes)": {
+        "details": "- User must have TRANSFER_ROLE          - Token to be transferred must be already registered          - User has to approve first the amount to be transferred WITHIN the original ERC1155 token contract,          and not from this contract. Otherwise, transaction will always fail",
+        "params": {
+          "to": "Destination address to receive the tokens",
+          "tokenId": "Token identifier to be transferred",
+          "tokenURI": "Name of the token to be transferred"
+        }
+      },
+      "depositERC20Token(string,uint256)": {
+        "details": "- Token to be transferred must be already registered          - User has to approve first the amount to be transferred WITHIN the original ERC20 token contract,          and not from this contract. Otherwise, transaction will always fail",
+        "params": {
+          "amount": "Amount of tokens to be transferred",
+          "tokenSymbol": "Name of the token to be transferred"
+        }
+      },
+      "depositERC721Token(string,uint256)": {
+        "details": "- User must have TRANSFER_ROLE          - Token to be transferred must be already registered          - User has to approve first the amount to be transferred WITHIN the original ERC721 token contract,          and not from this contract. Otherwise, transaction will always fail",
+        "params": {
+          "tokenId": "Token identifier to be transferred",
+          "tokenSymbol": "Name of the token to be transferred"
+        }
+      },
+      "depositEther()": {
+        "details": "- Amount to be deposited must be greater than 0 ethers"
+      },
+      "getBalance()": {
+        "returns": {
+          "_0": "Contract balance in weis"
+        }
+      },
+      "withdrawERC1155Token(string,address,uint256,uint256,bytes)": {
+        "details": "- User must have TRANSFER_ROLE          - PRIVI must have enough tokens to transfer them back to User",
+        "params": {
+          "to": "Destination address to receive the tokens",
+          "tokenId": "Token identifier to be transferred",
+          "tokenURI": "Name of the token to be transferred"
+        }
+      },
+      "withdrawERC20Token(string,address,uint256)": {
+        "details": "- User must have TRANSFER_ROLE          - PRIVI must have enough tokens to transfer them back to User",
+        "params": {
+          "amount": "Amount of tokens to be transferred",
+          "to": "Destination address to receive the tokens",
+          "tokenSymbol": "Name of the token to be transferred"
+        }
+      },
+      "withdrawERC721Token(string,address,uint256,bool)": {
+        "details": "- User must have TRANSFER_ROLE          - PRIVI must have enough tokens to transfer them back to User",
+        "params": {
+          "isPodMint": "is it a withdraw from swap manager or is it minting new nft pod token",
+          "to": "Destination address to receive the tokens",
+          "tokenId": "Token identifier to be transferred",
+          "tokenSymbol": "Name of the token to be transferred"
+        }
+      },
+      "withdrawEther(address,uint256)": {
+        "details": "- Sender must have TRANSFER_ROLE          - Contract must have enough balance to do the transfer",
+        "params": {
+          "amount": "Amount of ether to be transferred",
+          "to": "Destination address to receive the ether"
+        }
+      }
+    },
+    "title": "Manages swap and withdraw of Ethers, ERC20 tokens and ERC721 tokens between Users and PRIVI platform",
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {
+      "depositERC1155Token(string,address,uint256,uint256,bytes)": {
+        "notice": "Transfer ERC1155 token from sender address (User) to contract address (PRIVI)"
+      },
+      "depositERC20Token(string,uint256)": {
+        "notice": "Transfer ERC20 token from sender address (User) to contract address (PRIVI)"
+      },
+      "depositERC721Token(string,uint256)": {
+        "notice": "Transfer ERC721 token from sender address (User) to contract address (PRIVI)"
+      },
+      "depositEther()": {
+        "notice": "Transfer ether from sender address to contract address"
+      },
+      "withdrawERC1155Token(string,address,uint256,uint256,bytes)": {
+        "notice": "Transfer ERC1155 token from contract address (PRIVI) to sender address (User)"
+      },
+      "withdrawERC20Token(string,address,uint256)": {
+        "notice": "Transfer ERC20 token from contract address (PRIVI) to sender address (User)"
+      },
+      "withdrawERC721Token(string,address,uint256,bool)": {
+        "notice": "Transfer ERC721 token from contract address (PRIVI) to sender address (User)"
+      },
+      "withdrawEther(address,uint256)": {
+        "notice": "Transfer ether from contract address to sender address"
+      }
+    },
+    "version": 1
+  }
+}
