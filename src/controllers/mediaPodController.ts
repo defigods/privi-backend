@@ -323,7 +323,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             let tid = '';
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTxns)) {
-                db.collection(collections.mediaPods).doc(podId).collection(collections.Transactions).doc(tid).set({ Transactions: txnArray });
+                db.collection(collections.mediaPods).doc(podId).collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
             }
             // add initial data for graph
             addZerosToHistory(db.collection(collections.mediaPods).doc(podId).collection(collections.priceHistory), 'price');
