@@ -392,45 +392,43 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         const recordRoyalty = body.RecordRoyalty;
         const hash = body.Hash;
         const signature = body.Signature;
-        console.log(body, Date.now());
         const blockchainRes = await mediaPod.registerMedia(requester, podAddress, mediaSymbol, type, paymentType, copies,
             royalty, fundingToken, releaseDate, pricePerSecond, price, isRecord, recordToken, recordPaymentType,
             recordPrice, recordPricePerSecond, recordCopies, recordRoyalty, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
-            if(type === 'LIVE_VIDEO_TYPE' || type === 'LIVE_VIDEO_TYPE') {
-                await db.runTransaction(async (transaction) => {
-                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol), {
-                        Requester: requester,
-                        PodAddress: podAddress,
-                        MediaSymbol: mediaSymbol,
-                        Type: type,
-                        PaymentType: paymentType,
-                        Copies: copies,
-                        Royalty: royalty,
-                        FundingToken: fundingToken,
-                        ReleaseDate: releaseDate,
-                        PricePerSecond: pricePerSecond,
-                        Price: price,
-                        IsRecord: isRecord,
-                        RecordToken: recordToken,
-                        RecordPaymentType: recordPaymentType,
-                        RecordPrice: recordPrice,
-                        RecordPricePerSecond: recordPricePerSecond,
-                        RecordCopies: recordCopies,
-                        RecordRoyalty: recordRoyalty
-                    });
+            await db.runTransaction(async (transaction) => {
+                transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
+                    Requester: requester,
+                    PodAddress: podAddress,
+                    MediaSymbol: mediaSymbol,
+                    Type: type,
+                    PaymentType: paymentType,
+                    Copies: copies,
+                    Royalty: royalty,
+                    FundingToken: fundingToken,
+                    ReleaseDate: releaseDate,
+                    PricePerSecond: pricePerSecond,
+                    Price: price,
+                    IsRecord: isRecord,
+                    RecordToken: recordToken,
+                    RecordPaymentType: recordPaymentType,
+                    RecordPrice: recordPrice,
+                    RecordPricePerSecond: recordPricePerSecond,
+                    RecordCopies: recordCopies,
+                    RecordRoyalty: recordRoyalty
                 });
-            }
-            updateFirebase(blockchainRes);
+            });
+
             // add txns to media
             const output = blockchainRes.output;
             const updateTxns = output.Transactions;
             let tid = '';
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTxns)) {
-                db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol).collection(collections.Transactions).doc(tid).set({ Transactions: txnArray });
+                db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol)
+                  .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
             }
             res.send({ success: true });
         } else {
