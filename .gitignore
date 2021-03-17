@@ -1,4 +1,5 @@
 # node.js
+.idea/
 build/
 node_modules/
 
