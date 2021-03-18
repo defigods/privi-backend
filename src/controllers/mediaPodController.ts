@@ -407,6 +407,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
                 await db.runTransaction(async (transaction) => {
                     transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
                         Collabs: media.Collabs || {},
+                        HasPhoto: media.HasPhoto || false,
                         Requester: requester,
                         PodAddress: podAddress,
                         MediaSymbol: mediaSymbol,
@@ -469,6 +470,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
                 await db.runTransaction(async (transaction) => {
                     transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
                         Collabs: media.Collabs || {},
+                        HasPhoto: media.HasPhoto || false,
                         Requester: body.Requester,
                         PodAddress: media.PodAddress,
                         MediaSymbol: media.MediaSymbol,
