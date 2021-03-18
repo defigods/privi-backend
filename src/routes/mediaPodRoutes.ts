@@ -1,8 +1,9 @@
 import express from 'express';
 const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
-import multer from "multer";
+import multer from 'multer';
 const mediaPodController = require('../controllers/mediaPodController');
+const userController = require('../controllers/userController');
 
 let storage = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
@@ -14,7 +15,7 @@ let storage = multer.diskStorage({
   },
 });
 let upload = multer({
-  storage: storage
+  storage: storage,
 });
 
 // POSTS
@@ -41,5 +42,9 @@ router.get('/getPriceHistory', authenticateJWT, mediaPodController.getPriceHisto
 router.get('/getSupplyHistory', authenticateJWT, mediaPodController.getSupplyHistory);
 router.get('/getMediaPodTransactions', authenticateJWT, mediaPodController.getMediaPodTransactions);
 
+//POD SLUG
+router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);
+router.get('/getIdFromSlug/:urlSlug/:type', userController.getIdFromSlug);
+router.get('/getSlugFromId/:urlId/:type', userController.getSlugFromId);
 
 module.exports = router;
