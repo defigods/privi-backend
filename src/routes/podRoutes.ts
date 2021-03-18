@@ -176,7 +176,7 @@ router.get('/NFT/getPodTransactions/:podId', authenticateJWT, podController.getN
 router.get('/NFT/getMyPods/:userId', authenticateJWT, podController.getMyPodsNFT);
 router.get('/NFT/getTrendingPods', authenticateJWT, podController.getTrendingPodsNFT);
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
-router.get('/NFT/getAllPodsInfo/:userId', authenticateJWT, podController.getAllNFTPodsInfo);
+router.get('/NFT/getAllPodsInfo/:pagination/:lastId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.post('/changeNFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeNFTPodPhoto);
 
 router.post('/NFT/saveMediaPod', authenticateJWT, podController.saveNFTMedia);
