@@ -762,6 +762,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools = await getMyCreditPools(userId);
       let myWorkInProgress = await getMyWorkInProgressFunction(userId);
+      let myMedia = await getMyMediaFunction(userId);
 
       res.send({
         success: true,
@@ -776,6 +777,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
           myWorkInProgress: myWorkInProgress,
+          myMedia: myMedia
         },
       });
     } else {
@@ -1902,7 +1904,7 @@ const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<an
   });
 };
 
-//get communities
+//get WIP
 const getMyWorkInProgressFunction = (userId) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -1960,6 +1962,62 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
       });
   });
 };
+
+
+//get Media
+const getMyMediaFunction = (userId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let myMedia: any[] = [];
+
+      myMedia = await getMyMediaArray(userId);
+
+      resolve(myMedia);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+const getMyMediaArray = (userId: string): Promise<any[]> => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let mediaInfo: any[] = [];
+
+      const medias = await db.collection(collections.streaming).get();
+
+      let mediasArray : any[] = [];
+      for (const doc of medias.docs) {
+        let data = doc.data();
+        data.id = doc.id;
+        mediasArray.push(data);
+      }
+
+      if(mediasArray && mediasArray.length > 0) {
+        let requesterMedias = mediasArray.filter(med => med.Requester === userId);
+
+        let mediaWithCollab : any[] = [];
+        for (const media of mediasArray) {
+          if(media.Collab && media.Collab != {}) {
+            let collabKeys = Object.keys(media.Collab);
+
+            let collabIndex = collabKeys.findIndex(col => col === userId);
+            if(collabIndex !== -1) {
+              mediaWithCollab.push(media);
+            }
+          }
+        }
+        mediaInfo = requesterMedias.concat(mediaWithCollab);
+      }
+
+      resolve(mediaInfo);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
+
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
