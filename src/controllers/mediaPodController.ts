@@ -399,7 +399,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
             updateFirebase(blockchainRes);
 
             await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
+                transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), {
                     Requester: requester,
                     PodAddress: podAddress,
                     MediaSymbol: mediaSymbol,
@@ -428,7 +428,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTxns)) {
                 db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol)
-                  .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
+                    .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
             }
             res.send({ success: true });
         } else {
