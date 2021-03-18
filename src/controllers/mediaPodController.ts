@@ -398,9 +398,16 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
-            if (body.IsUploaded) {
+            if(body.IsUploaded) {
+                const mediasRef = db.collection(collections.mediaPods).doc(podAddress)
+                  .collection(collections.medias).doc(mediaSymbol);
+                const mediasGet = await mediasRef.get();
+                const media: any = mediasGet.data();
+
                 await db.runTransaction(async (transaction) => {
-                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), {
+                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
+                        Collabs: media.Collabs || {},
+                        HasPhoto: media.HasPhoto || false,
                         Requester: requester,
                         PodAddress: podAddress,
                         MediaSymbol: mediaSymbol,
@@ -430,7 +437,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTxns)) {
                 db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol)
-                    .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
+                  .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
             }
             res.send({ success: true });
         } else {
@@ -454,14 +461,16 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
-            if (body.IsRegistered) {
+            if(body.IsRegistered) {
                 const mediasRef = db.collection(collections.mediaPods).doc(podAddress)
-                    .collection(collections.medias).doc(mediaSymbol);
+                  .collection(collections.medias).doc(mediaSymbol);
                 const mediasGet = await mediasRef.get();
                 const media: any = mediasGet.data();
 
                 await db.runTransaction(async (transaction) => {
-                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), {
+                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
+                        Collabs: media.Collabs || {},
+                        HasPhoto: media.HasPhoto || false,
                         Requester: body.Requester,
                         PodAddress: media.PodAddress,
                         MediaSymbol: media.MediaSymbol,

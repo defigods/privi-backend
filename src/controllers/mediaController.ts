@@ -618,3 +618,64 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
     res.send({ success: false, error: err });
   }
 };
+
+
+exports.changeMediaMainPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
+        .collection(collections.medias).doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media : any = mediasGet.data();
+
+      let mediaEdited = {...media};
+      mediaEdited.HasPhoto = true;
+
+      await mediasRef.update(mediaEdited);
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaMainPhoto()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaMainPhoto(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getMediaMainPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    let mediaId = req.params.mediaId;
+
+    if (mediaId && mediaPod) {
+      const directoryPath = path.join('uploads', 'mediaMainPhoto', mediaId);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'image');
+      let raw = fs.createReadStream(path.join('uploads', 'mediaMainPhoto', mediaId + '.png'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } else {
+      console.log('Error in controllers/mediaController -> getMediaMainPhoto()', "There's no id...");
+      res.sendStatus(400);
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> getMediaMainPhoto(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
