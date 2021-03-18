@@ -7,11 +7,12 @@ import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+const fetch = require('node-fetch');
 
 //const apiKey = process.env.API_KEY;
 const apiKey = 'PRIVI';
 const ORIGIN_DAILY_API_URL = 'https://api.daily.co/v1';
-const DAILY_API_KEY = 'dd019368c1134baba69c91b9fd6852eab5b2a38d12c61b37459f0eba9c459513';
+const DAILY_API_KEY = 'e93f4b9d62e8f5428297778f56bf8a9417b6a5343d0d4a961e0451c893ea8cba';
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
@@ -361,32 +362,58 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
 
 exports.createStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
-  const { DocId, UserId } = req.body;
+  const { DocId, isRecord, UserId } = req.body;
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
 
   // Check the User is MainStreamer of this streaming data
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
-      let dailyResponse;
-      try {
-        dailyResponse = await axios.post(
-          ROOM_URL,
-          {},
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${DAILY_API_KEY}`,
-              body: JSON.stringify({properties: {enable_recording: 'rtp-tracks'}})
-            },
-          }
-        );
-      } catch (err) {
-        res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
-      }
+      
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`
+      },
+      body: JSON.stringify({
+        //privacy: 'private',
+        name: DocId,
+        properties: {enable_recording: 'cloud'}
+      })
+    };
 
-      const { data } = dailyResponse;
+    let dailyResponse;
+    await fetch(ROOM_URL, options)
+        .then( res => res.json() )
+        .then( json => {
+          dailyResponse = json;
+          return;
+        })
+        .catch( err => {
+          res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+        }
+      )
+    
+      // try {
 
+      //   // dailyResponse = await axios({
+      //   //   method: "post",
+      //   //   url: ROOM_URL,
+      //   //   headers: {
+      //   //     'Content-Type': 'application/json',
+      //   //       Authorization: `Bearer ${DAILY_API_KEY}`
+      //   //   },
+      //   //   data: JSON.stringify({privacy: 'private', room: "ROOm"})
+      //   // });
+      //   console.log(dailyResponse)
+      // } catch (err) {
+      //   res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+      // }
+
+      let data = dailyResponse;
+
+      
       try {
         docSnap.ref.update({
           RoomName: data.name,
@@ -395,6 +422,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
           RoomState: ROOM_STATE.GOING,
         });
         let resData = docSnap.data();
+        console.log(resData)
 
         // BLockchain Integration part
 
