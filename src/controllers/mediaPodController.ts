@@ -398,28 +398,30 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
 
-            await db.runTransaction(async (transaction) => {
-                transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g,'')), {
-                    Requester: requester,
-                    PodAddress: podAddress,
-                    MediaSymbol: mediaSymbol,
-                    Type: type,
-                    PaymentType: paymentType,
-                    Copies: copies,
-                    Royalty: royalty,
-                    FundingToken: fundingToken,
-                    ReleaseDate: releaseDate,
-                    PricePerSecond: pricePerSecond,
-                    Price: price,
-                    IsRecord: isRecord,
-                    RecordToken: recordToken,
-                    RecordPaymentType: recordPaymentType,
-                    RecordPrice: recordPrice,
-                    RecordPricePerSecond: recordPricePerSecond,
-                    RecordCopies: recordCopies,
-                    RecordRoyalty: recordRoyalty
+            if (body.IsUploaded) {
+                await db.runTransaction(async (transaction) => {
+                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), {
+                        Requester: requester,
+                        PodAddress: podAddress,
+                        MediaSymbol: mediaSymbol,
+                        Type: type,
+                        PaymentType: paymentType,
+                        Copies: copies,
+                        Royalty: royalty,
+                        FundingToken: fundingToken,
+                        ReleaseDate: releaseDate,
+                        PricePerSecond: pricePerSecond,
+                        Price: price,
+                        IsRecord: isRecord,
+                        RecordToken: recordToken,
+                        RecordPaymentType: recordPaymentType,
+                        RecordPrice: recordPrice,
+                        RecordPricePerSecond: recordPricePerSecond,
+                        RecordCopies: recordCopies,
+                        RecordRoyalty: recordRoyalty
+                    });
                 });
-            });
+            }
 
             // add txns to media
             const output = blockchainRes.output;
@@ -428,7 +430,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
             let txnArray: any = [];
             for ([tid, txnArray] of Object.entries(updateTxns)) {
                 db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol)
-                  .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
+                    .collection(collections.transactions).doc(tid).set({ Transactions: txnArray });
             }
             res.send({ success: true });
         } else {
@@ -451,6 +453,37 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
         const blockchainRes = await mediaPod.uploadMedia(podAddress, mediaSymbol, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+
+            if (body.IsRegistered) {
+                const mediasRef = db.collection(collections.mediaPods).doc(podAddress)
+                    .collection(collections.medias).doc(mediaSymbol);
+                const mediasGet = await mediasRef.get();
+                const media: any = mediasGet.data();
+
+                await db.runTransaction(async (transaction) => {
+                    transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), {
+                        Requester: body.Requester,
+                        PodAddress: media.PodAddress,
+                        MediaSymbol: media.MediaSymbol,
+                        Type: media.Type,
+                        PaymentType: media.PaymentType,
+                        Copies: media.Copies,
+                        Royalty: media.Royalty,
+                        FundingToken: media.FundingToken,
+                        ReleaseDate: media.ReleaseDate,
+                        PricePerSecond: media.PricePerSecond,
+                        Price: media.Price,
+                        IsRecord: media.IsRecord,
+                        RecordToken: media.RecordToken,
+                        RecordPaymentType: media.RecordPaymentType,
+                        RecordPrice: media.RecordPrice,
+                        RecordPricePerSecond: media.RecordPricePerSecond,
+                        RecordCopies: media.RecordCopies,
+                        RecordRoyalty: media.RecordRoyalty
+                    });
+                });
+            }
+
             // add txns to media
             const output = blockchainRes.output;
             const updateTxns = output.Transactions;
