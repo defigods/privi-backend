@@ -777,7 +777,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
           myWorkInProgress: myWorkInProgress,
-          myMedia: myMedia
+          myMedia: myMedia,
         },
       });
     } else {
@@ -1187,7 +1187,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
               numFollowers: followerData.numFollowers,
               numFollowings: followerData.numFollowings,
               isFollowing: numFollowing,
-              isSuperFollower: follower.superFollower || false
+              isSuperFollower: follower.superFollower || false,
             };
 
             followers.push(followerObj);
@@ -1362,7 +1362,7 @@ const acceptFollowUser = async (req: express.Request, res: express.Response) => 
       user.followers[alreadyFollowerIndex] = {
         user: userToAcceptFollow.id,
         accepted: true,
-        superFollower: false
+        superFollower: false,
       };
     } else {
       console.log('Error in controllers/userController -> acceptFollowUser()', 'Following request not found');
@@ -1538,14 +1538,13 @@ const superFollowerUser = async (req: express.Request, res: express.Response) =>
       const user: any = userGet.data();
 
       if (user.followers && user.followers.length > 0) {
-        let followerIndex = user.followers.findIndex(follower => follower.user === body.userToSuperFollow);
+        let followerIndex = user.followers.findIndex((follower) => follower.user === body.userToSuperFollow);
         if (followerIndex !== -1) {
           user.followers[followerIndex].superFollower = superFollower;
           await userRef.update({
-            followers: user.followers
+            followers: user.followers,
           });
           res.send({ success: true });
-
         } else {
           console.log('Error in controllers/userController -> superFollowerUser(): Follower not found');
           res.send({ success: false, error: 'Follower not found' });
@@ -1963,7 +1962,6 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
   });
 };
 
-
 //get Media
 const getMyMediaFunction = (userId) => {
   return new Promise(async (resolve, reject) => {
@@ -1986,23 +1984,23 @@ const getMyMediaArray = (userId: string): Promise<any[]> => {
 
       const medias = await db.collection(collections.streaming).get();
 
-      let mediasArray : any[] = [];
+      let mediasArray: any[] = [];
       for (const doc of medias.docs) {
         let data = doc.data();
         data.id = doc.id;
         mediasArray.push(data);
       }
 
-      if(mediasArray && mediasArray.length > 0) {
-        let requesterMedias = mediasArray.filter(med => med.Requester === userId);
+      if (mediasArray && mediasArray.length > 0) {
+        let requesterMedias = mediasArray.filter((med) => med.Requester === userId);
 
-        let mediaWithCollab : any[] = [];
+        let mediaWithCollab: any[] = [];
         for (const media of mediasArray) {
-          if(media.Collab && media.Collab != {}) {
+          if (media.Collab && media.Collab != {}) {
             let collabKeys = Object.keys(media.Collab);
 
-            let collabIndex = collabKeys.findIndex(col => col === userId);
-            if(collabIndex !== -1) {
+            let collabIndex = collabKeys.findIndex((col) => col === userId);
+            if (collabIndex !== -1) {
               mediaWithCollab.push(media);
             }
           }
@@ -2016,8 +2014,6 @@ const getMyMediaArray = (userId: string): Promise<any[]> => {
     }
   });
 };
-
-
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
@@ -3387,6 +3383,8 @@ const checkSlugExists = async (req: express.Request, res: express.Response) => {
       collectionSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'nftpod') {
       collectionSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'mediapod') {
+      collectionSnap = await db.collection(collections.mediaPods).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'credit') {
       collectionSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
     }
@@ -3431,6 +3429,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
       docSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'nftpod') {
       docSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'mediapod') {
+      docSnap = await db.collection(collections.mediaPods).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'credit') {
       docSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
     }
@@ -3452,6 +3452,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
         docIdSnap = await db.collection(collections.podsFT).doc(urlSlug).get();
       } else if (type === 'nftpod') {
         docIdSnap = await db.collection(collections.podsNFT).doc(urlSlug).get();
+      } else if (type === 'mediapod') {
+        docIdSnap = await db.collection(collections.mediaPods).doc(urlSlug).get();
       } else if (type === 'credit') {
         docIdSnap = await db.collection(collections.priviCredits).doc(urlSlug).get();
       }
@@ -3496,6 +3498,8 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
       console.log(docSnap);
     } else if (type === 'nftpod') {
       docSnap = await db.collection(collections.podsNFT).doc(urlId).get();
+    } else if (type === 'mediapod') {
+      docSnap = await db.collection(collections.mediaPods).doc(urlId).get();
     } else if (type === 'credit') {
       docSnap = await db.collection(collections.priviCredits).doc(urlId).get();
     }
@@ -3521,6 +3525,8 @@ const getSlugFromId = async (req: express.Request, res: express.Response) => {
         docSlugSnap = await db.collection(collections.podsFT).where('urlSlug', '==', urlSlug).get();
       } else if (type === 'nftpod') {
         docSlugSnap = await db.collection(collections.podsNFT).where('urlSlug', '==', urlSlug).get();
+      } else if (type === 'mediapod') {
+        docSlugSnap = await db.collection(collections.mediaPods).where('urlSlug', '==', urlSlug).get();
       } else if (type === 'credit') {
         docSlugSnap = await db.collection(collections.priviCredits).where('urlSlug', '==', urlSlug).get();
       }
@@ -3649,5 +3655,5 @@ module.exports = {
   getIdFromSlug,
   getSlugFromId,
   getFriends,
-  superFollowerUser
+  superFollowerUser,
 };
