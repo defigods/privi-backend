@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
+import { TwitterClient } from 'twitter-api-client';
 
 ///////////////////////////// POST ///////////////////////////////
 module.exports.createCollab = async (req: express.Request, res: express.Response) => {
@@ -70,6 +71,35 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
         });
     } catch (err) {
         console.log('Error in controllers/collabController -> getCollabs()', err);
+        res.send({ success: false });
+    }
+};
+
+
+const config2 = {
+    apiKey: '7zIOdV7fG0hPNRU3McZuAqp3w',
+    apiSecret: 'Ti17IYmlHMZLfQtBJ17AIa2ea0LkZ6Q6Ve5cgqXlYKBahnytLq',
+    accessToken: '1152134295013777409-zRyzXdGumjG5Qf5H9EmeleDx7DJ8gE',
+    accessTokenSecret: '4wrqJVhQuERIMVaAqUmV94lPT5HBtd9O7pbfoFjg8z4UC',
+}
+
+const twitterClient = new TwitterClient(config2);
+
+module.exports.getTwitterUsers = async (req: express.Request, res: express.Response) => {
+    try {
+        const retData: any[] = [];
+        const query = req.query;
+        const q: any = query.q;
+        const data = await twitterClient.accountsAndUsers.usersSearch({ q: q });
+        data.forEach((user) => {
+            retData.push({
+                name: user.name,
+                username: user.screen_name
+            })
+        });
+        res.send({ success: true, data: retData });
+    } catch (err) {
+        console.log('Error in controllers/collabController -> getTwitterUsers()', err);
         res.send({ success: false });
     }
 };
