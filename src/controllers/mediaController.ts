@@ -19,7 +19,6 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
   }
 };
-}
 
 exports.getMedias = async (req: express.Request, res: express.Response) => {
   try {
