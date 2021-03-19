@@ -1,10 +1,10 @@
 import express from 'express';
 import { db } from '../firebase/firebase';
-import path from "path";
-import fs from "fs";
-import collections from '../firebase/collections';
-import mediaPod from "../blockchain/mediaPod";
-import {updateFirebase} from "../functions/functions";
+import path from 'path';
+import fs from 'fs';
+import collections, { user } from '../firebase/collections';
+import mediaPod from '../blockchain/mediaPod';
+import { updateFirebase } from '../functions/functions';
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
@@ -18,7 +18,8 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
   } catch (e) {
     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
   }
-}
+};
+
 exports.getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
@@ -28,19 +29,111 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
     console.log(body);
 
     let medias: any[] = [];
+    let dataMedias : any[] = [];
+    let dataEthMedia : any[] = [];
 
-    const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
-    const dataMediasSnap : any[] = docsMediasSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data(), blockchain: 'PRIVI' }));
+    // Blockchain & SearchValue filters
+    if(body.blockChains && body.blockChains.length > 0) {
+      let findBlockchainPRIVI = body.blockChains.find(block => block === 'PRIVI');
+      let findBlockchainOthers = body.blockChains.filter(block => block !== 'PRIVI');
+      let mediaTypes = body.mediaTypes;
 
-    const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
-    const dataEthMediaSnap : any[] = docsEthMediaSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+      if (findBlockchainPRIVI) {
+        const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
+        let dataMediasSnap = docsMediasSnap.map((docSnap) => {
+          let data = docSnap.data();
+          data.id = docSnap.id;
+          data.blockchain = 'PRIVI';
+          return(data);
+        });
 
-    medias = dataMediasSnap.concat(dataEthMediaSnap).slice(pagination * 10, (pagination+1) * 10);
+        for(let media of dataMediasSnap){
+          // Searched Value
+          if(body.searchValue != '') {
+            if ((media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
+              (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))) {
+
+              let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+              if(applyTypeFilter) {
+                dataMedias.push(media);
+              }
+            }
+          } else {
+            let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+            if(applyTypeFilter) {
+              dataMedias.push(media);
+            }
+          }
+        }
+
+      }
+
+      if (findBlockchainOthers && findBlockchainOthers.length > 0) {
+        const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
+        let dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
+          let data = docSnap.data();
+          data.id = docSnap.id;
+          return(data);
+        });
+
+        for(let media of dataEthMediaSnap){
+          // Searched Value
+          if(body.searchValue != '') {
+            if (media.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
+              // Blockchain
+              for(let block of findBlockchainOthers) {
+                if(media.tag === block) {
+                  let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+                  if(applyTypeFilter) {
+                    dataEthMedia.push(media);
+                  }
+                }
+              }
+            }
+          } else {
+            // Blockchain
+            for(let block of findBlockchainOthers) {
+              if(media.tag === block) {
+                let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+                if(applyTypeFilter) {
+                  dataEthMedia.push(media);
+                }
+              }
+            }
+          }
+        }
+
+      }
+
+    }
+
+    medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
   } catch (e) {
+    console.log(e);
     return res.status(500).send({ success: false, error: e });
   }
+};
+
+const mediaTypeFilter = (media: any, mediaTypes: string[]) => {
+  return new Promise((resolve, reject) => {
+    try {
+      if(mediaTypes && mediaTypes.length > 0) {
+        let filterMedia = mediaTypes.some((typ) => typ === media.Type);
+
+        if(filterMedia) {
+          resolve(media);
+        } else{
+          resolve(false);
+        }
+      } else {
+       resolve(media);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
 
 exports.getEthMediaItem = async (req: express.Request, res: express.Response) => {
@@ -57,17 +150,20 @@ exports.getEthMediaItem = async (req: express.Request, res: express.Response) =>
   } catch (e) {
     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media item' });
   }
-}
+};
 
 exports.changeMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
-        .collection(collections.medias).doc(req.params.mediaId);
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(req.params.mediaPod)
+        .collection(collections.medias)
+        .doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
-      const media : any = mediasGet.data();
+      const media: any = mediasGet.data();
 
-      let mediaEdited = {...media};
+      let mediaEdited = { ...media };
       mediaEdited.IsUploaded = true;
 
       await mediasRef.update(mediaEdited);
@@ -84,13 +180,16 @@ exports.changeMediaPhoto = async (req: express.Request, res: express.Response) =
 
 exports.changeMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file &&  req.params && req.params.mediaPod && req.params.mediaId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
-        .collection(collections.medias).doc(req.params.mediaId);
+    if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(req.params.mediaPod)
+        .collection(collections.medias)
+        .doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
-      const media : any = mediasGet.data();
+      const media: any = mediasGet.data();
 
-      let mediaEdited = {...media};
+      let mediaEdited = { ...media };
       mediaEdited.IsUploaded = true;
 
       await mediasRef.update(mediaEdited);
@@ -107,13 +206,16 @@ exports.changeMediaAudio = async (req: express.Request, res: express.Response) =
 
 exports.changeMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
-    if (req.file &&  req.params && req.params.mediaPod && req.params.mediaId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
-        .collection(collections.medias).doc(req.params.mediaId);
+    if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(req.params.mediaPod)
+        .collection(collections.medias)
+        .doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
-      const media : any = mediasGet.data();
+      const media: any = mediasGet.data();
 
-      let mediaEdited = {...media};
+      let mediaEdited = { ...media };
       mediaEdited.IsUploaded = true;
 
       await mediasRef.update(mediaEdited);
@@ -132,12 +234,15 @@ exports.changeMediaBlog = async (req: express.Request, res: express.Response) =>
   try {
     let body = req.body;
     if (body && body.mediaId && body.mediaPod) {
-      const mediasRef = db.collection(collections.mediaPods).doc(body.mediaPod)
-        .collection(collections.medias).doc(body.mediaId);
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(body.mediaPod)
+        .collection(collections.medias)
+        .doc(body.mediaId);
       const mediasGet = await mediasRef.get();
-      const media : any = mediasGet.data();
+      const media: any = mediasGet.data();
 
-      let mediaEdited = {...media};
+      let mediaEdited = { ...media };
       mediaEdited.editorPages = body.editorPages || [];
       mediaEdited.mainHashtag = body.mainHashtag || '';
       mediaEdited.hashtags = body.hashtags || [];
@@ -163,13 +268,16 @@ exports.changeMediaBlog = async (req: express.Request, res: express.Response) =>
 exports.changeMediaBlogVideo = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.file.originalname && req.params && req.params.mediaPod && req.params.mediaId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
-        .collection(collections.medias).doc(req.params.mediaId);
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(req.params.mediaPod)
+        .collection(collections.medias)
+        .doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
-      let mediaEdited = {...media};
-      if(mediaEdited.videosId && mediaEdited.videosId.length > 0) {
+      let mediaEdited = { ...media };
+      if (mediaEdited.videosId && mediaEdited.videosId.length > 0) {
         mediaEdited.videosId.push(req.file.originalname);
       } else {
         mediaEdited.videosId = [req.file.originalname];
@@ -248,16 +356,17 @@ exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
     let pagination = req.params.pagination;
 
     if (mediaId && mediaPod && pagination) {
-      const mediasRef = db.collection(collections.mediaPods).doc(mediaPod)
-        .collection(collections.medias).doc(mediaId);
+      const mediasRef = db.collection(collections.mediaPods).doc(mediaPod).collection(collections.medias).doc(mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
-      res.send({ success: true, data: {
+      res.send({
+        success: true,
+        data: {
           actualPage: pagination,
           totalPages: media.totalPages,
-          page: media.editorPages[pagination]
-        }
+          page: media.editorPages[pagination],
+        },
       });
     } else {
       console.log('Error in controllers/mediaController -> getMediaBlog()', "There's no id...");
@@ -269,7 +378,7 @@ exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const getMedia = (mediaId: string, extension : string, type : string, res: express.Response) => {
+const getMedia = (mediaId: string, extension: string, type: string, res: express.Response) => {
   return new Promise((resolve, reject) => {
     try {
       const directoryPath = path.join('uploads', 'media', mediaId);
@@ -296,17 +405,20 @@ const getMedia = (mediaId: string, extension : string, type : string, res: expre
     } catch (e) {
       reject(e);
     }
-  })
-}
+  });
+};
 
 exports.editMedia = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
 
-    if(params && body && params.mediaPod && params.mediaId && body.media) {
-      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
-        .collection(collections.medias).doc(params.mediaId);
+    if (params && body && params.mediaPod && params.mediaId && body.media) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(params.mediaPod)
+        .collection(collections.medias)
+        .doc(params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -314,22 +426,22 @@ exports.editMedia = async (req: express.Request, res: express.Response) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      if(body.media.SavedCollabs && body.media.SavedCollabs.length > 0) {
-        if(media.SavedCollabs && media.SavedCollabs.length > 0) {
-          let newCollabs : any[] = [];
-          for(let bodyCollab of body.media.SavedCollabs) {
-            let isInBD : boolean = false;
-            for(let mediaCollab of media.SavedCollabs) {
-              if(bodyCollab.id === mediaCollab.id) {
+      if (body.media.SavedCollabs && body.media.SavedCollabs.length > 0) {
+        if (media.SavedCollabs && media.SavedCollabs.length > 0) {
+          let newCollabs: any[] = [];
+          for (let bodyCollab of body.media.SavedCollabs) {
+            let isInBD: boolean = false;
+            for (let mediaCollab of media.SavedCollabs) {
+              if (bodyCollab.id === mediaCollab.id) {
                 isInBD = true;
               }
             }
-            if(!isInBD) {
-              newCollabs.push(bodyCollab)
+            if (!isInBD) {
+              newCollabs.push(bodyCollab);
             }
           }
 
-          for(let collab of newCollabs) {
+          for (let collab of newCollabs) {
             await notificationsController.addNotification({
               userId: collab.id,
               notification: {
@@ -347,7 +459,7 @@ exports.editMedia = async (req: express.Request, res: express.Response) => {
             });
           }
         } else {
-          for(let collab of body.media.SavedCollabs) {
+          for (let collab of body.media.SavedCollabs) {
             await notificationsController.addNotification({
               userId: collab.id,
               notification: {
@@ -371,23 +483,26 @@ exports.editMedia = async (req: express.Request, res: express.Response) => {
 
       res.send({ success: true, data: body.media });
     } else {
-      console.log('Error in controllers/mediaController -> editMedia()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/mediaController -> editMedia()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> editMedia()', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
-exports.removeCollab =  async (req: express.Request, res: express.Response) => {
+exports.removeCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
 
-    if(params && body && params.mediaPod && params.mediaId && body.RemovedCollab && body.Creator) {
-      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
-        .collection(collections.medias).doc(params.mediaId);
+    if (params && body && params.mediaPod && params.mediaId && body.RemovedCollab && body.Creator) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(params.mediaPod)
+        .collection(collections.medias)
+        .doc(params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -395,7 +510,7 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      if(body.RemovedCollab.status === 'Accepted') {
+      if (body.RemovedCollab.status === 'Accepted') {
         const podAddress = body.PodAddress;
         const mediaSymbol = body.MediaSymbol;
 
@@ -431,9 +546,11 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
         const userCollabGet = await userCollabRef.get();
         const userCollab: any = userCollabGet.data();
 
-        let notificationIndex = userCollab.notifications.findIndex(not => not.type === 104 && not.pod === media.MediaSymbol);
+        let notificationIndex = userCollab.notifications.findIndex(
+          (not) => not.type === 104 && not.pod === media.MediaSymbol
+        );
 
-        if(notificationIndex !== -1) {
+        if (notificationIndex !== -1) {
           await notificationsController.removeNotification({
             userId: body.RemovedCollab.id,
             notificationId: userCollab.notifications[notificationIndex].id,
@@ -441,27 +558,27 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
         }
       }
 
-      let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.RemovedCollab.id);
+      let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.RemovedCollab.id);
       media.SavedCollabs.splice(collabIndex, 1);
 
-      let sumShare : number = 0;
-      for(let collab of media.SavedCollabs) {
-        if(collab.id !== body.Creator) {
+      let sumShare: number = 0;
+      for (let collab of media.SavedCollabs) {
+        if (collab.id !== body.Creator) {
           sumShare += collab.share;
         }
       }
 
-      if(sumShare < 100) {
-        let creatorIndex = media.SavedCollabs.findIndex(coll => coll.id === body.Creator);
+      if (sumShare < 100) {
+        let creatorIndex = media.SavedCollabs.findIndex((coll) => coll.id === body.Creator);
         let usr = {
           firstName: user.firstName,
           id: body.Creator,
           share: 100 - sumShare,
-          status: 'Creator'
-        }
-        if(creatorIndex === -1) {
-          media.SavedCollabs.push(usr)
-        } else{
+          status: 'Creator',
+        };
+        if (creatorIndex === -1) {
+          media.SavedCollabs.push(usr);
+        } else {
           media.SavedCollabs[creatorIndex] = usr;
         }
       }
@@ -469,10 +586,9 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
       await mediasRef.update(media);
 
       res.send({ success: true });
-
     } else {
-      console.log('Error in controllers/mediaController -> removeCollab()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/mediaController -> removeCollab()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> removeCollab()', err);
@@ -480,14 +596,17 @@ exports.removeCollab =  async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
+exports.refuseCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
 
-    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
-        .collection(collections.medias).doc(params.mediaId);
+    if (params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(params.mediaPod)
+        .collection(collections.medias)
+        .doc(params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -500,9 +619,9 @@ exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
         notificationId: body.notificationId,
       });
 
-      if(media.SavedCollabs && media.SavedCollabs.length > 0) {
-        let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.userId);
-        if(media.SavedCollabs[collabIndex].status === 'Requested') {
+      if (media.SavedCollabs && media.SavedCollabs.length > 0) {
+        let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.userId);
+        if (media.SavedCollabs[collabIndex].status === 'Requested') {
           media.SavedCollabs.splice(collabIndex, 1);
           await mediasRef.update(media);
 
@@ -521,19 +640,17 @@ exports.refuseCollab =  async (req: express.Request, res: express.Response) => {
               otherItemId: mediasGet.id,
             },
           });
-      }
-
+        }
       } else {
-        console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
+        console.log('Error in controllers/mediaController -> refuseCollab()', 'Missing data');
         res.send({ success: false, error: 'Collab status was not Pending' });
         return;
       }
 
       res.send({ success: true });
-
     } else {
-      console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/mediaController -> refuseCollab()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> refuseCollab()', err);
@@ -546,9 +663,12 @@ exports.acceptCollab = async (req: express.Request, res: express.Response) => {
     let params = req.params;
     let body = req.body;
 
-    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
-        .collection(collections.medias).doc(params.mediaId);
+    if (params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(params.mediaPod)
+        .collection(collections.medias)
+        .doc(params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -561,10 +681,10 @@ exports.acceptCollab = async (req: express.Request, res: express.Response) => {
         notificationId: body.notificationId,
       });
 
-      if(media.SavedCollabs && media.SavedCollabs.length > 0) {
-        let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.userId);
-        if(media.SavedCollabs[collabIndex].status === 'Requested') {
-          let mediaCopy = {...media};
+      if (media.SavedCollabs && media.SavedCollabs.length > 0) {
+        let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.userId);
+        if (media.SavedCollabs[collabIndex].status === 'Requested') {
+          let mediaCopy = { ...media };
           mediaCopy.SavedCollabs[collabIndex].status = 'Accepted';
           await mediasRef.update(mediaCopy);
 
@@ -585,13 +705,13 @@ exports.acceptCollab = async (req: express.Request, res: express.Response) => {
           });
           res.send({ success: true, data: mediaCopy });
         } else {
-          console.log('Error in controllers/mediaController -> acceptCollab()', "Collab status was not Requested");
+          console.log('Error in controllers/mediaController -> acceptCollab()', 'Collab status was not Requested');
           res.send({ success: false, error: 'Collab status was not Requested' });
         }
       }
     } else {
-      console.log('Error in controllers/mediaController -> acceptCollab()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/mediaController -> acceptCollab()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> acceptCollab()', err);
@@ -604,14 +724,17 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
     let params = req.params;
     let body = req.body;
 
-    if(params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(params.mediaPod)
-        .collection(collections.medias).doc(params.mediaId);
+    if (params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(params.mediaPod)
+        .collection(collections.medias)
+        .doc(params.mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
-      let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.userId);
-      if(media.SavedCollabs[collabIndex] && media.SavedCollabs[collabIndex].status === 'Accepted') {
+      let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.userId);
+      if (media.SavedCollabs[collabIndex] && media.SavedCollabs[collabIndex].status === 'Accepted') {
         const podAddress = body.PodAddress;
         const mediaSymbol = body.MediaSymbol;
 
@@ -620,7 +743,7 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
         const signature = body.Signature;
         const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
-          console.log(blockchainRes)
+          console.log(blockchainRes);
           updateFirebase(blockchainRes);
 
           await notificationsController.removeNotification({
@@ -634,12 +757,12 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
           res.send({ success: false, error: blockchainRes.message });
         }
       } else {
-        console.log('Error in controllers/mediaController -> refuseCollab()', "Collab status was not Accepted");
+        console.log('Error in controllers/mediaController -> refuseCollab()', 'Collab status was not Accepted');
         res.send({ success: false, error: 'Collab status was not Accepted' });
       }
     } else {
-      console.log('Error in controllers/mediaController -> refuseCollab()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/mediaController -> refuseCollab()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> refuseCollab()', err);
@@ -647,16 +770,18 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
   }
 };
 
-
 exports.changeMediaMainPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
-      const mediasRef = db.collection(collections.mediaPods).doc(req.params.mediaPod)
-        .collection(collections.medias).doc(req.params.mediaId);
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(req.params.mediaPod)
+        .collection(collections.medias)
+        .doc(req.params.mediaId);
       const mediasGet = await mediasRef.get();
-      const media : any = mediasGet.data();
+      const media: any = mediasGet.data();
 
-      let mediaEdited = {...media};
+      let mediaEdited = { ...media };
       mediaEdited.HasPhoto = true;
 
       await mediasRef.update(mediaEdited);
@@ -704,6 +829,37 @@ exports.getMediaMainPhoto = async (req: express.Request, res: express.Response) 
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> getMediaMainPhoto(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getUserMediaInfo = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+
+    if (userId) {
+      const mediaUserGet = await db.collection(collections.mediaUsers).where('user', '==', userId).get();
+
+      if (!mediaUserGet.empty) {
+        let userData: any = { ...mediaUserGet.docs[0].data() };
+        userData.docId = mediaUserGet.docs[0].id;
+
+        res.send({
+          success: true,
+          data: userData,
+        });
+      } else {
+        console.log('Error in controllers/mediaController -> getUserMediaInfo()', 'User not found...');
+        res.sendStatus(400);
+        res.send({ success: false });
+      }
+    } else {
+      console.log('Error in controllers/mediaController -> getUserMediaInfo()', "There's no id...");
+      res.sendStatus(400);
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> getUserMediaInfo(): ', err);
     res.send({ success: false, error: err });
   }
 };
