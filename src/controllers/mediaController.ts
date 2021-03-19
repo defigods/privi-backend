@@ -21,7 +21,12 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
 }
 exports.getMedias = async (req: express.Request, res: express.Response) => {
   try {
-    const lastMedia: number = +req.params.pagination;
+    const pagination: number = +req.params.pagination;
+
+    let body = req.body;
+
+    console.log(body);
+
     let medias: any[] = [];
 
     const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
@@ -30,7 +35,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
     const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
     const dataEthMediaSnap : any[] = docsEthMediaSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
-    medias = dataMediasSnap.concat(dataEthMediaSnap);
+    medias = dataMediasSnap.concat(dataEthMediaSnap).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
   } catch (e) {

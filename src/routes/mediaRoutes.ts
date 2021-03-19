@@ -99,7 +99,7 @@ router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
 
-router.get('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
+router.post('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
 
 
 module.exports = router;
