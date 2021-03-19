@@ -28,12 +28,61 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
     console.log(body);
 
     let medias: any[] = [];
+    let dataMediasSnap : any[] = [];
+    let dataEthMediaSnap : any[] = [];
 
-    const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
-    const dataMediasSnap : any[] = docsMediasSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data(), blockchain: 'PRIVI' }));
+    // Blockchain & SearchValue filters
 
-    const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
-    const dataEthMediaSnap : any[] = docsEthMediaSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+    if(body.blockChains && body.blockChains.length > 0) {
+      let findBlockchainPRIVI = body.blockChains.find(block => block === 'PRIVI');
+      let findBlockchainOthers = body.blockChains.filter(block => block !== 'PRIVI');
+
+      if(findBlockchainPRIVI) {
+        const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
+        dataMediasSnap = docsMediasSnap.map((docSnap) => {
+          let data = docSnap.data();
+          data.id = docSnap.id;
+          data.blockchain = 'PRIVI';
+
+          // Searched Value
+          if(body.searchValue != '') {
+            if (data.MediaName.toLowerCase().includes(body.searchValue.toLowerCase()) ||
+              data.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase())) {
+              return(data);
+
+            }
+          }
+
+        });
+
+      }
+
+      if(findBlockchainOthers && findBlockchainOthers.length > 0) {
+        const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
+        dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
+          let data = docSnap.data();
+          data.id = docSnap.id;
+
+          // Searched Value
+          if(body.searchValue != '') {
+            if (data.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
+
+              // Blockchain
+              for(let block of findBlockchainOthers) {
+                if(data.tag === block) {
+                  return(data);
+                }
+              }
+            }
+          }
+
+
+
+        });
+      }
+    }
+
+
 
     medias = dataMediasSnap.concat(dataEthMediaSnap).slice(pagination * 10, (pagination+1) * 10);
 
