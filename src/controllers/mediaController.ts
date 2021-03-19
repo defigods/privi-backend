@@ -1,6 +1,5 @@
 import express from 'express';
 import { db } from '../firebase/firebase';
-import { ethMedia } from '../firebase/collections';
 import path from "path";
 import fs from "fs";
 import collections from '../firebase/collections';
@@ -12,7 +11,7 @@ const apiKey = 'PRIVI'; //process.env.API_KEY;
 
 exports.getEthMedia = async (req: express.Request, res: express.Response) => {
   try {
-    const docsSnap = (await db.collection(ethMedia).get()).docs;
+    const docsSnap = (await db.collection(collections.ethMedia).get()).docs;
     const data = docsSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
     return res.status(200).send({ success: true, data });
@@ -20,11 +19,29 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
   }
 }
+exports.getMedias = async (req: express.Request, res: express.Response) => {
+  try {
+    const lastMedia: number = +req.params.pagination;
+    let medias: any[] = [];
+
+    const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
+    const dataMediasSnap : any[] = docsMediasSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data(), blockchain: 'PRIVI' }));
+
+    const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
+    const dataEthMediaSnap : any[] = docsEthMediaSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+
+    medias = dataMediasSnap.concat(dataEthMediaSnap);
+
+    return res.status(200).send({ success: true, data: medias });
+  } catch (e) {
+    return res.status(500).send({ success: false, error: e });
+  }
+}
 
 exports.getEthMediaItem = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   try {
-    const docRef = db.collection(ethMedia).doc(id);
+    const docRef = db.collection(collections.ethMedia).doc(id);
     const doc = await docRef.get();
 
     if (!doc.exists) return res.status(404).send({ success: false, message: 'Invalid document id' });

@@ -75,7 +75,7 @@ let upload5 = multer({
   storage: storage5,
 });
 
-router.get('/', mediaController.getEthMedia);
+router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/:id', mediaController.getEthMediaItem);
 
@@ -98,5 +98,8 @@ router.post('/removeCollab/:mediaPod/:mediaId', authenticateJWT, mediaController
 router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.refuseCollab);
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
+
+router.get('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
+
 
 module.exports = router;
