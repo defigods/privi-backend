@@ -1,6 +1,5 @@
 import express from 'express';
 import { db } from '../firebase/firebase';
-import { ethMedia } from '../firebase/collections';
 import path from "path";
 import fs from "fs";
 import collections from '../firebase/collections';
@@ -12,7 +11,7 @@ const apiKey = 'PRIVI'; //process.env.API_KEY;
 
 exports.getEthMedia = async (req: express.Request, res: express.Response) => {
   try {
-    const docsSnap = (await db.collection(ethMedia).get()).docs;
+    const docsSnap = (await db.collection(collections.ethMedia).get()).docs;
     const data = docsSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
     return res.status(200).send({ success: true, data });
@@ -20,11 +19,83 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
   }
 }
+exports.getMedias = async (req: express.Request, res: express.Response) => {
+  try {
+    const pagination: number = +req.params.pagination;
+
+    let body = req.body;
+
+    console.log(body);
+
+    let medias: any[] = [];
+    let dataMediasSnap : any[] = [];
+    let dataEthMediaSnap : any[] = [];
+
+    // Blockchain & SearchValue filters
+
+    if(body.blockChains && body.blockChains.length > 0) {
+      let findBlockchainPRIVI = body.blockChains.find(block => block === 'PRIVI');
+      let findBlockchainOthers = body.blockChains.filter(block => block !== 'PRIVI');
+
+      if(findBlockchainPRIVI) {
+        const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
+        dataMediasSnap = docsMediasSnap.map((docSnap) => {
+          let data = docSnap.data();
+          data.id = docSnap.id;
+          data.blockchain = 'PRIVI';
+
+          // Searched Value
+          if(body.searchValue != '') {
+            if (data.MediaName.toLowerCase().includes(body.searchValue.toLowerCase()) ||
+              data.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase())) {
+              return(data);
+
+            }
+          }
+
+        });
+
+      }
+
+      if(findBlockchainOthers && findBlockchainOthers.length > 0) {
+        const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
+        dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
+          let data = docSnap.data();
+          data.id = docSnap.id;
+
+          // Searched Value
+          if(body.searchValue != '') {
+            if (data.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
+
+              // Blockchain
+              for(let block of findBlockchainOthers) {
+                if(data.tag === block) {
+                  return(data);
+                }
+              }
+            }
+          }
+
+
+
+        });
+      }
+    }
+
+
+
+    medias = dataMediasSnap.concat(dataEthMediaSnap).slice(pagination * 10, (pagination+1) * 10);
+
+    return res.status(200).send({ success: true, data: medias });
+  } catch (e) {
+    return res.status(500).send({ success: false, error: e });
+  }
+}
 
 exports.getEthMediaItem = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   try {
-    const docRef = db.collection(ethMedia).doc(id);
+    const docRef = db.collection(collections.ethMedia).doc(id);
     const doc = await docRef.get();
 
     if (!doc.exists) return res.status(404).send({ success: false, message: 'Invalid document id' });
@@ -117,8 +188,14 @@ exports.changeMediaBlog = async (req: express.Request, res: express.Response) =>
 
       let mediaEdited = {...media};
       mediaEdited.editorPages = body.editorPages || [];
-      mediaEdited.totalPages = body.totalPages || 0;
-
+      mediaEdited.mainHashtag = body.mainHashtag || '';
+      mediaEdited.hashtags = body.hashtags || [];
+      mediaEdited.schedulePost = body.schedulePost || Date.now(); // integer timestamp eg 1609424040000
+      mediaEdited.description = body.description || '';
+      mediaEdited.descriptionArray = body.descriptionArray || [];
+      mediaEdited.author = body.author || '';
+      mediaEdited.selectedFormat = body.selectedFormat || 0; // 0 story 1 wall post
+      mediaEdited.hasPhoto = body.hasPhoto || false;
       await mediasRef.update(mediaEdited);
 
       res.send({ success: true, data: '/media/getBlog/:mediaId/:pagination' });
