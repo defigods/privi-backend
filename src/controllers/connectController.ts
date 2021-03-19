@@ -142,6 +142,7 @@ const wsListen = () => {
     };
 };
 
+// get rpc corresponding to chain ID
 const getWeb3forChain = (chainId: any): Web3 => {
     if(chainId === '0x3' || chainId === '3' || chainId === 3){
         console.log('getWeb3forChain', chainId)
@@ -227,9 +228,7 @@ const executeTX = (params: any) => {
     });
 };
 
-// get price
-
-
+// get price for uniswap liquidity token that might be imported either as a social token or community token
 const getMainNetPrices =  async () => {
     const WBTC = new Token(ChainId.MAINNET, '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', 8)
     const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6)
@@ -350,19 +349,19 @@ const getUniSwapPrices = async (req: express.Request, res: express.Response) => 
 //     return { success, data };
 // }
 
-const getPodTokenDeployedAddress = async (podAddress:string, chainId: string): Promise<string> => {
-    const web3_l: Web3 = getWeb3forChain(chainId);
-    // get factory
-    let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
-    const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
+// const getPodTokenDeployedAddress = async (podAddress:string, chainId: string): Promise<string> => {
+//     const web3_l: Web3 = getWeb3forChain(chainId);
+//     // get factory
+//     let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
+//     const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
 
-    // add privi to accoutn
-    await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
-    // get deployed address
-    const deployedAddress = await factoryContract.methods.podTokenAddresses(podAddress).call();
-    return deployedAddress;
+//     // add privi to accoutn
+//     await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
+//     // get deployed address
+//     const deployedAddress = await factoryContract.methods.podTokenAddresses(podAddress).call();
+//     return deployedAddress;
 
-}
+// }
 
 /**
  * @notice Receives a transaction from the front-end and:
@@ -434,7 +433,6 @@ const saveTx = async (params: any) => {
 
 /**
  * @notice Check number of confirmations of a transaction in Ethereum
- * @param txHash  Transaction hash
  * @return Number of confirmations (for testing, we set to 1 to get results faster)
  */
 const checkTxConfirmations = async (txHash: string, chainId: string) => {
@@ -640,7 +638,7 @@ const withdraw = async (
         const method = 
             (action === Action.WITHDRAW_ETH) ? contract.methods.withdrawEther(toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
             : (action === Action.WITHDRAW_ERC20) ? contract.methods.withdrawERC20Token(token, toEthAddress, web3_l.utils.toWei(String(amount)) ).encodeABI()
-            : contract.methods.withdrawERC721Token(token, toEthAddress, amount === 'NO_ID' ? '999999999' : amount, amount === 'NO_ID' ? true : false).encodeABI(); // hopefully this id won't exist, swapmanager needs update to account for minting pods
+            : contract.methods.withdrawERC721Token(token, toEthAddress, amount === 'NO_ID' ? '999999999' : amount, amount === 'NO_ID' ? true : false, false).encodeABI(); // hopefully this id won't exist, swapmanager needs update to account for minting pods
 
         // Transaction parameters
         const paramsTX = {
@@ -697,6 +695,7 @@ const withdraw = async (
 
 }
 
+// get recent swaps from db
 const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     const { userId, userAddress } = req.query;
     // console.log('getRecentSwaps', userAddress)
@@ -709,52 +708,7 @@ const getRecentSwaps = async (req: express.Request, res: express.Response) => {
     }
 }
 
-// const registerNewERC20TokenOnSwapManager = async (req: express.Request, res: express.Response) => {
-//     const { symbol, tokenAddress, chainId, comunityAddress } = req.body;
-//     console.log('registerNewERC20TokenOnSwapManager req:', symbol, tokenAddress, chainId, comunityAddress)
-//     const _chain: any = chainId?.toString();
-//     const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
-//     const web3 = getWeb3forChain(_chainId);
-
-//     const swapManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/SwapManager.json')));
-//     // Get SwapManager contract code
-//     const swapManagerContract = new web3.eth.Contract(swapManagerJson.abi, swapManagerJson.networks[_chainId]["address"]);
-
-//     // Choose method from SwapManager to be called
-//     const method = swapManagerContract.methods.registerTokenERC20(symbol, tokenAddress).encodeABI();
-
-//     // Transaction parameters
-//     const paramsTX = {
-//         chainId: chainId,
-//         fromAddress: ETH_PRIVI_ADDRESS,
-//         fromAddressKey: ETH_PRIVI_KEY,
-//         encodedABI: method,
-//         toAddress: swapManagerContract.options.address,
-//     };
-
-//     const balance = await getEthBalanceOf(ETH_PRIVI_ADDRESS, _chainId)
-//     console.log('getBridgeRegisteredToken ETH_PRIVI_ADDRESS, balance', balance)
-//     if (balance > 0.25) {
-
-//         // Execute transaction to withdraw in Ethereum
-//         const { success, error, data } = await executeTX(paramsTX);
-
-//         if (success) {
-//             if (typeof comunityAddress !== 'undefined' && comunityAddress !== '' && comunityAddress !== null) {
-//                 // update comunity data
-//                 db.collection(collections.community).doc(comunityAddress).update({registeredOnSwapManager: true})
-//             }
-//             res.send({ success: true, data: data });
-//         } else {
-//             res.send({ success: false, data: error });
-//         }
-
-//     } else {
-//         res.send({ success: false, data: 'Not Enough Blance in ETH_PRIVI_ADDRESS, ask admin to address this issue' });
-//     }
-    
-// }
-
+// get registed token from the bridge manager
 const getBridgeRegisteredToken = async (req: express.Request, res: express.Response) => {
     const { chainId } = req.query;
     console.log('getBridgeRegisteredToken req:', chainId)
