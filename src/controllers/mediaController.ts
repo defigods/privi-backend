@@ -19,6 +19,7 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
   }
 }
+
 exports.getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
@@ -28,68 +29,111 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
     console.log(body);
 
     let medias: any[] = [];
-    let dataMediasSnap : any[] = [];
-    let dataEthMediaSnap : any[] = [];
+    let dataMedias : any[] = [];
+    let dataEthMedia : any[] = [];
 
     // Blockchain & SearchValue filters
-
     if(body.blockChains && body.blockChains.length > 0) {
       let findBlockchainPRIVI = body.blockChains.find(block => block === 'PRIVI');
       let findBlockchainOthers = body.blockChains.filter(block => block !== 'PRIVI');
+      let mediaTypes = body.mediaTypes;
 
       if(findBlockchainPRIVI) {
         const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
-        dataMediasSnap = docsMediasSnap.map((docSnap) => {
+        let dataMediasSnap = docsMediasSnap.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
           data.blockchain = 'PRIVI';
+          return(data);
+        });
 
+        for(let media of dataMediasSnap){
           // Searched Value
           if(body.searchValue != '') {
-            if (data.MediaName.toLowerCase().includes(body.searchValue.toLowerCase()) ||
-              data.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase())) {
-              return(data);
+            if ((media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
+              (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))) {
 
+              let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+              if(applyTypeFilter) {
+                dataMedias.push(media);
+              }
+            }
+          } else {
+            let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+            if(applyTypeFilter) {
+              dataMedias.push(media);
             }
           }
-
-        });
+        }
 
       }
 
       if(findBlockchainOthers && findBlockchainOthers.length > 0) {
         const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
-        dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
+        let dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
+          return(data);
+        });
 
+        for(let media of dataEthMediaSnap){
           // Searched Value
           if(body.searchValue != '') {
-            if (data.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
-
+            if (media.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
               // Blockchain
               for(let block of findBlockchainOthers) {
-                if(data.tag === block) {
-                  return(data);
+                if(media.tag === block) {
+                  let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+                  if(applyTypeFilter) {
+                    dataEthMedia.push(media);
+                  }
+                }
+              }
+            }
+          } else {
+            // Blockchain
+            for(let block of findBlockchainOthers) {
+              if(media.tag === block) {
+                let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+                if(applyTypeFilter) {
+                  dataEthMedia.push(media);
                 }
               }
             }
           }
+        }
 
-
-
-        });
       }
+
     }
 
-
-
-    medias = dataMediasSnap.concat(dataEthMediaSnap).slice(pagination * 10, (pagination+1) * 10);
+    medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
   } catch (e) {
+    console.log(e);
     return res.status(500).send({ success: false, error: e });
   }
+}
+
+const mediaTypeFilter = (media: any, mediaTypes: string[]) => {
+  return new Promise((resolve, reject) => {
+    try {
+      if(mediaTypes && mediaTypes.length > 0) {
+        let filterMedia = mediaTypes.some((typ) => typ === media.Type);
+
+        if(filterMedia) {
+          resolve(media);
+        } else{
+          resolve(false);
+        }
+      } else {
+       resolve(media);
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
 }
 
 exports.getEthMediaItem = async (req: express.Request, res: express.Response) => {
