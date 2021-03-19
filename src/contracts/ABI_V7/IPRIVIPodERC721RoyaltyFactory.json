@@ -1,0 +1,2258 @@
+{
+  "contractName": "IPRIVIPodERC721RoyaltyFactory",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "string",
+          "name": "podId",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "podTokenName",
+          "type": "string"
+        },
+        {
+          "indexed": false,
+          "internalType": "string",
+          "name": "podTokenSymbol",
+          "type": "string"
+        }
+      ],
+      "name": "PodCreated",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "getTotalTokenCreated",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "totalPods",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "podId",
+          "type": "string"
+        }
+      ],
+      "name": "getPodAddressById",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "podAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        }
+      ],
+      "name": "getPodAddressBySymbol",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "podAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "podId",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "podTokenName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "podTokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "baseURI",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "royaltyAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "creator",
+          "type": "address"
+        }
+      ],
+      "name": "createPod",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "podAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "podId",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "podTokenName",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "podTokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "string",
+          "name": "baseURI",
+          "type": "string"
+        },
+        {
+          "internalType": "uint256",
+          "name": "royaltyAmount",
+          "type": "uint256"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "royaltyShares",
+          "type": "uint256[]"
+        },
+        {
+          "internalType": "address[]",
+          "name": "creators",
+          "type": "address[]"
+        }
+      ],
+      "name": "createMultiCreatorPod",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "podAddress",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "podId",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "mintPodTokenById",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "string",
+          "name": "tokenSymbol",
+          "type": "string"
+        },
+        {
+          "internalType": "address",
+          "name": "account",
+          "type": "address"
+        }
+      ],
+      "name": "mintPodTokenBySymbol",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.8.0+commit.c7dfd78e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"string\",\"name\":\"podId\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"podTokenName\",\"type\":\"string\"},{\"indexed\":false,\"internalType\":\"string\",\"name\":\"podTokenSymbol\",\"type\":\"string\"}],\"name\":\"PodCreated\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"podId\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"podTokenName\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"podTokenSymbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"baseURI\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"},{\"internalType\":\"uint256[]\",\"name\":\"royaltyShares\",\"type\":\"uint256[]\"},{\"internalType\":\"address[]\",\"name\":\"creators\",\"type\":\"address[]\"}],\"name\":\"createMultiCreatorPod\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"podAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"podId\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"podTokenName\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"podTokenSymbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"baseURI\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"royaltyAmount\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"}],\"name\":\"createPod\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"podAddress\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"podId\",\"type\":\"string\"}],\"name\":\"getPodAddressById\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"podAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"}],\"name\":\"getPodAddressBySymbol\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"podAddress\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getTotalTokenCreated\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"totalPods\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"podId\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"mintPodTokenById\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"string\",\"name\":\"tokenSymbol\",\"type\":\"string\"},{\"internalType\":\"address\",\"name\":\"account\",\"type\":\"address\"}],\"name\":\"mintPodTokenBySymbol\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{\"createMultiCreatorPod(string,string,string,string,uint256,uint256[],address[])\":{\"details\":\"Create pods Requirements: - pod id and symbol should not exist before.\"},\"createPod(string,string,string,string,uint256,address)\":{\"details\":\"Create pods of one single creator Requirements: - pod id and pod symbol should not exist before.\"},\"mintPodTokenById(string,address)\":{\"details\":\"Moderator will mint the amount of pod token for the investor's account Requirements: - the caller must MODERATOR_ROLE to perform this action.\"},\"mintPodTokenBySymbol(string,address)\":{\"details\":\"Moderator will mint the amount of pod token for the investor's account Requirements: - the caller must MODERATOR_ROLE to perform this action.\"}},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/IPRIVIPodERC721RoyaltyFactory.sol\":\"IPRIVIPodERC721RoyaltyFactory\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":500},\"remappings\":[]},\"sources\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/IPRIVIPodERC721RoyaltyFactory.sol\":{\"keccak256\":\"0x2a33f5ce5c292cbd426186ab28c1a9b154e7cc802d78479d56389ef5a2f3008e\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://8a51438fab022980508a1f6a3ceffcce6299d9f601527b1420ade2b7a2bf33dd\",\"dweb:/ipfs/QmS8TzCRRgpTkxRjppXJcrYGNDS8uTtxyLciDSdar56XhK\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "// SPDX-License-Identifier: MIT\n\npragma solidity ^0.8.0;\n\ninterface IPRIVIPodERC721RoyaltyFactory {\n    \n    event PodCreated(string indexed podId, string podTokenName, string podTokenSymbol);\n\n    function getTotalTokenCreated() external view returns(uint256 totalPods);\n\n    function getPodAddressById(string calldata podId) external view returns(address podAddress);\n\n    function getPodAddressBySymbol(string calldata tokenSymbol) external view returns(address podAddress);\n    \n    /**\n     *@dev Create pods of one single creator\n     *\n     * Requirements:\n     *\n     * - pod id and pod symbol should not exist before.\n     */\n    function createPod(string calldata podId, string calldata podTokenName, string calldata podTokenSymbol, string calldata baseURI, uint256 royaltyAmount, address creator) external returns (address podAddress);\n\n    /**\n     *@dev Create pods\n     *\n     * Requirements:\n     *\n     * - pod id and symbol should not exist before.\n     */\n    function createMultiCreatorPod(string calldata podId, string calldata podTokenName, string calldata podTokenSymbol, string calldata baseURI, uint256 royaltyAmount, uint256[] memory royaltyShares, address[] memory creators) external returns (address podAddress);\n    \n    /**\n     * @dev Moderator will mint the amount of pod token for the investor's account\n     *\n     * Requirements:\n     *\n     * - the caller must MODERATOR_ROLE to perform this action.\n     */\n    function mintPodTokenById(string calldata podId, address account) external;\n\n    /**\n     * @dev Moderator will mint the amount of pod token for the investor's account\n     *\n     * Requirements:\n     *\n     * - the caller must MODERATOR_ROLE to perform this action.\n     */\n    function mintPodTokenBySymbol(string calldata tokenSymbol, address account) external;\n    \n}",
+  "sourcePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/IPRIVIPodERC721RoyaltyFactory.sol",
+  "ast": {
+    "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/IPRIVIPodERC721RoyaltyFactory.sol",
+    "exportedSymbols": {
+      "IPRIVIPodERC721RoyaltyFactory": [
+        3654
+      ]
+    },
+    "id": 3655,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3570,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:23:14"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "id": 3654,
+        "linearizedBaseContracts": [
+          3654
+        ],
+        "name": "IPRIVIPodERC721RoyaltyFactory",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "id": 3578,
+            "name": "PodCreated",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3577,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3572,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3578,
+                  "src": "126:20:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3571,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "126:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3574,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "podTokenName",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3578,
+                  "src": "148:19:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3573,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "148:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3576,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "podTokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3578,
+                  "src": "169:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3575,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "169:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "125:66:14"
+            },
+            "src": "109:83:14"
+          },
+          {
+            "functionSelector": "0fc09e2e",
+            "id": 3583,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getTotalTokenCreated",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3579,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "227:2:14"
+            },
+            "returnParameters": {
+              "id": 3582,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3581,
+                  "mutability": "mutable",
+                  "name": "totalPods",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3583,
+                  "src": "252:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3580,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "252:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "251:19:14"
+            },
+            "scope": 3654,
+            "src": "198:73:14",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "functionSelector": "22b2edeb",
+            "id": 3590,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getPodAddressById",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3586,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3585,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3590,
+                  "src": "304:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3584,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "304:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "303:23:14"
+            },
+            "returnParameters": {
+              "id": 3589,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3588,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3590,
+                  "src": "349:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3587,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "349:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "348:20:14"
+            },
+            "scope": 3654,
+            "src": "277:92:14",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "functionSelector": "3325a4e4",
+            "id": 3597,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getPodAddressBySymbol",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3593,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3592,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3597,
+                  "src": "406:27:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3591,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "406:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "405:29:14"
+            },
+            "returnParameters": {
+              "id": 3596,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3595,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3597,
+                  "src": "457:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3594,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "457:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "456:20:14"
+            },
+            "scope": 3654,
+            "src": "375:102:14",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3598,
+              "nodeType": "StructuredDocumentation",
+              "src": "487:147:14",
+              "text": "@dev Create pods of one single creator\n Requirements:\n - pod id and pod symbol should not exist before."
+            },
+            "functionSelector": "e80cae26",
+            "id": 3615,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "createPod",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3611,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3600,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "658:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3599,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "658:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3602,
+                  "mutability": "mutable",
+                  "name": "podTokenName",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "681:28:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3601,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "681:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3604,
+                  "mutability": "mutable",
+                  "name": "podTokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "711:30:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3603,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "711:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3606,
+                  "mutability": "mutable",
+                  "name": "baseURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "743:23:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3605,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "743:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3608,
+                  "mutability": "mutable",
+                  "name": "royaltyAmount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "768:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3607,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "768:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3610,
+                  "mutability": "mutable",
+                  "name": "creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "791:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3609,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "791:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "657:150:14"
+            },
+            "returnParameters": {
+              "id": 3614,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3613,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "826:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3612,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "826:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "825:20:14"
+            },
+            "scope": 3654,
+            "src": "639:207:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3616,
+              "nodeType": "StructuredDocumentation",
+              "src": "852:121:14",
+              "text": "@dev Create pods\n Requirements:\n - pod id and symbol should not exist before."
+            },
+            "functionSelector": "972d08cf",
+            "id": 3637,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "createMultiCreatorPod",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3633,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3618,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1009:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3617,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1009:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3620,
+                  "mutability": "mutable",
+                  "name": "podTokenName",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1032:28:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3619,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1032:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3622,
+                  "mutability": "mutable",
+                  "name": "podTokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1062:30:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3621,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1062:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3624,
+                  "mutability": "mutable",
+                  "name": "baseURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1094:23:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3623,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1094:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3626,
+                  "mutability": "mutable",
+                  "name": "royaltyAmount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1119:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3625,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1119:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3629,
+                  "mutability": "mutable",
+                  "name": "royaltyShares",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1142:30:14",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_memory_ptr",
+                    "typeString": "uint256[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3627,
+                      "name": "uint256",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1142:7:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "id": 3628,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1142:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                      "typeString": "uint256[]"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3632,
+                  "mutability": "mutable",
+                  "name": "creators",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1174:25:14",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_memory_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3630,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1174:7:14",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 3631,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1174:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1008:192:14"
+            },
+            "returnParameters": {
+              "id": 3636,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3635,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1219:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3634,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1219:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1218:20:14"
+            },
+            "scope": 3654,
+            "src": "978:261:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3638,
+              "nodeType": "StructuredDocumentation",
+              "src": "1249:193:14",
+              "text": " @dev Moderator will mint the amount of pod token for the investor's account\n Requirements:\n - the caller must MODERATOR_ROLE to perform this action."
+            },
+            "functionSelector": "58d4891f",
+            "id": 3645,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "mintPodTokenById",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3643,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3640,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3645,
+                  "src": "1473:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3639,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1473:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3642,
+                  "mutability": "mutable",
+                  "name": "account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3645,
+                  "src": "1496:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3641,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1496:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1472:40:14"
+            },
+            "returnParameters": {
+              "id": 3644,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1521:0:14"
+            },
+            "scope": 3654,
+            "src": "1447:75:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3646,
+              "nodeType": "StructuredDocumentation",
+              "src": "1528:193:14",
+              "text": " @dev Moderator will mint the amount of pod token for the investor's account\n Requirements:\n - the caller must MODERATOR_ROLE to perform this action."
+            },
+            "functionSelector": "0d9c1812",
+            "id": 3653,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "mintPodTokenBySymbol",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3651,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3648,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3653,
+                  "src": "1756:27:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3647,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1756:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3650,
+                  "mutability": "mutable",
+                  "name": "account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3653,
+                  "src": "1785:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3649,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1785:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1755:46:14"
+            },
+            "returnParameters": {
+              "id": 3652,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1810:0:14"
+            },
+            "scope": 3654,
+            "src": "1726:85:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3655,
+        "src": "58:1760:14"
+      }
+    ],
+    "src": "33:1785:14"
+  },
+  "legacyAST": {
+    "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/interfaces/IPRIVIPodERC721RoyaltyFactory.sol",
+    "exportedSymbols": {
+      "IPRIVIPodERC721RoyaltyFactory": [
+        3654
+      ]
+    },
+    "id": 3655,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 3570,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "33:23:14"
+      },
+      {
+        "abstract": false,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "interface",
+        "fullyImplemented": false,
+        "id": 3654,
+        "linearizedBaseContracts": [
+          3654
+        ],
+        "name": "IPRIVIPodERC721RoyaltyFactory",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "anonymous": false,
+            "id": 3578,
+            "name": "PodCreated",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 3577,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3572,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3578,
+                  "src": "126:20:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3571,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "126:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3574,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "podTokenName",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3578,
+                  "src": "148:19:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3573,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "148:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3576,
+                  "indexed": false,
+                  "mutability": "mutable",
+                  "name": "podTokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3578,
+                  "src": "169:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_memory_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3575,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "169:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "125:66:14"
+            },
+            "src": "109:83:14"
+          },
+          {
+            "functionSelector": "0fc09e2e",
+            "id": 3583,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getTotalTokenCreated",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3579,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "227:2:14"
+            },
+            "returnParameters": {
+              "id": 3582,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3581,
+                  "mutability": "mutable",
+                  "name": "totalPods",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3583,
+                  "src": "252:17:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3580,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "252:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "251:19:14"
+            },
+            "scope": 3654,
+            "src": "198:73:14",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "functionSelector": "22b2edeb",
+            "id": 3590,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getPodAddressById",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3586,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3585,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3590,
+                  "src": "304:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3584,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "304:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "303:23:14"
+            },
+            "returnParameters": {
+              "id": 3589,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3588,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3590,
+                  "src": "349:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3587,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "349:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "348:20:14"
+            },
+            "scope": 3654,
+            "src": "277:92:14",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "functionSelector": "3325a4e4",
+            "id": 3597,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "getPodAddressBySymbol",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3593,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3592,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3597,
+                  "src": "406:27:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3591,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "406:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "405:29:14"
+            },
+            "returnParameters": {
+              "id": 3596,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3595,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3597,
+                  "src": "457:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3594,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "457:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "456:20:14"
+            },
+            "scope": 3654,
+            "src": "375:102:14",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3598,
+              "nodeType": "StructuredDocumentation",
+              "src": "487:147:14",
+              "text": "@dev Create pods of one single creator\n Requirements:\n - pod id and pod symbol should not exist before."
+            },
+            "functionSelector": "e80cae26",
+            "id": 3615,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "createPod",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3611,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3600,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "658:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3599,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "658:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3602,
+                  "mutability": "mutable",
+                  "name": "podTokenName",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "681:28:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3601,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "681:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3604,
+                  "mutability": "mutable",
+                  "name": "podTokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "711:30:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3603,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "711:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3606,
+                  "mutability": "mutable",
+                  "name": "baseURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "743:23:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3605,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "743:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3608,
+                  "mutability": "mutable",
+                  "name": "royaltyAmount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "768:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3607,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "768:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3610,
+                  "mutability": "mutable",
+                  "name": "creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "791:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3609,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "791:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "657:150:14"
+            },
+            "returnParameters": {
+              "id": 3614,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3613,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3615,
+                  "src": "826:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3612,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "826:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "825:20:14"
+            },
+            "scope": 3654,
+            "src": "639:207:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3616,
+              "nodeType": "StructuredDocumentation",
+              "src": "852:121:14",
+              "text": "@dev Create pods\n Requirements:\n - pod id and symbol should not exist before."
+            },
+            "functionSelector": "972d08cf",
+            "id": 3637,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "createMultiCreatorPod",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3633,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3618,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1009:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3617,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1009:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3620,
+                  "mutability": "mutable",
+                  "name": "podTokenName",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1032:28:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3619,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1032:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3622,
+                  "mutability": "mutable",
+                  "name": "podTokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1062:30:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3621,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1062:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3624,
+                  "mutability": "mutable",
+                  "name": "baseURI",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1094:23:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3623,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1094:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3626,
+                  "mutability": "mutable",
+                  "name": "royaltyAmount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1119:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3625,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1119:7:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3629,
+                  "mutability": "mutable",
+                  "name": "royaltyShares",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1142:30:14",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_uint256_$dyn_memory_ptr",
+                    "typeString": "uint256[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3627,
+                      "name": "uint256",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1142:7:14",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "id": 3628,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1142:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_uint256_$dyn_storage_ptr",
+                      "typeString": "uint256[]"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3632,
+                  "mutability": "mutable",
+                  "name": "creators",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1174:25:14",
+                  "stateVariable": false,
+                  "storageLocation": "memory",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_array$_t_address_$dyn_memory_ptr",
+                    "typeString": "address[]"
+                  },
+                  "typeName": {
+                    "baseType": {
+                      "id": 3630,
+                      "name": "address",
+                      "nodeType": "ElementaryTypeName",
+                      "src": "1174:7:14",
+                      "stateMutability": "nonpayable",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "id": 3631,
+                    "nodeType": "ArrayTypeName",
+                    "src": "1174:9:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_array$_t_address_$dyn_storage_ptr",
+                      "typeString": "address[]"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1008:192:14"
+            },
+            "returnParameters": {
+              "id": 3636,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3635,
+                  "mutability": "mutable",
+                  "name": "podAddress",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3637,
+                  "src": "1219:18:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3634,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1219:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1218:20:14"
+            },
+            "scope": 3654,
+            "src": "978:261:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3638,
+              "nodeType": "StructuredDocumentation",
+              "src": "1249:193:14",
+              "text": " @dev Moderator will mint the amount of pod token for the investor's account\n Requirements:\n - the caller must MODERATOR_ROLE to perform this action."
+            },
+            "functionSelector": "58d4891f",
+            "id": 3645,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "mintPodTokenById",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3643,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3640,
+                  "mutability": "mutable",
+                  "name": "podId",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3645,
+                  "src": "1473:21:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3639,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1473:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3642,
+                  "mutability": "mutable",
+                  "name": "account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3645,
+                  "src": "1496:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3641,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1496:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1472:40:14"
+            },
+            "returnParameters": {
+              "id": 3644,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1521:0:14"
+            },
+            "scope": 3654,
+            "src": "1447:75:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "documentation": {
+              "id": 3646,
+              "nodeType": "StructuredDocumentation",
+              "src": "1528:193:14",
+              "text": " @dev Moderator will mint the amount of pod token for the investor's account\n Requirements:\n - the caller must MODERATOR_ROLE to perform this action."
+            },
+            "functionSelector": "0d9c1812",
+            "id": 3653,
+            "implemented": false,
+            "kind": "function",
+            "modifiers": [],
+            "name": "mintPodTokenBySymbol",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3651,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3648,
+                  "mutability": "mutable",
+                  "name": "tokenSymbol",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3653,
+                  "src": "1756:27:14",
+                  "stateVariable": false,
+                  "storageLocation": "calldata",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_string_calldata_ptr",
+                    "typeString": "string"
+                  },
+                  "typeName": {
+                    "id": 3647,
+                    "name": "string",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1756:6:14",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_string_storage_ptr",
+                      "typeString": "string"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3650,
+                  "mutability": "mutable",
+                  "name": "account",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3653,
+                  "src": "1785:15:14",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3649,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1785:7:14",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1755:46:14"
+            },
+            "returnParameters": {
+              "id": 3652,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1810:0:14"
+            },
+            "scope": 3654,
+            "src": "1726:85:14",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "external"
+          }
+        ],
+        "scope": 3655,
+        "src": "58:1760:14"
+      }
+    ],
+    "src": "33:1785:14"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.8.0+commit.c7dfd78e.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-03-19T09:16:11.353Z",
+  "devdoc": {
+    "kind": "dev",
+    "methods": {
+      "createMultiCreatorPod(string,string,string,string,uint256,uint256[],address[])": {
+        "details": "Create pods Requirements: - pod id and symbol should not exist before."
+      },
+      "createPod(string,string,string,string,uint256,address)": {
+        "details": "Create pods of one single creator Requirements: - pod id and pod symbol should not exist before."
+      },
+      "mintPodTokenById(string,address)": {
+        "details": "Moderator will mint the amount of pod token for the investor's account Requirements: - the caller must MODERATOR_ROLE to perform this action."
+      },
+      "mintPodTokenBySymbol(string,address)": {
+        "details": "Moderator will mint the amount of pod token for the investor's account Requirements: - the caller must MODERATOR_ROLE to perform this action."
+      }
+    },
+    "version": 1
+  },
+  "userdoc": {
+    "kind": "user",
+    "methods": {},
+    "version": 1
+  }
+}

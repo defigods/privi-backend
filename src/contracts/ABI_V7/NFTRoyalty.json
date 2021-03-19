@@ -1,0 +1,2110 @@
+{
+  "contractName": "NFTRoyalty",
+  "abi": [
+    {
+      "anonymous": false,
+      "inputs": [
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "creator",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "address",
+          "name": "buyer",
+          "type": "address"
+        },
+        {
+          "indexed": true,
+          "internalType": "uint256",
+          "name": "amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "RecievedRoyalties",
+      "type": "event"
+    },
+    {
+      "inputs": [],
+      "name": "royaltyInfo",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        },
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "hasRoyalties",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "royaltyCreator",
+      "outputs": [
+        {
+          "internalType": "address",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "royaltyAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_creator",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_buyer",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_amount",
+          "type": "uint256"
+        }
+      ],
+      "name": "royaltiesRecieved",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    }
+  ],
+  "metadata": "{\"compiler\":{\"version\":\"0.8.0+commit.c7dfd78e\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"creator\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"buyer\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"}],\"name\":\"RecievedRoyalties\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"hasRoyalties\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"_creator\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"_buyer\",\"type\":\"address\"},{\"internalType\":\"uint256\",\"name\":\"_amount\",\"type\":\"uint256\"}],\"name\":\"royaltiesRecieved\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"royaltyAmount\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"royaltyCreator\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"royaltyInfo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"events\":{\"RecievedRoyalties(address,address,uint256)\":{\"details\":\"The marketplace would emit this event from their contracts. Or they would call royaltiesRecieved() function.\",\"params\":{\"amount\":\"The amount being paid to the creator\",\"buyer\":\"The person buying the NFT on a secondary sale\",\"creator\":\"The original creator of the NFT entitled to the royalties\"}}},\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"events\":{\"RecievedRoyalties(address,address,uint256)\":{\"notice\":\"(Mandatory) This event is emitted when royalties are transfered.\"}},\"kind\":\"user\",\"methods\":{\"hasRoyalties()\":{\"notice\":\"(optional) check if NFT has royalty\"},\"royaltiesRecieved(address,address,uint256)\":{\"notice\":\"(optional) check if NFT has royalty\"},\"royaltyAmount()\":{\"notice\":\"(optional) get royalty amount\"},\"royaltyCreator()\":{\"notice\":\"(optional) get royalty creator address\"},\"royaltyInfo()\":{\"notice\":\"(Mandatory) This Function retrieve royalty info.\"}},\"version\":1}},\"settings\":{\"compilationTarget\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/abstracts/NFTRoyalty.sol\":\"NFTRoyalty\"},\"evmVersion\":\"istanbul\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":true,\"runs\":500},\"remappings\":[]},\"sources\":{\"/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/abstracts/NFTRoyalty.sol\":{\"keccak256\":\"0x12bad9dac98de132b00a87cfc6ed621526e12db9fe67237f4cdc52bf103d8879\",\"license\":\"MIT\",\"urls\":[\"bzz-raw://7d2deaaaf0713324f6199e04d33f11ce0f65df3d951a929457a020634ca6b74f\",\"dweb:/ipfs/QmSRLCppz2DheGgQz1TX8asVTD31xQ28vVSFzWVpKbErRJ\"]}},\"version\":1}",
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "immutableReferences": {},
+  "generatedSources": [],
+  "deployedGeneratedSources": [],
+  "sourceMap": "",
+  "deployedSourceMap": "",
+  "source": "pragma solidity ^0.8.0;\n\n// SPDX-License-Identifier: MIT\n\nabstract contract NFTRoyalty {\n  /*\n   * bytes4(keccak256('supportsInterface(bytes4)')) == 0x01ffc9a7\n   */\n  uint256 internal royalty_amount;\n  address internal creator;\n\n  /**\n    @notice (Mandatory) This event is emitted when royalties are transfered.\n\n    @dev The marketplace would emit this event from their contracts. Or they would call royaltiesRecieved() function.\n\n    @param creator The original creator of the NFT entitled to the royalties\n    @param buyer The person buying the NFT on a secondary sale\n    @param amount The amount being paid to the creator\n    */\n  event RecievedRoyalties(\n    address indexed creator,\n    address indexed buyer,\n    uint256 indexed amount\n  );\n\n  constructor(uint256 _amount, address _creator) {\n    royalty_amount = _amount;\n    creator = _creator;\n  }\n\n  /**\n    @notice (Mandatory) This Function retrieve royalty info.\n    */\n  function royaltyInfo() external view returns (uint256, address) {\n    return (royalty_amount, creator);\n  }\n\n  /**\n    @notice (optional) check if NFT has royalty\n    */\n  function hasRoyalties() public pure returns (bool) {\n    return true;\n  }\n\n  /**\n    @notice (optional) get royalty creator address\n    */\n  function royaltyCreator() external view returns (address) {\n    return creator;\n  }\n\n  /**\n    @notice (optional) get royalty amount\n    */\n  function royaltyAmount() external view returns (uint256) {\n    return royalty_amount;\n  }\n\n  /**\n    @notice (optional) check if NFT has royalty\n    */\n  function royaltiesRecieved(\n    address _creator,\n    address _buyer,\n    uint256 _amount\n  ) public {\n    emit RecievedRoyalties(_creator, _buyer, _amount);\n  }\n}\n",
+  "sourcePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/abstracts/NFTRoyalty.sol",
+  "ast": {
+    "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/abstracts/NFTRoyalty.sol",
+    "exportedSymbols": {
+      "NFTRoyalty": [
+        3053
+      ]
+    },
+    "id": 3054,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2966,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:7"
+      },
+      {
+        "abstract": true,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 3053,
+        "linearizedBaseContracts": [
+          3053
+        ],
+        "name": "NFTRoyalty",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 2968,
+            "mutability": "mutable",
+            "name": "royalty_amount",
+            "nodeType": "VariableDeclaration",
+            "scope": 3053,
+            "src": "168:31:7",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 2967,
+              "name": "uint256",
+              "nodeType": "ElementaryTypeName",
+              "src": "168:7:7",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 2970,
+            "mutability": "mutable",
+            "name": "creator",
+            "nodeType": "VariableDeclaration",
+            "scope": 3053,
+            "src": "203:24:7",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 2969,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "203:7:7",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "anonymous": false,
+            "documentation": {
+              "id": 2971,
+              "nodeType": "StructuredDocumentation",
+              "src": "232:402:7",
+              "text": "@notice (Mandatory) This event is emitted when royalties are transfered.\n@dev The marketplace would emit this event from their contracts. Or they would call royaltiesRecieved() function.\n@param creator The original creator of the NFT entitled to the royalties\n@param buyer The person buying the NFT on a secondary sale\n@param amount The amount being paid to the creator"
+            },
+            "id": 2979,
+            "name": "RecievedRoyalties",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 2978,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2973,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2979,
+                  "src": "666:23:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2972,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "666:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 2975,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "buyer",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2979,
+                  "src": "695:21:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2974,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "695:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 2977,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2979,
+                  "src": "722:22:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2976,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "722:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "660:88:7"
+            },
+            "src": "637:112:7"
+          },
+          {
+            "body": {
+              "id": 2994,
+              "nodeType": "Block",
+              "src": "800:59:7",
+              "statements": [
+                {
+                  "expression": {
+                    "id": 2988,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "id": 2986,
+                      "name": "royalty_amount",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2968,
+                      "src": "806:14:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "id": 2987,
+                      "name": "_amount",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2981,
+                      "src": "823:7:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "806:24:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 2989,
+                  "nodeType": "ExpressionStatement",
+                  "src": "806:24:7"
+                },
+                {
+                  "expression": {
+                    "id": 2992,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "id": 2990,
+                      "name": "creator",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2970,
+                      "src": "836:7:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "id": 2991,
+                      "name": "_creator",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2983,
+                      "src": "846:8:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "src": "836:18:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "id": 2993,
+                  "nodeType": "ExpressionStatement",
+                  "src": "836:18:7"
+                }
+              ]
+            },
+            "id": 2995,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2984,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2981,
+                  "mutability": "mutable",
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2995,
+                  "src": "765:15:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2980,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "765:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 2983,
+                  "mutability": "mutable",
+                  "name": "_creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2995,
+                  "src": "782:16:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2982,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "782:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "764:35:7"
+            },
+            "returnParameters": {
+              "id": 2985,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "800:0:7"
+            },
+            "scope": 3053,
+            "src": "753:106:7",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 3007,
+              "nodeType": "Block",
+              "src": "1001:43:7",
+              "statements": [
+                {
+                  "expression": {
+                    "components": [
+                      {
+                        "id": 3003,
+                        "name": "royalty_amount",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 2968,
+                        "src": "1015:14:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "id": 3004,
+                        "name": "creator",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 2970,
+                        "src": "1031:7:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      }
+                    ],
+                    "id": 3005,
+                    "isConstant": false,
+                    "isInlineArray": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "TupleExpression",
+                    "src": "1014:25:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$_t_uint256_$_t_address_$",
+                      "typeString": "tuple(uint256,address)"
+                    }
+                  },
+                  "functionReturnParameters": 3002,
+                  "id": 3006,
+                  "nodeType": "Return",
+                  "src": "1007:32:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 2996,
+              "nodeType": "StructuredDocumentation",
+              "src": "863:71:7",
+              "text": "@notice (Mandatory) This Function retrieve royalty info."
+            },
+            "functionSelector": "46e80720",
+            "id": 3008,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltyInfo",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2997,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "957:2:7"
+            },
+            "returnParameters": {
+              "id": 3002,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2999,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3008,
+                  "src": "983:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2998,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "983:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3001,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3008,
+                  "src": "992:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3000,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "992:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "982:18:7"
+            },
+            "scope": 3053,
+            "src": "937:107:7",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 3016,
+              "nodeType": "Block",
+              "src": "1160:22:7",
+              "statements": [
+                {
+                  "expression": {
+                    "hexValue": "74727565",
+                    "id": 3014,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "kind": "bool",
+                    "lValueRequested": false,
+                    "nodeType": "Literal",
+                    "src": "1173:4:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    },
+                    "value": "true"
+                  },
+                  "functionReturnParameters": 3013,
+                  "id": 3015,
+                  "nodeType": "Return",
+                  "src": "1166:11:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3009,
+              "nodeType": "StructuredDocumentation",
+              "src": "1048:58:7",
+              "text": "@notice (optional) check if NFT has royalty"
+            },
+            "functionSelector": "656605d6",
+            "id": 3017,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "hasRoyalties",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3010,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1130:2:7"
+            },
+            "returnParameters": {
+              "id": 3013,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3012,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3017,
+                  "src": "1154:4:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3011,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1154:4:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1153:6:7"
+            },
+            "scope": 3053,
+            "src": "1109:73:7",
+            "stateMutability": "pure",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3025,
+              "nodeType": "Block",
+              "src": "1308:25:7",
+              "statements": [
+                {
+                  "expression": {
+                    "id": 3023,
+                    "name": "creator",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 2970,
+                    "src": "1321:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "functionReturnParameters": 3022,
+                  "id": 3024,
+                  "nodeType": "Return",
+                  "src": "1314:14:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3018,
+              "nodeType": "StructuredDocumentation",
+              "src": "1186:61:7",
+              "text": "@notice (optional) get royalty creator address"
+            },
+            "functionSelector": "9822e8c0",
+            "id": 3026,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltyCreator",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3019,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1273:2:7"
+            },
+            "returnParameters": {
+              "id": 3022,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3021,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3026,
+                  "src": "1299:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3020,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1299:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1298:9:7"
+            },
+            "scope": 3053,
+            "src": "1250:83:7",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 3034,
+              "nodeType": "Block",
+              "src": "1449:32:7",
+              "statements": [
+                {
+                  "expression": {
+                    "id": 3032,
+                    "name": "royalty_amount",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 2968,
+                    "src": "1462:14:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 3031,
+                  "id": 3033,
+                  "nodeType": "Return",
+                  "src": "1455:21:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3027,
+              "nodeType": "StructuredDocumentation",
+              "src": "1337:52:7",
+              "text": "@notice (optional) get royalty amount"
+            },
+            "functionSelector": "7c6e551d",
+            "id": 3035,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltyAmount",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3028,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1414:2:7"
+            },
+            "returnParameters": {
+              "id": 3031,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3030,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3035,
+                  "src": "1440:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3029,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1440:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1439:9:7"
+            },
+            "scope": 3053,
+            "src": "1392:89:7",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 3051,
+              "nodeType": "Block",
+              "src": "1647:60:7",
+              "statements": [
+                {
+                  "eventCall": {
+                    "arguments": [
+                      {
+                        "id": 3046,
+                        "name": "_creator",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3038,
+                        "src": "1676:8:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "id": 3047,
+                        "name": "_buyer",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3040,
+                        "src": "1686:6:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "id": 3048,
+                        "name": "_amount",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3042,
+                        "src": "1694:7:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      ],
+                      "id": 3045,
+                      "name": "RecievedRoyalties",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2979,
+                      "src": "1658:17:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_address_$_t_uint256_$returns$__$",
+                        "typeString": "function (address,address,uint256)"
+                      }
+                    },
+                    "id": 3049,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1658:44:7",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 3050,
+                  "nodeType": "EmitStatement",
+                  "src": "1653:49:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3036,
+              "nodeType": "StructuredDocumentation",
+              "src": "1485:58:7",
+              "text": "@notice (optional) check if NFT has royalty"
+            },
+            "functionSelector": "84a09c27",
+            "id": 3052,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltiesRecieved",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3043,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3038,
+                  "mutability": "mutable",
+                  "name": "_creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3052,
+                  "src": "1578:16:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3037,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1578:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3040,
+                  "mutability": "mutable",
+                  "name": "_buyer",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3052,
+                  "src": "1600:14:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3039,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1600:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3042,
+                  "mutability": "mutable",
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3052,
+                  "src": "1620:15:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3041,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1620:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1572:67:7"
+            },
+            "returnParameters": {
+              "id": 3044,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1647:0:7"
+            },
+            "scope": 3053,
+            "src": "1546:161:7",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          }
+        ],
+        "scope": 3054,
+        "src": "58:1651:7"
+      }
+    ],
+    "src": "0:1710:7"
+  },
+  "legacyAST": {
+    "absolutePath": "/home/rekard0/Documents/WORK/PriviEthereum/PRIVIethereum/contracts/abstracts/NFTRoyalty.sol",
+    "exportedSymbols": {
+      "NFTRoyalty": [
+        3053
+      ]
+    },
+    "id": 3054,
+    "license": "MIT",
+    "nodeType": "SourceUnit",
+    "nodes": [
+      {
+        "id": 2966,
+        "literals": [
+          "solidity",
+          "^",
+          "0.8",
+          ".0"
+        ],
+        "nodeType": "PragmaDirective",
+        "src": "0:23:7"
+      },
+      {
+        "abstract": true,
+        "baseContracts": [],
+        "contractDependencies": [],
+        "contractKind": "contract",
+        "fullyImplemented": true,
+        "id": 3053,
+        "linearizedBaseContracts": [
+          3053
+        ],
+        "name": "NFTRoyalty",
+        "nodeType": "ContractDefinition",
+        "nodes": [
+          {
+            "constant": false,
+            "id": 2968,
+            "mutability": "mutable",
+            "name": "royalty_amount",
+            "nodeType": "VariableDeclaration",
+            "scope": 3053,
+            "src": "168:31:7",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_uint256",
+              "typeString": "uint256"
+            },
+            "typeName": {
+              "id": 2967,
+              "name": "uint256",
+              "nodeType": "ElementaryTypeName",
+              "src": "168:7:7",
+              "typeDescriptions": {
+                "typeIdentifier": "t_uint256",
+                "typeString": "uint256"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "constant": false,
+            "id": 2970,
+            "mutability": "mutable",
+            "name": "creator",
+            "nodeType": "VariableDeclaration",
+            "scope": 3053,
+            "src": "203:24:7",
+            "stateVariable": true,
+            "storageLocation": "default",
+            "typeDescriptions": {
+              "typeIdentifier": "t_address",
+              "typeString": "address"
+            },
+            "typeName": {
+              "id": 2969,
+              "name": "address",
+              "nodeType": "ElementaryTypeName",
+              "src": "203:7:7",
+              "stateMutability": "nonpayable",
+              "typeDescriptions": {
+                "typeIdentifier": "t_address",
+                "typeString": "address"
+              }
+            },
+            "visibility": "internal"
+          },
+          {
+            "anonymous": false,
+            "documentation": {
+              "id": 2971,
+              "nodeType": "StructuredDocumentation",
+              "src": "232:402:7",
+              "text": "@notice (Mandatory) This event is emitted when royalties are transfered.\n@dev The marketplace would emit this event from their contracts. Or they would call royaltiesRecieved() function.\n@param creator The original creator of the NFT entitled to the royalties\n@param buyer The person buying the NFT on a secondary sale\n@param amount The amount being paid to the creator"
+            },
+            "id": 2979,
+            "name": "RecievedRoyalties",
+            "nodeType": "EventDefinition",
+            "parameters": {
+              "id": 2978,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2973,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2979,
+                  "src": "666:23:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2972,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "666:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 2975,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "buyer",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2979,
+                  "src": "695:21:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2974,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "695:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 2977,
+                  "indexed": true,
+                  "mutability": "mutable",
+                  "name": "amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2979,
+                  "src": "722:22:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2976,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "722:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "660:88:7"
+            },
+            "src": "637:112:7"
+          },
+          {
+            "body": {
+              "id": 2994,
+              "nodeType": "Block",
+              "src": "800:59:7",
+              "statements": [
+                {
+                  "expression": {
+                    "id": 2988,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "id": 2986,
+                      "name": "royalty_amount",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2968,
+                      "src": "806:14:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "id": 2987,
+                      "name": "_amount",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2981,
+                      "src": "823:7:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_uint256",
+                        "typeString": "uint256"
+                      }
+                    },
+                    "src": "806:24:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "id": 2989,
+                  "nodeType": "ExpressionStatement",
+                  "src": "806:24:7"
+                },
+                {
+                  "expression": {
+                    "id": 2992,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "leftHandSide": {
+                      "id": 2990,
+                      "name": "creator",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2970,
+                      "src": "836:7:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "nodeType": "Assignment",
+                    "operator": "=",
+                    "rightHandSide": {
+                      "id": 2991,
+                      "name": "_creator",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2983,
+                      "src": "846:8:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_address",
+                        "typeString": "address"
+                      }
+                    },
+                    "src": "836:18:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "id": 2993,
+                  "nodeType": "ExpressionStatement",
+                  "src": "836:18:7"
+                }
+              ]
+            },
+            "id": 2995,
+            "implemented": true,
+            "kind": "constructor",
+            "modifiers": [],
+            "name": "",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2984,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2981,
+                  "mutability": "mutable",
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2995,
+                  "src": "765:15:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2980,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "765:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 2983,
+                  "mutability": "mutable",
+                  "name": "_creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 2995,
+                  "src": "782:16:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 2982,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "782:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "764:35:7"
+            },
+            "returnParameters": {
+              "id": 2985,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "800:0:7"
+            },
+            "scope": 3053,
+            "src": "753:106:7",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "internal"
+          },
+          {
+            "body": {
+              "id": 3007,
+              "nodeType": "Block",
+              "src": "1001:43:7",
+              "statements": [
+                {
+                  "expression": {
+                    "components": [
+                      {
+                        "id": 3003,
+                        "name": "royalty_amount",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 2968,
+                        "src": "1015:14:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      },
+                      {
+                        "id": 3004,
+                        "name": "creator",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 2970,
+                        "src": "1031:7:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      }
+                    ],
+                    "id": 3005,
+                    "isConstant": false,
+                    "isInlineArray": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "lValueRequested": false,
+                    "nodeType": "TupleExpression",
+                    "src": "1014:25:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$_t_uint256_$_t_address_$",
+                      "typeString": "tuple(uint256,address)"
+                    }
+                  },
+                  "functionReturnParameters": 3002,
+                  "id": 3006,
+                  "nodeType": "Return",
+                  "src": "1007:32:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 2996,
+              "nodeType": "StructuredDocumentation",
+              "src": "863:71:7",
+              "text": "@notice (Mandatory) This Function retrieve royalty info."
+            },
+            "functionSelector": "46e80720",
+            "id": 3008,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltyInfo",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 2997,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "957:2:7"
+            },
+            "returnParameters": {
+              "id": 3002,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 2999,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3008,
+                  "src": "983:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 2998,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "983:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3001,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3008,
+                  "src": "992:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3000,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "992:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "982:18:7"
+            },
+            "scope": 3053,
+            "src": "937:107:7",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 3016,
+              "nodeType": "Block",
+              "src": "1160:22:7",
+              "statements": [
+                {
+                  "expression": {
+                    "hexValue": "74727565",
+                    "id": 3014,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": true,
+                    "kind": "bool",
+                    "lValueRequested": false,
+                    "nodeType": "Literal",
+                    "src": "1173:4:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    },
+                    "value": "true"
+                  },
+                  "functionReturnParameters": 3013,
+                  "id": 3015,
+                  "nodeType": "Return",
+                  "src": "1166:11:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3009,
+              "nodeType": "StructuredDocumentation",
+              "src": "1048:58:7",
+              "text": "@notice (optional) check if NFT has royalty"
+            },
+            "functionSelector": "656605d6",
+            "id": 3017,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "hasRoyalties",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3010,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1130:2:7"
+            },
+            "returnParameters": {
+              "id": 3013,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3012,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3017,
+                  "src": "1154:4:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_bool",
+                    "typeString": "bool"
+                  },
+                  "typeName": {
+                    "id": 3011,
+                    "name": "bool",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1154:4:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_bool",
+                      "typeString": "bool"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1153:6:7"
+            },
+            "scope": 3053,
+            "src": "1109:73:7",
+            "stateMutability": "pure",
+            "virtual": false,
+            "visibility": "public"
+          },
+          {
+            "body": {
+              "id": 3025,
+              "nodeType": "Block",
+              "src": "1308:25:7",
+              "statements": [
+                {
+                  "expression": {
+                    "id": 3023,
+                    "name": "creator",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 2970,
+                    "src": "1321:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "functionReturnParameters": 3022,
+                  "id": 3024,
+                  "nodeType": "Return",
+                  "src": "1314:14:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3018,
+              "nodeType": "StructuredDocumentation",
+              "src": "1186:61:7",
+              "text": "@notice (optional) get royalty creator address"
+            },
+            "functionSelector": "9822e8c0",
+            "id": 3026,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltyCreator",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3019,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1273:2:7"
+            },
+            "returnParameters": {
+              "id": 3022,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3021,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3026,
+                  "src": "1299:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3020,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1299:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1298:9:7"
+            },
+            "scope": 3053,
+            "src": "1250:83:7",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 3034,
+              "nodeType": "Block",
+              "src": "1449:32:7",
+              "statements": [
+                {
+                  "expression": {
+                    "id": 3032,
+                    "name": "royalty_amount",
+                    "nodeType": "Identifier",
+                    "overloadedDeclarations": [],
+                    "referencedDeclaration": 2968,
+                    "src": "1462:14:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "functionReturnParameters": 3031,
+                  "id": 3033,
+                  "nodeType": "Return",
+                  "src": "1455:21:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3027,
+              "nodeType": "StructuredDocumentation",
+              "src": "1337:52:7",
+              "text": "@notice (optional) get royalty amount"
+            },
+            "functionSelector": "7c6e551d",
+            "id": 3035,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltyAmount",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3028,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1414:2:7"
+            },
+            "returnParameters": {
+              "id": 3031,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3030,
+                  "mutability": "mutable",
+                  "name": "",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3035,
+                  "src": "1440:7:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3029,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1440:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1439:9:7"
+            },
+            "scope": 3053,
+            "src": "1392:89:7",
+            "stateMutability": "view",
+            "virtual": false,
+            "visibility": "external"
+          },
+          {
+            "body": {
+              "id": 3051,
+              "nodeType": "Block",
+              "src": "1647:60:7",
+              "statements": [
+                {
+                  "eventCall": {
+                    "arguments": [
+                      {
+                        "id": 3046,
+                        "name": "_creator",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3038,
+                        "src": "1676:8:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "id": 3047,
+                        "name": "_buyer",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3040,
+                        "src": "1686:6:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        }
+                      },
+                      {
+                        "id": 3048,
+                        "name": "_amount",
+                        "nodeType": "Identifier",
+                        "overloadedDeclarations": [],
+                        "referencedDeclaration": 3042,
+                        "src": "1694:7:7",
+                        "typeDescriptions": {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      }
+                    ],
+                    "expression": {
+                      "argumentTypes": [
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_address",
+                          "typeString": "address"
+                        },
+                        {
+                          "typeIdentifier": "t_uint256",
+                          "typeString": "uint256"
+                        }
+                      ],
+                      "id": 3045,
+                      "name": "RecievedRoyalties",
+                      "nodeType": "Identifier",
+                      "overloadedDeclarations": [],
+                      "referencedDeclaration": 2979,
+                      "src": "1658:17:7",
+                      "typeDescriptions": {
+                        "typeIdentifier": "t_function_event_nonpayable$_t_address_$_t_address_$_t_uint256_$returns$__$",
+                        "typeString": "function (address,address,uint256)"
+                      }
+                    },
+                    "id": 3049,
+                    "isConstant": false,
+                    "isLValue": false,
+                    "isPure": false,
+                    "kind": "functionCall",
+                    "lValueRequested": false,
+                    "names": [],
+                    "nodeType": "FunctionCall",
+                    "src": "1658:44:7",
+                    "tryCall": false,
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_tuple$__$",
+                      "typeString": "tuple()"
+                    }
+                  },
+                  "id": 3050,
+                  "nodeType": "EmitStatement",
+                  "src": "1653:49:7"
+                }
+              ]
+            },
+            "documentation": {
+              "id": 3036,
+              "nodeType": "StructuredDocumentation",
+              "src": "1485:58:7",
+              "text": "@notice (optional) check if NFT has royalty"
+            },
+            "functionSelector": "84a09c27",
+            "id": 3052,
+            "implemented": true,
+            "kind": "function",
+            "modifiers": [],
+            "name": "royaltiesRecieved",
+            "nodeType": "FunctionDefinition",
+            "parameters": {
+              "id": 3043,
+              "nodeType": "ParameterList",
+              "parameters": [
+                {
+                  "constant": false,
+                  "id": 3038,
+                  "mutability": "mutable",
+                  "name": "_creator",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3052,
+                  "src": "1578:16:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3037,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1578:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3040,
+                  "mutability": "mutable",
+                  "name": "_buyer",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3052,
+                  "src": "1600:14:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_address",
+                    "typeString": "address"
+                  },
+                  "typeName": {
+                    "id": 3039,
+                    "name": "address",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1600:7:7",
+                    "stateMutability": "nonpayable",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_address",
+                      "typeString": "address"
+                    }
+                  },
+                  "visibility": "internal"
+                },
+                {
+                  "constant": false,
+                  "id": 3042,
+                  "mutability": "mutable",
+                  "name": "_amount",
+                  "nodeType": "VariableDeclaration",
+                  "scope": 3052,
+                  "src": "1620:15:7",
+                  "stateVariable": false,
+                  "storageLocation": "default",
+                  "typeDescriptions": {
+                    "typeIdentifier": "t_uint256",
+                    "typeString": "uint256"
+                  },
+                  "typeName": {
+                    "id": 3041,
+                    "name": "uint256",
+                    "nodeType": "ElementaryTypeName",
+                    "src": "1620:7:7",
+                    "typeDescriptions": {
+                      "typeIdentifier": "t_uint256",
+                      "typeString": "uint256"
+                    }
+                  },
+                  "visibility": "internal"
+                }
+              ],
+              "src": "1572:67:7"
+            },
+            "returnParameters": {
+              "id": 3044,
+              "nodeType": "ParameterList",
+              "parameters": [],
+              "src": "1647:0:7"
+            },
+            "scope": 3053,
+            "src": "1546:161:7",
+            "stateMutability": "nonpayable",
+            "virtual": false,
+            "visibility": "public"
+          }
+        ],
+        "scope": 3054,
+        "src": "58:1651:7"
+      }
+    ],
+    "src": "0:1710:7"
+  },
+  "compiler": {
+    "name": "solc",
+    "version": "0.8.0+commit.c7dfd78e.Emscripten.clang"
+  },
+  "networks": {},
+  "schemaVersion": "3.3.3",
+  "updatedAt": "2021-03-19T09:16:11.341Z",
+  "devdoc": {
+    "events": {
+      "RecievedRoyalties(address,address,uint256)": {
+        "details": "The marketplace would emit this event from their contracts. Or they would call royaltiesRecieved() function.",
+        "params": {
+          "amount": "The amount being paid to the creator",
+          "buyer": "The person buying the NFT on a secondary sale",
+          "creator": "The original creator of the NFT entitled to the royalties"
+        }
+      }
+    },
+    "kind": "dev",
+    "methods": {},
+    "version": 1
+  },
+  "userdoc": {
+    "events": {
+      "RecievedRoyalties(address,address,uint256)": {
+        "notice": "(Mandatory) This event is emitted when royalties are transfered."
+      }
+    },
+    "kind": "user",
+    "methods": {
+      "hasRoyalties()": {
+        "notice": "(optional) check if NFT has royalty"
+      },
+      "royaltiesRecieved(address,address,uint256)": {
+        "notice": "(optional) check if NFT has royalty"
+      },
+      "royaltyAmount()": {
+        "notice": "(optional) get royalty amount"
+      },
+      "royaltyCreator()": {
+        "notice": "(optional) get royalty creator address"
+      },
+      "royaltyInfo()": {
+        "notice": "(Mandatory) This Function retrieve royalty info."
+      }
+    },
+    "version": 1
+  }
+}
