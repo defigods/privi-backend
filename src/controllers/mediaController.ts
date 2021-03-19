@@ -21,7 +21,12 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
 }
 exports.getMedias = async (req: express.Request, res: express.Response) => {
   try {
-    const lastMedia: number = +req.params.pagination;
+    const pagination: number = +req.params.pagination;
+
+    let body = req.body;
+
+    console.log(body);
+
     let medias: any[] = [];
 
     const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
@@ -30,7 +35,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
     const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
     const dataEthMediaSnap : any[] = docsEthMediaSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
-    medias = dataMediasSnap.concat(dataEthMediaSnap);
+    medias = dataMediasSnap.concat(dataEthMediaSnap).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
   } catch (e) {
@@ -134,8 +139,14 @@ exports.changeMediaBlog = async (req: express.Request, res: express.Response) =>
 
       let mediaEdited = {...media};
       mediaEdited.editorPages = body.editorPages || [];
-      mediaEdited.totalPages = body.totalPages || 0;
-
+      mediaEdited.mainHashtag = body.mainHashtag || '';
+      mediaEdited.hashtags = body.hashtags || [];
+      mediaEdited.schedulePost = body.schedulePost || Date.now(); // integer timestamp eg 1609424040000
+      mediaEdited.description = body.description || '';
+      mediaEdited.descriptionArray = body.descriptionArray || [];
+      mediaEdited.author = body.author || '';
+      mediaEdited.selectedFormat = body.selectedFormat || 0; // 0 story 1 wall post
+      mediaEdited.hasPhoto = body.hasPhoto || false;
       await mediasRef.update(mediaEdited);
 
       res.send({ success: true, data: '/media/getBlog/:mediaId/:pagination' });
