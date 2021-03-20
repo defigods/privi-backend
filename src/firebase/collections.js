@@ -54,6 +54,7 @@ module.exports = {
   voter: 'Voter',
   voting: 'Voting',
 
+  // pods
   podsFT: 'PodsFT',
   trendingPodsFT: 'TrendingPodsFT',
   buyingOffers: 'BuyingOffers',
@@ -65,12 +66,13 @@ module.exports = {
   priceHistory: 'PriceHistory',
   supplyHistory: 'SupplyHistory',
   podRoleInvitation: 'PodRoleInvitation',
-  mediaPods: "MediaPods",
+  mediaPods: 'MediaPods',
   trendingMediaPods: 'TrendingMediaPods',
-  medias: "Medias",
-  streamingListeners: "StreamingListeners",
-  streamers: "Streamers",
-  streamings: "Streamings",
+  medias: 'Medias',
+  mediaUsers: 'EthMediaUsers',
+  streamingListeners: 'StreamingListeners',
+  streamers: 'Streamers',
+  streamings: 'Streamings',
 
   podViewInvitation: 'PodViewInvitation',
   insurancePools: 'InsurancePools',

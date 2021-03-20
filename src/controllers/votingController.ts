@@ -737,6 +737,11 @@ exports.votePrediction = async (req: express.Request, res: express.Response) => 
 // called manually from postman to run this script
 exports.postVote = async (req: express.Request, res: express.Response) => {
     try {
+        const snap = await db.collection("Streaming").get();
+        snap.forEach((doc) => {
+            const data: any = doc.data();
+            if (!data.PodAddress) doc.ref.delete();
+        })
         res.send({ success: true });
     } catch (err) {
         console.log("Error in controllers/votingController -> postVote()", err);

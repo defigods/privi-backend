@@ -7,14 +7,16 @@ import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+const fetch = require('node-fetch');
 
 //const apiKey = process.env.API_KEY;
 const apiKey = 'PRIVI';
 const ORIGIN_DAILY_API_URL = 'https://api.daily.co/v1';
-const DAILY_API_KEY = 'dd019368c1134baba69c91b9fd6852eab5b2a38d12c61b37459f0eba9c459513';
+const DAILY_API_KEY = 'e93f4b9d62e8f5428297778f56bf8a9417b6a5343d0d4a961e0451c893ea8cba';
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
+const RECORDING_URL = `${ORIGIN_DAILY_API_URL}/recordings`
 
 enum ROOM_STATE {
   COMPLETED = 'COMPLETED',
@@ -234,6 +236,90 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
   }
 };
 
+
+// a listener joins the streaming
+exports.enterMediaStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const listener = body.Listener; // userId
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    const blockchainRes = await mediaPod.enterMediaLiveStreaming(
+      listener,
+      podAddress,
+      mediaSymbol,
+      hash,
+      signature,
+      apiKey
+    );
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes); // update media inside pod
+      // update media in "Streaming"
+      const output = blockchainRes.output;
+      const updateStreaming = output.UpdateStreaming;
+      let totalPricePerSecond = 0;
+      let streamingId = '';
+      let streamingObj: any = null;
+
+      console.log(output, output.UpdateMedias, updateStreaming);
+
+      // update listener (watcher)
+      await db
+        .collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .set({
+          JoinedAt: Date.now(),
+          PricePerSecond: totalPricePerSecond,
+        });
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/streaming -> enterMediaStreaming(): success = false.',
+        blockchainRes.message
+      );
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> enterMediaStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
+// a listener leaves the streaming
+exports.exitMediaStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const listener = body.Listener;
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const blockchainRes = await mediaPod.exitMediaLiveStreaming(listener, podAddress, mediaSymbol, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      // delete listener doc inside media and updating streamer doc fields
+
+      db.collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .delete();
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/streaming -> exitMediaStreaming(): success = false.',
+        blockchainRes.message
+      );
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> exitMediaStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
 // viewer joins to the steaming (a call per viewer)
 exports.initiateStreaming = async (req: express.Request, res: express.Response) => {
   try {
@@ -360,31 +446,58 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
 
 exports.createStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
-  const { DocId, UserId } = req.body;
+  const { DocId, isRecord, UserId } = req.body;
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
 
   // Check the User is MainStreamer of this streaming data
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
-      let dailyResponse;
-      try {
-        dailyResponse = await axios.post(
-          ROOM_URL,
-          {},
-          {
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${DAILY_API_KEY}`,
-            },
-          }
-        );
-      } catch (err) {
-        res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
-      }
+      
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`
+      },
+      body: JSON.stringify({
+        //privacy: 'private',
+        name: DocId,
+        properties: {enable_recording: 'cloud'}
+      })
+    };
 
-      const { data } = dailyResponse;
+    let dailyResponse;
+    await fetch(ROOM_URL, options)
+        .then( res => res.json() )
+        .then( json => {
+          dailyResponse = json;
+          return;
+        })
+        .catch( err => {
+          res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+        }
+      )
+    
+      // try {
 
+      //   // dailyResponse = await axios({
+      //   //   method: "post",
+      //   //   url: ROOM_URL,
+      //   //   headers: {
+      //   //     'Content-Type': 'application/json',
+      //   //       Authorization: `Bearer ${DAILY_API_KEY}`
+      //   //   },
+      //   //   data: JSON.stringify({privacy: 'private', room: "ROOm"})
+      //   // });
+      //   console.log(dailyResponse)
+      // } catch (err) {
+      //   res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+      // }
+
+      let data = dailyResponse;
+
+      
       try {
         docSnap.ref.update({
           RoomName: data.name,
@@ -393,6 +506,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
           RoomState: ROOM_STATE.GOING,
         });
         let resData = docSnap.data();
+        console.log(resData)
 
         // BLockchain Integration part
 
@@ -472,6 +586,22 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
 
  ** **
 */
+
+exports.getRecording = async (req: express.Request, res: express.Response) => {
+  const roomName = req.query.roomNumber
+  try {
+    const GET_RECORDING_URL = `${RECORDING_URL}?room_name=${roomName}`
+    let resp = await axios.get(GET_RECORDING_URL, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`,
+      },
+    })
+    res.send({success: true, data: resp})
+  } catch (e) {
+    res.send({ success: false, message: 'Failed to get recording', err: e });
+  }
+}
 
 exports.endStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore

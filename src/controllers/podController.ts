@@ -4,8 +4,6 @@ import podNFTProtocol from '../blockchain/podNFTProtocol';
 import {
   updateFirebase,
   getRateOfChangeAsMap,
-  createNotification,
-  getUidNameMap,
   getEmailUidMap,
   generateUniqueId,
   getMarketPrice,
@@ -13,15 +11,13 @@ import {
   getBuyTokenAmountPod,
   addZerosToHistory,
 } from '../functions/functions';
-import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
-import priviGovernance from '../blockchain/priviGovernance';
 import coinBalance from '../blockchain/coinBalance.js';
-import mediaPod from "../blockchain/mediaPod";
+import mediaPod from '../blockchain/mediaPod';
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
@@ -75,7 +71,7 @@ async function updateCommonFields(body: any, podId: string, isPodFT: boolean) {
 exports.editPod = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
-    let collection = body.IsDigital ? "PodsNFT" : "PodsFT";
+    let collection = body.IsDigital ? 'PodsNFT' : 'PodsFT';
 
     const podRef = db.collection(collection).doc(body.PodAddress);
 
@@ -104,19 +100,19 @@ exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
     let totalViews = body.TotalViews ? body.TotalViews : 0;
-    let collection = body.IsDigital ? "PodsNFT" : "PodsFT";
+    let collection = body.IsDigital ? 'PodsNFT' : 'PodsFT';
 
     const podRef = db.collection(collection).doc(body.PodAddress);
 
     await podRef.update({
-      TotalViews: totalViews + 1
+      TotalViews: totalViews + 1,
     });
 
     res.send({
       success: true,
       data: {
-        TotalViews: totalViews + 1
-      }
+        TotalViews: totalViews + 1,
+      },
     });
   } catch (err) {
     console.log('Error in controllers/podController -> sumTotalViews()', err);
@@ -129,7 +125,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const body = req.body;
     const podAddress = body.PodAddress;
     const userAddress = body.userAddress;
-    let collection = body.IsDigital ? "podNFT" : "podFT";
+    let collection = body.IsDigital ? 'podNFT' : 'podFT';
     const userSnap = await db.collection(collections.user).doc(userAddress).get();
     const podSnap = await db.collection(collection).doc(podAddress).get();
     const userData: any = userSnap.data();
@@ -142,27 +138,26 @@ exports.like = async (req: express.Request, res: express.Response) => {
       userLikes.push({
         date: Date.now(),
         type: collection,
-        id: podAddress
-      })
+        id: podAddress,
+      });
       podLikes.push({
         date: Date.now(),
-        userId: userAddress
-      })
-    }
-    else {
+        userId: userAddress,
+      });
+    } else {
       userLikes.forEach((item, index) => {
-        if (podAddress === item.id) userLikes.splice(index, 1)
-      })
+        if (podAddress === item.id) userLikes.splice(index, 1);
+      });
       podLikes.forEach((item, index2) => {
-        if (userAddress === item.userId) podLikes.splice(index2, 1)
-      })
+        if (userAddress === item.userId) podLikes.splice(index2, 1);
+      });
     }
 
     userSnap.ref.update({
-      Likes: userLikes
+      Likes: userLikes,
     });
     podSnap.ref.update({
-      Likes: podLikes
+      Likes: podLikes,
     });
 
     res.send({ success: true });
@@ -382,7 +377,7 @@ exports.changeWIPPhoto = async (req: express.Request, res: express.Response) => 
 
       if (workInProgress.HasPhoto !== undefined) {
         await workInProgressRef.update({
-          HasPhoto: true
+          HasPhoto: true,
         });
       }
 
@@ -406,7 +401,7 @@ exports.changeWIPPhotoToken = async (req: express.Request, res: express.Response
 
       if (workInProgress.HasPhoto !== undefined) {
         await workInProgressRef.update({
-          HasPhotoToken: true
+          HasPhotoToken: true,
         });
       }
 
@@ -436,14 +431,13 @@ exports.getPhotoWIP = async (req: express.Request, res: express.Response) => {
           // Do whatever you want to do with the file
           console.log(file);
         });
-
       });
 
       // stream the image back by loading the file
       res.setHeader('Content-Type', 'image');
       let raw = fs.createReadStream(path.join('uploads', 'wip', wipId + '.png'));
       raw.on('error', function (err) {
-        console.log(err)
+        console.log(err);
         res.sendStatus(400);
       });
       raw.pipe(res);
@@ -472,14 +466,13 @@ exports.getPhotoTokenWIP = async (req: express.Request, res: express.Response) =
           // Do whatever you want to do with the file
           console.log(file);
         });
-
       });
 
       // stream the image back by loading the file
       res.setHeader('Content-Type', 'image');
       let raw = fs.createReadStream(path.join('uploads', 'wipToken', wipId + '.png'));
       raw.on('error', function (err) {
-        console.log(err)
+        console.log(err);
         res.sendStatus(400);
       });
       raw.pipe(res);
@@ -976,7 +969,7 @@ exports.investFTPOD = async (req: express.Request, res: express.Response) => {
 
       // add txn to pod
       const output = blockchainRes.output;
-      console.log("investFT:", JSON.stringify(output, null, 4))
+      console.log('investFT:', JSON.stringify(output, null, 4));
       const transactions = output.Transactions;
       let tid = '';
       let txnArray: any = null;
@@ -1317,7 +1310,7 @@ exports.getMyPodsFT = async (req: express.Request, res: express.Response) => {
 };
 
 // filtering the top 10 pods with most followers
-const countLastWeekPods = exports.countLastWeekPods = (allPodsArray): Promise<any[]> => {
+const countLastWeekPods = (exports.countLastWeekPods = (allPodsArray): Promise<any[]> => {
   return new Promise<any[]>((resolve, reject) => {
     let lastWeek = new Date();
     let pastDate = lastWeek.getDate() - 7;
@@ -1345,7 +1338,7 @@ const countLastWeekPods = exports.countLastWeekPods = (allPodsArray): Promise<an
       resolve([]);
     }
   });
-};
+});
 
 exports.getOtherPodsFT = async (req: express.Request, res: express.Response) => {
   try {
@@ -1400,7 +1393,7 @@ exports.getTrendingPodsFT = async (req: express.Request, res: express.Response) 
     const trendingFTPods: any[] = [];
     const ftPodsSnap = await db.collection(collections.trendingPodsFT).get();
     for (let podSnap of ftPodsSnap.docs) {
-      let podData = podSnap.data()
+      let podData = podSnap.data();
       let ftPod = await db.collection(collections.podsFT).doc(podData.id).get();
       if (ftPod.exists) {
         trendingFTPods.push(ftPod.data());
@@ -1539,10 +1532,13 @@ exports.getFTPod = async (req: express.Request, res: express.Response) => {
       }
 
       // add url if empty //
-      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "") {
-        await db.collection(collections.podsFT).doc(podId).update({
-          "urlSlug": pod.Name.split(' ').join('')
-        })
+      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == '') {
+        await db
+          .collection(collections.podsFT)
+          .doc(podId)
+          .update({
+            urlSlug: pod.Name.split(' ').join(''),
+          });
       }
 
       res.send({ success: true, data: pod });
@@ -1747,7 +1743,7 @@ exports.getTrendingPodsNFT = async (req: express.Request, res: express.Response)
     const trendingNFTPods: any[] = [];
     const nftPodsSnap = await db.collection(collections.trendingPodsNFT).get();
     for (let podSnap of nftPodsSnap.docs) {
-      let podData = podSnap.data()
+      let podData = podSnap.data();
       let nftPod = await db.collection(collections.podsNFT).doc(podData.id).get();
       if (nftPod.exists) {
         trendingNFTPods.push(nftPod.data());
@@ -1855,10 +1851,13 @@ exports.getNFTPod = async (req: express.Request, res: express.Response) => {
       }
 
       // add url if empty //
-      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == "") {
-        await db.collection(collections.podsNFT).doc(podId).update({
-          "urlSlug": pod.Name.split(' ').join('')
-        })
+      if (!pod.hasOwnProperty('urlSlug') || pod.urlSlug == '') {
+        await db
+          .collection(collections.podsNFT)
+          .doc(podId)
+          .update({
+            urlSlug: pod.Name.split(' ').join(''),
+          });
       }
 
       res.send({
@@ -2018,7 +2017,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         TargetSpreadValidation: body.TargetSpreadValidation ?? false,
         TargetPriceValidation: body.TargetPriceValidation ?? false,
         TargetSupplyValidation: body.TargetSupplyValidation ?? false,
-        InitialSupplyValidation: body.InitialSupplyValidation ?? false
+        InitialSupplyValidation: body.InitialSupplyValidation ?? false,
       };
 
       let mediaIdNFT = body.id;
@@ -2032,17 +2031,28 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         const workInProgress: any = workInProgressGet.data();
 
         if (body.directlyUpdate) {
-          nftMediaObj.Offers = body.Offers
+          nftMediaObj.Offers = body.Offers;
           await workInProgressRef.update(nftMediaObj);
         } else {
           await workInProgressRef.update(nftMediaObj);
 
-          let diffOffers = body.Offers.filter(item1 =>
-            !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
-              && item2.amount === item1.amount && item2.token === item1.token)));
+          let diffOffers = body.Offers.filter(
+            (item1) =>
+              !workInProgress.Offers.some(
+                (item2) => item2.userId === item1.userId && item2.amount === item1.amount && item2.token === item1.token
+              )
+          );
 
           for (let offer of diffOffers) {
-            await changeOfferToWorkInProgressNFTPod(offer.userId, body.id, offer.status, offer.token, offer.amount, false, offer.paymentDate);
+            await changeOfferToWorkInProgressNFTPod(
+              offer.userId,
+              body.id,
+              offer.status,
+              offer.token,
+              offer.amount,
+              false,
+              offer.paymentDate
+            );
           }
         }
       } else {
@@ -2054,13 +2064,19 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
             ...nftMediaObj,
             Creator: body.Creator,
             Offers: body.Offers ?? [],
-            WIPType: 'NFTMedia'
+            WIPType: 'NFTMedia',
           });
 
         for (let offer of body.Offers) {
           const userSnap = await db.collection(collections.user).doc(offer.userId).get();
           const userData: any = userSnap.data();
-          chatController.createChatWIPFromUsers(mediaIdNFT, body.Creator, offer.userId, creator.firstName, userData.firstName)
+          chatController.createChatWIPFromUsers(
+            mediaIdNFT,
+            body.Creator,
+            offer.userId,
+            creator.firstName,
+            userData.firstName
+          );
 
           await notificationsController.addNotification({
             userId: offer.userId,
@@ -2074,8 +2090,8 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
               token: offer.token,
               amount: offer.amount,
               onlyInformation: false,
-              otherItemId: mediaIdNFT
-            }
+              otherItemId: mediaIdNFT,
+            },
           });
         }
       }
@@ -2083,7 +2099,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
       res.send({
         success: true,
         data: {
-          nftPodId: mediaIdNFT
+          nftPodId: mediaIdNFT,
         },
       });
     } else {
@@ -2094,15 +2110,23 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
     console.log('Error in controllers/podController -> saveNFTMedia(): ', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 exports.addOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if (body && body.userId && body.offer && body.offer.token && body.offer.amount
-      && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
-
+    if (
+      body &&
+      body.userId &&
+      body.offer &&
+      body.offer.token &&
+      body.offer.amount &&
+      body.offer.paymentDate &&
+      body.offer.userId &&
+      body.offer.wipId &&
+      body.Creator
+    ) {
       const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
       const creator: any = creatorSnap.data();
 
@@ -2112,13 +2136,18 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
         const userData: any = userSnap.data();
 
         mediaNFT = await communityController.addOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.offer);
-        chatController.createChatWIPFromUsers(body.offer.wipId, body.Creator, offer.userId, creator.firstName, userData.firstName);
+        chatController.createChatWIPFromUsers(
+          body.offer.wipId,
+          body.Creator,
+          offer.userId,
+          creator.firstName,
+          userData.firstName
+        );
       }
       res.send({ success: true, data: mediaNFT });
-
     } else {
-      console.log('Error in controllers/podController -> addOffer()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/podController -> addOffer()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/podController -> addOffer()', err);
@@ -2131,14 +2160,21 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if (body && body.userId && body.mediaIdNFT && body.status) {
-
-      let mediaNFT: any = await communityController.changeOfferToWorkInProgress(body.userId, body.mediaIdNFT, body.status, body.token, body.amount, body.notificationId || false, null, 'mediaNFT');
+      let mediaNFT: any = await communityController.changeOfferToWorkInProgress(
+        body.userId,
+        body.mediaIdNFT,
+        body.status,
+        body.token,
+        body.amount,
+        body.notificationId || false,
+        null,
+        'mediaNFT'
+      );
 
       res.send({ success: true, data: mediaNFT });
-
     } else {
-      console.log('Error in controllers/podController -> addOffer()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/podController -> addOffer()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/podController -> addOffer()', err);
@@ -2150,16 +2186,38 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
   try {
     const body = req.body;
 
-    if (body && body.sender && body.receiver && body.amountPeriod && body.token &&
-      body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.mediaIdNFT) {
-
-      const blockchainRes = await mediaPod.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+    if (
+      body &&
+      body.sender &&
+      body.receiver &&
+      body.amountPeriod &&
+      body.token &&
+      body.startDate &&
+      body.endDate &&
+      body.Hash &&
+      body.Signature &&
+      body.userId &&
+      body.mediaIdNFT
+    ) {
+      const blockchainRes = await mediaPod.createStreaming(
+        body.sender,
+        body.receiver,
+        body.amountPeriod,
+        body.token,
+        body.startDate,
+        body.endDate,
+        body.Hash,
+        body.Signature,
+        apiKey
+      );
       if (blockchainRes && blockchainRes.success) {
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
-        let notificationIndex = user.notifications.findIndex(not => not.otherItemId === body.mediaIdNFT && not.type === 103)
+        let notificationIndex = user.notifications.findIndex(
+          (not) => not.otherItemId === body.mediaIdNFT && not.type === 103
+        );
         if (notificationIndex !== -1) {
           await notificationsController.removeNotification({
             userId: body.userId,
@@ -2167,15 +2225,16 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
           });
         }
         res.send({ success: true });
-
       } else {
-        console.log('Error in controllers/podController -> signTransactionAcceptOffer(): success = false',
-          blockchainRes.message);
-        res.send({ success: false, error: "Blockchain error" });
+        console.log(
+          'Error in controllers/podController -> signTransactionAcceptOffer(): success = false',
+          blockchainRes.message
+        );
+        res.send({ success: false, error: 'Blockchain error' });
       }
     } else {
-      console.log('Error in controllers/podController -> signTransactionAcceptOffer()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/podController -> signTransactionAcceptOffer()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/podController -> signTransactionAcceptOffer()', err);
@@ -2202,17 +2261,15 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
       }
 
       res.send({ success: true, data: workInProgress });
-
     } else {
-      console.log('Error in controllers/podController -> getWIP()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/podController -> getWIP()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/podController -> getWIP()', err);
     res.send({ success: false, error: err });
   }
-}
-
+};
 
 //TODO: Modify for NFTPod
 const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount, notificationId, paymentDate) => {
@@ -2226,9 +2283,9 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
       let previousStatus: string = '';
       let userSavedId: string = '';
 
-      let offerIndex = offers.findIndex(off => off.userId === userId);
+      let offerIndex = offers.findIndex((off) => off.userId === userId);
       if (offerIndex !== -1) {
-        previousStatus = offers[offerIndex].status
+        previousStatus = offers[offerIndex].status;
         offers[offerIndex].status = status;
         offers[offerIndex].token = token;
         offers[offerIndex].amount = amount;
@@ -2240,13 +2297,13 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
           token: token,
           amount: amount,
           paymentDate: paymentDate,
-          userId: userId
-        })
+          userId: userId,
+        });
       }
 
       workInProgress.Offers = offers;
       await workInProgressRef.update({
-        Offers: offers
+        Offers: offers,
       });
 
       const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
@@ -2269,8 +2326,8 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: wipId
-          }
+            otherItemId: wipId,
+          },
         });
       } else if (status === 'declined') {
         // DECLINED OFFER NOTIFICATION
@@ -2286,8 +2343,8 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: wipId
-          }
+            otherItemId: wipId,
+          },
         });
         if (notificationId) {
           await notificationsController.removeNotification({
@@ -2297,13 +2354,18 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
         }
 
         let room: string = '';
-        if (user && user.firstName && creator && creator.firstName
-          && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
-          room = "" + wipId + "" + userSavedId + "" + workInProgress.Creator;
+        if (
+          user &&
+          user.firstName &&
+          creator &&
+          creator.firstName &&
+          user.firstName.toLowerCase() < creator.firstName.toLowerCase()
+        ) {
+          room = '' + wipId + '' + userSavedId + '' + workInProgress.Creator;
         } else {
-          room = "" + wipId + "" + workInProgress.Creator + "" + userSavedId;
+          room = '' + wipId + '' + workInProgress.Creator + '' + userSavedId;
         }
-        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        const chatQuery = await db.collection(collections.chat).where('room', '==', room).get();
         if (!chatQuery.empty) {
           for (const doc of chatQuery.docs) {
             let data = doc.data();
@@ -2315,7 +2377,6 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             }
           }
         }
-
       } else if (status === 'negotiating') {
         if (token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
@@ -2331,13 +2392,19 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
               token: offers[offerIndex].token,
               amount: offers[offerIndex].amount,
               onlyInformation: false,
-              otherItemId: wipId
-            }
+              otherItemId: wipId,
+            },
           });
         } else {
           if (previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
-            chatController.createChatWIPFromUsers(wipId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
+            chatController.createChatWIPFromUsers(
+              wipId,
+              workInProgress.Creator,
+              userSavedId,
+              creator.firstName,
+              user.firstName
+            );
 
             if (notificationId) {
               await notificationsController.removeNotification({
@@ -2346,7 +2413,9 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
               });
             }
           } else {
-            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === wipId && not.type === 97)
+            let notificationIndex = creator.notifications.findIndex(
+              (not) => not.otherItemId === wipId && not.type === 97
+            );
             if (notificationIndex !== -1) {
               await notificationsController.removeNotification({
                 userId: workInProgress.Creator,
@@ -2366,8 +2435,8 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
                 token: offers[offerIndex].token,
                 amount: offers[offerIndex].amount,
                 onlyInformation: false,
-                otherItemId: wipId
-              }
+                otherItemId: wipId,
+              },
             });
           }
         }
@@ -2385,17 +2454,17 @@ const changeOfferToWorkInProgressNFTPod = (userId, wipId, status, token, amount,
             token: token,
             amount: amount,
             onlyInformation: false,
-            otherItemId: wipId
-          }
+            otherItemId: wipId,
+          },
         });
       }
 
-      resolve(workInProgress)
+      resolve(workInProgress);
     } catch (e) {
-      reject(e)
+      reject(e);
     }
   });
-}
+};
 
 /**
  * Blockchain-Backend function, a user request a buy offer specifying the conditions
@@ -2909,7 +2978,7 @@ exports.getNFTPodTransactions = async (req: express.Request, res: express.Respon
         const transactions: any[] = data.Transactions ?? [];
         transactions.forEach((txn) => {
           txns.push(txn);
-        })
+        });
       });
       console.log(txns);
       res.send({ success: true, data: txns });

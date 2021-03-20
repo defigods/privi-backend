@@ -9,6 +9,7 @@ router.post('/createCollab', authenticateJWT, collabController.createCollab);
 router.post('/upvote', authenticateJWT, collabController.upvote);
 
 router.get('/getCollabs', authenticateJWT, collabController.getCollabs);
+router.get('/getTwitterUsers', collabController.getTwitterUsers);
 
 
 module.exports = router;
