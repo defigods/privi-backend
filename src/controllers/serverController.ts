@@ -56,6 +56,14 @@ export const startServer = (env: Env) => {
   // *** TODO: filter by priviweb.tech origin if Env='prod' ***
   app.use(cors());
 
+  // Add headers
+  app.use(function (req, res, next) {
+    // Website you wish to allow to connect
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    // Pass to next layer of middleware
+    next();
+  });
+
   // Set HTTP headers for security
   app.use(helmet());
 
