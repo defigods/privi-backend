@@ -1669,8 +1669,10 @@ exports.getFTPodSupplyHistory = async (req: express.Request, res: express.Respon
  */
 exports.getAllNFTPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
-    const lastNFTPod = req.query.lastNFTPod;
-    let allNFTPods: any[] = await getNFTPods(lastNFTPod);
+    const lastCommunity = +req.params.pagination;
+    const lastId: string = req.params.lastId;
+
+    let allNFTPods: any[] = await getNFTPods(lastCommunity, lastId);
     res.send({
       success: true,
       data: {
@@ -1787,13 +1789,25 @@ exports.setTrendingPodsNFT = cron.schedule('* * * * *', async () => {
 });
 
 // function to get all NFT Pods
-const getNFTPods = (exports.getNFTPods = (lastNFTPod): Promise<any[]> => {
+const getNFTPods = (exports.getNFTPods = (pagination, lastId): Promise<any[]> => {
   return new Promise<any[]>(async (resolve, reject) => {
-    let podsNFT;
-    if (lastNFTPod) {
-      podsNFT = await db.collection(collections.podsNFT).startAfter(lastNFTPod).limit(5).get();
+    // let podsNFT;
+    // if (lastNFTPod) {
+    //   podsNFT = await db.collection(collections.podsNFT).startAfter(lastNFTPod).limit(5).get();
+    // } else {
+    //   podsNFT = await db.collection(collections.podsNFT).limit(6).get();
+    // }
+
+    let podsNFT: any;
+
+    if (lastId && lastId !== 'null') {
+      const podNFTRef = db.collection(collections.podsNFT).doc(lastId);
+      const podNFTGet = await podNFTRef.get();
+      const podNFT: any = podNFTGet.data();
+  
+      podsNFT = await db.collection(collections.podsNFT).orderBy('Date').startAfter(podNFT.Date).limit(6).get();
     } else {
-      podsNFT = await db.collection(collections.podsNFT).limit(6).get();
+      podsNFT = await db.collection(collections.podsNFT).orderBy('Date').limit(6).get();
     }
 
     let array: any[] = [];
@@ -1803,6 +1817,7 @@ const getNFTPods = (exports.getNFTPods = (lastNFTPod): Promise<any[]> => {
     resolve(array);
   });
 });
+
 
 /**
  * Get the complete information of a particular pod

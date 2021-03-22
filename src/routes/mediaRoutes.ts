@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import {authenticateJWT} from "../middlewares/jwtAuthMiddleware";
-import multer from "multer";
+import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
+import multer from 'multer';
 
 const mediaController = require('../controllers/mediaController');
 
@@ -12,7 +12,7 @@ let storage1 = multer.diskStorage({
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId.replace(/\s/g,'') + '.png');
+    cb(null, req.params.mediaId.replace(/\s/g, '') + '.png');
   },
 });
 let upload1 = multer({
@@ -21,46 +21,45 @@ let upload1 = multer({
 
 let storage2 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/media')
+    cb(null, 'uploads/media');
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId.replace(/\s/g,'') + '.mp3')
-  }
+    cb(null, req.params.mediaId.replace(/\s/g, '') + '.mp3');
+  },
 });
 
 let upload2 = multer({
-  storage: storage2
+  storage: storage2,
 });
 
 let storage3 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/media')
+    cb(null, 'uploads/media');
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId.replace(/\s/g,'') + '.mp4')
-  }
+    cb(null, req.params.mediaId.replace(/\s/g, '') + '.mp4');
+  },
 });
 
 let upload3 = multer({
-  storage: storage3
+  storage: storage3,
 });
 
 let storage4 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/media/blog-' + req.params.mediaId)
+    cb(null, 'uploads/media/blog-' + req.params.mediaId);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, file.originalname + '.mp4')
-  }
+    cb(null, file.originalname + '.mp4');
+  },
 });
 
 let upload4 = multer({
-  storage: storage3
+  storage: storage3,
 });
-
 
 let storage5 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
@@ -68,21 +67,22 @@ let storage5 = multer.diskStorage({
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
-    cb(null, req.params.mediaId.replace(/\s/g,'') + '.png');
+    cb(null, req.params.mediaId.replace(/\s/g, '') + '.png');
   },
 });
 let upload5 = multer({
   storage: storage5,
 });
 
-router.get('/', mediaController.getEthMedia);
 
 router.get('/:id', mediaController.getEthMediaItem);
 
-router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
+router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBlog);
+router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
+router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
@@ -92,11 +92,12 @@ router.post('/uploadBlog/video/:mediaPod/:mediaId', authenticateJWT, upload4.sin
 
 router.post('/editMedia/:mediaPod/:mediaId', authenticateJWT, mediaController.editMedia);
 router.post('/changeMediaImage/:mediaPod/:mediaId', authenticateJWT, upload5.single('image'), mediaController.changeMediaMainPhoto);
-router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 
 router.post('/removeCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.removeCollab);
 router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.refuseCollab);
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
+
+router.post('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
 
 module.exports = router;

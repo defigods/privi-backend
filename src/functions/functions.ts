@@ -241,9 +241,10 @@ export async function updateFirebase(blockchainRes) {
         if (updateMedias) {
             let mediaSymbol: string = '';
             let mediaObj: any = null;
-            for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
+            for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) { // add in both colections
                 const podAddress = mediaObj.PodAddress;
                 if (podAddress) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol), mediaObj, { merge: true });
+                transaction.set(db.collection(collections.streaming).doc(mediaSymbol), mediaObj, { merge: true });
             }
         }
         // update streamings

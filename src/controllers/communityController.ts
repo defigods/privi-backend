@@ -327,7 +327,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                 itemId: creator,
                 follower: user.firstName,
                 pod: name, // community name
-                comment: userRole.role,
+                // comment: userRole.role,
+                comment: 'Invite to Community',
                 token: '',
                 amount: 0,
                 onlyInformation: false,
@@ -345,7 +346,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
                   itemId: creator,
                   follower: user.firstName,
                   pod: name, // community name
-                  comment: userRole.role,
+                  // comment: userRole.role,
+                  comment: 'Invite to Community',
                   token: '',
                   amount: 0,
                   onlyInformation: false,
