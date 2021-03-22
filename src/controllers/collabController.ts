@@ -15,7 +15,8 @@ module.exports.createCollab = async (req: express.Request, res: express.Response
             Creator: creator,
             Collaborators: collaborators,
             Idea: idea,
-            Platform: platform
+            Platform: platform,
+            CreatedAt: Date.now()
         });
         res.send({ success: true });
     } catch (err) {
