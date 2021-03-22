@@ -519,6 +519,25 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
   return null;
 }
 
+module.exports.getUserRegisteredEthAccounts = async (req: express.Request, res: express.Response) => {
+  const userId: any = req.body.priviUser.id;
+
+  if (!userId) return res.status(400).json({ success: false });
+
+  try {
+    const docsSnaps = (await db.collection(collections.wallet)
+      .doc(userId)
+      .collection(collections.registeredEthAddress)
+      .get()).docs;
+    
+    const data = docsSnaps.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+
+    return res.status(200).json({ success: true, data });
+  } catch (e) {
+    return res.status(500).json({ success: false });
+  }
+}
+
 module.exports.registerUserEthAccount = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
