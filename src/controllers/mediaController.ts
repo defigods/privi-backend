@@ -54,13 +54,13 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
               (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))) {
 
               let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-              if(applyTypeFilter) {
+              if(applyTypeFilter && media.Type && media.Type !== '') {
                 dataMedias.push(media);
               }
             }
           } else {
             let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-            if(applyTypeFilter) {
+            if(applyTypeFilter && media.Type && media.Type !== '') {
               dataMedias.push(media);
             }
           }
@@ -102,9 +102,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
             }
           }
         }
-
       }
-
     }
 
     medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
@@ -299,9 +297,8 @@ exports.changeMediaBlogVideo = async (req: express.Request, res: express.Respons
 exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
-    let mediaPod = req.params.mediaPod;
 
-    if (mediaId && mediaPod) {
+    if (mediaId) {
       await getMedia(mediaId, '.png', 'image', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
@@ -355,9 +352,8 @@ exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
 exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
-    let mediaPod = req.params.mediaPod;
 
-    if (mediaId && mediaPod) {
+    if (mediaId) {
       await getMedia(mediaId, '.mp4', 'video', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
