@@ -54,13 +54,13 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
               (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))) {
 
               let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-              if(applyTypeFilter) {
+              if(applyTypeFilter && media.Type && media.Type !== '') {
                 dataMedias.push(media);
               }
             }
           } else {
             let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-            if(applyTypeFilter) {
+            if(applyTypeFilter && media.Type && media.Type !== '') {
               dataMedias.push(media);
             }
           }
@@ -102,9 +102,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
             }
           }
         }
-
       }
-
     }
 
     medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
@@ -299,9 +297,8 @@ exports.changeMediaBlogVideo = async (req: express.Request, res: express.Respons
 exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
-    let mediaPod = req.params.mediaPod;
 
-    if (mediaId && mediaPod) {
+    if (mediaId) {
       await getMedia(mediaId, '.png', 'image', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
@@ -317,10 +314,30 @@ exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
 exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
-    let mediaPod = req.params.mediaPod;
 
-    if (mediaId && mediaPod) {
-      await getMedia(mediaId, '.mp3', 'audio', res);
+    if (mediaId) {
+      // await getMedia(mediaId, '.mp3', 'audio', res);
+      const directoryPath = path.join('uploads', 'media');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'audio');
+      let raw = fs.createReadStream(path.join('uploads', 'media', mediaId + '.mp3'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
       res.sendStatus(400);
@@ -335,9 +352,8 @@ exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
 exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
-    let mediaPod = req.params.mediaPod;
 
-    if (mediaId && mediaPod) {
+    if (mediaId) {
       await getMedia(mediaId, '.mp4', 'video', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
@@ -349,6 +365,7 @@ exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
 exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
@@ -381,16 +398,18 @@ exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
 const getMedia = (mediaId: string, extension: string, type: string, res: express.Response) => {
   return new Promise((resolve, reject) => {
     try {
-      const directoryPath = path.join('uploads', 'media', mediaId);
+      const directoryPath = path.join('uploads', 'media');
+      console.log('path', directoryPath)
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
           return console.log('Unable to scan directory: ' + err);
         }
+        console.log('files in getMedia');
         //listing all files using forEach
         files.forEach(function (file) {
           // Do whatever you want to do with the file
-          //console.log(file);
+          console.log(file);
         });
       });
 
@@ -402,6 +421,7 @@ const getMedia = (mediaId: string, extension: string, type: string, res: express
         res.sendStatus(400);
       });
       raw.pipe(res);
+      resolve(true);
     } catch (e) {
       reject(e);
     }
