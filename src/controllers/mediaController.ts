@@ -317,10 +317,30 @@ exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
 exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
-    let mediaPod = req.params.mediaPod;
 
-    if (mediaId && mediaPod) {
-      await getMedia(mediaId, '.mp3', 'audio', res);
+    if (mediaId) {
+      // await getMedia(mediaId, '.mp3', 'audio', res);
+      const directoryPath = path.join('uploads', 'media');
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', 'audio');
+      let raw = fs.createReadStream(path.join('uploads', 'media', mediaId + '.mp3'));
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
       res.sendStatus(400);
@@ -349,6 +369,7 @@ exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 };
+
 exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
@@ -381,16 +402,18 @@ exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
 const getMedia = (mediaId: string, extension: string, type: string, res: express.Response) => {
   return new Promise((resolve, reject) => {
     try {
-      const directoryPath = path.join('uploads', 'media', mediaId);
+      const directoryPath = path.join('uploads', 'media');
+      console.log('path', directoryPath)
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
           return console.log('Unable to scan directory: ' + err);
         }
+        console.log('files in getMedia');
         //listing all files using forEach
         files.forEach(function (file) {
           // Do whatever you want to do with the file
-          //console.log(file);
+          console.log(file);
         });
       });
 
@@ -402,6 +425,7 @@ const getMedia = (mediaId: string, extension: string, type: string, res: express
         res.sendStatus(400);
       });
       raw.pipe(res);
+      resolve(true);
     } catch (e) {
       reject(e);
     }

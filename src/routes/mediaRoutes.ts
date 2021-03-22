@@ -74,14 +74,15 @@ let upload5 = multer({
   storage: storage5,
 });
 
-router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/:id', mediaController.getEthMediaItem);
 
-router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
+router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBlog);
+router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
+router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
@@ -91,7 +92,6 @@ router.post('/uploadBlog/video/:mediaPod/:mediaId', authenticateJWT, upload4.sin
 
 router.post('/editMedia/:mediaPod/:mediaId', authenticateJWT, mediaController.editMedia);
 router.post('/changeMediaImage/:mediaPod/:mediaId', authenticateJWT, upload5.single('image'), mediaController.changeMediaMainPhoto);
-router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 
 router.post('/removeCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.removeCollab);
 router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.refuseCollab);
