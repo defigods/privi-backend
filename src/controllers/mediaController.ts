@@ -231,7 +231,7 @@ exports.changeMediaVideo = async (req: express.Request, res: express.Response) =
 exports.changeMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
-    if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
+    if (req.params && req.params.mediaPod && req.params.mediaId) {
       const mediasRef = db
         .collection(collections.mediaPods)
         .doc(req.params.mediaPod)
