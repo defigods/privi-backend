@@ -151,4 +151,6 @@ module.exports = {
   streaming: 'Streaming',
 
   ethMedia: 'EthMedia',
+
+  playList: 'PlayList'
 };
