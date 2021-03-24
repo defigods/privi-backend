@@ -506,6 +506,11 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           RecordRoyalty: recordRoyalty,
         }
 
+        if(media.Type === "BLOG_TYPE" || media === "BLOG_SNAP_TYPE") {
+          bodySave.EditorPages = media.editorPages || [];
+          bodySave.DescriptionArray = media.DescriptionArray || '';
+        }
+
         if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
           bodySave.RoomState = 'SCHEDULED'
           bodySave.CountStreamers = 0;

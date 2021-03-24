@@ -99,5 +99,7 @@ router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
 
 router.post('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
+router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
+router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 
 module.exports = router;

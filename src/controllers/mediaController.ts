@@ -820,7 +820,7 @@ exports.getMediaMainPhoto = async (req: express.Request, res: express.Response) 
   try {
     let mediaId = req.params.mediaId;
 
-    if (mediaId && mediaPod) {
+    if (mediaId) {
       const directoryPath = path.join('uploads', 'mediaMainPhoto', mediaId);
       fs.readdir(directoryPath, function (err, files) {
         //handling error
@@ -883,3 +883,82 @@ exports.getUserMediaInfo = async (req: express.Request, res: express.Response) =
     res.send({ success: false, error: err });
   }
 };
+
+exports.likeMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    let mediaId = req.params.mediaId;
+    let body = req.body;
+
+    if (mediaId && body.userId) {
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      const media: any = mediaGet.data();
+
+      let likes: any[] = [];
+      if (media.Likes && media.Likes.length > 0) {
+        likes = [...media.Likes];
+      }
+
+      let likeIndex = likes.findIndex((user) => user === body.userId);
+      if (likeIndex === -1) {
+        likes.push(body.userId);
+      }
+
+      await mediaRef.update({
+        Likes: likes,
+        NumLikes: likes.length
+      });
+
+      res.send({ success: true, data: {
+          Likes: likes,
+          NumLikes: likes.length
+        }
+      });
+    } else {
+      console.log('Error in controllers/mediaController -> likeMedia()', "There's no id...");
+      res.send({ success: false, error: "There's no id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> likeMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+}
+
+exports.removeLikeMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    let mediaId = req.params.mediaId;
+    let body = req.body;
+
+    if (mediaId && body.userId) {
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      const media: any = mediaGet.data();
+
+      let likes: any[] = [];
+      if (media.Likes && media.Likes.length > 0) {
+        likes = [...media.Likes];
+        let likeIndex = likes.findIndex((user) => user === body.userId);
+        if (likeIndex !== -1) {
+          likes.splice(likeIndex, 1);
+        }
+
+        await mediaRef.update({
+          Likes: likes,
+          NumLikes: likes.length
+        });
+      }
+
+      res.send({ success: true, data: {
+          Likes: likes,
+          NumLikes: likes.length || 0
+        }
+      });
+    } else {
+      console.log('Error in controllers/mediaController -> removeLikeMedia()', "There's no id...");
+      res.send({ success: false, error: "There's no id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> removeLikeMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+}
