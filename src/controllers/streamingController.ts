@@ -1,12 +1,13 @@
 import express from 'express';
 import social from '../blockchain/social';
 import mediaPod from '../blockchain/mediaPod';
-import { updateFirebase, getAddresUidMap } from '../functions/functions';
+import { updateFirebase, getAddresUidMap, isUserValidForLiveStream } from '../functions/functions';
 import collections, { medias, streaming } from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+const secretKey = require('secret-key');
 const fetch = require('node-fetch');
 
 //const apiKey = process.env.API_KEY;
@@ -93,6 +94,9 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
+
+    let ERR_MSG = ""; // reusable error message placeholder for this function
+
     const blockchainRes = await mediaPod.enterMediaLiveStreaming(
       listener,
       podAddress,
@@ -101,6 +105,18 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
       signature,
       apiKey
     );
+
+    //  validate the user if they can access the room.
+    if(!isUserValidForLiveStream(listener,mediaSymbol)) {
+      ERR_MSG = 'User not allowed in this live stream session';
+      console.log(
+        'Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.',
+        ERR_MSG
+      );
+      res.send({ success: false, error: ERR_MSG});
+    }
+
+
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes); // update media inside pod
       // update media in "Streaming"
@@ -396,7 +412,10 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
     EndingTime,
     Rewards,
     Video,
+    IsRecordAutoStart,
+    ProtectKey
   } = req.body;
+
 
   try {
     const collectionRef = await db.collection(collections.streaming).add({
@@ -423,6 +442,8 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
       StartingTime,
       EndingTime,
       Rewards,
+      IsRecordAutoStart,
+      ProtectKey
     });
     res.send({ success: true, DocId: collectionRef.id });
   } catch (err) {
@@ -446,36 +467,130 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
 
 exports.createStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
-  const { DocId, isRecord, UserId } = req.body;
+  const { DocId, isRecord, UserId, IsProtected, ProtectKey } = req.body;
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
 
+
+
   // Check the User is MainStreamer of this streaming data
-  // if (streamingData && UserId === streamingData?.MainStreamer) {
-  //   if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
-  const options = {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${DAILY_API_KEY}`
-    },
-    body: JSON.stringify({
-      //privacy: 'private',
-      name: DocId,
-      properties: { enable_recording: 'cloud' }
-    })
-  };
+  if (streamingData && UserId === streamingData?.MainStreamer) {
+    if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
-  let dailyResponse;
-  await fetch(ROOM_URL, options)
-    .then(res => res.json())
-    .then(json => {
-      dailyResponse = json;
-      return;
-    })
-    .catch(err => {
-      res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`
+      },
+      body: JSON.stringify({
+        //privacy: 'private',
+        name: DocId,
+        properties: {enable_recording: 'cloud',start_cloud_recording: (streamingData?.IsRecordAutoStart  ? 'true':'false')}
+      })
+    };
+
+    let dailyResponse;
+    await fetch(ROOM_URL, options)
+        .then( res => res.json() )
+        .then( json => {
+          dailyResponse = json;
+          return;
+        })
+        .catch( err => {
+          res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+        }
+      )
+    
+      // try {
+
+      //   // dailyResponse = await axios({
+      //   //   method: "post",
+      //   //   url: ROOM_URL,
+      //   //   headers: {
+      //   //     'Content-Type': 'application/json',
+      //   //       Authorization: `Bearer ${DAILY_API_KEY}`
+      //   //   },
+      //   //   data: JSON.stringify({privacy: 'private', room: "ROOm"})
+      //   // });
+      //   console.log(dailyResponse)
+      // } catch (err) {
+      //   res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
+      // }
+
+      let data = dailyResponse;
+
+      
+      try {
+        docSnap.ref.update({
+          RoomName: data.name,
+          StreamingUrl: data.url,
+          StartedTime: Date.now(),
+          RoomState: ROOM_STATE.GOING,
+        });
+        let resData = docSnap.data();
+        console.log(resData)
+
+        // BLockchain Integration part
+
+        // try {
+        //   const body = req.body;
+        //   const podAddress = body.PodAddress;
+        //   const mediaSymbol = body.MediaSymbol;
+        //   const hash = body.Hash;
+        //   const signature = body.Signature;
+        //   const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
+        //     podAddress,
+        //     mediaSymbol,
+        //     hash,
+        //     signature,
+        //     apiKey
+        //   );
+        //   if (blockchainRes && blockchainRes.success) {
+        //     updateFirebase(blockchainRes); // update media inside pod obj
+        //     // add media in an outer colection "Streaming"
+        //     const output = blockchainRes.output;
+        //     const updateMedias = output.UpdateMedias;
+        //     let mediaSymbol: string = '';
+        //     let mediaObj: any = null;
+        //     for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
+        //       db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
+        //       const streamerPrortions = mediaObj.StreamingProportions;
+        //       const streamerAddresses = Object.keys(streamerPrortions);
+        //       // add the streamer docs for accumulated price tracking
+        //       streamerAddresses.forEach((streamerAddress) => {
+        //         db.collection(collections.streaming)
+        //           .doc(mediaSymbol)
+        //           .collection(collections.streamers)
+        //           .doc(streamerAddress)
+        //           .set({
+        //             AccumulatedAmount: 0,
+        //             PricePerSecond: 0,
+        //             LastUpdate: Date.now(),
+        //           });
+        //       });
+        //     }
+        //     res.send({ success: true, StreamingUrl: data.url, data: resData });
+        //   } else {
+        //     console.log(
+        //       'Error in controllers/streaming -> initiateMediaLiveStreaming(): success = false.',
+        //       blockchainRes.message
+        //     );
+        //     res.send({ success: false, error: blockchainRes.message });
+        //   }
+        // } catch (err) {
+        //   console.log('Error in controllers/streaming -> initiateMediaLiveStreaming(): ', err);
+        //   res.send({ success: false });
+        // }
+
+        /// End Blockchain Integration Part.
+        res.send({ success: true, StreamingUrl: data.url, data: resData });
+      } catch (err) {
+        res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
+      }
+    } else {
+      res.send({ success: false, message: 'This streaming is not scheduled' });
     }
     )
 
@@ -652,6 +767,58 @@ exports.listStreaming = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, message: 'Error in getting firestore data' });
   }
 };
+
+exports.generateProtectKey = async (req: express.Request, res: express.Response) => {
+  //  generate secret key.
+  try {
+    let key = {data:""};
+    
+    key.data = secretKey.create('1EEA6DC-JAM4DP2-PHVYPBN-V0XCJ9X');
+    key.data = '1EEA6DC-JAM4DP2-PHVYPBN-V0XCJ9X';//temporary
+    res.send({ success: true, key});
+  } catch (err) {
+    res.send({ success: false, message: 'Error in getting firestore data' });
+  }
+
+};
+
+exports.validateProtectKey = async (req: express.Request, res: express.Response) => {
+  const { DocId, ProtectKey} = req.body;
+  try {
+    let key = {data:""};
+    const docRef = await db.collection(collections.streaming).doc(DocId);
+    const streamingData = (await docRef.get()).data();
+
+    if(streamingData?.ProtectKey == ProtectKey) { // validate.
+      res.send({ success: true, docRef});
+    }
+
+    res.send({ success: false, message:"Invalid Protect Key"});
+  } catch (err) {
+    res.send({ success: false, message: 'Error in getting firestore data' });
+  }
+
+};
+
+exports.registerStreamingParticipant = async(req: express.Request, res:express.Response) => {
+  const { DocId, UserId, ParticipantType, Room, IsAllowed } = req.body;
+
+  try{
+    const registerParticipantRef = await db.collection(collections.liveStream).add({
+      UserId: UserId,
+      ParticipantType: ParticipantType,
+      Room
+    });
+
+    res.send({ success: true, DocId: registerParticipantRef.id });
+
+  } catch (err) {
+
+    res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
+  }
+}
+
+
 // ----------------------------------- GETS -------------------------------------------
 // get social pools
 // exports.getSocialTokens = async (req: express.Request, res: express.Response) => {

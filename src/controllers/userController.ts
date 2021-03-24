@@ -783,7 +783,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
       let myMedia: any[] = await getMyMediaFunction(userId);
 
-      // filter the hidden ones for the visiting user
+      // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
         badges = badges.filter((obj) => !obj.Symbol || !hiddens[obj.Symbol]);
         myPodsAndInvested.FT = myPodsAndInvested.FT.filter((obj) => !obj.PodAddress || !hiddens[obj.PodAddress]);
@@ -792,7 +792,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         mySocialTokens = mySocialTokens.filter((obj) => !obj.PoolAddress || !hiddens[obj.PoolAddress]);
         myCreditPools.myBorrowingPriviCredits = myCreditPools.myBorrowingPriviCredits.filter((obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]);
         myCreditPools.myLendingPriviCredits = myCreditPools.myLendingPriviCredits.filter((obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]);
-        myWorkInProgress = myWorkInProgress.filter((obj) => !obj.id || !hiddens[obj.id]);
+        myWorkInProgress = [];
         myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol])
       }
       else if (userId == loggedUserId) {

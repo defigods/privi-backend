@@ -75,6 +75,19 @@ let upload5 = multer({
   storage: storage5,
 });
 
+let storage6 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/mediaPlaylists');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png');
+  },
+});
+let upload6 = multer({
+  storage: storage6,
+});
+
 
 router.get('/:id', mediaController.getEthMediaItem);
 
@@ -111,6 +124,7 @@ router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.remove
 router.post('/shareMedia/:mediaId', authenticateJWT, mediaController.shareMedia);
 
 router.post('/createPlaylist', authenticateJWT, playlistController.createPlaylist);
+router.post('/changePlaylistPhoto', authenticateJWT, upload6.single('image'), playlistController.changePlaylistPhoto);
 router.post('/sharePlayList/:playListId', authenticateJWT, playlistController.sharePlayList);
 router.post('/addToMyPlaylists', authenticateJWT, playlistController.addToMyPlaylists);
 router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.removeFromMyPlaylists);
