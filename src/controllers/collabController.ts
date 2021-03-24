@@ -42,6 +42,23 @@ module.exports.upvote = async (req: express.Request, res: express.Response) => {
     }
 };
 
+module.exports.react = async (req: express.Request, res: express.Response) => {
+    try {
+        const body = req.body;
+        const user = body.User;
+        const collabId = body.CollabId;
+        const collabSnap = await db.collection(collections.collabs).doc(collabId).get();
+        const data: any = collabSnap.data();
+        const newReacts = data.Reacts ?? {};
+        newReacts[user] = "";
+        collabSnap.ref.update({ Reacts: newReacts });
+        res.send({ success: true });
+    } catch (err) {
+        console.log('Error in controllers/collabController -> react()', err);
+        res.send({ success: false });
+    }
+};
+
 ///////////////////////////// GET ///////////////////////////////
 
 module.exports.getCollabs = async (req: express.Request, res: express.Response) => {
