@@ -1004,3 +1004,19 @@ export async function singTransaction(mnemonic, transaction) {
     let signature = toRpcSig(v, r, s);
     return [transactionHash.toString('hex'), signature]
 }
+
+
+export async function getUserLiveStreamInformation(user) {
+    const userInformation = await db.collection(collections.user).doc(user.DocId).get();
+    return userInformation;
+}
+
+export function isUserValidForLiveStream(user , liveStreamSession) {
+
+    // check if moderator or streamer
+    
+
+    //  check if user is able tolive stream permissions.
+    return true;
+
+}
