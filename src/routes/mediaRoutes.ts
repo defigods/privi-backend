@@ -3,6 +3,7 @@ import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from 'multer';
 
 const mediaController = require('../controllers/mediaController');
+const playlistController = require('../controllers/playlistController');
 
 const router: Router = Router();
 
@@ -77,12 +78,16 @@ let upload5 = multer({
 
 router.get('/:id', mediaController.getEthMediaItem);
 
+router.get('/getMedia/:mediaId', authenticateJWT, mediaController.getMedia);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
 router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBlog);
 router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/:pagination/:lastId', mediaController.getEthMedia);
+
+router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
+router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
@@ -101,5 +106,10 @@ router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, 
 router.post('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
+
+router.post('/shareMedia/:mediaId', authenticateJWT, mediaController.shareMedia);
+
+router.post('/createPlaylist', authenticateJWT, playlistController.createPlaylist);
+router.post('/sharePlayList/:playListId', authenticateJWT, playlistController.sharePlayList);
 
 module.exports = router;
