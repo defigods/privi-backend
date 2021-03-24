@@ -737,10 +737,17 @@ exports.votePrediction = async (req: express.Request, res: express.Response) => 
 // called manually from postman to run this script
 exports.postVote = async (req: express.Request, res: express.Response) => {
     try {
-        const snap = await db.collection("Streaming").get();
+        const snap = await db.collection("Collabs").get();
+        const dates = [
+            1616266447000,
+            1616093647000,
+            1615834447000
+        ]
         snap.forEach((doc) => {
-            const data: any = doc.data();
-            if (!data.PodAddress) doc.ref.delete();
+            var item = dates[Math.floor(Math.random() * dates.length)];
+            doc.ref.update({
+                CreatedAt: item
+            });
         })
         res.send({ success: true });
     } catch (err) {
