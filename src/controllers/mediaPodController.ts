@@ -481,61 +481,66 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         const mediasGet = await mediasRef.get();
         const media: any = mediasGet.data();
 
-                let bodySave : any = {
-                  Collabs: media.Collabs || {},
-                  HasPhoto: media.HasPhoto || false,
-                  Requester: requester,
-                  PodAddress: podAddress,
-                  MediaName: media.MediaName || '',
-                  MediaDescription: media.MediaDescription || '',
-                  MediaSymbol: mediaSymbol,
-                  Type: type,
-                  PaymentType: paymentType,
-                  Copies: copies,
-                  Royalty: royalty,
-                  FundingToken: fundingToken,
-                  ReleaseDate: releaseDate,
-                  PricePerSecond: pricePerSecond,
-                  Price: price,
-                  IsRecord: isRecord,
-                  RecordToken: recordToken,
-                  RecordPaymentType: recordPaymentType,
-                  RecordPrice: recordPrice,
-                  RecordPricePerSecond: recordPricePerSecond,
-                  RecordCopies: recordCopies,
-                  RecordRoyalty: recordRoyalty,
-                }
+        let bodySave : any = {
+          Collabs: media.Collabs || {},
+          HasPhoto: media.HasPhoto || false,
+          Requester: requester,
+          PodAddress: podAddress,
+          MediaName: media.MediaName || '',
+          MediaDescription: media.MediaDescription || '',
+          MediaSymbol: mediaSymbol,
+          Type: type,
+          PaymentType: paymentType,
+          Copies: copies,
+          Royalty: royalty,
+          FundingToken: fundingToken,
+          ReleaseDate: releaseDate,
+          PricePerSecond: pricePerSecond,
+          Price: price,
+          IsRecord: isRecord,
+          RecordToken: recordToken,
+          RecordPaymentType: recordPaymentType,
+          RecordPrice: recordPrice,
+          RecordPricePerSecond: recordPricePerSecond,
+          RecordCopies: recordCopies,
+          RecordRoyalty: recordRoyalty,
+        }
 
-                if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
-                  bodySave.RoomState = 'SCHEDULED'
-                  bodySave.CountStreamers = 0;
-                  bodySave.CountWatchers = 0;
-                  bodySave.ExpectedDuration = 0;
-                  bodySave.MainStreamer = media.Creator;
-                  bodySave.RoomName = media.MediaSymbol;
-                  bodySave.StartedTime = 0;
-                  bodySave.EndedTime = 0;
-                  bodySave.StreamingToken = '';
-                  bodySave.StreamingUrl = '';
-                  bodySave.TotalWatchers = 0;
-                  bodySave.Video = media === "LIVE_VIDEO_TYPE";
-                  bodySave.Watchers = [];
-                  bodySave.OnlineModerators = [];
-                  bodySave.Moderators = [];
-                  bodySave.OnlineStreamers = [];
-                  bodySave.Streamers = []
-                  bodySave.LimitedEdition = [];
-                  bodySave.PriceType = '';
-                  bodySave.Price = 0;
-                  bodySave.StartingTime = 0;
-                  bodySave.EndingTime = 0;
-                  bodySave.Rewards = '';
-                }
+        if(media.Type === "BLOG_TYPE" || media === "BLOG_SNAP_TYPE") {
+          bodySave.EditorPages = media.editorPages || [];
+          bodySave.DescriptionArray = media.DescriptionArray || '';
+        }
 
-                await db.runTransaction(async (transaction) => {
-                  transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
-                });
-            }
+        if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
+          bodySave.RoomState = 'SCHEDULED'
+          bodySave.CountStreamers = 0;
+          bodySave.CountWatchers = 0;
+          bodySave.ExpectedDuration = 0;
+          bodySave.MainStreamer = media.Creator;
+          bodySave.RoomName = media.MediaSymbol;
+          bodySave.StartedTime = 0;
+          bodySave.EndedTime = 0;
+          bodySave.StreamingToken = '';
+          bodySave.StreamingUrl = '';
+          bodySave.TotalWatchers = 0;
+          bodySave.Video = media === "LIVE_VIDEO_TYPE";
+          bodySave.Watchers = [];
+          bodySave.OnlineModerators = [];
+          bodySave.Moderators = [];
+          bodySave.OnlineStreamers = [];
+          bodySave.Streamers = []
+          bodySave.LimitedEdition = [];
+          bodySave.PriceType = '';
+          bodySave.Price = 0;
+          bodySave.StartingTime = 0;
+          bodySave.EndingTime = 0;
+          bodySave.Rewards = '';
+        }
+
+        await db.runTransaction(async (transaction) => {
+          transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
+        });
+    }
 
       // add txns to media
       const output = blockchainRes.output;
@@ -582,61 +587,61 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
         const mediasGet = await mediasRef.get();
         const media: any = mediasGet.data();
 
-                let bodySave : any = {
-                  Collabs: media.Collabs || {},
-                  HasPhoto: media.HasPhoto || false,
-                  Requester: body.Requester,
-                  PodAddress: media.PodAddress,
-                  MediaName: media.MediaName || '',
-                  MediaDescription: media.MediaDescription || '',
-                  MediaSymbol: media.MediaSymbol,
-                  Type: media.Type,
-                  PaymentType: media.PaymentType,
-                  Copies: media.Copies,
-                  Royalty: media.Royalty,
-                  FundingToken: media.FundingToken,
-                  ReleaseDate: media.ReleaseDate,
-                  PricePerSecond: media.PricePerSecond,
-                  Price: media.Price,
-                  IsRecord: media.IsRecord,
-                  RecordToken: media.RecordToken,
-                  RecordPaymentType: media.RecordPaymentType,
-                  RecordPrice: media.RecordPrice,
-                  RecordPricePerSecond: media.RecordPricePerSecond,
-                  RecordCopies: media.RecordCopies,
-                  RecordRoyalty: media.RecordRoyalty
-                }
+        let bodySave : any = {
+          Collabs: media.Collabs || {},
+          HasPhoto: media.HasPhoto || false,
+          Requester: body.Requester,
+          PodAddress: media.PodAddress,
+          MediaName: media.MediaName || '',
+          MediaDescription: media.MediaDescription || '',
+          MediaSymbol: media.MediaSymbol,
+          Type: media.Type,
+          PaymentType: media.PaymentType,
+          Copies: media.Copies,
+          Royalty: media.Royalty,
+          FundingToken: media.FundingToken,
+          ReleaseDate: media.ReleaseDate,
+          PricePerSecond: media.PricePerSecond,
+          Price: media.Price,
+          IsRecord: media.IsRecord,
+          RecordToken: media.RecordToken,
+          RecordPaymentType: media.RecordPaymentType,
+          RecordPrice: media.RecordPrice,
+          RecordPricePerSecond: media.RecordPricePerSecond,
+          RecordCopies: media.RecordCopies,
+          RecordRoyalty: media.RecordRoyalty
+        }
 
-                if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
-                  bodySave.RoomState = 'SCHEDULED'
-                  bodySave.CountStreamers = 0;
-                  bodySave.CountWatchers = 0;
-                  bodySave.ExpectedDuration = 0;
-                  bodySave.MainStreamer = media.Creator;
-                  bodySave.RoomName = media.MediaSymbol;
-                  bodySave.StartedTime = 0;
-                  bodySave.EndedTime = 0;
-                  bodySave.StreamingToken = '';
-                  bodySave.StreamingUrl = '';
-                  bodySave.TotalWatchers = 0;
-                  bodySave.Video = media === "LIVE_VIDEO_TYPE";
-                  bodySave.Watchers = [];
-                  bodySave.OnlineModerators = [];
-                  bodySave.Moderators = [];
-                  bodySave.OnlineStreamers = [];
-                  bodySave.Streamers = []
-                  bodySave.LimitedEdition = [];
-                  bodySave.PriceType = '';
-                  bodySave.Price = 0;
-                  bodySave.StartingTime = 0;
-                  bodySave.EndingTime = 0;
-                  bodySave.Rewards = '';
-                }
+        if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
+          bodySave.RoomState = 'SCHEDULED'
+          bodySave.CountStreamers = 0;
+          bodySave.CountWatchers = 0;
+          bodySave.ExpectedDuration = 0;
+          bodySave.MainStreamer = media.Creator;
+          bodySave.RoomName = media.MediaSymbol;
+          bodySave.StartedTime = 0;
+          bodySave.EndedTime = 0;
+          bodySave.StreamingToken = '';
+          bodySave.StreamingUrl = '';
+          bodySave.TotalWatchers = 0;
+          bodySave.Video = media === "LIVE_VIDEO_TYPE";
+          bodySave.Watchers = [];
+          bodySave.OnlineModerators = [];
+          bodySave.Moderators = [];
+          bodySave.OnlineStreamers = [];
+          bodySave.Streamers = []
+          bodySave.LimitedEdition = [];
+          bodySave.PriceType = '';
+          bodySave.Price = 0;
+          bodySave.StartingTime = 0;
+          bodySave.EndingTime = 0;
+          bodySave.Rewards = '';
+        }
 
-                await db.runTransaction(async (transaction) => {
-                  transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
-                });
-            }
+        await db.runTransaction(async (transaction) => {
+          transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
+        });
+      }
 
       // add txns to media
       const output = blockchainRes.output;

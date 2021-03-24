@@ -100,7 +100,8 @@ router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', userController.getBasicInfo);
 router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
-router.get('/getAllInfoProfile/:userId/:address', userController.getAllInfoProfile);
+router.get('/getAllInfoProfile', userController.getAllInfoProfile);
+router.post('/toggleHideItem', authenticateJWT, userController.toggleHideItem);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
