@@ -1,12 +1,13 @@
 import express from 'express';
 import social from '../blockchain/social';
 import mediaPod from '../blockchain/mediaPod';
-import { updateFirebase, getAddresUidMap } from '../functions/functions';
+import { updateFirebase, getAddresUidMap, isUserValidForLiveStream } from '../functions/functions';
 import collections, { medias, streaming } from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';
+const secretKey = require('secret-key');
 const fetch = require('node-fetch');
 
 //const apiKey = process.env.API_KEY;
@@ -93,6 +94,9 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
+
+    let ERR_MSG = ""; // reusable error message placeholder for this function
+
     const blockchainRes = await mediaPod.enterMediaLiveStreaming(
       listener,
       podAddress,
@@ -101,6 +105,18 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
       signature,
       apiKey
     );
+
+    //  validate the user if they can access the room.
+    if(!isUserValidForLiveStream(listener,mediaSymbol)) {
+      ERR_MSG = 'User not allowed in this live stream session';
+      console.log(
+        'Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.',
+        ERR_MSG
+      );
+      res.send({ success: false, error: ERR_MSG});
+    }
+
+
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes); // update media inside pod
       // update media in "Streaming"
@@ -312,7 +328,10 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
     EndingTime,
     Rewards,
     Video,
+    IsRecordAutoStart,
+    ProtectKey
   } = req.body;
+
 
   try {
     const collectionRef = await db.collection(collections.streaming).add({
@@ -339,6 +358,8 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
       StartingTime,
       EndingTime,
       Rewards,
+      IsRecordAutoStart,
+      ProtectKey
     });
     res.send({ success: true, DocId: collectionRef.id });
   } catch (err) {
@@ -362,14 +383,16 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
 
 exports.createStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
-  const { DocId, isRecord, UserId } = req.body;
+  const { DocId, isRecord, UserId, IsProtected, ProtectKey } = req.body;
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
+
+
 
   // Check the User is MainStreamer of this streaming data
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
-      
+
     const options = {
       method: 'POST',
       headers: {
@@ -379,7 +402,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
       body: JSON.stringify({
         //privacy: 'private',
         name: DocId,
-        properties: {enable_recording: 'cloud'}
+        properties: {enable_recording: 'cloud',start_cloud_recording: (streamingData?.IsRecordAutoStart  ? 'true':'false')}
       })
     };
 
@@ -573,6 +596,58 @@ exports.listStreaming = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, message: 'Error in getting firestore data' });
   }
 };
+
+exports.generateProtectKey = async (req: express.Request, res: express.Response) => {
+  //  generate secret key.
+  try {
+    let key = {data:""};
+    
+    key.data = secretKey.create('1EEA6DC-JAM4DP2-PHVYPBN-V0XCJ9X');
+    key.data = '1EEA6DC-JAM4DP2-PHVYPBN-V0XCJ9X';//temporary
+    res.send({ success: true, key});
+  } catch (err) {
+    res.send({ success: false, message: 'Error in getting firestore data' });
+  }
+
+};
+
+exports.validateProtectKey = async (req: express.Request, res: express.Response) => {
+  const { DocId, ProtectKey} = req.body;
+  try {
+    let key = {data:""};
+    const docRef = await db.collection(collections.streaming).doc(DocId);
+    const streamingData = (await docRef.get()).data();
+
+    if(streamingData?.ProtectKey == ProtectKey) { // validate.
+      res.send({ success: true, docRef});
+    }
+
+    res.send({ success: false, message:"Invalid Protect Key"});
+  } catch (err) {
+    res.send({ success: false, message: 'Error in getting firestore data' });
+  }
+
+};
+
+exports.registerStreamingParticipant = async(req: express.Request, res:express.Response) => {
+  const { DocId, UserId, ParticipantType, Room, IsAllowed } = req.body;
+
+  try{
+    const registerParticipantRef = await db.collection(collections.liveStream).add({
+      UserId: UserId,
+      ParticipantType: ParticipantType,
+      Room
+    });
+
+    res.send({ success: true, DocId: registerParticipantRef.id });
+
+  } catch (err) {
+
+    res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
+  }
+}
+
+
 // ----------------------------------- GETS -------------------------------------------
 // get social pools
 // exports.getSocialTokens = async (req: express.Request, res: express.Response) => {
