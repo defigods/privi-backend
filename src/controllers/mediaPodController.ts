@@ -516,7 +516,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           bodySave.CountStreamers = 0;
           bodySave.CountWatchers = 0;
           bodySave.ExpectedDuration = 0;
-          bodySave.MainStreamer = media.Creator;
+          bodySave.MainStreamer = bodySave.Requester;
           bodySave.RoomName = media.MediaSymbol;
           bodySave.StartedTime = 0;
           bodySave.EndedTime = 0;
