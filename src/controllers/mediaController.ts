@@ -103,7 +103,8 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
       }
     }
 
-    medias = dataEthMedia.concat(dataMedias).slice(pagination * 10, (pagination+1) * 10);
+    medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
+    // medias = dataEthMedia.concat(dataMedias).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
   } catch (e) {
