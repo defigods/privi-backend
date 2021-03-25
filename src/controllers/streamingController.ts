@@ -17,6 +17,7 @@ const DAILY_API_KEY = 'e93f4b9d62e8f5428297778f56bf8a9417b6a5343d0d4a961e0451c89
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
+const MEETING_TOKEN = `${ORIGIN_DAILY_API_URL}/meeting-tokens`;
 const RECORDING_URL = `${ORIGIN_DAILY_API_URL}/recordings`
 
 enum ROOM_STATE {
@@ -84,6 +85,7 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
     res.send({ success: false });
   }
 };
+
 
 // a listener joins the streaming
 exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
@@ -471,10 +473,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
 
-  console.log(DocId, UserId)
-  console.log(req.body)
   // Check the User is MainStreamer of this streaming data
-
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
@@ -487,7 +486,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
       body: JSON.stringify({
         //privacy: 'private',
         name: DocId,
-        properties: {enable_recording: 'cloud',start_cloud_recording: (streamingData?.IsRecordAutoStart  ? 'true':'false')}
+        properties: {enable_recording: 'cloud'}
       })
     };
 
@@ -642,6 +641,29 @@ exports.endStreaming = async (req: express.Request, res: express.Response) => {
   }
 };
 
+//  ?roomName=<>
+exports.generateMeetingToken = async (req: express.Request, res: express.Response) => {
+  const roomName = req.query.roomName
+
+  const options = {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json', Authorization: `Bearer ${DAILY_API_KEY}`},
+    body: JSON.stringify({
+      properties: {
+        room_name: roomName,
+        enable_screenshare: true,
+        start_cloud_recording: true
+      }
+    })
+  };
+
+  fetch(MEETING_TOKEN, options)
+    .then(res => res.json())
+    .then(json => console.log(json))
+    .catch(err => console.error('error:' + err));
+
+
+};
 /*
  ** List Streaming **
  ** GET METHOD **

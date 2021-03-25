@@ -19,5 +19,8 @@ router.get('/getRecording', authenticateJWT, streamingController.getRecording);
 
 router.get('/generateProtectKey',authenticateJWT,streamingController.generateProtectKey);
 router.get('/validateProtectKey',authenticateJWT,streamingController.validateProtectKey);
+router.get('/generateMeetingToken',authenticateJWT,streamingController.generateMeetingToken);
+
+//  meeting tokens (control)
 
 module.exports = router;
