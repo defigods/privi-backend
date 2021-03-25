@@ -26,8 +26,6 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
 
     let body = req.body;
 
-    console.log(body);
-
     let medias: any[] = [];
     let dataMedias : any[] = [];
     let dataEthMedia : any[] = [];
@@ -106,6 +104,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
     }
 
     medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
+    // medias = dataEthMedia.concat(dataMedias).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
   } catch (e) {
@@ -124,7 +123,7 @@ exports.getMedia = async (req: express.Request, res: express.Response) => {
       const media: any = mediaGet.data();
 
       if(mediaGet.exists) {
-        res.status(200).send({ success: true, data: media });
+        res.status(200).send({ success: true, data: { ...media, id: mediaId } });
       } else {
         res.status(200).send({ success: false, error: 'Media not found' });
       }
@@ -1040,7 +1039,13 @@ exports.shareMedia = async (req: express.Request, res: express.Response) => {
       const userSnap = await db.collection(collections.user).doc(body.userId).get();
       const userData: any = userSnap.data();
 
+      let mappingShare : any = {};
       for(let usr of body.Users) {
+        mappingShare[usr] ={
+          Saw: false,
+          Paid: false
+        };
+
         await notificationsController.addNotification({
           userId: usr,
           notification: {
@@ -1055,6 +1060,30 @@ exports.shareMedia = async (req: express.Request, res: express.Response) => {
             onlyInformation: false,
             otherItemId: '',
           },
+        });
+      }
+
+      const shareMediaRef = db.collection(collections.streaming).doc(mediaId)
+        .collection(collections.shareStreaming).doc(body.userId);
+      const shareMediaGet = await shareMediaRef.get();
+
+      if(shareMediaGet.exists) {
+        const shareMedia : any = shareMediaGet.data();
+
+        let sharedUser : any = {...shareMedia};
+        let shareKeys = Object.keys(mappingShare);
+        for(let usrShared of shareKeys) {
+          if(!sharedUser || !sharedUser[usrShared] || sharedUser[usrShared] === {}) {
+            sharedUser[usrShared] = mappingShare[usrShared]
+          }
+        }
+        await shareMediaRef.update(sharedUser)
+
+      } else {
+        await db.runTransaction(async (transaction) => {
+          // userData - no check if firestore insert works? TODO
+          transaction.set(db.collection(collections.streaming).doc(mediaId)
+            .collection(collections.shareStreaming).doc(body.userId), mappingShare);
         });
       }
 

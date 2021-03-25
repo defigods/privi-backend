@@ -100,6 +100,7 @@ router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
+router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
@@ -125,5 +126,7 @@ router.post('/shareMedia/:mediaId', authenticateJWT, mediaController.shareMedia)
 router.post('/createPlaylist', authenticateJWT, playlistController.createPlaylist);
 router.post('/changePlaylistPhoto', authenticateJWT, upload6.single('image'), playlistController.changePlaylistPhoto);
 router.post('/sharePlayList/:playListId', authenticateJWT, playlistController.sharePlayList);
+router.post('/addToMyPlaylists', authenticateJWT, playlistController.addToMyPlaylists);
+router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.removeFromMyPlaylists);
 
 module.exports = router;

@@ -478,21 +478,21 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${DAILY_API_KEY}`
-      },
-      body: JSON.stringify({
-        //privacy: 'private',
-        name: DocId,
-        properties: {enable_recording: 'cloud',start_cloud_recording: (streamingData?.IsRecordAutoStart  ? 'true':'false')}
-      })
-    };
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${DAILY_API_KEY}`
+        },
+        body: JSON.stringify({
+          //privacy: 'private',
+          name: DocId,
+          properties: {enable_recording: 'cloud',start_cloud_recording: (streamingData?.IsRecordAutoStart  ? 'true':'false')}
+        })
+      };
 
-    let dailyResponse;
-    await fetch(ROOM_URL, options)
+      let dailyResponse : any = {};
+      await fetch(ROOM_URL, options)
         .then( res => res.json() )
         .then( json => {
           dailyResponse = json;
@@ -501,11 +501,12 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         .catch( err => {
           res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
         }
-      )
+      );
+
+      console.log('dailyResponse', dailyResponse);
 
       let data = dailyResponse;
 
-      
       try {
         docSnap.ref.update({
           RoomName: data.name,
