@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
+import { authenticateJWT} from '../middlewares/jwtAuthMiddleware';
 const streamingController = require('../controllers/streamingController');
 
 // called from postman
@@ -16,5 +16,6 @@ router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleS
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
 router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
 router.get('/getRecording', authenticateJWT, streamingController.getRecording);
+router.get('/generateProtectKey',authenticateJWT,streamingController.generateProtectKey);
 
 module.exports = router;
