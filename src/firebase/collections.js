@@ -149,6 +149,7 @@ module.exports = {
   collabs: 'Collabs',
 
   streaming: 'Streaming',
+  shareStreaming: 'ShareStreaming',
 
   ethMedia: 'EthMedia',
 
