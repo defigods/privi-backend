@@ -14,6 +14,8 @@ router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleS
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
 router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
 router.get('/getRecording', authenticateJWT, streamingController.getRecording);
+
 router.get('/generateProtectKey',authenticateJWT,streamingController.generateProtectKey);
+router.get('/validateProtectKey',authenticateJWT,streamingController.validateProtectKey);
 
 module.exports = router;
