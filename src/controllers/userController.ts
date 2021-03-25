@@ -744,35 +744,92 @@ const getLoginInfo = async (req: express.Request, res: express.Response) => {
   }
 };
 
+const toggleHideItem = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const userId = body.UserId;
+    const itemId = body.ItemId;
+    const snap = await db.collection(collections.user).doc(userId).get();
+    const data: any = snap.data();
+    const hiddens = data.Hiddens ?? {};
+    if (hiddens[itemId]) delete hiddens[itemId];
+    else hiddens[itemId] = true;
+    snap.ref.update({
+      Hiddens: hiddens
+    });
+    res.send({ success: true });
+  } catch (err) {
+    console.log(err);
+    res.send({ success: false });
+  }
+}
+
 const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
   try {
-    let userId = req.params.userId;
-    let userAddress = req.params.address;
+    const query = req.query;
+    const userId: any = query.userId;
+    const userAddress: any = query.userAddress;
+    const loggedUserId: any = query.loggedUserId;
 
     const userSnap = await db.collection(collections.user).doc(userId).get();
-    const userData = userSnap.data();
+    const userData: any = userSnap.data();
+    const hiddens = userData.Hiddens ?? {};
     if (userData !== undefined) {
-      let badges = await getBadgesFunction(userId);
-      let myPodsAndInvested = await getMyPodsAndInvestedFunction(userId);
-      //let myPods = await getMyPodsFunction(userId);
-      //let podsFollowed = await getPodsFollowedFunction(userId);
-      //let podsInvestments = await getPodsInvestmentsFunction(userId);
-      //let followPodsInfo = await getFollowPodsInfoFunction(userId);
-      let myCommunities = await getMyCommunitiesFunction(userId);
-      let mySocialTokens = await getMySocialTokensFunction(userId, userAddress);
-      let myCreditPools = await getMyCreditPools(userId);
-      let myWorkInProgress = await getMyWorkInProgressFunction(userId);
-      let myMedia = await getMyMediaFunction(userId);
+      let badges: any[] = await getBadgesFunction(userId);
+      let myPodsAndInvested: any = await getMyPodsAndInvestedFunction(userId);
+      let myCommunities: any[] = await getMyCommunitiesFunction(userId);
+      let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
+      let myCreditPools: any = await getMyCreditPools(userId);
+      let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
+      let myMedia: any[] = await getMyMediaFunction(userId);
+
+      // filter the hidden ones for the visiting user and remove all the workInProgress
+      if (!loggedUserId || userId != loggedUserId) {
+        badges = badges.filter((obj) => !obj.Symbol || !hiddens[obj.Symbol]);
+        myPodsAndInvested.FT = myPodsAndInvested.FT.filter((obj) => !obj.PodAddress || !hiddens[obj.PodAddress]);
+        myPodsAndInvested.NFT = myPodsAndInvested.NFT.filter((obj) => !obj.PodAddress || !hiddens[obj.PodAddress]);
+        myCommunities = myCommunities.filter((obj) => !obj.CommunityAddress || !hiddens[obj.CommunityAddress]);
+        mySocialTokens = mySocialTokens.filter((obj) => !obj.PoolAddress || !hiddens[obj.PoolAddress]);
+        myCreditPools.myBorrowingPriviCredits = myCreditPools.myBorrowingPriviCredits.filter((obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]);
+        myCreditPools.myLendingPriviCredits = myCreditPools.myLendingPriviCredits.filter((obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]);
+        myWorkInProgress = [];
+        myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol])
+      }
+      else if (userId == loggedUserId) {
+        badges.forEach((item, index) => {
+          badges[index].hidden = hiddens[item.Symbol] != undefined;
+        });
+        myPodsAndInvested.FT.forEach((item, index) => {
+          myPodsAndInvested.FT[index].hidden = hiddens[item.PodAddress] != undefined;
+        });
+        myPodsAndInvested.NFT.forEach((item, index) => {
+          myPodsAndInvested.NFT[index].hidden = hiddens[item.PodAddress] != undefined;
+        });
+        myCommunities.forEach((item, index) => {
+          myCommunities[index].hidden = hiddens[item.CommunityAddress] != undefined;
+        });
+        mySocialTokens.forEach((item, index) => {
+          mySocialTokens[index].hidden = hiddens[item.PoolAddress] != undefined;
+        });
+        myCreditPools.myBorrowingPriviCredits.forEach((item, index) => {
+          myCreditPools.myBorrowingPriviCredits[index].hidden = hiddens[item.CreditAddress] != undefined;
+        });
+        myCreditPools.myLendingPriviCredits.forEach((item, index) => {
+          myCreditPools.myLendingPriviCredits[index].hidden = hiddens[item.CreditAddress] != undefined;
+        });
+        myWorkInProgress.forEach((item, index) => {
+          myWorkInProgress[index].hidden = hiddens[item.id] != undefined;
+        });
+        myMedia.forEach((item, index) => {
+          myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
+        });
+      }
 
       res.send({
         success: true,
         data: {
           badges: badges,
           myPods: myPodsAndInvested,
-          //myPods: myPods,
-          //podsFollowed: podsFollowed,
-          //podsInvestments: podsInvestments,
-          //followPodsInfo: followPodsInfo,
           myCommunities: myCommunities,
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
@@ -1644,7 +1701,7 @@ const getPodsInvestmentsFunction = (userId) => {
   });
 };
 
-const getMyPodsAndInvestedFunction = (userId) => {
+const getMyPodsAndInvestedFunction = (userId): Promise<any> => {
   return new Promise(async (resolve, reject) => {
     try {
       const userRef = await db.collection(collections.user).doc(userId).get();
@@ -1757,7 +1814,7 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
 };
 
 //get communities
-const getMyCommunitiesFunction = (userId) => {
+const getMyCommunitiesFunction = (userId): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     try {
       const userRef = await db.collection(collections.user).doc(userId).get();
@@ -1801,7 +1858,7 @@ const getCommunitiesArray = (arrayCommunities: any[], collection: any): Promise<
 };
 
 //get social tokens
-const getMySocialTokensFunction = (userId, address) => {
+const getMySocialTokensFunction = (userId, address): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     try {
       const retData: any[] = [];
@@ -1851,7 +1908,7 @@ const getMySocialTokensFunction = (userId, address) => {
 };
 
 //get credit pools
-const getMyCreditPools = (userId) => {
+const getMyCreditPools = (userId): Promise<any> => {
   return new Promise(async (resolve, reject) => {
     try {
       const userRef = await db.collection(collections.user).doc(userId).get();
@@ -1904,7 +1961,7 @@ const getCreditPoolsArray = (arrayCreditPools: any, collection: any): Promise<an
 };
 
 //get WIP
-const getMyWorkInProgressFunction = (userId) => {
+const getMyWorkInProgressFunction = (userId): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     try {
       let myWorkInProgress: any[] = [];
@@ -1963,7 +2020,7 @@ const getWorkInProgressArray = (userId: string, collection: any): Promise<any[]>
 };
 
 //get Media
-const getMyMediaFunction = (userId) => {
+const getMyMediaFunction = (userId): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     try {
       let myMedia: any[] = [];
@@ -2301,7 +2358,7 @@ const getBadges = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const getBadgesFunction = (userId: string) => {
+const getBadgesFunction = (userId: string): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     try {
       let address = userId;
@@ -3648,6 +3705,7 @@ module.exports = {
   removeNotification,
   inviteUserToPod,
   getAllInfoProfile,
+  toggleHideItem,
   getSuggestedUsers,
   getUserScores,
   getStatistics,

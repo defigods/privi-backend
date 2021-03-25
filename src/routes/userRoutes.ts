@@ -6,6 +6,7 @@ const router = express.Router();
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const userController = require('../controllers/userController');
 const userWallController = require('../controllers/userWallController');
+const mediaController = require('../controllers/mediaController');
 
 // let upload = multer({ dest: 'uploads' });
 // Multer Settings for file upload
@@ -72,7 +73,7 @@ let storage44 = multer.diskStorage({
 });
 
 let upload44 = multer({
-  storage: storage44
+  storage: storage44,
 });
 
 let storage5 = multer.diskStorage({
@@ -99,7 +100,8 @@ router.post('/resend_email_validation', userController.resendEmailValidation);
 
 router.get('/getBasicInfo/:userId', userController.getBasicInfo);
 router.get('/getLoginInfo/:userId', authenticateJWT, userController.getLoginInfo);
-router.get('/getAllInfoProfile/:userId/:address', userController.getAllInfoProfile);
+router.get('/getAllInfoProfile', userController.getAllInfoProfile);
+router.post('/toggleHideItem', authenticateJWT, userController.toggleHideItem);
 
 // MY WALL - GETS
 router.get('/wall/getFollowPodsInfo/:userId', authenticateJWT, userController.getFollowPodsInfo);
@@ -172,14 +174,27 @@ router.post('/wall/deletePost', authenticateJWT, userWallController.postDelete);
 router.get('/wall/getUserPosts/:userId', authenticateJWT, userWallController.getUserPosts);
 router.get('/wall/getUserPost/:postId', authenticateJWT, userWallController.getUserPostById);
 router.post('/wall/changePostPhoto', authenticateJWT, upload5.single('image'), userWallController.changePostPhoto);
-router.post('/wall/changePostDescriptionPhotos/:userWallPostId', authenticateJWT, upload4.array('image'), userWallController.changePostDescriptionPhotos);
+router.post(
+  '/wall/changePostDescriptionPhotos/:userWallPostId',
+  authenticateJWT,
+  upload4.array('image'),
+  userWallController.changePostDescriptionPhotos
+);
 router.get('/wall/getPostPhoto/:userWallPostId', userWallController.getUserWallPostPhotoById);
-router.get('/wall/getDescriptionPostPhoto/:userWallPostId/:photoId', userWallController.getUserWallPostDescriptionPhotoById);
+router.get(
+  '/wall/getDescriptionPostPhoto/:userWallPostId/:photoId',
+  userWallController.getUserWallPostDescriptionPhotoById
+);
 router.post('/wall/makeResponse', authenticateJWT, userWallController.makeResponseUserWallPost);
 router.post('/wall/likePost', authenticateJWT, userWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
-router.post('/wall/addVideo/:userWallPostId', authenticateJWT, upload44.single('video'), userWallController.addVideoPost);
+router.post(
+  '/wall/addVideo/:userWallPostId',
+  authenticateJWT,
+  upload44.single('video'),
+  userWallController.addVideoPost
+);
 router.post('/wall/getVideo/:userWallPostId/:videoId', authenticateJWT, userWallController.getVideoPost);
 
 router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
@@ -200,5 +215,7 @@ router.get('/getIdFromSlug/:urlSlug/:type', userController.getIdFromSlug);
 router.get('/getSlugFromId/:urlId/:type', userController.getSlugFromId);
 
 router.get('/getFriends/:userId', userController.getFriends);
+
+router.get('/getUserMediaInfo/:userId', mediaController.getUserMediaInfo);
 
 module.exports = router;

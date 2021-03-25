@@ -1010,9 +1010,9 @@
     eventemitter2 "^6.3.1"
     ws "^7.0.0"
 
-"@pm2/pm2-version-check@^1.0.3":
+"@pm2/pm2-version-check@latest":
   version "1.0.3"
-  resolved "https://registry.npmjs.org/@pm2/pm2-version-check/-/pm2-version-check-1.0.3.tgz"
+  resolved "https://registry.yarnpkg.com/@pm2/pm2-version-check/-/pm2-version-check-1.0.3.tgz#4ec5abaeee45c98dce3640f13861058c29f312c5"
   integrity sha512-SBuYsh+o35knItbRW97vl5/5nEc5c5DYP7PxjyPLOfmm9bMaDsVeATXjXMBy6+KLlyrYWHZxGbfXe003NnHClg==
   dependencies:
     debug "^4.1.1"
@@ -4334,10 +4334,22 @@ oauth-sign@~0.9.0:
   resolved "https://registry.npmjs.org/oauth-sign/-/oauth-sign-0.9.0.tgz"
   integrity sha512-fexhUFFPTGV8ybAtSIGbV6gOkSv8UtRbDBnAyLQw4QPKkgNlsH2ByPGtMUqdWkos6YCRmAqViwgZrJc/mRDzZQ==
 
+oauth@^0.9.15:
+  version "0.9.15"
+  resolved "https://registry.yarnpkg.com/oauth/-/oauth-0.9.15.tgz#bd1fefaf686c96b75475aed5196412ff60cfb9c1"
+  integrity sha1-vR/vr2hslrdUda7VGWQS/2DPucE=
+
 object-assign@^4, object-assign@^4.1.0, object-assign@^4.1.1:
   version "4.1.1"
   resolved "https://registry.npmjs.org/object-assign/-/object-assign-4.1.1.tgz"
   integrity sha1-IQmtx5ZYh8/AXLvUQsrIv7s2CGM=
+
+object-sizeof@^1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/object-sizeof/-/object-sizeof-1.6.1.tgz#35971f3fd2102bd8b51c67b0a53ed773ff77ab56"
+  integrity sha512-gNKGcRnDRXwEpAdwUY3Ef+aVZIrcQVXozSaVzHz6Pv4JxysH8vf5F+nIgsqW5T/YNwZNveh0mIW7PEH1O2MrDw==
+  dependencies:
+    buffer "^5.6.0"
 
 oboe@2.1.5:
   version "2.1.5"
@@ -5539,6 +5551,14 @@ tweetnacl@^0.14.3, tweetnacl@~0.14.0:
   version "0.14.5"
   resolved "https://registry.npmjs.org/tweetnacl/-/tweetnacl-0.14.5.tgz"
   integrity sha1-WuaBd/GS1EViadEIr6k/+HQ/T2Q=
+
+twitter-api-client@^1.3.2:
+  version "1.3.2"
+  resolved "https://registry.yarnpkg.com/twitter-api-client/-/twitter-api-client-1.3.2.tgz#aabe7df2ffe3f7b10e26ca8ce8fc20dff1dff169"
+  integrity sha512-xZ21Ah2ypNZ8/3dvPgzrlbi2Rehgbt1fylPTO0hKoNeAjeWF/w7TKgtqVtmUpSyIQDlRdnSXf0vRZaVSGeIIVg==
+  dependencies:
+    oauth "^0.9.15"
+    object-sizeof "^1.6.1"
 
 type-check@~0.3.2:
   version "0.3.2"

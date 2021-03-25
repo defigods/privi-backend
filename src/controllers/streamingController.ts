@@ -252,6 +252,90 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
   }
 };
 
+
+// a listener joins the streaming
+exports.enterMediaStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const listener = body.Listener; // userId
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    const blockchainRes = await mediaPod.enterMediaLiveStreaming(
+      listener,
+      podAddress,
+      mediaSymbol,
+      hash,
+      signature,
+      apiKey
+    );
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes); // update media inside pod
+      // update media in "Streaming"
+      const output = blockchainRes.output;
+      const updateStreaming = output.UpdateStreaming;
+      let totalPricePerSecond = 0;
+      let streamingId = '';
+      let streamingObj: any = null;
+
+      console.log(output, output.UpdateMedias, updateStreaming);
+
+      // update listener (watcher)
+      await db
+        .collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .set({
+          JoinedAt: Date.now(),
+          PricePerSecond: totalPricePerSecond,
+        });
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/streaming -> enterMediaStreaming(): success = false.',
+        blockchainRes.message
+      );
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> enterMediaStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
+// a listener leaves the streaming
+exports.exitMediaStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const listener = body.Listener;
+    const podAddress = body.PodAddress;
+    const mediaSymbol = body.MediaSymbol;
+    const blockchainRes = await mediaPod.exitMediaLiveStreaming(listener, podAddress, mediaSymbol, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      // delete listener doc inside media and updating streamer doc fields
+
+      db.collection(collections.streaming)
+        .doc(mediaSymbol)
+        .collection(collections.streamingListeners)
+        .doc(listener)
+        .delete();
+      res.send({ success: true });
+    } else {
+      console.log(
+        'Error in controllers/streaming -> exitMediaStreaming(): success = false.',
+        blockchainRes.message
+      );
+      res.send({ success: false, error: blockchainRes.message });
+    }
+  } catch (err) {
+    console.log('Error in controllers/streaming -> exitMediaStreaming(): ', err);
+    res.send({ success: false });
+  }
+};
+
 // viewer joins to the steaming (a call per viewer)
 exports.initiateStreaming = async (req: express.Request, res: express.Response) => {
   try {
@@ -387,9 +471,10 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
 
-
-
+  console.log(DocId, UserId)
+  console.log(req.body)
   // Check the User is MainStreamer of this streaming data
+
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
@@ -417,22 +502,6 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
           res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
         }
       )
-    
-      // try {
-
-      //   // dailyResponse = await axios({
-      //   //   method: "post",
-      //   //   url: ROOM_URL,
-      //   //   headers: {
-      //   //     'Content-Type': 'application/json',
-      //   //       Authorization: `Bearer ${DAILY_API_KEY}`
-      //   //   },
-      //   //   data: JSON.stringify({privacy: 'private', room: "ROOm"})
-      //   // });
-      //   console.log(dailyResponse)
-      // } catch (err) {
-      //   res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
-      // }
 
       let data = dailyResponse;
 
@@ -500,15 +569,16 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         // }
 
         /// End Blockchain Integration Part.
+        console.log(data.url)
         res.send({ success: true, StreamingUrl: data.url, data: resData });
       } catch (err) {
+        console.log(err)
         res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
       }
     } else {
+      console.log("here")
       res.send({ success: false, message: 'This streaming is not scheduled' });
     }
-  } else {
-    res.send({ success: false, message: ERROR_MSG.PERMISSION_ERROR });
   }
 };
 
@@ -536,7 +606,7 @@ exports.getRecording = async (req: express.Request, res: express.Response) => {
         Authorization: `Bearer ${DAILY_API_KEY}`,
       },
     })
-    res.send({success: true, data: resp})
+    res.send({ success: true, data: resp })
   } catch (e) {
     res.send({ success: false, message: 'Failed to get recording', err: e });
   }
