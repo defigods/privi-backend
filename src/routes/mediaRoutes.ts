@@ -129,4 +129,9 @@ router.post('/sharePlayList/:playListId', authenticateJWT, playlistController.sh
 router.post('/addToMyPlaylists', authenticateJWT, playlistController.addToMyPlaylists);
 router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.removeFromMyPlaylists);
 
+router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaController.addOffer);
+router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
+router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
+
+
 module.exports = router;

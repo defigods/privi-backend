@@ -1135,3 +1135,37 @@ exports.shareMedia = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 }
+
+exports.addOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.changeOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+
+
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> signTransactionAcceptOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
