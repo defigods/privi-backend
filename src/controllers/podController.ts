@@ -1957,7 +1957,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
             type: 56,
             typeItemId: 'user',
             itemId: creator,
-            follower: creator,
+            follower: userData.firstName,
             pod: name,
             comment: '',
             token: '',

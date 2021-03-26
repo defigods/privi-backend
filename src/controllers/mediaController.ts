@@ -103,6 +103,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
       }
     }
 
+    // medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
     medias = dataEthMedia.concat(dataMedias).slice(pagination * 10, (pagination+1) * 10);
 
     return res.status(200).send({ success: true, data: medias });
@@ -1134,3 +1135,37 @@ exports.shareMedia = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: err });
   }
 }
+
+exports.addOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.changeOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> addOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+
+
+
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> signTransactionAcceptOffer()', err);
+    res.send({ success: false, error: err });
+  }
+};
