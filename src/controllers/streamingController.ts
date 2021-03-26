@@ -676,6 +676,11 @@ exports.generateMeetingToken = async (req: express.Request, res: express.Respons
     res.send({ success: false, message: 'Failed to get recording', err: e });
   }
 };
+
+exports.validateMeetingToken = async (req: express.Request, res: express.Response) => {
+
+};
+
 /*
  ** List Streaming **
  ** GET METHOD **
