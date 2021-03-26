@@ -29,6 +29,7 @@ router.post('/saveCollectionDataInJSON', walletController.saveCollectionDataInJS
 // POSTS 
 router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
 router.post('/transfer', authenticateJWT, walletController.transfer);
+router.post('/createStreaming', authenticateJWT, walletController.createStreaming);
 router.post('/giveTip', authenticateJWT, walletController.giveTip);
 
 // GETS

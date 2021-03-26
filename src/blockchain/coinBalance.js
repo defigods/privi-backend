@@ -180,3 +180,19 @@ module.exports.multitransfer = async (arrayObj, caller) => {
 	});
 	return blockchainRes.data;
 }
+
+module.exports.createStreaming = async (senderAddress, receiverAddress, frequency, amountPerPeriod, streamingToken, startingDate, endingDate, hash, signature, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/createStreaming", {
+		SenderAddress: senderAddress,
+		ReceriverAddress: receiverAddress,
+		Frequency: frequency,
+		AmountPerPeriod: amountPerPeriod,
+		StreamingToken: streamingToken,
+		StartingDate: startingDate,
+		EndingDate: endingDate,
+		Hash: hash,
+		Signature: signature,
+		Caller: caller,
+	});
+	return blockchainRes.data;
+}

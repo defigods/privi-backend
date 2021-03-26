@@ -199,48 +199,6 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
-      // let senderName = fromUid;
-      // let receiverName = toUid;
-      // const senderSnap = await db.collection(collections.user).doc(userId).get();
-      // const receiverSnap = await db.collection(collections.user).doc(toUid).get();
-      // const senderData = senderSnap.data();
-      // const receriverData = receiverSnap.data();
-      // if (senderData !== undefined && receriverData !== undefined) {
-      //     senderName = senderData.firstName;
-      //     receiverName = receriverData.firstName;
-      //     notification to sender
-      //     await notificationsController.addNotification({
-      //         userId: senderSnap.id,
-      //         notification: {
-      //             type: 8,
-      //             typeItemId: 'user',
-      //             itemId: receiverSnap.id,
-      //             follower: receiverName,
-      //             pod: '',
-      //             comment: '',
-      //             token: token,
-      //             amount: amount,
-      //             onlyInformation: false,
-      //                     otherItemId: ''
-      //         }
-      //     });
-
-      //     await notificationsController.addNotification({
-      //         userId: receiverSnap.id,
-      //         notification: {
-      //             type: 7,
-      //             typeItemId: 'user',
-      //             itemId: senderSnap.id,
-      //             follower: senderName,
-      //             pod: '',
-      //             comment: '',
-      //             token: token,
-      //             amount: amount,
-      //             onlyInformation: false,
-      //                     otherItemId: ''
-      //         }
-      //     });
-      // }
       res.send({ success: true });
     } else {
       console.log('Error in controllers/walletController -> send(), blockchain returned false', blockchainRes.message);
@@ -248,6 +206,38 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     }
   } catch (err) {
     console.log('Error in controllers/walletController -> send()', err);
+    res.send({ success: false });
+  }
+};
+
+module.exports.createStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const userId = body.UserId;
+    const senderAddress = body.SenderAddress;
+    const receiverAddress = body.ReceiverAddress;
+    const frequency = body.Frequency;
+    const amountPerPeriod = body.AmountPerPeriod;
+    const streamingToken = body.StreamingToken;
+    const startingDate = body.StartingDate;
+    const endingDate = body.EndingDate;
+    const hash = body.Hash;
+    const signature = body.Signature;
+    if (!req.body.priviUser.id || req.body.priviUser.id != userId) {
+      console.log('error: jwt user is not the same as fromUid');
+      res.send({ success: false, message: 'jwt user is not the same as fromUid' });
+      return;
+    }
+    const blockchainRes = await coinBalance.createStreaming(senderAddress, receiverAddress, frequency, amountPerPeriod, streamingToken, startingDate, endingDate, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      // updateFirebase(blockchainRes);
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/walletController -> createStreaming(), blockchain returned false', blockchainRes.message);
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/walletController -> createStreaming()', err);
     res.send({ success: false });
   }
 };
