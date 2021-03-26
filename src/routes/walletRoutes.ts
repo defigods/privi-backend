@@ -26,7 +26,7 @@ router.post('/registerUserEthAccount', walletController.registerUserEthAccount);
 router.post('/giveTokensExistingUsers', walletController.giveTokensExistingUsers);
 router.post('/saveCollectionDataInJSON', walletController.saveCollectionDataInJSON);
 
-// POSTS 
+// POSTS
 router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
 router.post('/transfer', authenticateJWT, walletController.transfer);
 router.post('/createStreaming', authenticateJWT, walletController.createStreaming);
@@ -40,6 +40,7 @@ router.get('/getTokensRateChange', walletController.getTokensRateChange); // tok
 
 router.get('/getEmailToUidMap', authenticateJWT, walletController.getEmailToUidMap);
 router.get('/getEmailToAddressMap', authenticateJWT, walletController.getEmailToAddressMap);
+router.get('/getUidToAddressMap', authenticateJWT, walletController.getUidToAddressMap);
 
 // user balance and txns
 router.get('/getUserOwnedTokens', walletController.getUserOwnedTokens);
