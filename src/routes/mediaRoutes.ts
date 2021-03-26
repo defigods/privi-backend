@@ -103,6 +103,9 @@ router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
 router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
+router.get('/marketingMediaCommunity/getMediaChats/:mediaId', authenticateJWT, mediaController.getChatsMediaMarketing);
+router.get('/marketingMediaCommunity/getCommunityChats/:communityId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
 router.post('/uploadVideo/:mediaPod/:mediaId', authenticateJWT, upload3.single('video'), mediaController.changeMediaVideo);
@@ -132,6 +135,5 @@ router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.remove
 router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaController.addOffer);
 router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
 router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
-
 
 module.exports = router;

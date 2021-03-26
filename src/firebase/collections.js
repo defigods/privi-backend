@@ -153,5 +153,8 @@ module.exports = {
 
   ethMedia: 'EthMedia',
 
-  playList: 'PlayList'
+  playList: 'PlayList',
+
+  marketingMediaCommunityChat: 'MarketingMediaCommunityChat',
+  marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage'
 };
