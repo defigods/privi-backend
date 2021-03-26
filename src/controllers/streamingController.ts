@@ -17,7 +17,7 @@ const DAILY_API_KEY = 'e93f4b9d62e8f5428297778f56bf8a9417b6a5343d0d4a961e0451c89
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
-const MEETING_TOKEN = `${ORIGIN_DAILY_API_URL}/meeting-tokens`;
+const MEETING_TOKENS_URL = `${ORIGIN_DAILY_API_URL}/meeting-tokens`;
 const RECORDING_URL = `${ORIGIN_DAILY_API_URL}/recordings`
 
 enum ROOM_STATE {
@@ -413,9 +413,7 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
     StartingTime,
     EndingTime,
     Rewards,
-    Video,
-    IsRecordAutoStart,
-    ProtectKey
+    Video
   } = req.body;
 
 
@@ -443,9 +441,7 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
       Price,
       StartingTime,
       EndingTime,
-      Rewards,
-      IsRecordAutoStart,
-      ProtectKey
+      Rewards
     });
     res.send({ success: true, DocId: collectionRef.id });
   } catch (err) {
@@ -641,28 +637,44 @@ exports.endStreaming = async (req: express.Request, res: express.Response) => {
   }
 };
 
-//  ?roomName=<>
+exports.getMeetingToken = async (req: express.Request, res: express.Response) => {
+  const roomName = req.query.roomName
+  const docId = req.query.docId as string;
+
+  const docRef = await db.collection(collections.streaming).doc(docId)
+
+  res.send({ success: true, data: docRef });
+}
 exports.generateMeetingToken = async (req: express.Request, res: express.Response) => {
   const roomName = req.query.roomName
+  const docId = req.query.docId as string;
 
-  const options = {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json', Authorization: `Bearer ${DAILY_API_KEY}`},
-    body: JSON.stringify({
-      properties: {
-        room_name: roomName,
-        enable_screenshare: true,
-        start_cloud_recording: true
-      }
+  try{
+
+    let resp = await axios.post(MEETING_TOKENS_URL, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`,
+        body: JSON.stringify({
+          properties: {
+            room_name: roomName,
+            enable_screenshare: true,
+            start_cloud_recording: true
+          }
+        })
+      },
     })
-  };
 
-  fetch(MEETING_TOKEN, options)
-    .then(res => res.json())
-    .then(json => console.log(json))
-    .catch(err => console.error('error:' + err));
-
-
+    //  persis to collection
+    const docRef = await db.collection(collections.streaming).doc(docId);
+    docRef.set({
+      ProtectKey: resp.data
+    });
+    const streamingData = (await docRef.get()).data();
+    res.send({ success: true, data: resp })
+  } catch (e) {
+    res.send({ success: false, message: 'Failed to get recording', err: e });
+  }
 };
 /*
  ** List Streaming **
