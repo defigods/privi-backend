@@ -9,7 +9,7 @@ import { updateFirebase } from '../functions/functions';
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
 
-exports.getEthMedia = async (req: express.Request, res: express.Response) => {
+export const getEthMedia = async (req: express.Request, res: express.Response) => {
   try {
     const docsSnap = (await db.collection(collections.ethMedia).get()).docs;
     const data = docsSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
@@ -20,7 +20,7 @@ exports.getEthMedia = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.getMedias = async (req: express.Request, res: express.Response) => {
+export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
 
@@ -113,7 +113,7 @@ exports.getMedias = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.getMedia = async (req: express.Request, res: express.Response) => {
+export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
 
@@ -156,7 +156,7 @@ const mediaTypeFilter = (media: any, mediaTypes: string[]) => {
   });
 }
 
-exports.getEthMediaItem = async (req: express.Request, res: express.Response) => {
+export const getEthMediaItem = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
   try {
     const docRef = db.collection(collections.ethMedia).doc(id);
@@ -172,7 +172,7 @@ exports.getEthMediaItem = async (req: express.Request, res: express.Response) =>
   }
 };
 
-exports.changeMediaPhoto = async (req: express.Request, res: express.Response) => {
+export const changeMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
       const mediasRef = db
@@ -198,7 +198,7 @@ exports.changeMediaPhoto = async (req: express.Request, res: express.Response) =
   }
 };
 
-exports.changeMediaAudio = async (req: express.Request, res: express.Response) => {
+export const changeMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
       const mediasRef = db
@@ -224,7 +224,7 @@ exports.changeMediaAudio = async (req: express.Request, res: express.Response) =
   }
 };
 
-exports.changeMediaVideo = async (req: express.Request, res: express.Response) => {
+export const changeMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
       const mediasRef = db
@@ -250,7 +250,7 @@ exports.changeMediaVideo = async (req: express.Request, res: express.Response) =
   }
 };
 
-exports.changeMediaBlog = async (req: express.Request, res: express.Response) => {
+export const changeMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
     if (req.params && req.params.mediaPod && req.params.mediaId) {
@@ -285,7 +285,7 @@ exports.changeMediaBlog = async (req: express.Request, res: express.Response) =>
   }
 };
 
-exports.changeMediaBlogVideo = async (req: express.Request, res: express.Response) => {
+export const changeMediaBlogVideo = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.file.originalname && req.params && req.params.mediaPod && req.params.mediaId) {
       const mediasRef = db
@@ -316,12 +316,12 @@ exports.changeMediaBlogVideo = async (req: express.Request, res: express.Respons
   }
 };
 
-exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
+export const getMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
 
     if (mediaId) {
-      await getMedia(mediaId, '.png', 'image', res);
+      await getMediaInternal(mediaId, '.png', 'image', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
       res.sendStatus(400);
@@ -333,7 +333,7 @@ exports.getMediaPhoto = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
+export const getMediaAudio = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
 
@@ -371,12 +371,12 @@ exports.getMediaAudio = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
+export const getMediaVideo = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
 
     if (mediaId) {
-      await getMedia(mediaId, '.mp4', 'video', res);
+      await getMediaInternal(mediaId, '.mp4', 'video', res);
     } else {
       console.log('Error in controllers/mediaController -> getMediaPhoto()', "There's no id...");
       res.sendStatus(400);
@@ -388,7 +388,7 @@ exports.getMediaVideo = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
+export const getMediaBlog = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
     let mediaPod = req.params.mediaPod;
@@ -417,7 +417,7 @@ exports.getMediaBlog = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const getMedia = (mediaId: string, extension: string, type: string, res: express.Response) => {
+const getMediaInternal = (mediaId: string, extension: string, type: string, res: express.Response) => {
   return new Promise((resolve, reject) => {
     try {
       const directoryPath = path.join('uploads', 'media');
@@ -450,7 +450,7 @@ const getMedia = (mediaId: string, extension: string, type: string, res: express
   });
 };
 
-exports.editMedia = async (req: express.Request, res: express.Response) => {
+export const editMedia = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -534,7 +534,7 @@ exports.editMedia = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.removeCollab = async (req: express.Request, res: express.Response) => {
+export const removeCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -638,7 +638,7 @@ exports.removeCollab = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.refuseCollab = async (req: express.Request, res: express.Response) => {
+export const refuseCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -700,7 +700,7 @@ exports.refuseCollab = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.acceptCollab = async (req: express.Request, res: express.Response) => {
+export const acceptCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -761,7 +761,7 @@ exports.acceptCollab = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.signTransactionAcceptCollab = async (req: express.Request, res: express.Response) => {
+export const signTransactionAcceptCollab = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
     let body = req.body;
@@ -812,7 +812,7 @@ exports.signTransactionAcceptCollab = async (req: express.Request, res: express.
   }
 };
 
-exports.changeMediaMainPhoto = async (req: express.Request, res: express.Response) => {
+export const changeMediaMainPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaPod && req.params.mediaId) {
       const mediasRef = db
@@ -838,7 +838,7 @@ exports.changeMediaMainPhoto = async (req: express.Request, res: express.Respons
   }
 };
 
-exports.getMediaMainPhoto = async (req: express.Request, res: express.Response) => {
+export const getMediaMainPhoto = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
 
@@ -875,7 +875,7 @@ exports.getMediaMainPhoto = async (req: express.Request, res: express.Response) 
   }
 };
 
-exports.getUserMediaInfo = async (req: express.Request, res: express.Response) => {
+export const getUserMediaInfo = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
 
@@ -906,7 +906,7 @@ exports.getUserMediaInfo = async (req: express.Request, res: express.Response) =
   }
 };
 
-exports.likeMedia = async (req: express.Request, res: express.Response) => {
+export const likeMedia = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
     let body = req.body;
@@ -988,7 +988,7 @@ exports.likeMedia = async (req: express.Request, res: express.Response) => {
   }
 }
 
-exports.removeLikeMedia = async (req: express.Request, res: express.Response) => {
+export const removeLikeMedia = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
     let body = req.body;
@@ -1028,7 +1028,7 @@ exports.removeLikeMedia = async (req: express.Request, res: express.Response) =>
   }
 }
 
-exports.shareMedia = async (req: express.Request, res: express.Response) => {
+export const shareMedia = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
     let body = req.body;
@@ -1138,7 +1138,7 @@ exports.shareMedia = async (req: express.Request, res: express.Response) => {
   }
 }
 
-exports.addOffer = async (req: express.Request, res: express.Response) => {
+export const addOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const podAddress = body.PodAddress;
@@ -1162,7 +1162,7 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.changeOffer = async (req: express.Request, res: express.Response) => {
+export const changeOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const action = body.Action;
@@ -1212,7 +1212,7 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
+export const signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 

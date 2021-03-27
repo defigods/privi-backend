@@ -5,7 +5,7 @@ import fs from "fs";
 
 const apiKey = 'PRIVI'; //process.env.API_KEY;
 
-exports.createPlaylist = async (req: express.Request, res: express.Response) => {
+export const createPlaylist = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
     const creator = body.Creator;
@@ -29,7 +29,7 @@ exports.createPlaylist = async (req: express.Request, res: express.Response) => 
   }
 };
 
-exports.changePlaylistPhoto = async (
+export const changePlaylistPhoto = async (
   req: express.Request,
   res: express.Response
 ) => {
@@ -60,7 +60,7 @@ exports.changePlaylistPhoto = async (
   }
 };
 
-exports.getPlaylist = async (req: express.Request, res: express.Response) => {
+export const getPlaylist = async (req: express.Request, res: express.Response) => {
   try {
     let playlistId = req.params.playListId;
 
@@ -80,7 +80,7 @@ exports.getPlaylist = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.getMyPlaylists = async (req: express.Request, res: express.Response) => {
+export const getMyPlaylists = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId
 
@@ -99,7 +99,7 @@ exports.getMyPlaylists = async (req: express.Request, res: express.Response) => 
   }
 };
 
-exports.addToMyPlaylists = async (req: express.Request, res: express.Response) => {
+export const addToMyPlaylists = async (req: express.Request, res: express.Response) => {
   try {
 
     res.status(200).send({ success: true, data: {} });
@@ -109,7 +109,7 @@ exports.addToMyPlaylists = async (req: express.Request, res: express.Response) =
   }
 };
 
-exports.removeFromMyPlaylists = async (req: express.Request, res: express.Response) => {
+export const removeFromMyPlaylists = async (req: express.Request, res: express.Response) => {
   try {
 
     res.status(200).send({ success: true, data: {} });
@@ -119,7 +119,7 @@ exports.removeFromMyPlaylists = async (req: express.Request, res: express.Respon
   }
 };
 
-exports.getPlaylists = async (req: express.Request, res: express.Response) => {
+export const getPlaylists = async (req: express.Request, res: express.Response) => {
   try {
 
     res.status(200).send({ success: true, data: {} });
@@ -129,7 +129,7 @@ exports.getPlaylists = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.sharePlayList = async (req: express.Request, res: express.Response) => {
+export const sharePlayList = async (req: express.Request, res: express.Response) => {
   try {
 
     res.status(200).send({ success: true, data: {} });

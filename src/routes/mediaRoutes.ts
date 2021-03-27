@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from 'multer';
 
-const mediaController = require('../controllers/mediaController');
-const playlistController = require('../controllers/playlistController');
+import * as mediaController from '../controllers/mediaController';
+import * as playlistController from '../controllers/playlistController';
 
 const router: Router = Router();
 
