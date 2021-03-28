@@ -511,12 +511,12 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           bodySave.DescriptionArray = media.DescriptionArray || '';
         }
 
-        if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
+        if(media.Type === "LIVE_AUDIO_TYPE" || media.Type === "LIVE_VIDEO_TYPE") {
           bodySave.RoomState = 'SCHEDULED'
           bodySave.CountStreamers = 0;
           bodySave.CountWatchers = 0;
           bodySave.ExpectedDuration = 0;
-          bodySave.MainStreamer = media.Creator;
+          bodySave.MainStreamer = bodySave.Requester;
           bodySave.RoomName = media.MediaSymbol;
           bodySave.StartedTime = 0;
           bodySave.EndedTime = 0;

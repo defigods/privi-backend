@@ -73,6 +73,7 @@ module.exports = {
   streamingListeners: 'StreamingListeners',
   streamers: 'Streamers',
   streamings: 'Streamings',
+  communityMarketings: "CommunityMarketings",
 
   podViewInvitation: 'PodViewInvitation',
   insurancePools: 'InsurancePools',
@@ -149,8 +150,12 @@ module.exports = {
   collabs: 'Collabs',
 
   streaming: 'Streaming',
+  shareStreaming: 'ShareStreaming',
 
   ethMedia: 'EthMedia',
 
-  playList: 'PlayList'
+  playList: 'PlayList',
+
+  marketingMediaCommunityChat: 'MarketingMediaCommunityChat',
+  marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage'
 };

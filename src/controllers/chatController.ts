@@ -1882,7 +1882,6 @@ const createChatWIPFromUsers = exports.createChatWIPFromUsers = (wipId, fromId, 
             reject(e);
         }
     });
-
 }
 
 exports.getChatsWIP = async (req: express.Request, res: express.Response) => {

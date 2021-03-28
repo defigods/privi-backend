@@ -100,7 +100,13 @@ router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
+router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
+
+router.get('/marketingMediaCommunity/getMediaChats/:mediaId', authenticateJWT, mediaController.getChatsMediaMarketing);
+router.get('/marketingMediaCommunity/getCommunityChats/:communityId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
+router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
@@ -125,5 +131,11 @@ router.post('/shareMedia/:mediaId', authenticateJWT, mediaController.shareMedia)
 router.post('/createPlaylist', authenticateJWT, playlistController.createPlaylist);
 router.post('/changePlaylistPhoto', authenticateJWT, upload6.single('image'), playlistController.changePlaylistPhoto);
 router.post('/sharePlayList/:playListId', authenticateJWT, playlistController.sharePlayList);
+router.post('/addToMyPlaylists', authenticateJWT, playlistController.addToMyPlaylists);
+router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.removeFromMyPlaylists);
+
+router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaController.addOffer);
+router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
+router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
 
 module.exports = router;

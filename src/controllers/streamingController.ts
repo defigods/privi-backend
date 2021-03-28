@@ -644,7 +644,8 @@ exports.getMeetingToken = async (req: express.Request, res: express.Response) =>
   const docRef = await db.collection(collections.streaming).doc(docId)
 
   res.send({ success: true, data: docRef });
-}
+};
+
 exports.generateMeetingToken = async (req: express.Request, res: express.Response) => {
   const roomName = req.query.roomName
   const docId = req.query.docId as string;
