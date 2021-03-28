@@ -17,6 +17,7 @@ const DAILY_API_KEY = 'e93f4b9d62e8f5428297778f56bf8a9417b6a5343d0d4a961e0451c89
 
 // Daily API URL
 const ROOM_URL = `${ORIGIN_DAILY_API_URL}/rooms`;
+const MEETING_TOKENS_URL = `${ORIGIN_DAILY_API_URL}/meeting-tokens`;
 const RECORDING_URL = `${ORIGIN_DAILY_API_URL}/recordings`
 
 enum ROOM_STATE {
@@ -84,6 +85,7 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
     res.send({ success: false });
   }
 };
+
 
 // a listener joins the streaming
 exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
@@ -411,9 +413,7 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
     StartingTime,
     EndingTime,
     Rewards,
-    Video,
-    IsRecordAutoStart,
-    ProtectKey
+    Video
   } = req.body;
 
 
@@ -441,9 +441,7 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
       Price,
       StartingTime,
       EndingTime,
-      Rewards,
-      IsRecordAutoStart,
-      ProtectKey
+      Rewards
     });
     res.send({ success: true, DocId: collectionRef.id });
   } catch (err) {
@@ -471,28 +469,25 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   const docSnap = await db.collection(collections.streaming).doc(DocId).get();
   const streamingData = docSnap.data();
 
-  console.log(DocId, UserId)
-  console.log(req.body)
   // Check the User is MainStreamer of this streaming data
-
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
-      const options = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${DAILY_API_KEY}`
-        },
-        body: JSON.stringify({
-          //privacy: 'private',
-          name: DocId,
-          properties: {enable_recording: 'cloud',start_cloud_recording: (streamingData?.IsRecordAutoStart  ? 'true':'false')}
-        })
-      };
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`
+      },
+      body: JSON.stringify({
+        //privacy: 'private',
+        name: DocId,
+        properties: {enable_recording: 'cloud'}
+      })
+    };
 
-      let dailyResponse : any = {};
-      await fetch(ROOM_URL, options)
+    let dailyResponse;
+    await fetch(ROOM_URL, options)
         .then( res => res.json() )
         .then( json => {
           dailyResponse = json;
@@ -501,12 +496,11 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         .catch( err => {
           res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
         }
-      );
-
-      console.log('dailyResponse', dailyResponse);
+      )
 
       let data = dailyResponse;
 
+      
       try {
         docSnap.ref.update({
           RoomName: data.name,
@@ -641,6 +635,51 @@ exports.endStreaming = async (req: express.Request, res: express.Response) => {
   } else {
     res.send({ success: false, message: 'This User is not a MainStreamer of this meeting!' });
   }
+};
+
+exports.getMeetingToken = async (req: express.Request, res: express.Response) => {
+  const roomName = req.query.roomName
+  const docId = req.query.docId as string;
+
+  const docRef = await db.collection(collections.streaming).doc(docId)
+
+  res.send({ success: true, data: docRef });
+};
+
+exports.generateMeetingToken = async (req: express.Request, res: express.Response) => {
+  const roomName = req.query.roomName
+  const docId = req.query.docId as string;
+
+  try{
+
+    let resp = await axios.post(MEETING_TOKENS_URL, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${DAILY_API_KEY}`,
+        body: JSON.stringify({
+          properties: {
+            room_name: roomName,
+            enable_screenshare: true,
+            start_cloud_recording: true
+          }
+        })
+      },
+    })
+
+    //  persis to collection
+    const docRef = await db.collection(collections.streaming).doc(docId);
+    docRef.set({
+      ProtectKey: resp.data
+    });
+    const streamingData = (await docRef.get()).data();
+    res.send({ success: true, data: resp })
+  } catch (e) {
+    res.send({ success: false, message: 'Failed to get recording', err: e });
+  }
+};
+
+exports.validateMeetingToken = async (req: express.Request, res: express.Response) => {
+
 };
 
 /*
