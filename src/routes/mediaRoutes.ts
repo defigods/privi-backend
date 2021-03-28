@@ -105,6 +105,8 @@ router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPl
 
 router.get('/marketingMediaCommunity/getMediaChats/:mediaId', authenticateJWT, mediaController.getChatsMediaMarketing);
 router.get('/marketingMediaCommunity/getCommunityChats/:communityId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
+router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);

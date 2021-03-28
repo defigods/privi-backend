@@ -1373,3 +1373,54 @@ exports.getChatsCommunityMarketing = async (req: express.Request, res: express.R
     res.send({ success: false, error: err });
   }
 };
+exports.getMediaMarketing = async (req: express.Request, res: express.Response) => {
+  try {
+    const mediaId = req.params.mediaId;
+    const podAddress = req.params.podAddress;
+
+    const allMarketing: any[] = [];
+    const marketingMediaCommunitySnap = await db.collection(collections.mediaPods).doc(podAddress)
+      .collection(collections.medias).doc(mediaId).collection(collections.communityMarketings).get();
+    marketingMediaCommunitySnap.forEach((doc) => {
+      let data = doc.data();
+      data.id = doc.id;
+      allMarketing.push(data);
+    });
+
+
+    // let sortMarketing = allMarketing.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+
+    res.send({
+      success: true,
+      data: allMarketing
+    });
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+exports.getCommunityMarketing = async (req: express.Request, res: express.Response) => {
+  try {
+    const communityId = req.params.communityId;
+
+    const allChats: any[] = [];
+    const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
+      .where("communityId", "==", communityId).get();
+    marketingMediaCommunityChatSnap.forEach((doc) => {
+      let data = doc.data();
+      data.id = doc.id;
+      allChats.push(data);
+    });
+
+    let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+
+    res.send({
+      success: true,
+      data: sortChats
+    });
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> getChatsCommunityMarketing()', err);
+    res.send({ success: false, error: err });
+  }
+};
