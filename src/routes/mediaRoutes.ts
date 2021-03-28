@@ -103,8 +103,12 @@ router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
 router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
-router.get('/marketingMediaCommunity/getMediaChats/:mediaId', authenticateJWT, mediaController.getChatsMediaMarketing);
-router.get('/marketingMediaCommunity/getCommunityChats/:communityId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+router.get('/marketingMediaCommunity/getMediaChats/:mediaId/:userId', authenticateJWT, mediaController.getChatsMediaMarketing);
+router.get('/marketingMediaCommunity/createMediaChats/:mediaId/:communityId/:userId', authenticateJWT, mediaController.createChatMediaMarketing);
+router.get('/marketingMediaCommunity/getMessages/:mediaId/:communityId/:userId', authenticateJWT, mediaController.getMessagesMediaMarketing);
+
+router.get('/marketingMediaCommunity/getCommunityChats/:communityId/:userId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+
 router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
 router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
 
