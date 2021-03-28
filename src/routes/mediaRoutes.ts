@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from 'multer';
 
-const mediaController = require('../controllers/mediaController');
-const playlistController = require('../controllers/playlistController');
+import * as mediaController from '../controllers/mediaController';
+import * as playlistController from '../controllers/playlistController';
 
 const router: Router = Router();
 
@@ -122,7 +122,7 @@ router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
 
-router.post('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
+router.post('/getMedias/:pagination/:lastId', mediaController.getMedias);
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 
