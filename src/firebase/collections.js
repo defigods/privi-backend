@@ -73,6 +73,7 @@ module.exports = {
   streamingListeners: 'StreamingListeners',
   streamers: 'Streamers',
   streamings: 'Streamings',
+  communityMarketings: "CommunityMarketings",
 
   podViewInvitation: 'PodViewInvitation',
   insurancePools: 'InsurancePools',
