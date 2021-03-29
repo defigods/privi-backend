@@ -1224,7 +1224,7 @@ export const signTransactionAcceptOffer = async (req: express.Request, res: expr
   }
 };
 
-const createChatMarketingMediaCommunities = exports.createChatMarketingMediaCommunities = (mediaSymbol, communityId, mediaCreatorId) => {
+export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, mediaCreatorId) => {
   return new Promise(async (resolve, reject) => {
     try {
       const mediaRef = db.collection(collections.streaming).doc(mediaSymbol);
@@ -1237,12 +1237,12 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
 
       let collabs = Object.keys(media.Collabs);
 
-      let users : any[] = [];
+      let users: any[] = [];
 
       const creatorSnap = await db.collection(collections.user).doc(mediaCreatorId).get();
       const creatorData: any = creatorSnap.data();
 
-      if(creatorSnap.exists) {
+      if (creatorSnap.exists) {
         users.push({
           type: 'Media Creator',
           userId: mediaCreatorId,
@@ -1252,11 +1252,11 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
         })
       }
 
-      for(let collab of collabs) {
+      for (let collab of collabs) {
         const userSnap = await db.collection(collections.user).doc(collab).get();
         const userData: any = userSnap.data();
 
-        if(userSnap.exists) {
+        if (userSnap.exists) {
           users.push({
             type: 'Media Collab',
             userId: collab,
@@ -1278,10 +1278,10 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
         lastView: null
       });
 
-      if(creatorCommunityData.Admins && creatorCommunityData.Admins.length > 0) {
+      if (creatorCommunityData.Admins && creatorCommunityData.Admins.length > 0) {
         let arrayFiltered = creatorCommunityData.Admins.filter(admin => admin.status === 'Accepted');
         if (arrayFiltered && arrayFiltered.length > 0) {
-          for(let communityAdmin of arrayFiltered) {
+          for (let communityAdmin of arrayFiltered) {
             const userSnap = await db.collection(collections.user).doc(communityAdmin.userId).get();
             const userData: any = userSnap.data();
             users.push({
@@ -1306,15 +1306,15 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
         messages: []
       }
 
-      await db.collection(collections.marketingMediaCommunityChat).doc(media.MediaSymbol+communityGet.id).set(obj);
+      await db.collection(collections.marketingMediaCommunityChat).doc(media.MediaSymbol + communityGet.id).set(obj);
 
-      let dir = "uploads/marketingMediaCommunity/" + media.MediaSymbol+communityGet.id;
+      let dir = "uploads/marketingMediaCommunity/" + media.MediaSymbol + communityGet.id;
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
       }
 
-      obj.id = media.MediaSymbol+communityGet.id;
+      obj.id = media.MediaSymbol + communityGet.id;
       resolve(obj);
 
     } catch (e) {
@@ -1324,34 +1324,65 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
   });
 }
 
-exports.getChatsMediaMarketing = async (req: express.Request, res: express.Response) => {
+export const getChatsMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
+    const userId = req.params.userId;
 
-    const allChats: any[] = [];
-    const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
-      .where("mediaId", "==", mediaId).get();
-    marketingMediaCommunityChatSnap.forEach((doc) => {
-      let data = doc.data();
-      data.id = doc.id;
-      allChats.push(data);
-    });
+    let isAllowed = await checkIfHasPermissions(userId, mediaId);
 
-    let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+    if(isAllowed) {
+      const allChats: any[] = [];
+      const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
+        .where("mediaId", "==", mediaId).get();
+      marketingMediaCommunityChatSnap.forEach((doc) => {
+        let data = doc.data();
+        data.id = doc.id;
+        allChats.push(data);
+      });
 
-    res.send({
-      success: true,
-      data: sortChats
-    });
+      let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+
+      res.send({
+        success: true,
+        data: sortChats
+      });
+    } else {
+      console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', 'Non permissions');
+      res.send({ success: false, error: 'Non permissions' });
+    }
   } catch (err) {
     console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', err);
     res.send({ success: false, error: err });
   }
 };
 
-exports.getChatsCommunityMarketing = async (req: express.Request, res: express.Response) => {
+const checkIfHasPermissions = (userId: string, mediaId: string) : Promise<boolean> => {
+  return new Promise<boolean>(async (resolve, reject) => {
+    try {
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      const media: any = mediaGet.data();
+
+      let arrayCollabs : any[] = Object.keys(media.Collabs);
+
+      console.log(media, userId, media.Requester === userId, media.MainStreamer === userId, arrayCollabs.some(collab => collab === userId))
+
+      if(media.Requester === userId || media.MainStreamer === userId || arrayCollabs.some(collab => collab === userId)) {
+        resolve(true);
+      } else {
+        resolve(false)
+      }
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+export const getChatsCommunityMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const communityId = req.params.communityId;
+    const userId = req.params.userId;
 
     const allChats: any[] = [];
     const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
@@ -1373,7 +1404,8 @@ exports.getChatsCommunityMarketing = async (req: express.Request, res: express.R
     res.send({ success: false, error: err });
   }
 };
-exports.getMediaMarketing = async (req: express.Request, res: express.Response) => {
+
+export const getMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
     const podAddress = req.params.podAddress;
@@ -1400,7 +1432,7 @@ exports.getMediaMarketing = async (req: express.Request, res: express.Response) 
   }
 };
 
-exports.getCommunityMarketing = async (req: express.Request, res: express.Response) => {
+export const getCommunityMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const communityId = req.params.communityId;
 
@@ -1422,5 +1454,253 @@ exports.getCommunityMarketing = async (req: express.Request, res: express.Respon
   } catch (err) {
     console.log('Error in controllers/mediaController -> getChatsCommunityMarketing()', err);
     res.send({ success: false, error: err });
+  }
+};
+
+export const createChatMediaMarketing = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+    let mediaId = req.params.mediaId;
+    let communityId = req.params.communityId;
+
+    if (userId && mediaId && communityId) {
+
+      let chat = await createChatMediaMarketingFunction(userId, mediaId, communityId);
+
+      res.send({
+        success: true,
+        data: chat
+      });
+    } else {
+      console.log('Error in controllers/mediaController -> createChatMediaMarketing(): Missing info');
+      res.send({
+        success: false,
+        error: 'Error in controllers/mediaController -> createChatMediaMarketing(): Missing info'
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> createChatMediaMarketing() ' + e);
+    res.send({
+      success: false,
+      error: 'Error in controllers/mediaController -> createChatMediaMarketing() ' + e
+    });
+  }
+};
+
+export const createChatMediaMarketingFunction = (userId, mediaId, communityId) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      let room : string = mediaId + communityId;
+
+      const chatQuery = await db.collection(collections.marketingMediaCommunityChat).doc(room).get();
+      if (!chatQuery.exists) {
+        let data : any = chatQuery.data();
+        data.id = chatQuery.id;
+        resolve(data);
+      } else {
+        let users : any[] = [];
+
+        const mediaRef = db.collection(collections.streaming).doc(mediaId);
+        const mediaGet = await mediaRef.get();
+        const media: any = mediaGet.data();
+
+        const requesterSnap = await db.collection(collections.user).doc(media.Requester).get();
+        const requesterData: any = requesterSnap.data();
+
+        users.push({
+          type: 'Media Creator',
+          userId: media.Requester,
+          userName: requesterData.firstName,
+          userConnected: false,
+          lastView: null
+        });
+
+        let arrayCollabs : any[] = Object.keys(media.Collabs);
+
+        for(let collab of arrayCollabs) {
+          const userSnap = await db.collection(collections.user).doc(collab).get();
+          const userData: any = userSnap.data();
+
+          users.push({
+            type: 'Media Collab',
+            userId: collab,
+            userName: userData.firstName,
+            userConnected: false,
+            lastView: null
+          })
+        }
+
+        const communitySnap = await db.collection(collections.community).doc(communityId).get();
+        const communityData: any = communitySnap.data();
+
+        const creatorSnap = await db.collection(collections.user).doc(communityData.Creator).get();
+        const creatorData: any = creatorSnap.data();
+
+        users.push({
+          type: 'Community Creator',
+          userId: communityData.Creator,
+          userName: creatorData.firstName,
+          userConnected: false,
+          lastView: null
+        });
+
+        if(communityData.Admins && communityData.Admins.length > 0) {
+          let admins = communityData.Admins.filter(admin => admin.status === 'Accepted');
+
+          for(let admin of admins) {
+            const userSnap = await db.collection(collections.user).doc(admin.userId).get();
+            const userData: any = userSnap.data();
+
+            users.push({
+              type: 'Community Admin',
+              userId: admin.userId,
+              userName: userData.firstName,
+              userConnected: false,
+              lastView: null
+            });
+          }
+
+        }
+
+        await db.runTransaction(async (transaction) => {
+          // userData - no check if firestore insert works? TODO
+          transaction.set(db.collection(collections.marketingMediaCommunityChat).doc(room), {
+            users: users,
+            created: Date.now(),
+            room: room,
+            lastMessage: null,
+            lastMessageDate: null,
+            messages: [],
+            mediaId: mediaId,
+            communityId: communityId
+          });
+        });
+        resolve({
+          users: users,
+          created: Date.now(),
+          room: room,
+          lastMessage: null,
+          lastMessageDate: null,
+          messages: [],
+          mediaId: mediaId,
+          mediaName: media.MediaName,
+          communityId: communityId,
+          communityName: communityData.Name
+        })
+      }
+    } catch (e) {
+      console.log(e)
+      reject(e);
+    }
+  });
+}
+
+export const getMessagesMediaMarketing = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+    let mediaId = req.params.mediaId;
+    let communityId = req.params.communityId;
+
+    if (userId && mediaId && communityId) {
+      const chatQuery = await db.collection(collections.marketingMediaCommunityChat)
+        .doc(mediaId+communityId).get();
+      let messages: any[] = [];
+
+      if (chatQuery.exists) {
+        let data = chatQuery.data();
+
+        if (data && data.messages && data.messages.length > 0) {
+          for (let i = 0; i < data.messages.length; i++) {
+            const messageGet = await db.collection(collections.marketingMediaCommunityMessage)
+              .doc(data.messages[i]).get();
+            messages.push(messageGet.data())
+
+            if (i === data.messages.length - 1) {
+              res.status(200).send({
+                success: true,
+                data: messages
+              });
+            }
+          }
+        } else {
+          res.status(200).send({
+            success: true,
+            data: messages
+          });
+        }
+
+      } else {
+        res.status(200).send({
+          success: false,
+          error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Wrong Chat Room Provided'
+        });
+      }
+    } else {
+      res.status(200).send({
+        success: false,
+        error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Non Chat Room Provided'
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> getMessagesMediaMarketing()' + e)
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> getMessagesMediaMarketing():' + e
+    });
+  }
+};
+
+export const lastViewMediaMarketing = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body
+
+    if (body.userId && body.room) {
+      const marketingMediaCommunitySnap = await db.collection(collections.marketingMediaCommunityChat)
+        .doc(body.room).get();
+      if (marketingMediaCommunitySnap.exists) {
+          let data : any = marketingMediaCommunitySnap.data();
+
+          let users = [...data.users];
+          let userIndex = users.findIndex(usr => usr.userId === body.userId);
+          if(userIndex !== -1) {
+            users[userIndex].lastView = Date.now();
+            await db.collection(collections.marketingMediaCommunityChat)
+              .doc(body.room).update({
+                users: users
+            });
+          }
+      }
+
+      const marketingMediaCommunityMessageSnap = await db.collection(collections.marketingMediaCommunityMessage)
+        .where("chatId", "==", body.room).get();
+
+      if (!marketingMediaCommunityMessageSnap.empty) {
+        for (const doc of marketingMediaCommunityMessageSnap.docs) {
+          let data = doc.data();
+          let seenArray : any[] = [...data.seen] || [];
+
+          let notSaw = seenArray.findIndex(see => see !== body.userId);
+          if(notSaw === -1) {
+            seenArray.push(body.userId);
+
+            db.collection(collections.marketingMediaCommunityMessage).doc(doc.id).update({
+              "seen": seenArray
+            });
+          }
+        }
+      }
+      res.status(200).send({ success: true });
+    } else {
+      res.status(200).send({
+        success: false,
+        error: 'Error in controllers/mediaController -> lastViewMediaMarketing(): Non Chat Room Provided'
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> lastViewMediaMarketing()' + e)
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> lastViewMediaMarketing():' + e
+    });
   }
 };

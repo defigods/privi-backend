@@ -181,7 +181,7 @@ module.exports.saveCollectionDataInJSON = async (req: express.Request, res: expr
     res.send({ success: false });
   }
 };
-// -----------------------------------------------------------------
+// ------------------------------ POSTS -----------------------------
 
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
   try {
@@ -524,10 +524,10 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
           tokenType: element.isERC20
             ? 'CRYPTO'
             : element.isERC721
-            ? 'NFT'
-            : element.isERC721 && roll && roll.exist
-            ? 'SOCIAL'
-            : 'UNKNOWN',
+              ? 'NFT'
+              : element.isERC721 && roll && roll.exist
+                ? 'SOCIAL'
+                : 'UNKNOWN',
           balance: element.amount,
           images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND',
           isOpenSea: element.isERC721 && openSea,
@@ -1014,6 +1014,25 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
     console.log('Error in controllers/walletController -> getAllTokensWithBuyingPrice()', err);
     res.send({ success: false });
   }
+};
+
+module.exports.getRegisteredTokensByType = async (req: express.Request, res: express.Response) => {
+  const defaultList = ["CRYPTO", "MEDIAPOD", "NFTPOD", "FTPOD", "COMMUNITY", "SOCIAL"];
+
+  const params = req.query;
+  let requestedTypes: any = params.typeList ?? defaultList;
+  const retData = {};
+  const promises: any[] = [];
+  requestedTypes.forEach((type) => {
+    promises.push(coinBalance.getTokenListByType(type, apiKey));
+  });
+  const responses = await Promise.all(promises);
+  responses.forEach((blockchainResp) => {
+    if (blockchainResp.success) {
+      retData[blockchainResp.tokenType] = blockchainResp.output;
+    }
+  });
+  res.send({ success: true, data: retData });
 };
 
 /**

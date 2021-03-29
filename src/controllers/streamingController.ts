@@ -473,21 +473,21 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   if (streamingData && UserId === streamingData?.MainStreamer) {
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
 
-    const options = {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${DAILY_API_KEY}`
-      },
-      body: JSON.stringify({
-        //privacy: 'private',
-        name: DocId,
-        properties: {enable_recording: 'cloud'}
-      })
-    };
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${DAILY_API_KEY}`
+        },
+        body: JSON.stringify({
+          //privacy: 'private',
+          name: DocId,
+          properties: {enable_recording: 'cloud'}
+        })
+      };
 
-    let dailyResponse;
-    await fetch(ROOM_URL, options)
+      let dailyResponse;
+      await fetch(ROOM_URL, options)
         .then( res => res.json() )
         .then( json => {
           dailyResponse = json;
@@ -500,7 +500,8 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
 
       let data = dailyResponse;
 
-      
+      console.log('data aqui', data);
+
       try {
         docSnap.ref.update({
           RoomName: data.name,
@@ -511,7 +512,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         let resData = docSnap.data();
         console.log(resData)
 
-        // BLockchain Integration part
+        // Blockchain Integration part
 
         // try {
         //   const body = req.body;
@@ -570,10 +571,13 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         console.log(err)
         res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
       }
+    } else if(streamingData.RoomState === ROOM_STATE.GOING) {
+      res.send({ success: true, StreamingUrl: streamingData.StreamingUrl, data: streamingData });
     } else {
-      console.log("here")
       res.send({ success: false, message: 'This streaming is not scheduled' });
     }
+  } else {
+    res.send({ success: false, message: 'You re not the main streamer' });
   }
 };
 

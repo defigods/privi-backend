@@ -103,10 +103,15 @@ router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
 router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
-// router.get('/marketingMediaCommunity/getMediaChats/:mediaId', authenticateJWT, mediaController.getChatsMediaMarketing);
-// router.get('/marketingMediaCommunity/getCommunityChats/:communityId', authenticateJWT, mediaController.getChatsCommunityMarketing);
-// router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
-// router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
+
+router.get('/marketingMediaCommunity/getMediaChats/:mediaId/:userId', authenticateJWT, mediaController.getChatsMediaMarketing);
+router.get('/marketingMediaCommunity/createMediaChats/:mediaId/:communityId/:userId', authenticateJWT, mediaController.createChatMediaMarketing);
+router.get('/marketingMediaCommunity/getMessages/:mediaId/:communityId/:userId', authenticateJWT, mediaController.getMessagesMediaMarketing);
+
+router.get('/marketingMediaCommunity/getCommunityChats/:communityId/:userId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+
+router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
+router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
 
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
@@ -138,4 +143,7 @@ router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaControlle
 router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
 router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
 
+router.post('/marketingMediaCommunity/chats/lastView', authenticateJWT, mediaController.lastViewMediaMarketing);
+
 module.exports = router;
+

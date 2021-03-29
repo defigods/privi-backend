@@ -622,7 +622,7 @@ export const startSocket = (env: Env) => {
       const uid = generateUniqueId();
       await db.runTransaction(async (transaction) => {
         // userData - no check if firestore insert works? TODO
-        transaction.set(db.collection(collections.MarketingMediaCommunityMessage).doc(uid), {
+        transaction.set(db.collection(collections.marketingMediaCommunityMessage).doc(uid), {
           chatId: message.mediaId+message.communityId,
           message: message.message,
           fromId: message.fromId,
