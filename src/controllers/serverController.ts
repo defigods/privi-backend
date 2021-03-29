@@ -587,5 +587,96 @@ export const startSocket = (env: Env) => {
         },
       });
     });
+
+    socket.on("subscribe-marketing-media-community", async function (chatInfo) {
+      if (chatInfo.mediaId && chatInfo.communityId && chatInfo.userId) {
+        const marketingMediaCommunityChatRef = db
+          .collection(collections.marketingMediaCommunityChat)
+          .doc(chatInfo.mediaId+chatInfo.communityId);
+        const marketingMediaCommunityChatGet = await marketingMediaCommunityChatRef.get();
+        const marketingMediaCommunityChat: any = marketingMediaCommunityChatGet.data();
+
+        let users: any[] = [...marketingMediaCommunityChat.users];
+        let findUserIndex = users.findIndex(
+          (user, i) => chatInfo.userId === user.userId
+        );
+        if (findUserIndex !== -1) {
+          users[findUserIndex].lastView = Date.now();
+          users[findUserIndex].userConnected = true;
+        }
+
+        marketingMediaCommunityChatRef.update({
+          users: users
+        });
+
+        console.log("joining room", chatInfo.mediaId+chatInfo.communityId);
+        socket.join(chatInfo.mediaId+chatInfo.communityId);
+      } else {
+        console.log("Error subscribe-discord socket: No Room provided");
+      }
+    });
+
+    socket.on("add-message-marketing-media-community", async function (message) {
+      console.log("message", message);
+
+      const uid = generateUniqueId();
+      await db.runTransaction(async (transaction) => {
+        // userData - no check if firestore insert works? TODO
+        transaction.set(db.collection(collections.marketingMediaCommunityMessage).doc(uid), {
+          chatId: message.mediaId+message.communityId,
+          message: message.message,
+          fromId: message.fromId,
+          fromName: message.fromName,
+          created: Date.now(),
+          seen: [],
+          likes: [],
+          dislikes: [],
+          numLikes: 0,
+          numDislikes: 0,
+          type: 'text'
+        });
+      });
+      const marketingMediaCommunityChatRef = db
+        .collection(collections.MarketingMediaCommunityChat)
+        .doc(message.mediaId+message.communityId);
+      const marketingMediaCommunityChatGet = await marketingMediaCommunityChatRef.get();
+      const marketingMediaCommunityChat: any = marketingMediaCommunityChatGet.data();
+
+      let messages: any = marketingMediaCommunityChat.messages || [];
+      messages.push(uid);
+
+      await marketingMediaCommunityChatRef.update({
+        messages: messages,
+        lastMessage: message.message,
+        lastMessageDate: Date.now(),
+      });
+
+
+      const userRef = db.collection(collections.user).doc(message.from);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      console.log("sending room post", message);
+      socket.to(message.mediaId+message.communityId).emit("message-marketing-media-community", {
+        chatId: message.mediaId+message.communityId,
+        message: message.message,
+        fromId: message.fromId,
+        user: {
+          name: user.firstName,
+          level: user.level || 1,
+          cred: user.cred || 0,
+          salutes: user.salutes || 0,
+        },
+        created: Date.now(),
+        seen: [],
+        likes: [],
+        dislikes: [],
+        numLikes: 0,
+        numDislikes: 0,
+        numReplies: 0,
+        id: uid,
+        type: 'text'
+      });
+    });
   });
 };

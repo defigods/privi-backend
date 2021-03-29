@@ -500,6 +500,16 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
   }
 };
 
+exports.onlyForSuperFollowers = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+  } catch (err) {
+    console.log('Error in controllers/userWallController -> onlyForSuperfollowers()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
 exports.getFeedPosts = async (req: express.Request, res: express.Response) => {
   try {
     if (req.params && req.params.userId) {
