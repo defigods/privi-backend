@@ -142,4 +142,6 @@ router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaControlle
 router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
 router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
 
+router.post('/marketingMediaCommunity/chats/lastView', authenticateJWT, mediaController.lastViewMediaMarketing);
+
 module.exports = router;

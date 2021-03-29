@@ -1348,9 +1348,9 @@ exports.getChatsMediaMarketing = async (req: express.Request, res: express.Respo
         data: sortChats
       });
     } else {
-
+      console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', 'Non permissions');
+      res.send({ success: false, error: 'Non permissions' });
     }
-
   } catch (err) {
     console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', err);
     res.send({ success: false, error: err });
@@ -1366,7 +1366,9 @@ const checkIfHasPermissions = (userId: string, mediaId: string) : Promise<boolea
 
       let arrayCollabs : any[] = Object.keys(media.Collabs);
 
-      if(media.Requester === userId || arrayCollabs.some(collab => collab === userId)) {
+      console.log(media, userId, media.Requester === userId, media.MainStreamer === userId, arrayCollabs.some(collab => collab === userId))
+
+      if(media.Requester === userId || media.MainStreamer === userId || arrayCollabs.some(collab => collab === userId)) {
         resolve(true);
       } else {
         resolve(false)
@@ -1580,7 +1582,9 @@ const createChatMediaMarketing = exports.createChatWIPFromUsers = (userId, media
           lastMessageDate: null,
           messages: [],
           mediaId: mediaId,
-          communityId: communityId
+          mediaName: media.MediaName,
+          communityId: communityId,
+          communityName: communityData.Name
         })
       }
     } catch (e) {
@@ -1606,7 +1610,7 @@ exports.getMessagesMediaMarketing = async (req: express.Request, res: express.Re
 
         if (data && data.messages && data.messages.length > 0) {
           for (let i = 0; i < data.messages.length; i++) {
-            const messageGet = await db.collection(collections.MarketingMediaCommunityMessage)
+            const messageGet = await db.collection(collections.marketingMediaCommunityMessage)
               .doc(data.messages[i]).get();
             messages.push(messageGet.data())
 
@@ -1641,6 +1645,61 @@ exports.getMessagesMediaMarketing = async (req: express.Request, res: express.Re
     res.status(200).send({
       success: false,
       error: 'Error in controllers/mediaController -> getMessagesMediaMarketing():' + e
+    });
+  }
+};
+
+exports.lastViewMediaMarketing = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body
+
+    if (body.userId && body.room) {
+      const marketingMediaCommunitySnap = await db.collection(collections.marketingMediaCommunityChat)
+        .doc(body.room).get();
+      if (marketingMediaCommunitySnap.exists) {
+          let data : any = marketingMediaCommunitySnap.data();
+
+          let users = [...data.users];
+          let userIndex = users.findIndex(usr => usr.userId === body.userId);
+          if(userIndex !== -1) {
+            users[userIndex].lastView = Date.now();
+            await db.collection(collections.marketingMediaCommunityChat)
+              .doc(body.room).update({
+                users: users
+            });
+          }
+      }
+
+      const marketingMediaCommunityMessageSnap = await db.collection(collections.marketingMediaCommunityMessage)
+        .where("chatId", "==", body.room).get();
+
+      if (!marketingMediaCommunityMessageSnap.empty) {
+        for (const doc of marketingMediaCommunityMessageSnap.docs) {
+          let data = doc.data();
+          let seenArray : any[] = [...data.seen] || [];
+
+          let notSaw = seenArray.findIndex(see => see !== body.userId);
+          if(notSaw === -1) {
+            seenArray.push(body.userId);
+
+            db.collection(collections.marketingMediaCommunityMessage).doc(doc.id).update({
+              "seen": seenArray
+            });
+          }
+        }
+      }
+      res.status(200).send({ success: true });
+    } else {
+      res.status(200).send({
+        success: false,
+        error: 'Error in controllers/mediaController -> lastViewMediaMarketing(): Non Chat Room Provided'
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> lastViewMediaMarketing()' + e)
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> lastViewMediaMarketing():' + e
     });
   }
 };
