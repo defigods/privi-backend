@@ -1324,7 +1324,7 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
   });
 }
 
-exports.getChatsMediaMarketing = async (req: express.Request, res: express.Response) => {
+export const getChatsMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
     const userId = req.params.userId;
@@ -1379,7 +1379,7 @@ const checkIfHasPermissions = (userId: string, mediaId: string) : Promise<boolea
   });
 }
 
-exports.getChatsCommunityMarketing = async (req: express.Request, res: express.Response) => {
+export const getChatsCommunityMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const communityId = req.params.communityId;
     const userId = req.params.userId;
@@ -1404,7 +1404,8 @@ exports.getChatsCommunityMarketing = async (req: express.Request, res: express.R
     res.send({ success: false, error: err });
   }
 };
-exports.getMediaMarketing = async (req: express.Request, res: express.Response) => {
+
+export const getMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
     const podAddress = req.params.podAddress;
@@ -1431,7 +1432,7 @@ exports.getMediaMarketing = async (req: express.Request, res: express.Response) 
   }
 };
 
-exports.getCommunityMarketing = async (req: express.Request, res: express.Response) => {
+export const getCommunityMarketing = async (req: express.Request, res: express.Response) => {
   try {
     const communityId = req.params.communityId;
 
@@ -1456,7 +1457,7 @@ exports.getCommunityMarketing = async (req: express.Request, res: express.Respon
   }
 };
 
-exports.createChatMediaMarketing = async (req: express.Request, res: express.Response) => {
+export const createChatMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     let mediaId = req.params.mediaId;
@@ -1464,7 +1465,7 @@ exports.createChatMediaMarketing = async (req: express.Request, res: express.Res
 
     if (userId && mediaId && communityId) {
 
-      let chat = await createChatMediaMarketing(userId, mediaId, communityId);
+      let chat = await createChatMediaMarketingFunction(userId, mediaId, communityId);
 
       res.send({
         success: true,
@@ -1486,7 +1487,7 @@ exports.createChatMediaMarketing = async (req: express.Request, res: express.Res
   }
 };
 
-const createChatMediaMarketing = exports.createChatWIPFromUsers = (userId, mediaId, communityId) => {
+export const createChatMediaMarketingFunction = (userId, mediaId, communityId) => {
   return new Promise(async (resolve, reject) => {
     try {
       let room : string = mediaId + communityId;
@@ -1594,7 +1595,7 @@ const createChatMediaMarketing = exports.createChatWIPFromUsers = (userId, media
   });
 }
 
-exports.getMessagesMediaMarketing = async (req: express.Request, res: express.Response) => {
+export const getMessagesMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
     let mediaId = req.params.mediaId;
@@ -1649,7 +1650,7 @@ exports.getMessagesMediaMarketing = async (req: express.Request, res: express.Re
   }
 };
 
-exports.lastViewMediaMarketing = async (req: express.Request, res: express.Response) => {
+export const lastViewMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body
 
