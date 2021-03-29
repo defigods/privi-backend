@@ -1224,7 +1224,7 @@ export const signTransactionAcceptOffer = async (req: express.Request, res: expr
   }
 };
 
-const createChatMarketingMediaCommunities = exports.createChatMarketingMediaCommunities = (mediaSymbol, communityId, mediaCreatorId) => {
+export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, mediaCreatorId) => {
   return new Promise(async (resolve, reject) => {
     try {
       const mediaRef = db.collection(collections.streaming).doc(mediaSymbol);
@@ -1237,12 +1237,12 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
 
       let collabs = Object.keys(media.Collabs);
 
-      let users : any[] = [];
+      let users: any[] = [];
 
       const creatorSnap = await db.collection(collections.user).doc(mediaCreatorId).get();
       const creatorData: any = creatorSnap.data();
 
-      if(creatorSnap.exists) {
+      if (creatorSnap.exists) {
         users.push({
           type: 'Media Creator',
           userId: mediaCreatorId,
@@ -1252,11 +1252,11 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
         })
       }
 
-      for(let collab of collabs) {
+      for (let collab of collabs) {
         const userSnap = await db.collection(collections.user).doc(collab).get();
         const userData: any = userSnap.data();
 
-        if(userSnap.exists) {
+        if (userSnap.exists) {
           users.push({
             type: 'Media Collab',
             userId: collab,
@@ -1278,10 +1278,10 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
         lastView: null
       });
 
-      if(creatorCommunityData.Admins && creatorCommunityData.Admins.length > 0) {
+      if (creatorCommunityData.Admins && creatorCommunityData.Admins.length > 0) {
         let arrayFiltered = creatorCommunityData.Admins.filter(admin => admin.status === 'Accepted');
         if (arrayFiltered && arrayFiltered.length > 0) {
-          for(let communityAdmin of arrayFiltered) {
+          for (let communityAdmin of arrayFiltered) {
             const userSnap = await db.collection(collections.user).doc(communityAdmin.userId).get();
             const userData: any = userSnap.data();
             users.push({
@@ -1306,15 +1306,15 @@ const createChatMarketingMediaCommunities = exports.createChatMarketingMediaComm
         messages: []
       }
 
-      await db.collection(collections.marketingMediaCommunityChat).doc(media.MediaSymbol+communityGet.id).set(obj);
+      await db.collection(collections.marketingMediaCommunityChat).doc(media.MediaSymbol + communityGet.id).set(obj);
 
-      let dir = "uploads/marketingMediaCommunity/" + media.MediaSymbol+communityGet.id;
+      let dir = "uploads/marketingMediaCommunity/" + media.MediaSymbol + communityGet.id;
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
       }
 
-      obj.id = media.MediaSymbol+communityGet.id;
+      obj.id = media.MediaSymbol + communityGet.id;
       resolve(obj);
 
     } catch (e) {
