@@ -512,7 +512,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         let resData = docSnap.data();
         console.log(resData)
 
-        // BLockchain Integration part
+        // Blockchain Integration part
 
         // try {
         //   const body = req.body;
