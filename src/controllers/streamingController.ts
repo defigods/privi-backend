@@ -580,6 +580,21 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
     res.send({ success: false, message: 'You re not the main streamer' });
   }
 };
+exports.getStreaming = async (req: express.Request, res: express.Response) => {
+  // Get the document from Firestore
+  const { DocId, UserId } = req.body;
+
+  if(DocId && UserId) {
+    const docSnap = await db.collection(collections.streaming).doc(DocId).get();
+    const streamingData : any = docSnap.data();
+
+    console.log(streamingData.StreamingUrl);
+    res.send({ success: true, StreamingUrl: streamingData.StreamingUrl, data: streamingData });
+
+  } else {
+    res.send({ success: false, message: 'Info is missing' });
+  }
+};
 
 /*
  ** End Video Streaming **
