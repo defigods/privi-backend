@@ -32,8 +32,8 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
     // Blockchain & SearchValue filters
     if (body.blockChains && body.blockChains.length > 0) {
-      let findBlockchainPRIVI = body.blockChains.find(block => block === 'PRIVI');
-      let findBlockchainOthers = body.blockChains.filter(block => block !== 'PRIVI');
+      let findBlockchainPRIVI = body.blockChains.find((block) => block === 'PRIVI');
+      let findBlockchainOthers = body.blockChains.filter((block) => block !== 'PRIVI');
       let mediaTypes = body.mediaTypes;
 
       if (findBlockchainPRIVI) {
@@ -42,15 +42,16 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           let data = docSnap.data();
           data.id = docSnap.id;
           data.blockchain = 'PRIVI';
-          return (data);
+          return data;
         });
 
         for (let media of dataMediasSnap) {
           // Searched Value
           if (body.searchValue != '') {
-            if ((media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
-              (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))) {
-
+            if (
+              (media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
+              (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))
+            ) {
               let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
               if (applyTypeFilter && media.Type && media.Type !== '') {
                 dataMedias.push(media);
@@ -63,7 +64,6 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
             }
           }
         }
-
       }
 
       if (findBlockchainOthers && findBlockchainOthers.length > 0) {
@@ -71,7 +71,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         let dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
-          return (data);
+          return data;
         });
 
         for (let media of dataEthMediaSnap) {
@@ -81,10 +81,15 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
               // Blockchain
               for (let block of findBlockchainOthers) {
                 if (media.tag === block) {
-                  let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-                  if (applyTypeFilter) {
+                  //NOTE: apparently in firebase eth media does not have type  ?
+                  //showing them when all mediatypes activated
+                  if (mediaTypes.length >= 7) {
                     dataEthMedia.push(media);
                   }
+                  /*let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+                  if (applyTypeFilter) {
+                    dataEthMedia.push(media);
+                  }*/
                 }
               }
             }
@@ -92,16 +97,23 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
             // Blockchain
             for (let block of findBlockchainOthers) {
               if (media.tag === block) {
-                let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-                if (applyTypeFilter) {
+                //NOTE: apparently in firebase eth media does not have type  ?
+                //showing them when all mediatypes activated
+                if (mediaTypes.length >= 7) {
                   dataEthMedia.push(media);
                 }
+                /*let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
+                if (applyTypeFilter) {
+                  dataEthMedia.push(media);
+                }*/
               }
             }
           }
         }
       }
     }
+
+    console.log();
 
     // medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
     medias = dataEthMedia.concat(dataMedias).slice(pagination * 10, (pagination + 1) * 10);
@@ -154,7 +166,7 @@ const mediaTypeFilter = (media: any, mediaTypes: string[]) => {
       reject(e);
     }
   });
-}
+};
 
 export const getEthMediaItem = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
@@ -421,7 +433,7 @@ const getMediaInternal = (mediaId: string, extension: string, type: string, res:
   return new Promise((resolve, reject) => {
     try {
       const directoryPath = path.join('uploads', 'media');
-      console.log('path', directoryPath)
+      console.log('path', directoryPath);
       fs.readdir(directoryPath, function (err, files) {
         //handling error
         if (err) {
@@ -928,7 +940,7 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
 
       await mediaRef.update({
         Likes: likes,
-        NumLikes: likes.length
+        NumLikes: likes.length,
       });
 
       const userSnap = await db.collection(collections.user).doc(body.userId).get();
@@ -973,10 +985,11 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
       }
 
       res.send({
-        success: true, data: {
+        success: true,
+        data: {
           Likes: likes,
-          NumLikes: likes.length
-        }
+          NumLikes: likes.length,
+        },
       });
     } else {
       console.log('Error in controllers/mediaController -> likeMedia()', "There's no id...");
@@ -986,7 +999,7 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
     console.log('Error in controllers/mediaController -> likeMedia(): ', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 export const removeLikeMedia = async (req: express.Request, res: express.Response) => {
   try {
@@ -1008,15 +1021,16 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
 
         await mediaRef.update({
           Likes: likes,
-          NumLikes: likes.length
+          NumLikes: likes.length,
         });
       }
 
       res.send({
-        success: true, data: {
+        success: true,
+        data: {
           Likes: likes,
-          NumLikes: likes.length || 0
-        }
+          NumLikes: likes.length || 0,
+        },
       });
     } else {
       console.log('Error in controllers/mediaController -> removeLikeMedia()', "There's no id...");
@@ -1026,7 +1040,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
     console.log('Error in controllers/mediaController -> removeLikeMedia(): ', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 export const shareMedia = async (req: express.Request, res: express.Response) => {
   try {
@@ -1045,7 +1059,7 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
       for (let usr of body.Users) {
         mappingShare[usr] = {
           Saw: false,
-          Paid: false
+          Paid: false,
         };
 
         await notificationsController.addNotification({
@@ -1065,8 +1079,11 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
         });
       }
 
-      const shareMediaRef = db.collection(collections.streaming).doc(mediaId)
-        .collection(collections.shareStreaming).doc(body.userId);
+      const shareMediaRef = db
+        .collection(collections.streaming)
+        .doc(mediaId)
+        .collection(collections.shareStreaming)
+        .doc(body.userId);
       const shareMediaGet = await shareMediaRef.get();
 
       if (shareMediaGet.exists) {
@@ -1076,16 +1093,17 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
         let shareKeys = Object.keys(mappingShare);
         for (let usrShared of shareKeys) {
           if (!sharedUser || !sharedUser[usrShared] || sharedUser[usrShared] === {}) {
-            sharedUser[usrShared] = mappingShare[usrShared]
+            sharedUser[usrShared] = mappingShare[usrShared];
           }
         }
-        await shareMediaRef.update(sharedUser)
-
+        await shareMediaRef.update(sharedUser);
       } else {
         await db.runTransaction(async (transaction) => {
           // userData - no check if firestore insert works? TODO
-          transaction.set(db.collection(collections.streaming).doc(mediaId)
-            .collection(collections.shareStreaming).doc(body.userId), mappingShare);
+          transaction.set(
+            db.collection(collections.streaming).doc(mediaId).collection(collections.shareStreaming).doc(body.userId),
+            mappingShare
+          );
         });
       }
 
@@ -1136,7 +1154,7 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
     console.log('Error in controllers/mediaController -> likeMedia(): ', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 export const addOffer = async (req: express.Request, res: express.Response) => {
   try {
@@ -1149,12 +1167,18 @@ export const addOffer = async (req: express.Request, res: express.Response) => {
     const amount = body.Amount;
     const status = body.Status;
 
-    db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol).collection(collections.communityMarketings).doc(communityAddress).set({
-      PaymentDate: paymentDate,
-      Token: token,
-      Amount: amount,
-      Status: status
-    });
+    db.collection(collections.mediaPods)
+      .doc(podAddress)
+      .collection(collections.medias)
+      .doc(mediaSymbol)
+      .collection(collections.communityMarketings)
+      .doc(communityAddress)
+      .set({
+        PaymentDate: paymentDate,
+        Token: token,
+        Amount: amount,
+        Status: status,
+      });
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/mediaController -> addOffer()', err);
@@ -1172,37 +1196,61 @@ export const changeOffer = async (req: express.Request, res: express.Response) =
     const token = body.Token;
     const amount = body.Amount;
     switch (action) {
-      case "DELETE":
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol).collection(collections.communityMarketings).doc(communityAddress).delete();
+      case 'DELETE':
+        db.collection(collections.mediaPods)
+          .doc(podAddress)
+          .collection(collections.medias)
+          .doc(mediaSymbol)
+          .collection(collections.communityMarketings)
+          .doc(communityAddress)
+          .delete();
         break;
-      case "PENDING":
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol).collection(collections.communityMarketings).doc(communityAddress).update({
-          Status: 'PENDING',
-          Token: token,
-          Amount: amount,
-        });
+      case 'PENDING':
+        db.collection(collections.mediaPods)
+          .doc(podAddress)
+          .collection(collections.medias)
+          .doc(mediaSymbol)
+          .collection(collections.communityMarketings)
+          .doc(communityAddress)
+          .update({
+            Status: 'PENDING',
+            Token: token,
+            Amount: amount,
+          });
         break;
-      case "DECLINE":
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol).collection(collections.communityMarketings).doc(communityAddress).update({
-          Status: 'DECLINED'
-        });
+      case 'DECLINE':
+        db.collection(collections.mediaPods)
+          .doc(podAddress)
+          .collection(collections.medias)
+          .doc(mediaSymbol)
+          .collection(collections.communityMarketings)
+          .doc(communityAddress)
+          .update({
+            Status: 'DECLINED',
+          });
         break;
-      case "ACCEPT":
-        db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol).collection(collections.communityMarketings).doc(communityAddress).update({
-          Status: 'ACCEPTED'
-        });
+      case 'ACCEPT':
+        db.collection(collections.mediaPods)
+          .doc(podAddress)
+          .collection(collections.medias)
+          .doc(mediaSymbol)
+          .collection(collections.communityMarketings)
+          .doc(communityAddress)
+          .update({
+            Status: 'ACCEPTED',
+          });
         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
         const data: any = communitySnap.data();
         const marketingMedia = data.MarketingMedia ?? [];
         if (!marketingMedia.find((mediaObj) => mediaObj.MediaSymbol && mediaObj.MediaSymbol == mediaSymbol)) {
           marketingMedia.push({
             PodAddress: podAddress,
-            MediaSymbol: mediaSymbol
+            MediaSymbol: mediaSymbol,
           });
         }
         communitySnap.ref.update({
-          MarketingMedia: marketingMedia
-        })
+          MarketingMedia: marketingMedia,
+        });
         break;
     }
     res.send({ success: true });
@@ -1215,9 +1263,6 @@ export const changeOffer = async (req: express.Request, res: express.Response) =
 export const signTransactionAcceptOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-
-
-
   } catch (err) {
     console.log('Error in controllers/mediaController -> signTransactionAcceptOffer()', err);
     res.send({ success: false, error: err });
@@ -1248,8 +1293,8 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
           userId: mediaCreatorId,
           userName: creatorData.firstName,
           userConnected: false,
-          lastView: Date.now()
-        })
+          lastView: Date.now(),
+        });
       }
 
       for (let collab of collabs) {
@@ -1262,8 +1307,8 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
             userId: collab,
             userName: userData.firstName,
             userConnected: false,
-            lastView: null
-          })
+            lastView: null,
+          });
         }
       }
 
@@ -1275,11 +1320,11 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
         userId: mediaCreatorId,
         userName: creatorCommunityData.firstName,
         userConnected: false,
-        lastView: null
+        lastView: null,
       });
 
       if (creatorCommunityData.Admins && creatorCommunityData.Admins.length > 0) {
-        let arrayFiltered = creatorCommunityData.Admins.filter(admin => admin.status === 'Accepted');
+        let arrayFiltered = creatorCommunityData.Admins.filter((admin) => admin.status === 'Accepted');
         if (arrayFiltered && arrayFiltered.length > 0) {
           for (let communityAdmin of arrayFiltered) {
             const userSnap = await db.collection(collections.user).doc(communityAdmin.userId).get();
@@ -1289,7 +1334,7 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
               userId: communityAdmin.userId,
               userName: userData.firstName,
               userConnected: false,
-              lastView: null
+              lastView: null,
             });
           }
         }
@@ -1303,12 +1348,15 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
         created: Date.now(),
         lastMessage: null,
         lastMessageDate: null,
-        messages: []
-      }
+        messages: [],
+      };
 
-      await db.collection(collections.marketingMediaCommunityChat).doc(media.MediaSymbol + communityGet.id).set(obj);
+      await db
+        .collection(collections.marketingMediaCommunityChat)
+        .doc(media.MediaSymbol + communityGet.id)
+        .set(obj);
 
-      let dir = "uploads/marketingMediaCommunity/" + media.MediaSymbol + communityGet.id;
+      let dir = 'uploads/marketingMediaCommunity/' + media.MediaSymbol + communityGet.id;
 
       if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir);
@@ -1316,13 +1364,12 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
 
       obj.id = media.MediaSymbol + communityGet.id;
       resolve(obj);
-
     } catch (e) {
-      console.log(e)
+      console.log(e);
       reject(e);
     }
   });
-}
+};
 
 export const getChatsMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
@@ -1331,21 +1378,23 @@ export const getChatsMediaMarketing = async (req: express.Request, res: express.
 
     let isAllowed = await checkIfHasPermissions(userId, mediaId);
 
-    if(isAllowed) {
+    if (isAllowed) {
       const allChats: any[] = [];
-      const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
-        .where("mediaId", "==", mediaId).get();
+      const marketingMediaCommunityChatSnap = await db
+        .collection(collections.marketingMediaCommunityChat)
+        .where('mediaId', '==', mediaId)
+        .get();
       marketingMediaCommunityChatSnap.forEach((doc) => {
         let data = doc.data();
         data.id = doc.id;
         allChats.push(data);
       });
 
-      let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+      let sortChats = allChats.sort((a, b) => (b.created > a.created ? 1 : a.created > b.created ? -1 : 0));
 
       res.send({
         success: true,
-        data: sortChats
+        data: sortChats,
       });
     } else {
       console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', 'Non permissions');
@@ -1357,27 +1406,37 @@ export const getChatsMediaMarketing = async (req: express.Request, res: express.
   }
 };
 
-const checkIfHasPermissions = (userId: string, mediaId: string) : Promise<boolean> => {
+const checkIfHasPermissions = (userId: string, mediaId: string): Promise<boolean> => {
   return new Promise<boolean>(async (resolve, reject) => {
     try {
       const mediaRef = db.collection(collections.streaming).doc(mediaId);
       const mediaGet = await mediaRef.get();
       const media: any = mediaGet.data();
 
-      let arrayCollabs : any[] = Object.keys(media.Collabs);
+      let arrayCollabs: any[] = Object.keys(media.Collabs);
 
-      console.log(media, userId, media.Requester === userId, media.MainStreamer === userId, arrayCollabs.some(collab => collab === userId))
+      console.log(
+        media,
+        userId,
+        media.Requester === userId,
+        media.MainStreamer === userId,
+        arrayCollabs.some((collab) => collab === userId)
+      );
 
-      if(media.Requester === userId || media.MainStreamer === userId || arrayCollabs.some(collab => collab === userId)) {
+      if (
+        media.Requester === userId ||
+        media.MainStreamer === userId ||
+        arrayCollabs.some((collab) => collab === userId)
+      ) {
         resolve(true);
       } else {
-        resolve(false)
+        resolve(false);
       }
     } catch (e) {
       reject(e);
     }
   });
-}
+};
 
 export const getChatsCommunityMarketing = async (req: express.Request, res: express.Response) => {
   try {
@@ -1385,19 +1444,21 @@ export const getChatsCommunityMarketing = async (req: express.Request, res: expr
     const userId = req.params.userId;
 
     const allChats: any[] = [];
-    const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
-      .where("communityId", "==", communityId).get();
+    const marketingMediaCommunityChatSnap = await db
+      .collection(collections.marketingMediaCommunityChat)
+      .where('communityId', '==', communityId)
+      .get();
     marketingMediaCommunityChatSnap.forEach((doc) => {
       let data = doc.data();
       data.id = doc.id;
       allChats.push(data);
     });
 
-    let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+    let sortChats = allChats.sort((a, b) => (b.created > a.created ? 1 : a.created > b.created ? -1 : 0));
 
     res.send({
       success: true,
-      data: sortChats
+      data: sortChats,
     });
   } catch (err) {
     console.log('Error in controllers/mediaController -> getChatsCommunityMarketing()', err);
@@ -1411,20 +1472,24 @@ export const getMediaMarketing = async (req: express.Request, res: express.Respo
     const podAddress = req.params.podAddress;
 
     const allMarketing: any[] = [];
-    const marketingMediaCommunitySnap = await db.collection(collections.mediaPods).doc(podAddress)
-      .collection(collections.medias).doc(mediaId).collection(collections.communityMarketings).get();
+    const marketingMediaCommunitySnap = await db
+      .collection(collections.mediaPods)
+      .doc(podAddress)
+      .collection(collections.medias)
+      .doc(mediaId)
+      .collection(collections.communityMarketings)
+      .get();
     marketingMediaCommunitySnap.forEach((doc) => {
       let data = doc.data();
       data.id = doc.id;
       allMarketing.push(data);
     });
 
-
     // let sortMarketing = allMarketing.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
 
     res.send({
       success: true,
-      data: allMarketing
+      data: allMarketing,
     });
   } catch (err) {
     console.log('Error in controllers/mediaController -> getChatsMediaMarketing()', err);
@@ -1437,19 +1502,21 @@ export const getCommunityMarketing = async (req: express.Request, res: express.R
     const communityId = req.params.communityId;
 
     const allChats: any[] = [];
-    const marketingMediaCommunityChatSnap = await db.collection(collections.marketingMediaCommunityChat)
-      .where("communityId", "==", communityId).get();
+    const marketingMediaCommunityChatSnap = await db
+      .collection(collections.marketingMediaCommunityChat)
+      .where('communityId', '==', communityId)
+      .get();
     marketingMediaCommunityChatSnap.forEach((doc) => {
       let data = doc.data();
       data.id = doc.id;
       allChats.push(data);
     });
 
-    let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+    let sortChats = allChats.sort((a, b) => (b.created > a.created ? 1 : a.created > b.created ? -1 : 0));
 
     res.send({
       success: true,
-      data: sortChats
+      data: sortChats,
     });
   } catch (err) {
     console.log('Error in controllers/mediaController -> getChatsCommunityMarketing()', err);
@@ -1464,25 +1531,24 @@ export const createChatMediaMarketing = async (req: express.Request, res: expres
     let communityId = req.params.communityId;
 
     if (userId && mediaId && communityId) {
-
       let chat = await createChatMediaMarketingFunction(userId, mediaId, communityId);
 
       res.send({
         success: true,
-        data: chat
+        data: chat,
       });
     } else {
       console.log('Error in controllers/mediaController -> createChatMediaMarketing(): Missing info');
       res.send({
         success: false,
-        error: 'Error in controllers/mediaController -> createChatMediaMarketing(): Missing info'
+        error: 'Error in controllers/mediaController -> createChatMediaMarketing(): Missing info',
       });
     }
   } catch (e) {
     console.log('Error in controllers/mediaController -> createChatMediaMarketing() ' + e);
     res.send({
       success: false,
-      error: 'Error in controllers/mediaController -> createChatMediaMarketing() ' + e
+      error: 'Error in controllers/mediaController -> createChatMediaMarketing() ' + e,
     });
   }
 };
@@ -1490,15 +1556,15 @@ export const createChatMediaMarketing = async (req: express.Request, res: expres
 export const createChatMediaMarketingFunction = (userId, mediaId, communityId) => {
   return new Promise(async (resolve, reject) => {
     try {
-      let room : string = mediaId + communityId;
+      let room: string = mediaId + communityId;
 
       const chatQuery = await db.collection(collections.marketingMediaCommunityChat).doc(room).get();
       if (!chatQuery.exists) {
-        let data : any = chatQuery.data();
+        let data: any = chatQuery.data();
         data.id = chatQuery.id;
         resolve(data);
       } else {
-        let users : any[] = [];
+        let users: any[] = [];
 
         const mediaRef = db.collection(collections.streaming).doc(mediaId);
         const mediaGet = await mediaRef.get();
@@ -1512,12 +1578,12 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
           userId: media.Requester,
           userName: requesterData.firstName,
           userConnected: false,
-          lastView: null
+          lastView: null,
         });
 
-        let arrayCollabs : any[] = Object.keys(media.Collabs);
+        let arrayCollabs: any[] = Object.keys(media.Collabs);
 
-        for(let collab of arrayCollabs) {
+        for (let collab of arrayCollabs) {
           const userSnap = await db.collection(collections.user).doc(collab).get();
           const userData: any = userSnap.data();
 
@@ -1526,8 +1592,8 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
             userId: collab,
             userName: userData.firstName,
             userConnected: false,
-            lastView: null
-          })
+            lastView: null,
+          });
         }
 
         const communitySnap = await db.collection(collections.community).doc(communityId).get();
@@ -1541,13 +1607,13 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
           userId: communityData.Creator,
           userName: creatorData.firstName,
           userConnected: false,
-          lastView: null
+          lastView: null,
         });
 
-        if(communityData.Admins && communityData.Admins.length > 0) {
-          let admins = communityData.Admins.filter(admin => admin.status === 'Accepted');
+        if (communityData.Admins && communityData.Admins.length > 0) {
+          let admins = communityData.Admins.filter((admin) => admin.status === 'Accepted');
 
-          for(let admin of admins) {
+          for (let admin of admins) {
             const userSnap = await db.collection(collections.user).doc(admin.userId).get();
             const userData: any = userSnap.data();
 
@@ -1556,10 +1622,9 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
               userId: admin.userId,
               userName: userData.firstName,
               userConnected: false,
-              lastView: null
+              lastView: null,
             });
           }
-
         }
 
         await db.runTransaction(async (transaction) => {
@@ -1572,7 +1637,7 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
             lastMessageDate: null,
             messages: [],
             mediaId: mediaId,
-            communityId: communityId
+            communityId: communityId,
           });
         });
         resolve({
@@ -1585,15 +1650,15 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
           mediaId: mediaId,
           mediaName: media.MediaName,
           communityId: communityId,
-          communityName: communityData.Name
-        })
+          communityName: communityData.Name,
+        });
       }
     } catch (e) {
-      console.log(e)
+      console.log(e);
       reject(e);
     }
   });
-}
+};
 
 export const getMessagesMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
@@ -1602,8 +1667,10 @@ export const getMessagesMediaMarketing = async (req: express.Request, res: expre
     let communityId = req.params.communityId;
 
     if (userId && mediaId && communityId) {
-      const chatQuery = await db.collection(collections.marketingMediaCommunityChat)
-        .doc(mediaId+communityId).get();
+      const chatQuery = await db
+        .collection(collections.marketingMediaCommunityChat)
+        .doc(mediaId + communityId)
+        .get();
       let messages: any[] = [];
 
       if (chatQuery.exists) {
@@ -1611,80 +1678,84 @@ export const getMessagesMediaMarketing = async (req: express.Request, res: expre
 
         if (data && data.messages && data.messages.length > 0) {
           for (let i = 0; i < data.messages.length; i++) {
-            const messageGet = await db.collection(collections.marketingMediaCommunityMessage)
-              .doc(data.messages[i]).get();
-            messages.push(messageGet.data())
+            const messageGet = await db
+              .collection(collections.marketingMediaCommunityMessage)
+              .doc(data.messages[i])
+              .get();
+            messages.push(messageGet.data());
 
             if (i === data.messages.length - 1) {
               res.status(200).send({
                 success: true,
-                data: messages
+                data: messages,
               });
             }
           }
         } else {
           res.status(200).send({
             success: true,
-            data: messages
+            data: messages,
           });
         }
-
       } else {
         res.status(200).send({
           success: false,
-          error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Wrong Chat Room Provided'
+          error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Wrong Chat Room Provided',
         });
       }
     } else {
       res.status(200).send({
         success: false,
-        error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Non Chat Room Provided'
+        error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Non Chat Room Provided',
       });
     }
   } catch (e) {
-    console.log('Error in controllers/mediaController -> getMessagesMediaMarketing()' + e)
+    console.log('Error in controllers/mediaController -> getMessagesMediaMarketing()' + e);
     res.status(200).send({
       success: false,
-      error: 'Error in controllers/mediaController -> getMessagesMediaMarketing():' + e
+      error: 'Error in controllers/mediaController -> getMessagesMediaMarketing():' + e,
     });
   }
 };
 
 export const lastViewMediaMarketing = async (req: express.Request, res: express.Response) => {
   try {
-    let body = req.body
+    let body = req.body;
 
     if (body.userId && body.room) {
-      const marketingMediaCommunitySnap = await db.collection(collections.marketingMediaCommunityChat)
-        .doc(body.room).get();
+      const marketingMediaCommunitySnap = await db
+        .collection(collections.marketingMediaCommunityChat)
+        .doc(body.room)
+        .get();
       if (marketingMediaCommunitySnap.exists) {
-          let data : any = marketingMediaCommunitySnap.data();
+        let data: any = marketingMediaCommunitySnap.data();
 
-          let users = [...data.users];
-          let userIndex = users.findIndex(usr => usr.userId === body.userId);
-          if(userIndex !== -1) {
-            users[userIndex].lastView = Date.now();
-            await db.collection(collections.marketingMediaCommunityChat)
-              .doc(body.room).update({
-                users: users
-            });
-          }
+        let users = [...data.users];
+        let userIndex = users.findIndex((usr) => usr.userId === body.userId);
+        if (userIndex !== -1) {
+          users[userIndex].lastView = Date.now();
+          await db.collection(collections.marketingMediaCommunityChat).doc(body.room).update({
+            users: users,
+          });
+        }
       }
 
-      const marketingMediaCommunityMessageSnap = await db.collection(collections.marketingMediaCommunityMessage)
-        .where("chatId", "==", body.room).get();
+      const marketingMediaCommunityMessageSnap = await db
+        .collection(collections.marketingMediaCommunityMessage)
+        .where('chatId', '==', body.room)
+        .get();
 
       if (!marketingMediaCommunityMessageSnap.empty) {
         for (const doc of marketingMediaCommunityMessageSnap.docs) {
           let data = doc.data();
-          let seenArray : any[] = [...data.seen] || [];
+          let seenArray: any[] = [...data.seen] || [];
 
-          let notSaw = seenArray.findIndex(see => see !== body.userId);
-          if(notSaw === -1) {
+          let notSaw = seenArray.findIndex((see) => see !== body.userId);
+          if (notSaw === -1) {
             seenArray.push(body.userId);
 
             db.collection(collections.marketingMediaCommunityMessage).doc(doc.id).update({
-              "seen": seenArray
+              seen: seenArray,
             });
           }
         }
@@ -1693,14 +1764,14 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
     } else {
       res.status(200).send({
         success: false,
-        error: 'Error in controllers/mediaController -> lastViewMediaMarketing(): Non Chat Room Provided'
+        error: 'Error in controllers/mediaController -> lastViewMediaMarketing(): Non Chat Room Provided',
       });
     }
   } catch (e) {
-    console.log('Error in controllers/mediaController -> lastViewMediaMarketing()' + e)
+    console.log('Error in controllers/mediaController -> lastViewMediaMarketing()' + e);
     res.status(200).send({
       success: false,
-      error: 'Error in controllers/mediaController -> lastViewMediaMarketing():' + e
+      error: 'Error in controllers/mediaController -> lastViewMediaMarketing():' + e,
     });
   }
 };
