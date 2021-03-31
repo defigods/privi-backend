@@ -22,6 +22,7 @@ import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
 import { sockets } from './serverController';
 import { LEVELS, ONE_DAY } from '../constants/userLevels';
+import { send } from 'process';
 
 const walletController = require('./walletController');
 const levels = require('./userLevelsController');
@@ -2347,6 +2348,51 @@ const getUserList = async (req: express.Request, res: express.Response) => {
   }
 };
 
+// get points info for Boost page
+const getPointsInfo = async (req: express.Request, res: express.Response) => {
+  try {
+    const params = req.query;
+    const userId: any = params.publicId;
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData: any = userSnap.data();
+    const currUserPoints = userData.Points ?? 0;
+
+    let points: any[] = [];
+    const allUserSnap = await db.collection(collections.user).get();
+    allUserSnap.forEach((doc) => {
+      const data = doc.data();
+      const point = data.Points ? Number(data.Points.toString()) : 0;
+      points.push(point);
+    });
+    points = points.sort((a, b) => a - b).reverse(); // from greates to lowest;
+    const n = Math.floor(points.length * 0.1);
+    const lowestTopPoint = points.length > 0 ? points[n] : 0;
+
+    const history: any[] = [];
+    const pointsHistorySnap = await db.collection(collections.points).orderBy('date').limit(5).get();
+    pointsHistorySnap.forEach((doc) => {
+      const data: any = doc.data();
+      const record: any = {
+        user: data.userId,
+        reason: data.reason,
+        date: data.date,
+        points: data.points,
+      };
+      history.push(record);
+    });
+
+    const retData = {
+      currPoints: userData.Points ?? 0,
+      remainingPoints: lowestTopPoint > currUserPoints ? lowestTopPoint - currUserPoints : 0,
+      history: history
+    };
+    res.send({ success: true, data: retData });
+  } catch (e) {
+    console.log('Error in controllers/userController -> getPointsInfo()' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
 // get all badges registered in the system
 const getAllBadges = async (req: express.Request, res: express.Response) => {
   try {
@@ -3751,4 +3797,5 @@ module.exports = {
   getSlugFromId,
   getFriends,
   superFollowerUser,
+  getPointsInfo
 };

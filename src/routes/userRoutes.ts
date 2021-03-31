@@ -147,6 +147,7 @@ router.post('/updateNewBadge', authenticateJWT, userController.updateNewBadge);
 
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
+router.get('/pointsInfo', authenticateJWT, userController.getPointsInfo);
 // BADGES
 router.get('/badges/getAllBadges', authenticateJWT, userController.getAllBadges);
 router.get('/badges/getBadgeData', authenticateJWT, userController.getBadgeData);
