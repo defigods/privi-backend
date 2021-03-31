@@ -2,8 +2,8 @@ import { Router } from 'express';
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 import multer from 'multer';
 
-const mediaController = require('../controllers/mediaController');
-const playlistController = require('../controllers/playlistController');
+import * as mediaController from '../controllers/mediaController';
+import * as playlistController from '../controllers/playlistController';
 
 const router: Router = Router();
 
@@ -103,6 +103,15 @@ router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
 router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
+router.get('/marketingMediaCommunity/getMediaChats/:mediaId/:userId', authenticateJWT, mediaController.getChatsMediaMarketing);
+router.get('/marketingMediaCommunity/createMediaChats/:mediaId/:communityId/:userId', authenticateJWT, mediaController.createChatMediaMarketing);
+router.get('/marketingMediaCommunity/getMessages/:mediaId/:communityId/:userId', authenticateJWT, mediaController.getMessagesMediaMarketing);
+
+router.get('/marketingMediaCommunity/getCommunityChats/:communityId/:userId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+
+router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
+router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
+
 router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
 router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
 router.post('/uploadVideo/:mediaPod/:mediaId', authenticateJWT, upload3.single('video'), mediaController.changeMediaVideo);
@@ -117,7 +126,7 @@ router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
 
-router.post('/getMedias/:pagination/:lastId', authenticateJWT, mediaController.getMedias);
+router.post('/getMedias/:pagination/:lastId', mediaController.getMedias);
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 
@@ -128,5 +137,11 @@ router.post('/changePlaylistPhoto', authenticateJWT, upload6.single('image'), pl
 router.post('/sharePlayList/:playListId', authenticateJWT, playlistController.sharePlayList);
 router.post('/addToMyPlaylists', authenticateJWT, playlistController.addToMyPlaylists);
 router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.removeFromMyPlaylists);
+
+router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaController.addOffer);
+router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
+router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
+
+router.post('/marketingMediaCommunity/chats/lastView', authenticateJWT, mediaController.lastViewMediaMarketing);
 
 module.exports = router;

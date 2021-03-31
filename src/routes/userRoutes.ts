@@ -189,6 +189,7 @@ router.post('/wall/makeResponse', authenticateJWT, userWallController.makeRespon
 router.post('/wall/likePost', authenticateJWT, userWallController.likePost);
 router.post('/wall/dislikePost', authenticateJWT, userWallController.dislikePost);
 router.post('/wall/pinPost', authenticateJWT, userWallController.pinPost);
+router.post('/wall/onlyForSuperFollowers', authenticateJWT, userWallController.onlyForSuperFollowers);
 router.post(
   '/wall/addVideo/:userWallPostId',
   authenticateJWT,
@@ -196,6 +197,7 @@ router.post(
   userWallController.addVideoPost
 );
 router.post('/wall/getVideo/:userWallPostId/:videoId', authenticateJWT, userWallController.getVideoPost);
+
 
 router.get('/feed/getPosts/:userId', authenticateJWT, userWallController.getFeedPosts);
 

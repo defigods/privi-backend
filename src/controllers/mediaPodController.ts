@@ -444,6 +444,8 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const recordPricePerSecond = body.RecordPricePerSecond;
     const recordCopies = body.RecordCopies;
     const recordRoyalty = body.RecordRoyalty;
+    const exclusivePermissionsList = body.ExclusivePermissionsList ?? [];
+    const rewards = body.Rewards ?? [];
     const hash = body.Hash;
     const signature = body.Signature;
     const blockchainRes = await mediaPod.registerMedia(
@@ -481,7 +483,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         const mediasGet = await mediasRef.get();
         const media: any = mediasGet.data();
 
-        let bodySave : any = {
+        let bodySave: any = {
           Collabs: media.Collabs || {},
           HasPhoto: media.HasPhoto || false,
           Requester: requester,
@@ -504,19 +506,21 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           RecordPricePerSecond: recordPricePerSecond,
           RecordCopies: recordCopies,
           RecordRoyalty: recordRoyalty,
+          ExclusivePermissionsList: exclusivePermissionsList,
+          Rewards: rewards,
         }
 
-        if(media.Type === "BLOG_TYPE" || media === "BLOG_SNAP_TYPE") {
+        if (media.Type === "BLOG_TYPE" || media === "BLOG_SNAP_TYPE") {
           bodySave.EditorPages = media.editorPages || [];
           bodySave.DescriptionArray = media.DescriptionArray || '';
         }
 
-        if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
+        if (media.Type === "LIVE_AUDIO_TYPE" || media.Type === "LIVE_VIDEO_TYPE") {
           bodySave.RoomState = 'SCHEDULED'
           bodySave.CountStreamers = 0;
           bodySave.CountWatchers = 0;
           bodySave.ExpectedDuration = 0;
-          bodySave.MainStreamer = media.Creator;
+          bodySave.MainStreamer = bodySave.Requester;
           bodySave.RoomName = media.MediaSymbol;
           bodySave.StartedTime = 0;
           bodySave.EndedTime = 0;
@@ -540,7 +544,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         await db.runTransaction(async (transaction) => {
           transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
         });
-    }
+      }
 
       // add txns to media
       const output = blockchainRes.output;
@@ -587,7 +591,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
         const mediasGet = await mediasRef.get();
         const media: any = mediasGet.data();
 
-        let bodySave : any = {
+        let bodySave: any = {
           Collabs: media.Collabs || {},
           HasPhoto: media.HasPhoto || false,
           Requester: body.Requester,
@@ -612,7 +616,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           RecordRoyalty: media.RecordRoyalty
         }
 
-        if(media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
+        if (media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
           bodySave.RoomState = 'SCHEDULED'
           bodySave.CountStreamers = 0;
           bodySave.CountWatchers = 0;
