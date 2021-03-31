@@ -30,6 +30,7 @@ router.post('/saveCollectionDataInJSON', walletController.saveCollectionDataInJS
 router.post('/getUserTokenBalance', authenticateJWT, walletController.getUserTokenBalance);
 router.post('/transfer', authenticateJWT, walletController.transfer);
 router.post('/giveTip', authenticateJWT, walletController.giveTip);
+router.post('/removeUserRegisteredEthAccounts', authenticateJWT, walletController.removeUserRegisteredEthAccounts);
 
 // GETS
 // crypto rates
