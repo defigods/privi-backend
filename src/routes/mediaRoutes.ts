@@ -126,7 +126,7 @@ router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
 router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
 
-router.post('/getMedias/:pagination/:lastId', mediaController.getMedias);
+router.post('/getMedias/:pagination/:lastId', mediaController.getMedias); // NOTE: It's used on public landing page hence authentication is removed
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 
