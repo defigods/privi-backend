@@ -4,6 +4,7 @@ import express from "express";
 import { BADGES_MAP } from '../constants/badges';
 import badge from "../blockchain/badge";
 import { updateFirebase } from "../functions/functions";
+import cron from 'node-cron';
 
 const levelsController = require("./userLevelsController");
 const notificationsController = require("./notificationsController");
@@ -14,69 +15,82 @@ const apiKey = "PRIVI";
 exports.getTasks = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
-    const userRef = await db.collection(collections.user).doc(userId).get();
-    const user: any = userRef.data();
+    const retData: any[] = [];
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData: any = userSnap.data();
 
-    const allTasks = await db.collection(collections.tasks).get();
-
-    let userTasks = user.UserTasks || ([] as any);
-    let userTasksToDisplay = [] as any;
-
-    allTasks.docs.map(async (doc, i) => {
-      //load tasks if user has the level task or higher &&
-      //user has no tasks OR user doesn't already have this task
-      if (
-        doc.data().Level <= user.level &&
-        (user.UserTasks === undefined ||
-          (user.UserTasks &&
-            !user.UserTasks.some((task) => task.Id === doc.id)))
-      ) {
-        let task = { Id: doc.id, Completed: false, Level: doc.data().Level } as any;
-        if (doc.data().Timed) {
-          task.Timed = doc.data().Timed;
-          //TODO: set timing rules ??
-          //.EndDate and .StartDate
-        }
-        userTasks.push(task);
-      }
-
-      //add user to task
-      if (
-        doc.data().Users &&
-        !doc.data().Users.some((user) => user === userId)
-      ) {
-        const usersCopy = doc.data().Users || [];
-        usersCopy.push(userId);
-
-        await db.collection(collections.tasks).doc(doc.id).update({
-          Users: usersCopy,
-        });
-      }
-
-      //and add info to the list to be returned
-      if (
-        userTasks.some((task) => task.Id === doc.id) &&
-        doc.data().Level !== 0
-      ) {
-        let taskTodisplay = { ...doc.data() };
-
-        taskTodisplay.Completed =
-          userTasks[
-            userTasks.findIndex((task) => task.Id === doc.id)
-          ].Completed;
-
-        userTasksToDisplay.push(taskTodisplay);
-      }
+    const allTasksSnap = await db.collection(collections.tasks).get();
+    const taskIdToTaskDataMap = {};
+    allTasksSnap.forEach((doc) => {
+      const data = doc.data();
+      if (data.Level) taskIdToTaskDataMap[doc.id] = doc.data();
     });
 
-    //and update db
-    await db.collection(collections.user).doc(userId).update({
-      UserTasks: userTasks,
+    const userTasks = userData.UserTasks ?? [];
+    userTasks.forEach((userTask) => {
+      if (taskIdToTaskDataMap[userTask.Id ?? '']) retData.push({ ...taskIdToTaskDataMap[userTask.Id], ...userTask });
     });
+    res.send({ success: true, data: retData });
+    // OLD CODE
+    // let userTasks = userData.UserTasks ?? [];
+    // let userTasksToDisplay = [] as any;
 
-    if (userTasksToDisplay.length > 0) {
-      res.send({ success: true, data: userTasksToDisplay });
-    } else res.send({ success: false });
+    // allTasksSnap.forEach(async (doc) => {
+    //   //load tasks if user has the level task or higher &&
+    //   //user has no tasks OR user doesn't already have this task
+    //   const taskData = doc.data();
+    //   if (
+    //     taskData.Level <= userData.level &&
+    //     (userData.UserTasks === undefined ||
+    //       (userData.UserTasks &&
+    //         !userData.UserTasks.some((task) => task.Id === doc.id)))
+    //   ) {
+    //     let task = { Id: doc.id, Completed: false, Level: taskData.Level } as any;
+    //     if (taskData.Timed) {
+    //       task.Timed = taskData.Timed;
+    //       //TODO: set timing rules ??
+    //       //.EndDate and .StartDate
+    //     }
+    //     userTasks.push(task);
+    //   }
+
+    //   //add user to task
+    //   if (
+    //     taskData.Users &&
+    //     !taskData.Users.some((user) => user === userId)
+    //   ) {
+    //     const usersCopy = taskData.Users || [];
+    //     usersCopy.push(userId);
+
+    //     await db.collection(collections.tasks).doc(doc.id).update({
+    //       Users: usersCopy,
+    //     });
+    //   }
+
+    //   //and add info to the list to be returned
+    //   if (
+    //     userTasks.some((task) => task.Id === doc.id) &&
+    //     taskData.Level !== 0
+    //   ) {
+    //     let taskTodisplay = { ...taskData };
+
+    //     taskTodisplay.Completed =
+    //       userTasks[
+    //         userTasks.findIndex((task) => task.Id === doc.id)
+    //       ].Completed;
+
+    //     userTasksToDisplay.push(taskTodisplay);
+    //   }
+    // });
+
+    // //and update db
+    // await db.collection(collections.user).doc(userId).update({
+    //   UserTasks: userTasks,
+    // });
+
+    // if (userTasksToDisplay.length > 0) {
+    //   res.send({ success: true, data: userTasksToDisplay });
+    // } else res.send({ success: false });
   } catch (err) {
     console.log("Error in controllers/tasks -> getTasks()", err);
     res.send({ success: false });
@@ -321,3 +335,36 @@ exports.updateTask = (userId, title) => {
     }
   })
 }
+
+// daily check and add new created tasks to users
+exports.addTaskToUsers = cron.schedule('0 0 * * *', async () => {
+  try {
+    console.log("********* Task Controller addTaskToUsers() cron job started *********");
+    const userSnap = await db.collection(collections.user).get();
+    const allTasks = await db.collection(collections.tasks).get();
+    userSnap.forEach((userDoc) => {
+      const userData = userDoc.data();
+      const userTasks = userData.UserTasks;
+      const userLevel = userData.level ?? 0;
+      allTasks.forEach((taskDoc) => {
+        const taskData = taskDoc.data();
+        const taskLevel = taskData.Level ?? 0;
+        // user meets level requirement and dont have this task yet
+        if (userLevel >= taskLevel && !userTasks.find((task) => task.Id == taskDoc.id)) {
+          // possible improvement: check if user meets condition to complete this task and set correct boolean instead of 'false'
+          userTasks.push({
+            Completed: false,
+            Id: taskDoc.id,
+            AddedAt: Date.now()
+          });
+        }
+      });
+      userDoc.ref.update({
+        UserTasks: userTasks
+      });
+    });
+    console.log("--------- Task Controller addTaskToUsers() finished ---------");
+  } catch (err) {
+    console.log('Error in controllers/taskController -> addTaskToUsers()', err);
+  }
+});

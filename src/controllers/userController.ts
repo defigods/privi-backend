@@ -3,7 +3,7 @@ import express from 'express';
 // import * as path from 'path';
 // import { stringify } from 'querystring';
 import Web3 from 'web3';
-import collections from '../firebase/collections';
+import collections, { badges } from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
@@ -775,7 +775,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
     const userData: any = userSnap.data();
     const hiddens = userData.Hiddens ?? {};
     if (userData !== undefined) {
-      let badges: any[] = await getBadgesFunction(userId);
+      let badges: any[] = await getBadgesFunction(userAddress);
       let myPodsAndInvested: any = await getMyPodsAndInvestedFunction(userId);
       let myCommunities: any[] = await getMyCommunitiesFunction(userId);
       let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
@@ -2344,12 +2344,53 @@ const getUserList = async (req: express.Request, res: express.Response) => {
   }
 };
 
-// get all badges
+// get all badges registered in the system
+const getAllBadges = async (req: express.Request, res: express.Response) => {
+  try {
+    const blockchainRes = await coinBalance.getTokenListByType("BADGE", apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      const badgeSymbolList = blockchainRes.output ?? [];
+      const retData: any[] = [];
+      const badgesSnap = await db.collection(collections.badges).get();
+      badgesSnap.forEach((doc) => {
+        const data: any = doc.data();
+        if (badgeSymbolList.includes(doc.id)) retData.push(data);
+      })
+      res.send({ success: true, data: retData });
+    }
+    else {
+      console.log("error: ", blockchainRes.message)
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/userController -> getBadges()' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+// get badge data given badge symbol
+const getBadgeData = async (req: express.Request, res: express.Response) => {
+  try {
+    const params = req.query;
+    const symbol: any = params.Symbol;
+    const badgeSnap = await db.collection(collections.badges).doc(symbol).get();
+    if (badgeSnap.exists) {
+      res.send({ success: true, data: badgeSnap.data() });
+    } else {
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/userController -> getBadges()' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+// get all user badges
 const getBadges = async (req: express.Request, res: express.Response) => {
   try {
-    let userId = req.params.userId;
+    let address = req.params.address;
 
-    let retData = await getBadgesFunction(userId);
+    let retData = await getBadgesFunction(address);
 
     res.send({ success: true, data: retData });
   } catch (e) {
@@ -2358,18 +2399,9 @@ const getBadges = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const getBadgesFunction = (userId: string): Promise<any[]> => {
+const getBadgesFunction = (address: string): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
     try {
-      let address = userId;
-      console.log(userId);
-      console.log(Web3.utils.isAddress(userId));
-      if (!Web3.utils.isAddress(userId)) {
-        const userRef = db.collection(collections.user).doc(userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
-        address = user.address;
-      }
       const retData: any[] = [];
       const blockchainRes = await coinBalance.getBalancesByType(address, collections.badgeToken, apiKey);
       if (blockchainRes && blockchainRes.success) {
@@ -3678,6 +3710,8 @@ module.exports = {
   getLoginInfo,
   getPhotoById,
   getUserList,
+  getAllBadges,
+  getBadgeData,
   getBadges,
   getBadgeBySymbol,
   createBadge,
