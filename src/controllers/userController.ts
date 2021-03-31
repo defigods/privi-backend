@@ -1220,14 +1220,17 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         });
       } else {
         let followers: any[] = [];
-        user.followers.forEach(async (follower, id) => {
+        let id = 0;
+        // user.followers.forEach(async (follower, id) => {
+        for (const follower of user.followers) {
+          id++;
           if (follower.accepted) {
             const followerInfo = await db.collection(collections.user).doc(follower.user).get();
             const followerData: any = followerInfo.data();
 
             let numFollowing: number = 0;
             if (ownUser) {
-              let isFollowing = user.followings.find((following) => following.user === follower.user);
+              let isFollowing = await user.followings.find((following) => following.user === follower.user);
 
               if (isFollowing && isFollowing.accepted) {
                 numFollowing = 2;
@@ -1258,7 +1261,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
               },
             });
           }
-        });
+        };
       }
     } else {
       console.log('Error in controllers/profile -> getFollowers()', 'Error getting followers');
