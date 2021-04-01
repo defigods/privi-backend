@@ -50,7 +50,7 @@ let upload3 = multer({
 
 
 router.post('/getChats', authenticateJWT, chatController.getChats);
-router.post('/getUsers', authenticateJWT, chatController.getUsers);
+router.post('/getUsers', chatController.getUsers); // NOTE: It's used on public landing page hence authentication is removed
 router.post('/getFollowings/:userId', authenticateJWT, chatController.getFollowings);
 router.post('/getRoom', authenticateJWT, chatController.getChatRoom);
 router.post('/getRoomById', authenticateJWT, chatController.getChatRoomById);

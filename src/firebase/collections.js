@@ -69,7 +69,7 @@ module.exports = {
   mediaPods: 'MediaPods',
   trendingMediaPods: 'TrendingMediaPods',
   medias: 'Medias',
-  mediaUsers: 'EthMediaUsers',
+  mediaUsers: 'EthMediaUsersTesting',
   streamingListeners: 'StreamingListeners',
   streamers: 'Streamers',
   streamings: 'Streamings',

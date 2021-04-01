@@ -503,7 +503,13 @@ exports.pinPost = async (req: express.Request, res: express.Response) => {
 exports.onlyForSuperFollowers = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
-
+    const userWallPostRef = db.collection(collections.userWallPost).doc(body.wallPostId);
+	const userWallPostGet = await userWallPostRef.get();
+	await userWallPostRef.update( {
+		OnlySuperFollowers: body.OnlySuperFollowers
+	});
+	const userWallPost: any = userWallPostGet.data();
+	res.send({ success: true, data: userWallPost});
   } catch (err) {
     console.log('Error in controllers/userWallController -> onlyForSuperfollowers()', err);
     res.send({ success: false, error: err });
