@@ -1204,6 +1204,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
       Name: body.Name,
       Description: body.Description,
       urlSlug: body.urlSlug,
+      TwitterId: body.TwitterId
     });
 
     res.send({
@@ -1212,6 +1213,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
         Name: body.Name,
         Description: body.Description,
         urlSlug: body.urlSlug,
+        TwitterId: body.TwitterId
       },
     });
   } catch (err) {
