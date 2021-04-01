@@ -60,9 +60,10 @@ module.exports.react = async (req: express.Request, res: express.Response) => {
 };
 
 ///////////////////////////// GET ///////////////////////////////
-
+// return the collabs according to the filter and sort options
 module.exports.getCollabs = async (req: express.Request, res: express.Response) => {
     try {
+        const params = req.query;
         const allCollabs: any[] = [];
         const trendingCollabs: any[] = [];
         const collabSnap = await db.collection(collections.collabs).get();
@@ -81,9 +82,10 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
             const numUpvotes = Object.keys(obj.Upvotes ?? {}).length;
             if (numUpvotes >= mean) trendingCollabs.push(obj);
         });
+        const filteredCollabs = filterCollabs(allCollabs, params);
         res.send({
             success: true, data: {
-                allCollabs: allCollabs,
+                allCollabs: filteredCollabs,
                 trendingCollabs: trendingCollabs
             }
         });
@@ -92,6 +94,80 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
         res.send({ success: false });
     }
 };
+
+const displayOptions = ["All Collabs", "My Collabs"];
+const sortByOptions = ["Most Liked", "Recent"];
+const filterCollabs = (allCollabs, params) => {
+    const userId = params.userId;
+    let filteredCollabs: any[] = [];
+    // 1. filter by display option
+    const displaySelection = params.displaySelection;
+    if (displaySelection) {
+        switch (displaySelection) {
+            case displayOptions[0]:
+                allCollabs.forEach((collab) => {
+                    filteredCollabs.push(collab);
+                });
+                break;
+            case displayOptions[1]:
+                allCollabs.forEach((collab) => {
+                    // creator or collaborator
+                    if (
+                        collab.Creator == userId ||
+                        (collab.Collaborators &&
+                            collab.Collaborators.find((collabObj) => collabObj.id == userId))
+                    )
+                        filteredCollabs.push(collab);
+                });
+                break;
+            default:
+                allCollabs.forEach((collab) => {
+                    filteredCollabs.push(collab);
+                });
+                break;
+        }
+    } else filteredCollabs = [...allCollabs];
+    //2. filter by user input
+    const searchValue = params.searchValue;
+    if (searchValue) {
+        let aux = [...filteredCollabs];
+        filteredCollabs = [];
+        aux.forEach((collab: any) => {
+            if (
+                (collab.Idea &&
+                    collab.Idea.toLowerCase().includes(searchValue.toLowerCase())) ||
+                (collab.Platform &&
+                    collab.Platform.name &&
+                    collab.Platform.name
+                        .toLowerCase()
+                        .includes(searchValue.toLowerCase()))
+            )
+                filteredCollabs.push(collab);
+        });
+    }
+
+    //3. sort
+    const sortSelection = params.sortSelection;
+    if (sortSelection) {
+        switch (sortSelection) {
+            case sortByOptions[0]:
+                filteredCollabs.sort((a, b) => {
+                    const aLikes = a.Likes ?? 0;
+                    const bLikes = b.Likes ?? 0;
+                    return bLikes - aLikes;
+                });
+                break;
+            case sortByOptions[1]:
+                filteredCollabs.sort((a, b) => {
+                    const aDate = a.CreatedAt ?? 0;
+                    const bDate = b.CreatedAt ?? 0;
+                    return bDate - aDate;
+                });
+                break;
+        }
+    }
+    return filteredCollabs;
+}
 
 
 const config2 = {
