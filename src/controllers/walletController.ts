@@ -17,6 +17,7 @@ import cron from 'node-cron';
 import path from 'path';
 import fs from 'fs';
 import { AMBERDATA_API_KEY, MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE } from '../constants/configuration';
+import { type } from 'os';
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
@@ -564,10 +565,8 @@ module.exports.getUserRegisteredEthAccounts = async (req: express.Request, res: 
 
 module.exports.registerUserEthAccount = async (req: express.Request, res: express.Response) => {
   try {
-    const body = req.body;
-    const address = body.address;
-    const userId = body.userId;
-    console.log('registerUserEthAccount address/userId', address, userId);
+    const { address, userId, walletType, walletStatus } = req.body;
+    console.log('registerUserEthAccount address/userId', address, userId)
 
     // get user address registered collection
     const walletRegisteredEthAddrSnap = await db
@@ -590,6 +589,8 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
           .collection(collections.registeredEthAddress)
           .doc(address)
           .set({
+            walletType: walletType,
+            walletStatus: walletStatus,
             tokenList: preparedTokenList,
             lastUpdate: Date.now(),
           });
@@ -614,6 +615,8 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
         .collection(collections.registeredEthAddress)
         .doc(address)
         .set({
+          walletType: walletType,
+          walletStatus: walletStatus,
           tokenList: preparedTokenList,
           lastUpdate: Date.now(),
         });
@@ -624,6 +627,36 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
     res.send({ success: false });
   }
 };
+
+module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, res: express.Response) => {
+  try {
+    const { address, userId } = req.body;
+
+    // get user address registered collection
+    const walletRegisteredEthAddrSnap = await db.collection(collections.wallet)
+      .doc(userId)
+      .collection(collections.registeredEthAddress)
+      .doc(address)
+      .get();
+
+    // check if address is already registered
+    if (!walletRegisteredEthAddrSnap.exists) {
+      console.log('No user address existing');
+      res.send({ success: false });
+    }
+
+    await db.collection(collections.wallet)
+        .doc(userId)
+        .collection(collections.registeredEthAddress)
+        .doc(address)
+        .delete();
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/walletController -> removeUserRegisteredEthAccounts()', err);
+    res.send({ success: false });
+  }
+}
 
 ///////////////////////////// gets //////////////////////////////
 
