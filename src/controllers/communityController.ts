@@ -27,6 +27,7 @@ import { sendNewCommunityUsersEmail } from '../email_templates/emailTemplates';
 import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
 import { user } from 'firebase-functions/lib/providers/auth';
 import tradinionalLending from "../blockchain/traditionalLending";
+import { send } from 'process';
 
 const chatController = require('./chatController');
 const notificationsController = require('./notificationsController');
@@ -1626,55 +1627,143 @@ const getExtraData = async (data, rateOfChange) => {
   };
 };
 
-// get all communities, highlighting the trending ones
+// get all communities with pagination and filtering
+const pageSize = 6;
+const sortByOptions = ["Most Followed", "Recent"];
+const sortByTokenOptions = ["Descending", "Ascending"];
+const displayingCommunities = [
+  "All Communities",
+  "My Communities",
+  "Private Communities",
+  "Public Communities",
+];
 exports.getCommunities = async (req: express.Request, res: express.Response) => {
   try {
-    const lastCommunity: number = +req.params.pagination;
-    const allCommunities: any[] = [];
+    // filter stuffs
+    const params = req.query;
 
-    let communitiesSnap: any;
-    if (lastCommunity) {
-      const lastId: any = req.params.lastId;
-      const communityRef = db.collection(collections.community).doc(lastId);
-      const communityGet = await communityRef.get();
-      const community: any = communityGet.data();
+    const pagination: number = +req.params.pagination; // a number representing the page
+    let allCommunities: any[] = [];
+    const communitiesSnap = await db.collection(collections.community).get();
 
-      communitiesSnap = await db
-        .collection(collections.community)
-        .orderBy('Date')
-        .startAfter(community.Date)
-        .limit(6)
-        .get();
-    } else {
-      communitiesSnap = await db.collection(collections.community).orderBy('Date').limit(6).get();
+    // pagination and filtering
+    if (pagination) {
+      communitiesSnap.forEach((doc) => {
+        if (allCommunities.length <= pagination * pageSize) {
+          const data: any = doc.data();
+          if (params) {
+            let addData = true;
+            const userId = params.userId;
+            //1. select the communities selection to show
+            const displayingCommunitiesSelection = params.displayingCommunitiesSelection;
+            if (displayingCommunitiesSelection) {
+              switch (displayingCommunitiesSelection) {
+                case displayingCommunities[0]:
+                  addData = true;
+                  break;
+                case displayingCommunities[1]:
+                  addData = (data.Creator === userId || data.Member && data.Members.includes(userId))
+                  break;
+                case displayingCommunities[2]:
+                  addData = (data.Privacy === "Private")
+                  break;
+                case displayingCommunities[3]:
+                  addData = (data.Privacy === "Public")
+                  break;
+              }
+            }
+            //2. filter by user input
+            const searchValue: any = params.searchValue;
+            if (searchValue) {
+              if (data.Hashtags && data.Hashtags.length > 0 && searchValue.includes("#")) {
+                data.Hashtags.forEach((hashtag: string) => {
+                  if (!hashtag.toUpperCase().includes(searchValue.slice(1).toUpperCase())) {
+                    addData = false;
+                  }
+                });
+              } else if (searchValue.length > 0 && data.Name) {
+                if (!data.Name.toUpperCase().includes(searchValue.toUpperCase())) addData = false;
+              }
+            }
+            //3. addData
+            if (addData) allCommunities.push(data);
+          } else {
+            allCommunities.push(data);
+          }
+        }
+      });
+
+      //Sort 1
+      const sortByOptionsSelection = params.sortByOptionsSelection;
+      if (sortByOptionsSelection) {
+        if (sortByOptionsSelection === sortByOptions[0]) {
+          //by most followers
+          allCommunities.sort((a, b) =>
+            b.Followers && a.Followers
+              ? b.Followers.length - a.Followers.length
+              : 0
+          );
+        } else if (sortByOptionsSelection === sortByOptions[1]) {
+          //by most recent date
+          allCommunities.sort(
+            (a, b) => Date.parse(b["StartDate"]) - Date.parse(a["StartDate"])
+          );
+        }
+      }
+
+      //Sort 2
+      const sortByTokenOptionsSelection = params.sortByTokenOptionsSelection;
+      if (sortByTokenOptionsSelection) {
+        if (sortByTokenOptionsSelection === sortByTokenOptions[0]) {
+          //by tokens descending
+          allCommunities.sort((a, b) => b.Price - a.Price);
+        } else if (sortByTokenOptionsSelection === sortByTokenOptions[1]) {
+          //by tokens ascending
+          allCommunities.sort((a, b) => a.Price - b.Price);
+        }
+      }
+
+      //Sort 3
+      const sortByEntryLevelSelection: any = params.sortByEntryLevelSelection;
+      if (sortByEntryLevelSelection) {
+        //by entry level
+        allCommunities = allCommunities.filter(community => community.MinimumUserLevel === parseInt(sortByEntryLevelSelection));
+      }
+    }
+    // if no pagination and filters just return all 
+    else {
+      communitiesSnap.forEach((doc) => allCommunities.push(doc.data()));
     }
     const rateOfChange = await getRateOfChangeAsMap();
-    const docs = communitiesSnap.docs;
-    for (let i = 0; i < docs.length; i++) {
-      const doc = docs[i];
-      const data: any = doc.data();
-      const id: any = doc.id;
+    for (let i = 0; i < allCommunities.length; i++) {
+      const data = allCommunities[i];
       const extraData = await getExtraData(data, rateOfChange);
-
       let arrayMembersId: any[] = await getArrayIdCommunityMembers(data);
-
-      allCommunities.push({
+      allCommunities[i] = {
         ...data,
         ...extraData,
-        id: id,
         arrayMembersId: arrayMembersId,
-      });
+      };
     }
+    let hasMore = false;
+    if (pagination) {
+      hasMore = allCommunities.length == pagination * pageSize;
+    }
+
     res.send({
       success: true,
       data: {
         all: allCommunities,
+        hasMore: hasMore
       },
     });
+
   } catch (e) {
     return 'Error in controllers/communitiesControllers -> getAllCommunities()' + e;
   }
 };
+
+
 
 // get a single community data
 exports.getCommunity = async (req: express.Request, res: express.Response) => {

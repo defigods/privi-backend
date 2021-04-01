@@ -147,8 +147,11 @@ router.post('/updateNewBadge', authenticateJWT, userController.updateNewBadge);
 
 router.post('/getUserList', authenticateJWT, userController.getUserList);
 
+router.get('/pointsInfo', authenticateJWT, userController.getPointsInfo);
 // BADGES
-router.get('/badges/getBadges/:userId', authenticateJWT, userController.getBadges);
+router.get('/badges/getAllBadges', authenticateJWT, userController.getAllBadges);
+router.get('/badges/getBadgeData', authenticateJWT, userController.getBadgeData);
+router.get('/badges/getBadges/:address', authenticateJWT, userController.getBadges);
 router.post('/badges/create', authenticateJWT, userController.createBadge);
 router.post('/badges/changeBadgePhoto', authenticateJWT, upload2.single('image'), userController.changeBadgePhoto);
 router.get('/badges/getPhoto/:badgeId', userController.getBadgePhotoById);
