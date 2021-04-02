@@ -1641,17 +1641,27 @@ const displayingCommunities = [
 ];
 exports.getCommunities = async (req: express.Request, res: express.Response) => {
   try {
-    // filter stuffs
+    // filter stuff
     const params = req.query;
 
-    const pagination: number = +req.params.pagination; // a number representing the page
-    let allCommunities: any[] = [];
-    const communitiesSnap = await db.collection(collections.community).get();
+    // pagination stuff
+    const pagination: number = +req.params.pagination;
+    const previousLastId: any = req.params.lastId;
+    let nextLastId;
 
+    let allCommunities: any[] = [];
+    console.log("***************************", pagination, previousLastId, params)
     // pagination and filtering
-    if (pagination) {
+    if (pagination != undefined) {
+      let communitiesSnap;
+      if (previousLastId != 'null') {
+        const lastCommunitySnap = await db.collection(collections.community).doc(previousLastId).get();
+        const lastCommunityData: any = lastCommunitySnap.data();
+        communitiesSnap = await db.collection(collections.community).orderBy('Date').startAfter(lastCommunityData.Date ?? 0).get();
+      }
+      else communitiesSnap = await db.collection(collections.community).orderBy('Date').get();
       communitiesSnap.forEach((doc) => {
-        if (allCommunities.length <= pagination * pageSize) {
+        if (allCommunities.length < pageSize) {
           const data: any = doc.data();
           if (params) {
             let addData = true;
@@ -1677,13 +1687,13 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
             //2. filter by user input
             const searchValue: any = params.searchValue;
             if (searchValue) {
-              if (data.Hashtags && data.Hashtags.length > 0 && searchValue.includes("#")) {
+              if (searchValue.includes("#") && data.Hashtags && data.Hashtags.length > 0) {
                 data.Hashtags.forEach((hashtag: string) => {
                   if (!hashtag.toUpperCase().includes(searchValue.slice(1).toUpperCase())) {
                     addData = false;
                   }
                 });
-              } else if (searchValue.length > 0 && data.Name) {
+              } else if (data.Name) {
                 if (!data.Name.toUpperCase().includes(searchValue.toUpperCase())) addData = false;
               }
             }
@@ -1694,6 +1704,7 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
           }
         }
       });
+      if (allCommunities.length > 0) nextLastId = allCommunities[allCommunities.length - 1].CommunityAddress; // save last community Id (by date) before sorting
 
       //Sort 1
       const sortByOptionsSelection = params.sortByOptionsSelection;
@@ -1725,15 +1736,17 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         }
       }
 
-      //Sort 3
+      //Filter by Minimun User Level
       const sortByEntryLevelSelection: any = params.sortByEntryLevelSelection;
-      if (sortByEntryLevelSelection) {
+      if (sortByEntryLevelSelection && !isNaN(Number(sortByEntryLevelSelection))) {
         //by entry level
         allCommunities = allCommunities.filter(community => community.MinimumUserLevel === parseInt(sortByEntryLevelSelection));
       }
+
     }
-    // if no pagination and filters just return all 
+    // if no pagination and filters, just return all 
     else {
+      const communitiesSnap = await db.collection(collections.community).get();
       communitiesSnap.forEach((doc) => allCommunities.push(doc.data()));
     }
     const rateOfChange = await getRateOfChangeAsMap();
@@ -1747,16 +1760,15 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         arrayMembersId: arrayMembersId,
       };
     }
-    let hasMore = false;
-    if (pagination) {
-      hasMore = allCommunities.length == pagination * pageSize;
-    }
+
+    const hasMore = allCommunities.length == pageSize;
 
     res.send({
       success: true,
       data: {
         all: allCommunities,
-        hasMore: hasMore
+        hasMore: hasMore,
+        lastId: nextLastId,
       },
     });
 
