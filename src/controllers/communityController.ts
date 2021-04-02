@@ -1650,7 +1650,6 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
     let nextLastId;
 
     let allCommunities: any[] = [];
-    console.log("***************************", pagination, previousLastId, params)
     // pagination and filtering
     if (pagination != undefined) {
       let communitiesSnap;

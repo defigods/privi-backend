@@ -115,13 +115,135 @@ exports.getOtherMediaPods = async (req: express.Request, res: express.Response) 
   }
 };
 
+// get media pods according to pagination and filters
+const pageSize = 6;
+const sortByOptions = ["Most Followed", "Recent"];
+const sortByTokenOptions = ["Descending", "Ascending"];
+const displayingPods = [
+  "All Pods",
+  "My Pods",
+  "My Connections",
+  "Private Pods",
+  "Public Pods",
+];
 exports.getAllMediaPodsInfo = async (req: express.Request, res: express.Response) => {
   try {
-    const mediaNFTPod = req.query.lastMediaPod;
-    let allMediaPods: any[] = await getMediaPods(mediaNFTPod);
+    const pagination: number = +req.params.pagination;
+    const previousLastId = req.params.lastId;
+    const params = req.query;
+    let nextLastId = "null";
+    let allMediaPods: any[] = [];
+    let followers: string[] = [];
+    if (params.userId && params.displayingCommunitiesSelection == displayingPods[2]) {
+      const userSnap = await db.collection(collections.user).doc(params.userId as string).get();
+      const userData: any = userSnap.data();
+      followers = userData && userData.followers ? userData.followers : [];
+    }
+    // pagination and filtering
+    if (pagination != undefined) {
+      let communitiesSnap;
+      if (previousLastId != 'null') {
+        const lastPodSnap = await db.collection(collections.mediaPods).doc(previousLastId).get();
+        const lastPodData: any = lastPodSnap.data();
+        communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').startAfter(lastPodData.Date ?? 0).get();
+      }
+      else communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').get();
+      communitiesSnap.forEach((doc) => {
+        if (allMediaPods.length < pageSize) {
+          const data: any = doc.data();
+          if (params) {
+            let addData = true;
+            const userId = params.userId;
+            //1. select the communities selection to show
+            const displayingPodsSelection = params.displayingPodsSelection;
+            if (displayingPodsSelection) {
+              switch (displayingPodsSelection) {
+                case displayingPods[0]:
+                  addData = true;
+                  break;
+                case displayingPods[1]:
+                  addData = (data.Creator === userId);
+                  break;
+                case displayingPods[2]:
+                  addData = followers.includes(data.Creator ?? '');
+                  break;
+                case displayingPods[3]:
+                  addData = Boolean(data.Private);
+                  break;
+                case displayingPods[4]:
+                  addData = !Boolean(data.Private);
+                  break;
+              }
+            }
+            //2. filter by user input
+            const searchValue: any = params.searchValue;
+            if (searchValue) {
+              if (searchValue.includes("#") && data.Hashtags && data.Hashtags.length > 0) {
+                data.Hashtags.forEach((hashtag: string) => {
+                  if (!hashtag.toUpperCase().includes(searchValue.slice(1).toUpperCase())) {
+                    addData = false;
+                  }
+                });
+              } else if (data.Name) {
+                if (!data.Name.toUpperCase().includes(searchValue.toUpperCase())) addData = false;
+              }
+            }
+            //3. filter by endorsement and trust scores
+            const trustScore = params.trustScore;
+            if (trustScore != undefined && !isNaN(Number(trustScore))) addData = addData && (data.TrustScore == undefined || data.TrustScore * 100 <= Number(trustScore));
+            const endorsementScore = params.endorsementScore;
+            if (endorsementScore != undefined && !isNaN(Number(endorsementScore))) addData = addData && (data.EndorsementScore == undefined || data.EndorsementScore * 100 <= Number(endorsementScore))
+            //4. addData 
+            if (addData) allMediaPods.push(data);
+          } else {
+            allMediaPods.push(data);
+          }
+        }
+      });
+      if (allMediaPods.length > 0) nextLastId = allMediaPods[allMediaPods.length - 1].PodAddress; // save last community Id (by date) before sorting
+
+      //Sort 1
+      const sortByOptionsSelection = params.sortByOptionsSelection;
+      if (sortByOptionsSelection) {
+        if (sortByOptionsSelection === sortByOptions[0]) {
+          //by most followers
+          allMediaPods.sort((a, b) =>
+            b.Followers && a.Followers
+              ? b.Followers.length - a.Followers.length
+              : 0
+          );
+        } else if (sortByOptionsSelection === sortByOptions[1]) {
+          //by most recent date
+          allMediaPods.sort(
+            (a, b) => Date.parse(b["StartDate"]) - Date.parse(a["StartDate"])
+          );
+        }
+      }
+      //Sort 2
+      const sortByTokenOptionsSelection = params.sortByTokenOptionsSelection;
+      if (sortByTokenOptionsSelection) {
+        if (sortByTokenOptionsSelection === sortByTokenOptions[0]) {
+          //by tokens descending
+          allMediaPods.sort((a, b) => b.FundingTokenPrice - a.FundingTokenPrice);
+        } else if (sortByTokenOptionsSelection === sortByTokenOptions[1]) {
+          //by tokens ascending
+          allMediaPods.sort((a, b) => a.FundingTokenPrice - b.FundingTokenPrice);
+        }
+      }
+    }
+    // if no pagination and filters, just return all 
+    else {
+      const mediasSnap = await db.collection(collections.mediaPods).get();
+      mediasSnap.forEach((doc) => allMediaPods.push(doc.data()));
+    }
+    const hasMore = allMediaPods.length == pageSize;
     res.send({
       success: true,
-      data: allMediaPods ?? [],
+      data: {
+        mediaPods: allMediaPods ?? [],
+        hasMore: hasMore,
+        lastId: nextLastId
+      },
     });
   } catch (err) {
     console.log('Error in controllers/mediaPodController -> getAllMediaPodsInfo(): ', err);
