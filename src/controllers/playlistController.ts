@@ -1,6 +1,6 @@
 import express from 'express';
 import { db } from '../firebase/firebase';
-import collections, { user } from '../firebase/collections';
+import collections from '../firebase/collections';
 import fs from 'fs';
 import { generateUniqueId } from '../functions/functions';
 
@@ -199,7 +199,6 @@ export const removeFromMyPlaylists = async (req: express.Request, res: express.R
 };
 
 export const getPlaylists = async (req: express.Request, res: express.Response) => {
-  console.log('getPlaylists');
   try {
     const playlistsCollection = await db.collection(collections.playList).get();
     const playlists = [] as any;

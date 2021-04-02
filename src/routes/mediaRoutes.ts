@@ -96,7 +96,7 @@ router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
 router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBlog);
 router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
-router.get('/:pagination/:lastId', mediaController.getEthMedia);
+router.get('/getEthMedia/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
 router.get('/getMyPlaylists/:userId', authenticateJWT, playlistController.getMyPlaylists);
