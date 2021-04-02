@@ -88,8 +88,7 @@ let upload6 = multer({
   storage: storage6,
 });
 
-
-router.get('/:id', mediaController.getEthMediaItem);
+router.get('/getEthMedia/:id', mediaController.getEthMediaItem);
 
 router.get('/getMedia/:mediaId', authenticateJWT, mediaController.getMedia);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
@@ -100,32 +99,84 @@ router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
-router.get('/getMyPlaylist/:userId', authenticateJWT, playlistController.getMyPlaylists);
+router.get('/getMyPlaylists/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
+router.get(
+  '/marketingMediaCommunity/getMediaChats/:mediaId/:userId',
+  authenticateJWT,
+  mediaController.getChatsMediaMarketing
+);
+router.get(
+  '/marketingMediaCommunity/createMediaChats/:mediaId/:communityId/:userId',
+  authenticateJWT,
+  mediaController.createChatMediaMarketing
+);
+router.get(
+  '/marketingMediaCommunity/getMessages/:mediaId/:communityId/:userId',
+  authenticateJWT,
+  mediaController.getMessagesMediaMarketing
+);
 
-router.get('/marketingMediaCommunity/getMediaChats/:mediaId/:userId', authenticateJWT, mediaController.getChatsMediaMarketing);
-router.get('/marketingMediaCommunity/createMediaChats/:mediaId/:communityId/:userId', authenticateJWT, mediaController.createChatMediaMarketing);
-router.get('/marketingMediaCommunity/getMessages/:mediaId/:communityId/:userId', authenticateJWT, mediaController.getMessagesMediaMarketing);
+router.get(
+  '/marketingMediaCommunity/getCommunityChats/:communityId/:userId',
+  authenticateJWT,
+  mediaController.getChatsCommunityMarketing
+);
 
-router.get('/marketingMediaCommunity/getCommunityChats/:communityId/:userId', authenticateJWT, mediaController.getChatsCommunityMarketing);
+router.get(
+  '/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId',
+  authenticateJWT,
+  mediaController.getMediaMarketing
+);
+router.get(
+  '/marketingMediaCommunity/getCommunityOffers/:communityId',
+  authenticateJWT,
+  mediaController.getCommunityMarketing
+);
 
-router.get('/marketingMediaCommunity/getMediaOffers/:podAddress/:mediaId', authenticateJWT, mediaController.getMediaMarketing);
-router.get('/marketingMediaCommunity/getCommunityOffers/:communityId', authenticateJWT, mediaController.getCommunityMarketing);
-
-router.post('/uploadDigitalArt/:mediaPod/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeMediaPhoto);
-router.post('/uploadAudio/:mediaPod/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeMediaAudio);
-router.post('/uploadVideo/:mediaPod/:mediaId', authenticateJWT, upload3.single('video'), mediaController.changeMediaVideo);
+router.post(
+  '/uploadDigitalArt/:mediaPod/:mediaId',
+  authenticateJWT,
+  upload1.single('image'),
+  mediaController.changeMediaPhoto
+);
+router.post(
+  '/uploadAudio/:mediaPod/:mediaId',
+  authenticateJWT,
+  upload2.single('audio'),
+  mediaController.changeMediaAudio
+);
+router.post(
+  '/uploadVideo/:mediaPod/:mediaId',
+  authenticateJWT,
+  upload3.single('video'),
+  mediaController.changeMediaVideo
+);
 router.post('/uploadBlog/:mediaPod/:mediaId', authenticateJWT, mediaController.changeMediaBlog);
-router.post('/uploadBlog/video/:mediaPod/:mediaId', authenticateJWT, upload4.single('video'), mediaController.changeMediaBlogVideo);
+router.post(
+  '/uploadBlog/video/:mediaPod/:mediaId',
+  authenticateJWT,
+  upload4.single('video'),
+  mediaController.changeMediaBlogVideo
+);
 
 router.post('/editMedia/:mediaPod/:mediaId', authenticateJWT, mediaController.editMedia);
-router.post('/changeMediaImage/:mediaPod/:mediaId', authenticateJWT, upload5.single('image'), mediaController.changeMediaMainPhoto);
+router.post(
+  '/changeMediaImage/:mediaPod/:mediaId',
+  authenticateJWT,
+  upload5.single('image'),
+  mediaController.changeMediaMainPhoto
+);
 
 router.post('/removeCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.removeCollab);
 router.post('/refuseCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.refuseCollab);
 router.post('/acceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.acceptCollab);
-router.post('/signTransactionAcceptCollab/:mediaPod/:mediaId', authenticateJWT, mediaController.signTransactionAcceptCollab);
+router.post(
+  '/signTransactionAcceptCollab/:mediaPod/:mediaId',
+  authenticateJWT,
+  mediaController.signTransactionAcceptCollab
+);
 
 router.post('/getMedias/:pagination/:lastId', mediaController.getMedias); // NOTE: It's used on public landing page hence authentication is removed
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
@@ -141,9 +192,12 @@ router.post('/removeFromMyPlaylists', authenticateJWT, playlistController.remove
 
 router.post('/marketingMediaCommunity/addOffer', authenticateJWT, mediaController.addOffer);
 router.post('/marketingMediaCommunity/changeOffer', authenticateJWT, mediaController.changeOffer);
-router.post('/marketingMediaCommunity/signTransactionAcceptOffer', authenticateJWT, mediaController.signTransactionAcceptOffer);
+router.post(
+  '/marketingMediaCommunity/signTransactionAcceptOffer',
+  authenticateJWT,
+  mediaController.signTransactionAcceptOffer
+);
 
 router.post('/marketingMediaCommunity/chats/lastView', authenticateJWT, mediaController.lastViewMediaMarketing);
 
 module.exports = router;
-
