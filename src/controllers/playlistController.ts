@@ -138,9 +138,9 @@ export const addToMyPlaylists = async (req: express.Request, res: express.Respon
       let thumbnails = playlistData.Thumbnails;
 
       //add media to its respectful list
-      if (chainType === 'PRIVI') {
+      if (chainType === 'PRIVI' && !priviMedias.includes(mediaId)) {
         priviMedias.push(mediaId);
-      } else {
+      } else if (!ethMedias.includes(mediaId)) {
         ethMedias.push(mediaId);
       }
 
