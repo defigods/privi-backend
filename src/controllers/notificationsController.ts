@@ -2,6 +2,7 @@ import {db} from "../firebase/firebase";
 import collections from '../firebase/collections';
 import { io, sockets } from "./serverController";
 import {filterTrending, getRateOfChangeAsMap} from "../functions/functions";
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import cron from 'node-cron';
 
 interface Notification {

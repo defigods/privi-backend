@@ -4,6 +4,7 @@ import { updateFirebase, addZerosToHistory } from '../functions/functions';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import cron from 'node-cron';
+import { uploadToFirestoreBucket } from '../functions/firestore'
 const notificationsController = require('./notificationsController');
 
 const apiKey = 'PRIVI'; //process.env.API_KEY;

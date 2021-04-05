@@ -3,6 +3,7 @@ import tradinionalLending from "../blockchain/traditionalLending";
 import coinBalance from "../blockchain/coinBalance.js";
 import { updateFirebase, getRateOfChangeAsMap, getLendingInterest, getStakingInterest, createNotification } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import collections from "../firebase/collections";
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';

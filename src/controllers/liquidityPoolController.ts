@@ -2,6 +2,7 @@ import express from 'express';
 import liquidityPool from "../blockchain/liquidtyPool";
 import coinBalance from "../blockchain/coinBalance";
 import { updateFirebase, addZerosToHistory, getRateOfChangeAsMap } from "../functions/functions";
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import notificationTypes from "../constants/notificationType";
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';

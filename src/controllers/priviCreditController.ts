@@ -1,5 +1,6 @@
 import express from 'express';
 import priviCredit from '../blockchain/priviCredit';
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import {
   updateFirebase,
   createNotification,

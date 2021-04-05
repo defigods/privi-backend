@@ -6,6 +6,7 @@ import {
   getMediaPodSellingAmount,
   generateUniqueId,
 } from '../functions/functions';
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import notificationTypes from '../constants/notificationType';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';

@@ -4,6 +4,7 @@ import express from "express";
 import { BADGES_MAP } from '../constants/badges';
 import badge from "../blockchain/badge";
 import { updateFirebase } from "../functions/functions";
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import cron from 'node-cron';
 
 const levelsController = require("./userLevelsController");

@@ -2,6 +2,7 @@ import {
   generateUniqueId,
 } from "../functions/functions";
 import collections from "../firebase/collections";
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import { db } from "../firebase/firebase";
 import express from "express";
 import fs from "fs";

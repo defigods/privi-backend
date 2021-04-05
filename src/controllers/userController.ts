@@ -2227,6 +2227,10 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
+
+      // upload to Firestore Bucket
+      await uploadToFirestoreBucket(req.file, "uploads/users", "images/users")
+
       const userRef = db.collection(collections.user).doc(req.file.originalname);
       const userGet = await userRef.get();
       const user: any = userGet.data();
@@ -2569,7 +2573,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
 const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-    
+
       // upload to Firestore Bucket
       await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
 

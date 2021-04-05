@@ -1,6 +1,7 @@
 import express from 'express';
 import social from '../blockchain/social';
 import coinBalance from '../blockchain/coinBalance';
+import { uploadToFirestoreBucket } from '../functions/firestore'
 import {
   updateFirebase,
   getMarketPrice,
@@ -342,6 +343,9 @@ exports.like = async (req: express.Request, res: express.Response) => {
 exports.changeSocialTokenPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
+      // upload to Firestore Bucket
+      await uploadToFirestoreBucket(req.file, "uploads/socialTokens", "images/socialTokens")
+
       const socialPoolsRef = db.collection(collections.socialPools).doc(req.file.originalname);
       const socialPoolsGet = await socialPoolsRef.get();
       const socialPool: any = socialPoolsGet.data();

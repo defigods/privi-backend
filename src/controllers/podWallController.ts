@@ -3,6 +3,7 @@ import { db } from "../firebase/firebase";
 import express from 'express';
 import path from 'path';
 import fs from "fs";
+import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const blogController = require('./blogController');
 const notificationsController = require('./notificationsController');
