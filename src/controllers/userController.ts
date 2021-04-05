@@ -359,29 +359,9 @@ const attachAddress = async (userPublicId: string) => {
 
 const signUp = async (req: express.Request, res: express.Response) => {
   try {
-    /*
-                const {
-                    role
-                    , firstName
-                    , lastName
-                    , gender
-                    , age
-                    , country
-                    , location
-                    , address
-                    , postalCode
-                    , dialCode
-                    , phone
-                    , currency
-                    , email
-                    , password } = req.query;
-        */
-
     const body = req.body;
 
     const firstName = body.firstName;
-    const country = body.country;
-    const currency = body.currency;
     const email = body.email;
     const password = body.password;
 
@@ -394,17 +374,6 @@ const signUp = async (req: express.Request, res: express.Response) => {
       res.send({ success: false, message: 'email and password required' });
       return;
     }
-
-    /*
-                const lastName = body.lastName;
-                const gender = body.gender;
-                const age = body.age;
-                const location = body.location;
-                const address = body.address;
-                const postalCode = body.postalCode;
-                const dialCode = body.dialCode;
-                const phone = body.phone;
-        */
 
     let uid: string = '';
     const lastUpdate = Date.now();
@@ -437,8 +406,6 @@ const signUp = async (req: express.Request, res: express.Response) => {
         // userData - no check if firestore insert works? TODO
         transaction.set(db.collection(collections.user).doc(uid), {
           firstName: firstName,
-          country: country,
-          currency: currency,
           email: email,
           password: hash,
           role: role,
@@ -2569,7 +2536,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
 const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-    
+
       // upload to Firestore Bucket
       await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
 
