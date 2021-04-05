@@ -9,6 +9,30 @@ import { generateUniqueId, updateFirebase } from '../functions/functions';
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
 
+export const registerMediaView = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    
+    const mediaRef = db.collection(collections.medias).doc(body.mediaId);
+    const mediaData: any = mediaRef.get();
+
+    await mediaRef.update({
+      totalViews: mediaData.totalViews ?? 0 + 1
+    });
+
+    res.send({
+      success: true,
+      data: {
+        totalViews: mediaData.totalViews ?? 0 + 1
+      }
+    });
+  } catch (err) {
+    console.log('Error in controllers/priviCredit -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+};
+
+
 export const getEthMedia = async (req: express.Request, res: express.Response) => {
   try {
     const docsSnap = (await db.collection(collections.ethMedia).get()).docs;

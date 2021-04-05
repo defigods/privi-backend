@@ -93,6 +93,7 @@ router.get('/getEthMedia/:id', mediaController.getEthMediaItem);
 router.get('/getMedia/:mediaId', authenticateJWT, mediaController.getMedia);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
+router.post('/mediaViewed/:mediaId', mediaController.registerMediaView);
 router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBlog);
 router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
