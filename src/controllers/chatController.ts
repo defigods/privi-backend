@@ -339,6 +339,51 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
     }
 };
 
+exports.getAllArtists = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+
+        let users: any[] = [];
+
+        const userQuery = await db.collection(collections.user).get();
+        if (!userQuery.empty) {
+            for (const doc of userQuery.docs) {
+                let data = doc.data();
+                data.id = doc.id;
+                users.push({
+                    ...data,
+                    isExternalUser: false
+                });
+            }
+        }
+
+        const artistQuery = await db.collection(collections.mediaUsers).get();
+        if (!artistQuery.empty) {
+            for (const doc of artistQuery.docs) {
+                let data = doc.data();
+                data.id = doc.id;
+                users.push({
+                    ...data,
+                    firstName: data.user,
+                    isExternalUser: true
+                });
+            }
+        }
+
+        res.status(200).send({
+            success: true,
+            data: users,
+            count: artistQuery.docs.length
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> getAllArtists()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getAllArtists()' + e
+        });
+    }
+};
+
 exports.getFollowings = async (req: express.Request, res: express.Response) => {
     try {
         let userId = req.params.userId;
