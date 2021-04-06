@@ -195,6 +195,7 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     const type = body.Type;
     const hash = body.Hash;
     const signature = body.Signature;
+    // console.log(body);
     if (!req.body.priviUser.id || req.body.priviUser.id != userId) {
       console.log('error: jwt user is not the same as fromUid');
       res.send({ success: false, message: 'jwt user is not the same as fromUid' });
@@ -205,11 +206,11 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
       updateFirebase(blockchainRes);
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/walletController -> send(), blockchain returned false', blockchainRes.message);
+      console.log('Error in controllers/walletController -> transfer(), blockchain returned false', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (err) {
-    console.log('Error in controllers/walletController -> send()', err);
+    console.log('Error in controllers/walletController -> transfer()', err);
     res.send({ success: false });
   }
 };
@@ -646,10 +647,10 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
     }
 
     await db.collection(collections.wallet)
-        .doc(userId)
-        .collection(collections.registeredEthAddress)
-        .doc(address)
-        .delete();
+      .doc(userId)
+      .collection(collections.registeredEthAddress)
+      .doc(address)
+      .delete();
 
     res.send({ success: true });
   } catch (err) {
