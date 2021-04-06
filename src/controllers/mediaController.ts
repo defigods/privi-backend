@@ -5,7 +5,7 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;

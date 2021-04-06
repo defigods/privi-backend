@@ -1,7 +1,7 @@
 import express, { response } from 'express';
 import podFTProtocol from '../blockchain/podFTProtocol';
 import podNFTProtocol from '../blockchain/podNFTProtocol';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import {
   updateFirebase,
   getRateOfChangeAsMap,

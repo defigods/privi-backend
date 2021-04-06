@@ -1,5 +1,5 @@
 import collections from '../firebase/collections';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import { db } from '../firebase/firebase';
 import express from 'express';
 import path from 'path';
@@ -102,7 +102,7 @@ exports.changePostPhoto = async (req: express.Request, res: express.Response) =>
     if (req.file) {
 
       // upload to Firestore Bucket
-      await uploadToFirestoreBucket(req.file, "uploads/wallPosts", "images/wallPosts")
+      // await uploadToFirestoreBucket(req.file, "uploads/wallPosts", "images/wallPosts")
 
       const userWallPostRef = db.collection(collections.userWallPost).doc(req.file.originalname);
       const userWallPostGet = await userWallPostRef.get();
@@ -145,7 +145,7 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
         filesName.push('/' + userWallPostId + '/' + files[i].originalname);
 
         // upload to Firestore Bucket
-        await uploadToFirestoreBucket(files[i], "uploads/wallPosts", "images/wallPosts")
+        // await uploadToFirestoreBucket(files[i], "uploads/wallPosts", "images/wallPosts")
       }
 
       console.log(req.params.userWallPostId, filesName);

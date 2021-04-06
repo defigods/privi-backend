@@ -3,7 +3,7 @@ import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
 import fs from 'fs';
 import { generateUniqueId } from '../functions/functions';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const apiKey = 'PRIVI'; //process.env.API_KEY;
 

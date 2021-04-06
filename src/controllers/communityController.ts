@@ -11,7 +11,7 @@ import {
   getSellTokenAmount,
   getUidAddressMap,
 } from '../functions/functions';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import badge from '../blockchain/badge';
 import community from '../blockchain/community';
 import coinBalance from '../blockchain/coinBalance';

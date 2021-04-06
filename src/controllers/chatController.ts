@@ -2,7 +2,7 @@ import express from "express";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
 import { generateUniqueId } from "../functions/functions";
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import fs from "fs";
 import path from "path";
 

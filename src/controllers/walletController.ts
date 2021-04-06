@@ -18,7 +18,7 @@ import path from 'path';
 import fs from 'fs';
 import { AMBERDATA_API_KEY, MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE } from '../constants/configuration';
 import { type } from 'os';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 
 require('dotenv').config();
 //const apiKey = process.env.API_KEY;
@@ -1203,7 +1203,7 @@ exports.changeTokenPhoto = async (req: express.Request, res: express.Response) =
   try {
     if (req.file) {
        // upload to Firestore Bucket
-       await uploadToFirestoreBucket(req.file, "uploads/tokens", "images/tokens")
+      //  await uploadToFirestoreBucket(req.file, "uploads/tokens", "images/tokens")
 
       res.send({ success: true });
     } else {
