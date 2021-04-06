@@ -3707,6 +3707,64 @@ const getFriends = async (req: express.Request, res: express.Response) => {
   }
 };
 
+/**
+ * Function check if user is existing from id.
+ * @param req {userId}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: ids list
+ */
+const checkIfUserExists = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    if (userData) {
+      res.send({ success: true });
+    } else {
+      res.send({ success: false });
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> checkIfUserExists(): ' + e;
+  }
+}
+
+
+/**
+ * Function increase user's profileViews from id.
+ * @param req {userId}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: updated profileViews count
+ */
+const sumTotalViews = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let userId = body.userId;
+
+    const userRef = db.collection(collections.user).doc(userId);
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    if (userData !== undefined ) {
+      const currentProfileViews = userData.profileViews || 0;
+      await userRef.update({
+        profileViews: currentProfileViews + 1
+      });
+
+      res.send({
+        success: true,
+        data: {
+          TotalViews: currentProfileViews + 1
+        }
+      });
+    } else {
+      res.send({
+        success: false
+      });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userController -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+};
+
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -3773,5 +3831,7 @@ module.exports = {
   getSlugFromId,
   getFriends,
   superFollowerUser,
-  getPointsInfo
+  getPointsInfo,
+  checkIfUserExists,
+  sumTotalViews
 };

@@ -160,7 +160,8 @@ router.get('/badges/getBadgeBySymbol/:badgeSymbol', authenticateJWT, userControl
 router.get('/getUserScores/:userId', authenticateJWT, userController.getUserScores);
 router.get('/getStatistics/:userId', authenticateJWT, userController.getStatistics);
 
-//router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
+router.get('/checkIfUserExists/:userId', userController.checkIfUserExists);
+router.post('/sumTotalViews', userController.sumTotalViews);
 
 router.post('/governance/createIssue', userController.createIssue);
 router.post('/governance/createProposal', userController.createProposal);
