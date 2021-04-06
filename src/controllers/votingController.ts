@@ -3,6 +3,7 @@ import { generateUniqueId, updateFirebase } from "../functions/functions";
 import { db } from "../firebase/firebase";
 import collections, { voting } from "../firebase/collections";
 import cron from 'node-cron';
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import votation from "../blockchain/votation";
 import coinBalance from '../blockchain/coinBalance';
 import path from "path";
@@ -221,6 +222,9 @@ exports.createVoting = async (req: express.Request, res: express.Response) => {
 exports.changeVotingPhoto = async (req: express.Request, res: express.Response) => {
     try {
         if (req.file) {
+             // upload to Firestore Bucket
+            // await uploadToFirestoreBucket(req.file, "uploads/votation", "images/votation")
+
             const votingRef = db.collection(collections.voting)
                 .doc(req.file.originalname);
             const votingGet = await votingRef.get();

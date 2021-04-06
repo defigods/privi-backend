@@ -7,7 +7,7 @@ import collections, { badges } from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import badge from '../blockchain/badge';
 import {
   addZerosToHistory,
@@ -2194,6 +2194,10 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
+
+      // upload to Firestore Bucket
+      // await uploadToFirestoreBucket(req.file, "uploads/users", "images/users")
+
       const userRef = db.collection(collections.user).doc(req.file.originalname);
       const userGet = await userRef.get();
       const user: any = userGet.data();
@@ -2538,7 +2542,7 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     if (req.file) {
 
       // upload to Firestore Bucket
-      await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
+      // await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
 
       const badgeRef = db.collection(collections.badges).doc(req.file.originalname);
 
