@@ -300,14 +300,16 @@ export const changeMediaBlog = async (req: express.Request, res: express.Respons
 
       let mediaEdited = { ...media };
       mediaEdited.editorPages = body.editorPages || [];
-      mediaEdited.mainHashtag = body.mainHashtag || '';
+      mediaEdited.IsUploaded = true;
+
+      /*mediaEdited.mainHashtag = body.mainHashtag || '';
       mediaEdited.hashtags = body.hashtags || [];
       mediaEdited.schedulePost = body.schedulePost || Date.now(); // integer timestamp eg 1609424040000
       mediaEdited.description = body.description || '';
       mediaEdited.descriptionArray = body.descriptionArray || [];
       mediaEdited.author = body.author || '';
       mediaEdited.selectedFormat = body.selectedFormat || 0; // 0 story 1 wall post
-      mediaEdited.hasPhoto = body.hasPhoto || false;
+      mediaEdited.hasPhoto = body.hasPhoto || false;*/
       await mediasRef.update(mediaEdited);
 
       res.send({ success: true, data: '/media/getBlog/:mediaId/:pagination' });

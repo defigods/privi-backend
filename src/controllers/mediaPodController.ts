@@ -700,6 +700,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
+    console.log(podAddress, mediaSymbol, hash, signature, apiKey);
     const blockchainRes = await mediaPod.uploadMedia(podAddress, mediaSymbol, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
