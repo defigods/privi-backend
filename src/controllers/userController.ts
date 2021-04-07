@@ -7,7 +7,7 @@ import collections, { badges } from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
-import { uploadToFirestoreBucket } from '../functions/firestore'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import badge from '../blockchain/badge';
 import {
   addZerosToHistory,
@@ -2194,6 +2194,10 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
+
+      // upload to Firestore Bucket
+      // await uploadToFirestoreBucket(req.file, "uploads/users", "images/users")
+
       const userRef = db.collection(collections.user).doc(req.file.originalname);
       const userGet = await userRef.get();
       const user: any = userGet.data();
@@ -2371,7 +2375,7 @@ const getAllBadges = async (req: express.Request, res: express.Response) => {
       const badgesSnap = await db.collection(collections.badges).get();
       badgesSnap.forEach((doc) => {
         const data: any = doc.data();
-        if (badgeSymbolList.includes(doc.id)) retData.push(data);
+        if (badgeSymbolList.includes(data.Symbol)) retData.push(data);
       })
       res.send({ success: true, data: retData });
     }
@@ -2434,13 +2438,13 @@ const getBadgesFunction = (address: string): Promise<any[]> => {
             tokenData = token.data();
           }
 
-          if (amount > 0) {
+          // if (amount > 0) { // Fixed: remove filter amount > 0 for privi badges
             retData.push({
               ...doc.data(),
               Amount: amount,
               tokenData: tokenData,
             });
-          }
+          // }
         });
         // console.log(retData)
         resolve(retData);
@@ -2538,7 +2542,7 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     if (req.file) {
 
       // upload to Firestore Bucket
-      await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
+      // await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
 
       const badgeRef = db.collection(collections.badges).doc(req.file.originalname);
 
@@ -3703,6 +3707,64 @@ const getFriends = async (req: express.Request, res: express.Response) => {
   }
 };
 
+/**
+ * Function check if user is existing from id.
+ * @param req {userId}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: ids list
+ */
+const checkIfUserExists = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    if (userData) {
+      res.send({ success: true });
+    } else {
+      res.send({ success: false });
+    }
+  } catch (e) {
+    return 'Error in controllers/userController -> checkIfUserExists(): ' + e;
+  }
+}
+
+
+/**
+ * Function increase user's profileViews from id.
+ * @param req {userId}. urlId : identifier of the user/community/pod. type: string that indicates if it's for a user, community, ft pod or nft pod
+ * @param res {success, data}. success: boolean that indicates if the opreaction is performed. data: updated profileViews count
+ */
+const sumTotalViews = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let userId = body.userId;
+
+    const userRef = db.collection(collections.user).doc(userId);
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    if (userData !== undefined ) {
+      const currentProfileViews = userData.profileViews || 0;
+      await userRef.update({
+        profileViews: currentProfileViews + 1
+      });
+
+      res.send({
+        success: true,
+        data: {
+          TotalViews: currentProfileViews + 1
+        }
+      });
+    } else {
+      res.send({
+        success: false
+      });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userController -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+};
+
+
 module.exports = {
   emailValidation,
   forgotPassword,
@@ -3769,5 +3831,7 @@ module.exports = {
   getSlugFromId,
   getFriends,
   superFollowerUser,
-  getPointsInfo
+  getPointsInfo,
+  checkIfUserExists,
+  sumTotalViews
 };

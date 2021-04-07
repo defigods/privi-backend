@@ -4,6 +4,7 @@ import mediaPod from '../blockchain/mediaPod';
 import { updateFirebase, getAddresUidMap, isUserValidForLiveStream } from '../functions/functions';
 import collections, { medias, streaming } from '../firebase/collections';
 import { db } from '../firebase/firebase';
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import fs from 'fs';
 import path from 'path';
 import axios from 'axios';

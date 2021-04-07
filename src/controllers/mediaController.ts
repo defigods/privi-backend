@@ -5,6 +5,7 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
@@ -45,7 +46,8 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
 };
 
 
-const pageSize = 6;
+const pageSize = 100;
+// const pageSize = 6;s
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
@@ -88,6 +90,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         medias = [...dataMediasSnap];
       }
       availableSize -= medias.length;
+      console.log("availableSize", availableSize, medias.length)
 
       if (findBlockchainOthers && findBlockchainOthers.length > 0 && availableSize > 0) {
         let docsEthMediaSnap: any[] = [];
@@ -115,8 +118,11 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     const retData = {
       data: medias,
       lastId: medias.length > 0 ? medias[medias.length - 1].id : 'null',
-      hasMore: medias.length == pageSize
+      // hasMore: medias.length == pageSize
+      hasMore: false
     }
+
+    console.log(retData);
 
     res.send({ success: true, ...retData });
   } catch (e) {

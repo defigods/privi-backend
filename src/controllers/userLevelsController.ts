@@ -2,6 +2,7 @@ import express from "express";
 import collections from "../firebase/collections";
 import {db} from "../firebase/firebase";
 import {LEVELS, ONE_DAY, ONE_HOUR} from '../constants/userLevels'
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const getLevelsInfo = async (req: express.Request, res: express.Response) => {
     try {

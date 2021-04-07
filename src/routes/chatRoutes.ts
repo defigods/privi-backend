@@ -58,6 +58,7 @@ router.post('/getMessages', authenticateJWT, chatController.getMessages);
 router.post('/messagesNotSeen', authenticateJWT, chatController.getMessagesNotSeen);
 router.post('/lastView', authenticateJWT, chatController.lastView);
 router.post('/newChat', authenticateJWT, chatController.createChat);
+router.post('/getAllArtists', chatController.getAllArtists);
 
 router.post('/discord/getChat', authenticateJWT, chatController.discordGetChat);
 router.post('/discord/getChatInfoMedia', authenticateJWT, chatController.discordGetChatInfoMedia);
