@@ -2375,7 +2375,7 @@ const getAllBadges = async (req: express.Request, res: express.Response) => {
       const badgesSnap = await db.collection(collections.badges).get();
       badgesSnap.forEach((doc) => {
         const data: any = doc.data();
-        if (badgeSymbolList.includes(doc.id)) retData.push(data);
+        if (badgeSymbolList.includes(data.Symbol)) retData.push(data);
       })
       res.send({ success: true, data: retData });
     }
@@ -2438,13 +2438,13 @@ const getBadgesFunction = (address: string): Promise<any[]> => {
             tokenData = token.data();
           }
 
-          if (amount > 0) {
+          // if (amount > 0) { // Fixed: remove filter amount > 0 for privi badges
             retData.push({
               ...doc.data(),
               Amount: amount,
               tokenData: tokenData,
             });
-          }
+          // }
         });
         // console.log(retData)
         resolve(retData);

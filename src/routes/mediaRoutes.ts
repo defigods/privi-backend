@@ -99,7 +99,7 @@ router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBl
 router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/getEthMedia/:pagination/:lastId', mediaController.getEthMedia);
 
-router.get('/getPlaylists', authenticateJWT, playlistController.getPlaylists);
+router.get('/getPlaylists', playlistController.getPlaylists);
 router.get('/getMyPlaylists/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
 
