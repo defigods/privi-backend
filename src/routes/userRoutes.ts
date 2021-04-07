@@ -92,7 +92,9 @@ let upload5 = multer({
 // AUTHENTICATION
 router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
+router.post('/signInWithWallet', userController.signInWithWallet);
 router.post('/signUp', userController.signUp);
+router.post('/signUpWithWallet', userController.signUpWithWallet);
 // router.post('/createMnemonic', userController.createMnemonic);
 //router.get('/:userId', userController.signIn);
 router.get('/email_validation/:validation_slug', userController.emailValidation);
