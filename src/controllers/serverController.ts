@@ -231,6 +231,7 @@ export const startSocket = (env: Env) => {
         connected: true,
         socketId: socket.id,
       });
+      socket.broadcast.emit("user_connect_status", { userId, connected: true });
     });
 
     // when the user disconnects.. perform this
@@ -250,6 +251,8 @@ export const startSocket = (env: Env) => {
             connected: false,
             socketId: null,
           });
+
+          socket.broadcast.emit("user_connect_status", { userId: user.id, connected: false });
         } else {
           console.log("disconnect");
         }

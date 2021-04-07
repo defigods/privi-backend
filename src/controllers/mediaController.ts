@@ -5,6 +5,7 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
@@ -104,7 +105,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
             if (media.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
               // Blockchain
               for (let block of findBlockchainOthers) {
-                if (media.tag === block) {
+                if (media.tag.charAt(0).toUpperCase() + media.tag.slice(1) === block) {
                   //NOTE: apparently in firebase eth media does not have type  ?
                   //showing them when all mediatypes activated
                   if (mediaTypes.length >= 7) {
@@ -120,7 +121,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           } else {
             // Blockchain
             for (let block of findBlockchainOthers) {
-              if (media.tag === block) {
+              if (media.tag.charAt(0).toUpperCase() + media.tag.slice(1) === block) {
                 //NOTE: apparently in firebase eth media does not have type  ?
                 //showing them when all mediatypes activated
                 if (mediaTypes.length >= 7) {

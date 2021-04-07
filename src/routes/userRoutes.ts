@@ -92,7 +92,9 @@ let upload5 = multer({
 // AUTHENTICATION
 router.post('/forgot_password', userController.forgotPassword);
 router.post('/signIn', userController.signIn);
+router.post('/signInWithWallet', userController.signInWithWallet);
 router.post('/signUp', userController.signUp);
+router.post('/signUpWithWallet', userController.signUpWithWallet);
 // router.post('/createMnemonic', userController.createMnemonic);
 //router.get('/:userId', userController.signIn);
 router.get('/email_validation/:validation_slug', userController.emailValidation);
@@ -160,7 +162,8 @@ router.get('/badges/getBadgeBySymbol/:badgeSymbol', authenticateJWT, userControl
 router.get('/getUserScores/:userId', authenticateJWT, userController.getUserScores);
 router.get('/getStatistics/:userId', authenticateJWT, userController.getStatistics);
 
-//router.post('/getBasicInfo', authenticateJWT, userController.getBasicInfo);
+router.get('/checkIfUserExists/:userId', userController.checkIfUserExists);
+router.post('/sumTotalViews', userController.sumTotalViews);
 
 router.post('/governance/createIssue', userController.createIssue);
 router.post('/governance/createProposal', userController.createProposal);

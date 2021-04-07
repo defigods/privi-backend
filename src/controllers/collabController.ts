@@ -1,6 +1,7 @@
 import express from "express";
 import { db } from "../firebase/firebase";
 import collections from '../firebase/collections';
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import { TwitterClient } from 'twitter-api-client';
 
 ///////////////////////////// POST ///////////////////////////////

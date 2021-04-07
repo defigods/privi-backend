@@ -1,4 +1,5 @@
 import collections from "../firebase/collections";
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import { db } from "../firebase/firebase";
 import express from 'express';
 import path from 'path';

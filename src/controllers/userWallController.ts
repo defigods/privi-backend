@@ -1,4 +1,5 @@
 import collections from '../firebase/collections';
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import { db } from '../firebase/firebase';
 import express from 'express';
 import path from 'path';
@@ -99,6 +100,10 @@ exports.postDelete = async (req: express.Request, res: express.Response) => {
 exports.changePostPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
+
+      // upload to Firestore Bucket
+      // await uploadToFirestoreBucket(req.file, "uploads/wallPosts", "images/wallPosts")
+
       const userWallPostRef = db.collection(collections.userWallPost).doc(req.file.originalname);
       const userWallPostGet = await userWallPostRef.get();
       const userWallPost: any = userWallPostGet.data();
@@ -138,7 +143,11 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
 
       for (let i = 0; i < files.length; i++) {
         filesName.push('/' + userWallPostId + '/' + files[i].originalname);
+
+        // upload to Firestore Bucket
+        // await uploadToFirestoreBucket(files[i], "uploads/wallPosts", "images/wallPosts")
       }
+
       console.log(req.params.userWallPostId, filesName);
       await userWallPostRef.update({
         descriptionImages: filesName,
@@ -155,7 +164,7 @@ exports.changePostDescriptionPhotos = async (req: express.Request, res: express.
 };
 
 exports.addVideoPost = async (req: express.Request, res: express.Response) => {
-  try{
+  try {
     if (req.file && req.file.originalname && req.params && req.params.userWallPostId) {
       const userWallPostRef = db.collection(collections.userWallPost).doc(req.params.userWallPostId);
       const userWallPostGet = await userWallPostRef.get();
@@ -182,7 +191,7 @@ exports.addVideoPost = async (req: express.Request, res: express.Response) => {
 };
 
 exports.getVideoPost = async (req: express.Request, res: express.Response) => {
-  try{
+  try {
     if (req.params && req.params.userWallPostId && req.params.videoId) {
 
       const directoryPath = path.join('uploads', 'userWallPostId', 'user-' + req.params.userWallPostId, req.params.videoId);
@@ -504,12 +513,12 @@ exports.onlyForSuperFollowers = async (req: express.Request, res: express.Respon
   try {
     let body = req.body;
     const userWallPostRef = db.collection(collections.userWallPost).doc(body.wallPostId);
-	const userWallPostGet = await userWallPostRef.get();
-	await userWallPostRef.update( {
-		OnlySuperFollowers: body.OnlySuperFollowers
-	});
-	const userWallPost: any = userWallPostGet.data();
-	res.send({ success: true, data: userWallPost});
+    const userWallPostGet = await userWallPostRef.get();
+    await userWallPostRef.update({
+      OnlySuperFollowers: body.OnlySuperFollowers
+    });
+    const userWallPost: any = userWallPostGet.data();
+    res.send({ success: true, data: userWallPost });
   } catch (err) {
     console.log('Error in controllers/userWallController -> onlyForSuperfollowers()', err);
     res.send({ success: false, error: err });
