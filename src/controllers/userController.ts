@@ -16,6 +16,7 @@ import {
   getUidFromEmail,
   updateFirebase,
   getMarketPrice,
+  getAddresUidMap
 } from '../functions/functions';
 import path from 'path';
 import fs from 'fs';
@@ -24,6 +25,7 @@ import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates
 import { sockets } from './serverController';
 import { LEVELS, ONE_DAY } from '../constants/userLevels';
 import { send } from 'process';
+const uuid = require('uuid');
 
 const walletController = require('./walletController');
 const levels = require('./userLevelsController');
@@ -301,6 +303,64 @@ const signIn = async (req: express.Request, res: express.Response) => {
   }
 };
 
+const signInWithWallet = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const address = body.address;
+    if (address) {
+      // Compare user & passwd between login input and DB
+      const user = await db.collection(collections.user).where('address', '==', address).get();
+      // Return result
+      if (user.empty) {
+        console.log('not found');
+        res.send({ isSignedIn: false, userData: {}, message: "Wallet Address doesn't exsit" });
+      } else {
+        console.log('found from address');
+        const data = user.docs[0].data();
+        
+        if (!data.notifications) {
+          data.notifications = [];
+        }
+        // data.notifications.concat(allWallPost);
+
+        let success = true;
+
+        data.id = user.docs[0].id;
+        if (success) {
+          console.log('Login successful');
+
+          // Generate an access token
+          let expiryDate = new Date();
+          expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
+
+          const accessToken = jwt.sign(
+            {
+              id: data.id,
+              email: data.email,
+              role: data.role,
+              iat: Date.now(),
+              exp: expiryDate.getTime(),
+            },
+            configuration.JWT_SECRET_STRING
+          );
+
+          res.send({
+            isSignedIn: true,
+            userData: data,
+            accessToken: accessToken,
+          });
+        }
+        
+      }
+    } else {
+      console.log('Wallet Address required');
+      res.send({ isSignedIn: false, userData: {}, message: "Address required" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/user.ts -> signIn(): ', err);
+  }
+};
+
 const attachAddress = async (userPublicId: string) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -356,6 +416,145 @@ const attachAddress = async (userPublicId: string) => {
     }
   });
 };
+
+const signUpWithWallet = async (req: express.Request, res: express.Response) => {
+  
+  try {
+
+    const body = req.body;
+
+    const firstName = body.firstName;
+    const address = body.address;
+    const email = body.email;
+    const password = uuid.v4();
+
+    // const role = body.role; // role should not be coming from user input?
+    const role = 'USER';
+
+    if (email == '' || password == '') {
+      // basic requirement validation
+      console.log('email and password required');
+      res.send({ success: false, message: 'email and password required' });
+      return;
+    }
+
+    /*
+                const lastName = body.lastName;
+                const gender = body.gender;
+                const age = body.age;
+                const location = body.location;
+                const address = body.address;
+                const postalCode = body.postalCode;
+                const dialCode = body.dialCode;
+                const phone = body.phone;
+        */
+
+    let uid: string = '';
+    const lastUpdate = Date.now();
+
+    // check if address is in database
+    const addressUidMap = await getAddresUidMap();
+    let toUid = addressUidMap[address!.toString()];
+
+    if (toUid) {
+      res.send({ success: false, message: 'address is already in database' });
+      return;
+    }
+
+    const orgName = 'companies'; // hardcoded for now
+    const userPublicId = generateUniqueId(); // now we generate it
+    const caller = apiKey;
+    const blockchainRes = await dataProtocol.registerUser(orgName, userPublicId, role, caller);
+
+    if (blockchainRes && blockchainRes.success) {
+      // Get IDs from blockchain response
+      uid = userPublicId;
+
+      const salt = await bcrypt.genSalt(10);
+      const hash = await bcrypt.hash(password, salt);
+
+      const validationSecret = crypto.randomBytes(8).toString('hex');
+
+      // Creates User in DB
+      await db.runTransaction(async (transaction) => {
+        // userData - no check if firestore insert works? TODO
+        transaction.set(db.collection(collections.user).doc(uid), {
+          firstName: firstName,
+          email: email,
+          password: hash,
+          role: role,
+          validationSecret: validationSecret,
+          isEmailValidated: false,
+          lastUpdate: lastUpdate,
+          endorsementScore: 0.5,
+          trustScore: 0.5,
+          awards: [],
+          creds: 0,
+          badges: [],
+          points: 0,
+          followings: [],
+          numFollowings: 0,
+          followers: [],
+          numFollowers: 0,
+          followingNFTPods: [],
+          followingFTPods: [],
+          myNFTPods: [],
+          myFTPods: [],
+          investedNFTPods: [],
+          investedFTPods: [],
+          Likes: [],
+          twitter: '',
+          instagram: '',
+          facebook: '',
+          level: 1,
+          notifications: [],
+          verified: false,
+          anon: false,
+          anonAvatar: 'ToyFaces_Colored_BG_111.jpg',
+          hasPhoto: false,
+          mnemonic: '',
+          pubKey: '',
+          address: address,
+          userAddress: '',
+          dob: 0,
+          tutorialsSeen: {
+            communities: false,
+            pods: false,
+            creditPools: false,
+          },
+          urlSlug: uid,
+        });
+
+      });
+
+      // ------------------------- attach address only test net ----------------------------
+      // await attachAddress(userPublicId);
+
+      // ------------------------- add zero to balance history to make graph prettier ----------------------------
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyCrypto), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyFT), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyNFT), 'price');
+      addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historySocial), 'price');
+
+      // ------------------------- Provisional for TestNet ---------------------------------
+      // give user some balance in each tokens (50/tokenRate).
+      const updatedUserSnap = await db.collection(collections.user).doc(uid).get();
+      const updatedUserData: any = updatedUserSnap.data();
+      const userAddress = updatedUserData.address;
+      walletController.giveAwayTokens(userAddress, 100);
+
+      // ------------------------------------------------------------------------------------
+
+      res.send({ success: true, uid: uid, lastUpdate: lastUpdate });
+    } else {
+      console.log('Warning in controllers/user.ts -> signUp():', blockchainRes);
+      res.send({ success: false, message: 'Warning in controllers/user.ts -> signUp():' });
+    }
+  } catch (err) {
+    console.log('Error in controllers/user.ts -> signUp(): ', err);
+    res.send({ success: false, message: 'Error in controllers/user.ts -> signUp():' });
+  }
+}
 
 const signUp = async (req: express.Request, res: express.Response) => {
   try {
@@ -3741,7 +3940,9 @@ module.exports = {
   forgotPassword,
   resendEmailValidation,
   signIn,
+  signInWithWallet,
   signUp,
+  signUpWithWallet,
   // createMnemonic,
   getFollowPodsInfo,
   getFollowingUserInfo,
