@@ -3,6 +3,7 @@ import insurance from "../blockchain/insurance";
 import { updateFirebase, getRateOfChangeAsMap, createNotification, getUidNameMap, getEmailUidMap, generateUniqueId, filterTrending } from "../functions/functions";
 import notificationTypes from "../constants/notificationType";
 import collections, { insurancePools } from "../firebase/collections";
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import { db } from "../firebase/firebase";
 import cron from 'node-cron';
 import fs from 'fs';

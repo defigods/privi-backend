@@ -4,6 +4,7 @@ import collections from "../firebase/collections";
 import coinBalance from "../blockchain/coinBalance";
 import cron from "node-cron";
 import { generateUniqueId } from "../functions/functions";
+//import { uploadToFirestoreBucket } from '../functions/firestore'
 import fs from "fs";
 import path from "path";
 
@@ -343,6 +344,9 @@ const changeCampaignPhoto = async (
 ) => {
   try {
     if (req.file) {
+      // upload to Firestore Bucket
+      // await uploadToFirestoreBucket(req.file, "uploads/campaigns", "images/campaigns")
+
       res.send({ success: true });
     } else {
       console.log(
