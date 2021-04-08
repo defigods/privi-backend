@@ -46,7 +46,7 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
 };
 
 
-const pageSize = 100;
+const pageSize = 6;
 // const pageSize = 6;s
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
@@ -67,10 +67,12 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
       if (findBlockchainPRIVI) {
         let docsMediasSnap: any[] = [];
-        const lastPriviMediaSnap = await db.collection(collections.streamings).doc(prevLastMediaId).get();
-        if (prevLastMediaId != 'null' && lastPriviMediaSnap.exists) {
-          docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).limit(availableSize).get()).docs;
-          isLastIdPrivi = true;
+        if (prevLastMediaId != 'null') {
+          const lastPriviMediaSnap = await db.collection(collections.streamings).doc(prevLastMediaId).get();
+          if (lastPriviMediaSnap.exists) {
+            docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).limit(availableSize).get()).docs;
+            isLastIdPrivi = true;
+          }
         }
         else docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).limit(availableSize).get()).docs;
         let dataMediasSnap = docsMediasSnap.map((docSnap) => {
@@ -90,7 +92,6 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         medias = [...dataMediasSnap];
       }
       availableSize -= medias.length;
-      console.log("availableSize", availableSize, medias.length)
 
       if (findBlockchainOthers && findBlockchainOthers.length > 0 && availableSize > 0) {
         let docsEthMediaSnap: any[] = [];
@@ -118,11 +119,11 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     const retData = {
       data: medias,
       lastId: medias.length > 0 ? medias[medias.length - 1].id : 'null',
-      // hasMore: medias.length == pageSize
-      hasMore: false
+      hasMore: medias.length == pageSize
+      // hasMore: false
     }
 
-    console.log(retData);
+    console.log(retData.lastId);
 
     res.send({ success: true, ...retData });
   } catch (e) {
