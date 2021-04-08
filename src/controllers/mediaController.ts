@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../firebase/firebase';
+import { db, firebase } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
 import collections, { user } from '../firebase/collections';
@@ -13,7 +13,7 @@ const apiKey = 'PRIVI'; //process.env.API_KEY;
 export const registerMediaView = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
-    
+
     const mediaRef = db.collection(collections.medias).doc(body.mediaId);
     const mediaData: any = mediaRef.get();
 
@@ -45,105 +45,86 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
   }
 };
 
+
+const pageSize = 100;
+// const pageSize = 6;s
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
+    const prevLastMediaId: string = req.params.lastId;
+    let body = req.body;  // filters
 
-    let body = req.body;
+    let availableSize = pageSize;
+    let isLastIdPrivi = false;
 
     let medias: any[] = [];
-    let dataMedias: any[] = [];
-    let dataEthMedia: any[] = [];
 
     // Blockchain & SearchValue filters
-    if (body.blockChains && body.blockChains.length > 0) {
+    if (body.blockChains) {
       let findBlockchainPRIVI = body.blockChains.find((block) => block === 'PRIVI');
       let findBlockchainOthers = body.blockChains.filter((block) => block !== 'PRIVI');
       let mediaTypes = body.mediaTypes;
 
       if (findBlockchainPRIVI) {
-        const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
+        let docsMediasSnap: any[] = [];
+        const lastPriviMediaSnap = await db.collection(collections.streamings).doc(prevLastMediaId).get();
+        if (prevLastMediaId != 'null' && lastPriviMediaSnap.exists) {
+          docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).limit(availableSize).get()).docs;
+          isLastIdPrivi = true;
+        }
+        else docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).limit(availableSize).get()).docs;
         let dataMediasSnap = docsMediasSnap.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
           data.blockchain = 'PRIVI';
           return data;
         });
-
-        for (let media of dataMediasSnap) {
-          // Searched Value
-          if (body.searchValue != '') {
-            if (
-              (media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
-              (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase()))
-            ) {
-              let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-              if (applyTypeFilter && media.Type && media.Type !== '') {
-                dataMedias.push(media);
-              }
-            }
-          } else {
-            let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-            if (applyTypeFilter && media.Type && media.Type !== '') {
-              dataMedias.push(media);
-            }
-          }
+        // Searched Value
+        if (body.searchValue != '') {
+          dataMediasSnap = dataMediasSnap.filter((media) => (media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
+            (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase())))
         }
+        // Type
+        dataMediasSnap = dataMediasSnap.filter((media) => !media.Type || mediaTypes.includes(media.Type));
+        // Add to Medias array
+        medias = [...dataMediasSnap];
       }
+      availableSize -= medias.length;
+      console.log("availableSize", availableSize, medias.length)
 
-      if (findBlockchainOthers && findBlockchainOthers.length > 0) {
-        const docsEthMediaSnap = (await db.collection(collections.ethMedia).get()).docs;
+      if (findBlockchainOthers && findBlockchainOthers.length > 0 && availableSize > 0) {
+        let docsEthMediaSnap: any[] = [];
+        const lastETHMediaSnap = await db.collection(collections.ethMedia).doc(prevLastMediaId).get();
+        if (prevLastMediaId != 'null' && !isLastIdPrivi && lastETHMediaSnap.exists) {
+          docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).limit(availableSize).get()).docs;
+        }
+        else docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).limit(availableSize).get()).docs;
         let dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
           return data;
         });
-
-        for (let media of dataEthMediaSnap) {
-          // Searched Value
-          if (body.searchValue != '') {
-            if (media.title.toLowerCase().includes(body.searchValue.toLowerCase())) {
-              // Blockchain
-              for (let block of findBlockchainOthers) {
-                if (media.tag.charAt(0).toUpperCase() + media.tag.slice(1) === block) {
-                  //NOTE: apparently in firebase eth media does not have type  ?
-                  //showing them when all mediatypes activated
-                  if (mediaTypes.length >= 7) {
-                    dataEthMedia.push(media);
-                  }
-                  /*let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-                  if (applyTypeFilter) {
-                    dataEthMedia.push(media);
-                  }*/
-                }
-              }
-            }
-          } else {
-            // Blockchain
-            for (let block of findBlockchainOthers) {
-              if (media.tag.charAt(0).toUpperCase() + media.tag.slice(1) === block) {
-                //NOTE: apparently in firebase eth media does not have type  ?
-                //showing them when all mediatypes activated
-                if (mediaTypes.length >= 7) {
-                  dataEthMedia.push(media);
-                }
-                /*let applyTypeFilter = await mediaTypeFilter(media, mediaTypes);
-                if (applyTypeFilter) {
-                  dataEthMedia.push(media);
-                }*/
-              }
-            }
-          }
+        // filter by search value
+        if (body.searchValue != '') {
+          dataEthMediaSnap = dataEthMediaSnap.filter((media) => media.title.toLowerCase().includes(body.searchValue.toLowerCase()));
         }
+        // filter by type
+        dataEthMediaSnap.filter((media) => !media.tag || mediaTypes.includes(media.tag));
+        // add to return array
+        medias = [...medias, ...dataEthMediaSnap];
       }
     }
 
-    console.log();
+    const retData = {
+      data: medias,
+      lastId: medias.length > 0 ? medias[medias.length - 1].id : 'null',
+      // hasMore: medias.length == pageSize
+      hasMore: false
+    }
 
-    // medias = dataMedias.concat(dataEthMedia).slice(pagination * 10, (pagination+1) * 10);
-    medias = dataEthMedia.concat(dataMedias).slice(pagination * 10, (pagination + 1) * 10);
+    console.log(retData);
 
-    return res.status(200).send({ success: true, data: medias });
+    res.send({ success: true, ...retData });
   } catch (e) {
     console.log(e);
     return res.status(500).send({ success: false, error: e });
