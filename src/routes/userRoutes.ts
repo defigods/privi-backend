@@ -226,4 +226,7 @@ router.get('/getFriends/:userId', userController.getFriends);
 
 router.get('/getUserMediaInfo/:userId', mediaController.getUserMediaInfo);
 
+//USER WALLET
+router.post('/updateWalletAddress', authenticateJWT, userController.updateWalletAddress);
+
 module.exports = router;
