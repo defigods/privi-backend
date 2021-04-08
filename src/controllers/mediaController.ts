@@ -63,7 +63,12 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
       if (findBlockchainPRIVI) {
         const docsMediasSnap = (await db.collection(collections.streaming).get()).docs;
-        let dataMediasSnap = docsMediasSnap.map((docSnap) => {
+        let dataMediasSnap = docsMediasSnap/*.filter((docSnap) => {
+          let data = docSnap.data();
+          if(!data.ReleaseDate || (data.ReleaseDate && data.ReleaseDate*1000 >= Date.now())) {
+            return data;
+          }
+        })*/.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
           data.blockchain = 'PRIVI';
