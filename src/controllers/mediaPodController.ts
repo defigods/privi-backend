@@ -597,15 +597,19 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
 
-      if (body.IsUploaded) {
-        const mediasRef = db
-          .collection(collections.mediaPods)
-          .doc(podAddress)
-          .collection(collections.medias)
-          .doc(mediaSymbol);
-        const mediasGet = await mediasRef.get();
-        const media: any = mediasGet.data();
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(podAddress)
+        .collection(collections.medias)
+        .doc(mediaSymbol);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
 
+      await mediasRef.update({
+        IsRegistered: true
+      });
+
+      if (body.IsUploaded) {
         let bodySave: any = {
           Collabs: media.Collabs || {},
           HasPhoto: media.HasPhoto || false,
@@ -701,7 +705,9 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
+    console.log(podAddress, mediaSymbol, hash, signature, apiKey);
     const blockchainRes = await mediaPod.uploadMedia(podAddress, mediaSymbol, hash, signature, apiKey);
+    console.log(blockchainRes);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
 
@@ -780,7 +786,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           .doc(podAddress)
           .collection(collections.medias)
           .doc(mediaSymbol)
-          .collection(collections.Transactions)
+          .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }

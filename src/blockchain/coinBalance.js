@@ -184,7 +184,7 @@ module.exports.multitransfer = async (arrayObj, caller) => {
 module.exports.createStreaming = async (senderAddress, receiverAddress, frequency, amountPerPeriod, streamingToken, startingDate, endingDate, hash, signature, caller) => {
 	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/createStreaming", {
 		SenderAddress: senderAddress,
-		ReceriverAddress: receiverAddress,
+		ReceiverAddress: receiverAddress,
 		Frequency: frequency,
 		AmountPerPeriod: amountPerPeriod,
 		StreamingToken: streamingToken,

@@ -787,6 +787,7 @@ interface BasicInfo {
   verified: boolean;
   urlSlug: string;
   address: string;
+  connected: boolean;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -818,6 +819,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       verified: false,
       urlSlug: userId,
       address: '',
+      connected: false,
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -869,6 +871,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         userData.urlSlug ||
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
       basicInfo.address = userData.address || '';
+      basicInfo.connected = userData.connected || false;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
