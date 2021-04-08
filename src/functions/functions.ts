@@ -635,6 +635,16 @@ export async function getUidFromEmail(email) {
     return res;
 };
 
+export async function getUidFromAddress(address) {
+    let res = {};
+    const usersQuery = await db.collection(collections.user).where("address", "==", address).get();
+    for (const doc of usersQuery.docs) {
+        const address = doc.data().address;
+        res[address] = doc.id;
+    }
+    return res;
+}
+
 export async function getUidNameMap() {
     const map = {};
     const userSnap = await db.collection(collections.user).get();

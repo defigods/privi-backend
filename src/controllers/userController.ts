@@ -3,7 +3,7 @@ import express from 'express';
 // import * as path from 'path';
 // import { stringify } from 'querystring';
 import Web3 from 'web3';
-import collections, { badges } from '../firebase/collections';
+import collections, { badges, wallet } from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
 import coinBalance from '../blockchain/coinBalance';
 import { db } from '../firebase/firebase';
@@ -2765,6 +2765,8 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
   }
 };
 
+
+
 const getBadgePhotoById = async (req: express.Request, res: express.Response) => {
   try {
     let badgeId = req.params.badgeId;
@@ -3963,6 +3965,38 @@ const sumTotalViews = async (req: express.Request, res: express.Response) => {
   }
 };
 
+const updateWalletAddress = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let userId = body.userId;
+    let walletAddress = body.address;
+
+    const userRef = db.collection(collections.user).doc(userId);
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    if (userData !== undefined && walletAddress ) {
+      
+      await userRef.update({
+        address: walletAddress
+      });
+
+      res.send({
+        success: true,
+        data: {
+          address: walletAddress
+        }
+      });
+    } else {
+      res.send({
+        success: false
+      });
+    }
+  } catch (err) {
+    console.log('Error in controllers/userController -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+}
+
 
 module.exports = {
   emailValidation,
@@ -4034,5 +4068,6 @@ module.exports = {
   superFollowerUser,
   getPointsInfo,
   checkIfUserExists,
-  sumTotalViews
+  sumTotalViews,
+  updateWalletAddress
 };
