@@ -177,7 +177,7 @@ exports.unstakeToken = async (req: express.Request, res: express.Response) => {
       });
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/stakingController -> unstakeToken(): success = false');
+      console.log('Error in controllers/stakingController -> unstakeToken(): success = false', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (err) {
@@ -398,19 +398,34 @@ exports.getUserStakedInfo = async (
   try {
     const token: any = req.query.token;
     const userId: any = req.query.userId;
+    console.log(token, userId)
     if (!token || !userId) {
       res.send({ success: false });
       return;
     }
-    const stakedHistorySnap = await db
+    const stakingDepositSnap = await db
       .collection(collections.stakingDeposit)
       .doc(token)
       .collection(collections.userStakings)
       .doc(userId)
       .get();
-    const data: any = stakedHistorySnap.data();
-    if (data) {
-      res.send({ success: true, data: data });
+    const data1: any = stakingDepositSnap.data();
+
+    // *********** Provisional *************
+    const stakingTokenSnap = await db
+      .collection(collections.stakingToken)
+      .doc(token)
+      .get();
+    let stakedAmount = 0;
+    const data2: any = stakingTokenSnap.data();
+    if (data2 && data2.Members && data2.Members[userId]) stakedAmount = data2.Members[userId];
+
+    if (data1) {
+      const retData = {
+        ...data1,
+        StakedAmount: stakedAmount
+      }
+      res.send({ success: true, data: retData });
     } else {
       res.send({ success: false });
     }
@@ -437,7 +452,6 @@ exports.saveStakingAmountEndOfDay = cron.schedule('0 0 * * *', async () => {
           .then((blockchainRes) => {
             if (blockchainRes && blockchainRes.success) {
               const amount = blockchainRes.output;
-              console.log(amount);
               if (amount > 0) {
                 db.collection(collections.stakingDeposit)
                   .doc(token)
@@ -455,7 +469,7 @@ exports.saveStakingAmountEndOfDay = cron.schedule('0 0 * * *', async () => {
       }
     }
   } catch (err) {
-    console.log('Error in controllers/stakingController -> manageStakedAmount()', err);
+    console.log('Error in controllers/stakingController -> saveStakingAmountEndOfDay()', err);
   }
 });
 
@@ -481,7 +495,7 @@ exports.saveStakingAmountEndOfWeek = cron.schedule('0 0 * * 0', async () => {
       }
     }
   } catch (err) {
-    console.log('Error in controllers/stakingController -> manageStakedAmount()', err);
+    console.log('Error in controllers/stakingController -> saveStakingAmountEndOfWeek()', err);
   }
 });
 
@@ -507,7 +521,7 @@ exports.saveStakingAmountEndOfMonth = cron.schedule('0 0 1 * *', async () => {
       }
     }
   } catch (err) {
-    console.log('Error in controllers/stakingController -> manageStakedAmount()', err);
+    console.log('Error in controllers/stakingController -> saveStakingAmountEndOfMonth()', err);
   }
 });
 // --------------------------------------------------------
