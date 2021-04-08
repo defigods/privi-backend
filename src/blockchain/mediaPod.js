@@ -41,8 +41,8 @@ module.exports.registerMedia = async (requester, podAddress, mediaSymbol, type, 
     return blockchainRes.data;
 };
 
-module.exports.uploadMedia = async (mediaSymbol, podAddress, hash, signature, caller) => {
-    let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/initiatePod", {
+module.exports.uploadMedia = async (podAddress, mediaSymbol, hash, signature, caller) => {
+    let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/uploadMedia", {
         MediaSymbol: mediaSymbol,
         PodAddress: podAddress,
         Hash: hash,
