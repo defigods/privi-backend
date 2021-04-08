@@ -189,7 +189,8 @@ module.exports.getTwitterUsers = async (req: express.Request, res: express.Respo
         data.forEach((user) => {
             retData.push({
                 name: user.name,
-                username: user.screen_name
+                username: user.screen_name,
+                avatar: user.profile_image_url_https
             })
         });
         res.send({ success: true, data: retData });
