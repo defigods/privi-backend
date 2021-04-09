@@ -94,6 +94,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       availableSize -= medias.length;
 
       if (findBlockchainOthers && findBlockchainOthers.length > 0 && availableSize > 0) {
+        let mediaStatuses = body.mediaStatuses;
         let docsEthMediaSnap: any[] = [];
         const lastETHMediaSnap = await db.collection(collections.ethMedia).doc(prevLastMediaId).get();
         if (prevLastMediaId != 'null' && !isLastIdPrivi && lastETHMediaSnap.exists) {
@@ -111,6 +112,11 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         }
         // filter by type
         dataEthMediaSnap.filter((media) => !media.tag || mediaTypes.includes(media.tag));
+
+        // filter by status
+        mediaStatuses && mediaStatuses.length > 0 && dataEthMediaSnap.filter((media => media.status && Array.isArray(media.status) 
+        && media.status.length > 0 && media.status.forEach(status => mediaStatuses.indexOf(status) > -1)))
+
         // add to return array
         medias = [...medias, ...dataEthMediaSnap];
       }
