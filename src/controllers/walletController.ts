@@ -567,7 +567,7 @@ module.exports.getUserRegisteredEthAccounts = async (req: express.Request, res: 
 
 module.exports.registerUserEthAccount = async (req: express.Request, res: express.Response) => {
   try {
-    const { address, userId, walletType, walletStatus } = req.body;
+    const { address, userId, walletType, walletStatus, walletName  } = req.body;
     console.log('registerUserEthAccount address/userId', address, userId)
 
     // get user address registered collection
@@ -594,6 +594,7 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
             walletType: walletType,
             walletStatus: walletStatus,
             tokenList: preparedTokenList,
+            name: walletName,
             lastUpdate: Date.now(),
           });
         res.send({ success: true });
@@ -620,6 +621,7 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
           walletType: walletType,
           walletStatus: walletStatus,
           tokenList: preparedTokenList,
+          name: walletName,
           lastUpdate: Date.now(),
         });
       res.send({ success: true });

@@ -787,7 +787,6 @@ interface BasicInfo {
   verified: boolean;
   urlSlug: string;
   address: string;
-  connected: boolean;
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -819,7 +818,6 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       verified: false,
       urlSlug: userId,
       address: '',
-      connected: false,
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -871,7 +869,6 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         userData.urlSlug ||
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
       basicInfo.address = userData.address || '';
-      basicInfo.connected = userData.connected || false;
 
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
@@ -3973,6 +3970,15 @@ const updateWalletAddress = async (req: express.Request, res: express.Response) 
     let body = req.body;
     let userId = body.userId;
     let walletAddress = body.address;
+
+    // check if address is in database
+    const addressUidMap = await getAddresUidMap();
+    let toUid = addressUidMap[walletAddress!.toString()];
+
+    if (toUid) {
+      res.send({ success: false, message: 'address is already in database' });
+      return;
+    }
 
     const userRef = db.collection(collections.user).doc(userId);
     const userSnap = await db.collection(collections.user).doc(userId).get();
