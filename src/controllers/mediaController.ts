@@ -46,8 +46,7 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
 };
 
 
-const pageSize = 6;
-// const pageSize = 6;s
+const pageSize = 10;
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
@@ -94,18 +93,25 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       availableSize -= medias.length;
 
       if (findBlockchainOthers && findBlockchainOthers.length > 0 && availableSize > 0) {
-        let mediaStatuses = body.mediaStatuses;
+        let mediaStatuses = body.status;
         let docsEthMediaSnap: any[] = [];
         const lastETHMediaSnap = await db.collection(collections.ethMedia).doc(prevLastMediaId).get();
         if (prevLastMediaId != 'null' && !isLastIdPrivi && lastETHMediaSnap.exists) {
-          docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).limit(availableSize).get()).docs;
+          docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId)
+            .limit(availableSize).get()).docs;
         }
-        else docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).limit(availableSize).get()).docs;
+        else docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId())
+          .limit(availableSize).get()).docs;
+
         let dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
           let data = docSnap.data();
           data.id = docSnap.id;
           return data;
         });
+
+        // NOTE: This is a problem. Filters are applied only after ".limit(availableSize)" is set. Instead, filters should go over the whole collection,
+        //       and then limit the number of results returned.
+
         // filter by search value
         if (body.searchValue != '') {
           dataEthMediaSnap = dataEthMediaSnap.filter((media) => media.title.toLowerCase().includes(body.searchValue.toLowerCase()));
@@ -113,9 +119,17 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         // filter by type
         dataEthMediaSnap.filter((media) => !media.tag || mediaTypes.includes(media.tag));
 
+        // TODO: check that this is working as expected
+        // For EthMedia items in firebase: item.status = ["new", "buyNow"] --> array of simultaneous states
+        // Need to check each item of array if included in selected states in FE filters.
         // filter by status
-        mediaStatuses && mediaStatuses.length > 0 && dataEthMediaSnap.filter((media => media.status && Array.isArray(media.status) 
-        && media.status.length > 0 && media.status.forEach(status => mediaStatuses.indexOf(status) > -1)))
+        if (mediaStatuses && mediaStatuses.length > 0) {
+          dataEthMediaSnap = dataEthMediaSnap.filter(media => media.status && Array.isArray(media.status))
+
+          dataEthMediaSnap.forEach(item => {
+            return item.status.some(r => mediaStatuses.indexOf(r) >= 0)
+          })
+        }
 
         // add to return array
         medias = [...medias, ...dataEthMediaSnap];
