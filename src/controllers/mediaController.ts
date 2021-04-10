@@ -46,93 +46,106 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
 };
 
 
-const pageSize = 10;
+const pageSize = 6;
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
+    // pagination vars
     const pagination: number = +req.params.pagination;
     const prevLastMediaId: string = req.params.lastId;
-    let body = req.body;  // filters
+    // filter vars
+    const body = req.body;  // filters
+    const blockChains = body.blockChains ?? [];
+    const mediaTypes = body.mediaTypes ?? [];
+    const searchValue = body.searchValue ?? '';
+    const status = body.status ?? [];
+    console.log(pagination, prevLastMediaId, body);
 
+    // ret vars
     let availableSize = pageSize;
     let isLastIdPrivi = false;
-
     let medias: any[] = [];
 
-    // Blockchain & SearchValue filters
-    if (body.blockChains) {
-      let findBlockchainPRIVI = body.blockChains.find((block) => block === 'PRIVI');
-      let findBlockchainOthers = body.blockChains.filter((block) => block !== 'PRIVI');
-      let mediaTypes = body.mediaTypes;
-
-      if (findBlockchainPRIVI) {
-        let docsMediasSnap: any[] = [];
-        if (prevLastMediaId != 'null') {
-          const lastPriviMediaSnap = await db.collection(collections.streamings).doc(prevLastMediaId).get();
-          if (lastPriviMediaSnap.exists) {
-            docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).limit(availableSize).get()).docs;
-            isLastIdPrivi = true;
+    // PRIVI Medias
+    if (blockChains.includes('PRIVI')) {
+      let mediaSnap: any;
+      if (prevLastMediaId == 'null') {
+        mediaSnap = await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).get();
+      }
+      else {
+        const lastPriviMediaSnap = await db.collection(collections.streaming).doc(prevLastMediaId).get();
+        // if prevLastMediaId exist in this colection means its from privi otherwise its from ETH
+        if (lastPriviMediaSnap.exists) {
+          mediaSnap = await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).get();
+          isLastIdPrivi = true;
+        }
+      }
+      if (mediaSnap) {
+        // loop through privi medias and filter until getting the desired amount of docs
+        let priviMediaData: any[] = [];
+        const mediaDocs = mediaSnap.docs ?? [];
+        for (let i = 0; i < mediaDocs.length && availableSize > 0; i++) {
+          let addData = true;
+          const data = mediaDocs[i].data();
+          data.id = mediaDocs[i].id;
+          data.blockchain = 'PRIVI';
+          // Filter options
+          // searched Value
+          if (searchValue != '')
+            addData = addData && ((!data.MediaName || data.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
+              (!data.MediaSymbol || data.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase())));
+          // types
+          addData = addData && (!data.Type || mediaTypes.includes(data.Type));
+          if (addData) {
+            priviMediaData.push(data);
+            availableSize--;
           }
         }
-        else docsMediasSnap = (await db.collection(collections.streaming).orderBy(firebase.firestore.FieldPath.documentId()).limit(availableSize).get()).docs;
-        let dataMediasSnap = docsMediasSnap.map((docSnap) => {
-          let data = docSnap.data();
-          data.id = docSnap.id;
-          data.blockchain = 'PRIVI';
-          return data;
-        });
-        // Searched Value
-        if (body.searchValue != '') {
-          dataMediasSnap = dataMediasSnap.filter((media) => (media.MediaName && media.MediaName.toLowerCase().includes(body.searchValue.toLowerCase())) ||
-            (media.MediaSymbol && media.MediaSymbol.toLowerCase().includes(body.searchValue.toLowerCase())))
-        }
-        // Type
-        dataMediasSnap = dataMediasSnap.filter((media) => !media.Type || mediaTypes.includes(media.Type));
-        // Add to Medias array
-        medias = [...dataMediasSnap];
+        // add to medias array
+        medias = [...priviMediaData];
       }
-      availableSize -= medias.length;
-
-      if (findBlockchainOthers && findBlockchainOthers.length > 0 && availableSize > 0) {
-        let mediaStatuses = body.status;
-        let docsEthMediaSnap: any[] = [];
+    }
+    // ETH Medias
+    // convert blockchain list to lower case
+    let otherBlockchainsFilterList = blockChains.filter((blockchain) => blockchain !== 'PRIVI');
+    otherBlockchainsFilterList = otherBlockchainsFilterList.map(v => v.toLowerCase());
+    if (otherBlockchainsFilterList.length > 0 && availableSize > 0) {
+      let mediaSnap: any;
+      // if last media was ETH
+      if (prevLastMediaId != 'null' && !isLastIdPrivi) {
         const lastETHMediaSnap = await db.collection(collections.ethMedia).doc(prevLastMediaId).get();
-        if (prevLastMediaId != 'null' && !isLastIdPrivi && lastETHMediaSnap.exists) {
-          docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId)
-            .limit(availableSize).get()).docs;
+        if (lastETHMediaSnap.exists) mediaSnap = await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).startAfter(prevLastMediaId).get();
+      }
+      else mediaSnap = await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId()).get();
+      if (mediaSnap) {
+        // loop through eth medias and filter until getting the desired amount of docs
+        let ethMediaData: any[] = [];
+        const mediaDocs = mediaSnap.docs ?? [];
+        for (let i = 0; i < mediaDocs.length && availableSize > 0; i++) {
+          let addData = true;
+          const data = mediaDocs[i].data();
+          data.id = mediaDocs[i].id;
+          // Filter options
+          // searched Value
+          if (searchValue != '') addData = addData && (data.title.toLowerCase().includes(searchValue.toLowerCase()));
+          // // blockchain
+          addData = addData && (!data.tag || otherBlockchainsFilterList.includes(data.tag.toLowerCase()));
+          // types
+          addData = addData && (!data.type || mediaTypes.includes(data.type));
+          // status
+          if (status.length > 0) {
+            let foundStatus = false;
+            for (let i = 0; i < status.length && !foundStatus; i++) {
+              if (!data.status || !Array.isArray(data.status) || data.status.includes(status[i])) foundStatus = true
+            }
+            addData = addData && foundStatus;
+          }
+          if (addData) {
+            ethMediaData.push(data);
+            availableSize--;
+          }
         }
-        else docsEthMediaSnap = (await db.collection(collections.ethMedia).orderBy(firebase.firestore.FieldPath.documentId())
-          .limit(availableSize).get()).docs;
-
-        let dataEthMediaSnap = docsEthMediaSnap.map((docSnap) => {
-          let data = docSnap.data();
-          data.id = docSnap.id;
-          return data;
-        });
-
-        // NOTE: This is a problem. Filters are applied only after ".limit(availableSize)" is set. Instead, filters should go over the whole collection,
-        //       and then limit the number of results returned.
-
-        // filter by search value
-        if (body.searchValue != '') {
-          dataEthMediaSnap = dataEthMediaSnap.filter((media) => media.title.toLowerCase().includes(body.searchValue.toLowerCase()));
-        }
-        // filter by type
-        dataEthMediaSnap.filter((media) => !media.tag || mediaTypes.includes(media.tag));
-
-        // TODO: check that this is working as expected
-        // For EthMedia items in firebase: item.status = ["new", "buyNow"] --> array of simultaneous states
-        // Need to check each item of array if included in selected states in FE filters.
-        // filter by status
-        if (mediaStatuses && mediaStatuses.length > 0) {
-          dataEthMediaSnap = dataEthMediaSnap.filter(media => media.status && Array.isArray(media.status))
-
-          dataEthMediaSnap.forEach(item => {
-            return item.status.some(r => mediaStatuses.indexOf(r) >= 0)
-          })
-        }
-
-        // add to return array
-        medias = [...medias, ...dataEthMediaSnap];
+        // add to medias array
+        medias = [...medias, ...ethMediaData];
       }
     }
 
@@ -140,10 +153,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       data: medias,
       lastId: medias.length > 0 ? medias[medias.length - 1].id : 'null',
       hasMore: medias.length == pageSize
-      // hasMore: false
     }
-
-    console.log(retData.lastId);
 
     res.send({ success: true, ...retData });
   } catch (e) {
