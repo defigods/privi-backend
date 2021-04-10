@@ -10,6 +10,7 @@ import {
   getUidAddressMap,
 } from '../functions/functions';
 import collections from '../firebase/collections';
+import dataProtocol from '../blockchain/dataProtocol';
 import { db } from '../firebase/firebase';
 import coinBalance from '../blockchain/coinBalance.js';
 import express from 'express';
@@ -24,6 +25,7 @@ require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = 'PRIVI'; // just for now
 const notificationsController = require('./notificationsController');
+const { publicToAddress } = require('ethereumjs-util');
 const CoinGecko = require('coingecko-api');
 
 // ---------------------- CALLED FROM POSTMAN -------------------------------
@@ -658,6 +660,47 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/walletController -> removeUserRegisteredEthAccounts()', err);
+    res.send({ success: false });
+  }
+}
+
+module.exports.registerPriviWallet = async (req: express.Request, res: express.Response) => {
+  try {
+    console.log({body: req.body})
+    const { pubKey, userId } = req.body;
+
+    console.log('got call from', userId);
+    const caller = apiKey;
+    const lastUpdate = Date.now();
+
+    const publicKey = '0x04' + pubKey.toString('hex');
+    const address = '0x' + (await publicToAddress(pubKey).toString('hex'));
+    console.log({publicKey, address})
+    const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
+
+    if (blockchainRes && blockchainRes.success) {
+      // set address in User DB
+      await db.runTransaction(async (transaction) => {
+        // userData - no check if firestore insert works? TODO
+        transaction.update(db.collection(collections.user).doc(userId), {
+          pubKey: publicKey,
+          address: address,
+          lastUpdate: lastUpdate,
+        });
+      });
+
+      res.send({
+        success: true,
+        uid: userId,
+        address: address,
+        lastUpdate: lastUpdate,
+      });
+    } else {
+      console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/user.ts -> attachaddress(): ', err);
     res.send({ success: false });
   }
 }
