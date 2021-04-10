@@ -317,7 +317,7 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
       } else {
         console.log('found from address');
         const data = user.docs[0].data();
-        
+
         if (!data.notifications) {
           data.notifications = [];
         }
@@ -350,7 +350,7 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
             accessToken: accessToken,
           });
         }
-        
+
       }
     } else {
       console.log('Wallet Address required');
@@ -418,7 +418,7 @@ const attachAddress = async (userPublicId: string) => {
 };
 
 const signUpWithWallet = async (req: express.Request, res: express.Response) => {
-  
+
   try {
 
     const body = req.body;
@@ -3738,6 +3738,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
 
     if (type === 'user') {
       docSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'mediaUsers') {
+      docSnap = await db.collection(collections.mediaUsers).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'community') {
       docSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'ftpod') {
@@ -3761,6 +3763,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
 
       if (type === 'user') {
         docIdSnap = await db.collection(collections.user).doc(urlSlug).get();
+      } else if (type === 'mediaUsers') {
+        docIdSnap = await db.collection(collections.mediaUsers).doc(urlSlug).get();
       } else if (type === 'community') {
         docIdSnap = await db.collection(collections.community).doc(urlSlug).get();
       } else if (type === 'ftpod') {
@@ -3984,7 +3988,7 @@ const updateWalletAddress = async (req: express.Request, res: express.Response) 
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
     if (userData !== undefined && walletAddress ) {
-      
+
       await userRef.update({
         address: walletAddress
       });
