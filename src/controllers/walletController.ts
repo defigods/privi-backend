@@ -869,10 +869,26 @@ module.exports.getUserOwnedTokens = async (req: express.Request, res: express.Re
       const response = await responsePromise;
       res.send({ success: true, data: response });
     } else {
-      res.send({ success: true, data: [] });
+      const catalogs = (userId !== '')
+        ? await (await db.collection(collections.mediaUsers).doc(userId).get()).data() || []
+        : [];
+
+      res.send({ success: true, data: [catalogs] });
     }
   } catch (err) {
     console.log('Error in controllers/walletController -> getUserOwnedTokens()', err);
+
+    try {
+      let { userId } = req.query;
+      userId = userId!.toString();
+      const catalogs = (userId !== '')
+        ? await (await db.collection(collections.mediaUsers).doc(userId).get()).data() || []
+        : [];
+
+      res.send({ success: true, data: [catalogs] });
+    } catch (err) {
+      res.send({ success: false });
+    }
     res.send({ success: false });
   }
 };

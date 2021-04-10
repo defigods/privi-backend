@@ -3738,6 +3738,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
 
     if (type === 'user') {
       docSnap = await db.collection(collections.user).where('urlSlug', '==', urlSlug).get();
+    } else if (type === 'mediaUsers') {
+      docSnap = await db.collection(collections.mediaUsers).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'community') {
       docSnap = await db.collection(collections.community).where('urlSlug', '==', urlSlug).get();
     } else if (type === 'ftpod') {
@@ -3761,6 +3763,8 @@ const getIdFromSlug = async (req: express.Request, res: express.Response) => {
 
       if (type === 'user') {
         docIdSnap = await db.collection(collections.user).doc(urlSlug).get();
+      } else if (type === 'mediaUsers') {
+        docIdSnap = await db.collection(collections.mediaUsers).doc(urlSlug).get();
       } else if (type === 'community') {
         docIdSnap = await db.collection(collections.community).doc(urlSlug).get();
       } else if (type === 'ftpod') {
