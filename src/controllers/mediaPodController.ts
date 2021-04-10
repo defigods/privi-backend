@@ -363,7 +363,7 @@ exports.getBuyingPodFundingTokenAmount = async (req: express.Request, res: expre
       podData.MaxPrice,
       podData.MaxSupply,
       podData.SupplyReleased,
-      1
+      amount
     );
     res.send({ success: true, data: price });
   } catch (err) {
