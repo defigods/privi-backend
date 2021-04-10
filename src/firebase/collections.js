@@ -19,6 +19,7 @@ module.exports = {
   rates: 'ratesOfChange',
 
   registeredEthAddress: 'RegisteredEthAddress',
+  catalog: 'catalog',
   //new histories
   historyCrypto: 'HistoryCRYPTO',
   historySocial: 'HistorySOCIAL',
