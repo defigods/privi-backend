@@ -957,6 +957,56 @@ export const getUserMediaInfo = async (req: express.Request, res: express.Respon
   }
 };
 
+export const fractionalizeMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    let body = req.body;
+
+    if (params && body && params.mediaPod && params.mediaId && body.media) {
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(params.mediaPod)
+        .collection(collections.medias)
+        .doc(params.mediaId);
+
+      // To send notification after fractionalizing if necessary (tweak fields!)
+      // await notificationsController.addNotification({
+      //   userId: params.mediaId,
+      //   notification: {
+      //     type: "",
+      //     typeItemId: 'user',
+      //     itemId: body.media.Creator,
+      //     follower: user.firstName,
+      //     pod: params.mediaPod,
+      //     comment: '',
+      //     token: params.mediaId,
+      //     amount: '',
+      //     onlyInformation: false,
+      //     otherItemId: mediasGet.id,
+      //   },
+      // });
+
+      await mediasRef.update({
+          Fractionalized: true,
+          FractionalizeInfo: {
+            Fraction: body.fraction,
+            FractionPrice: body.fractionPrice,
+            BuyBackPrice: body.buyBackPrice,
+            InterestRate: body.interestRate
+          }
+      });
+
+      res.send({ success: true, data: body.media });
+    } else {
+      console.log('Error in controllers/mediaController -> fractionalizeMedia()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> fractionalizeMedia()', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 export const likeMedia = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;
