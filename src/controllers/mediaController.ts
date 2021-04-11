@@ -991,7 +991,9 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
           FractionalizeInfo: {
             Fraction: body.fraction,
             FractionPrice: body.fractionPrice,
+            FractionPriceToken: body.fractionPriceToken,
             BuyBackPrice: body.buyBackPrice,
+            BuyBackPriceToken: body.buyBackPriceToken,
             InterestRate: body.interestRate
           }
       });
