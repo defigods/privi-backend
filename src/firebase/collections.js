@@ -153,7 +153,7 @@ module.exports = {
   streaming: 'Streaming',
   shareStreaming: 'ShareStreaming',
 
-  ethMedia: 'EthMediaTesting3',
+  ethMedia: 'EthMedia',
 
   playList: 'PlayList',
 

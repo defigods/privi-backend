@@ -59,9 +59,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     const mediaTypes = body.mediaTypes ?? [];
     const searchValue = body.searchValue ?? '';
     const status = body.status ?? [];
-    const collectionsBlockchain = body.collections ?? [];
-    console.log(pagination, prevLastMediaId, body);
-
+    const collectionsArray = body.collections ?? [];
     // ret vars
     let availableSize = pageSize;
     let isLastIdPrivi = false;
@@ -126,21 +124,15 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           let addData = true;
           const data = mediaDocs[i].data();
           data.id = mediaDocs[i].id;
-          // Filter options
+          // Filter options:
           // searched Value
           if (searchValue != '') addData = addData && (data.title.toLowerCase().includes(searchValue.toLowerCase()));
-          // // blockchain
+          // blockchain
           addData = addData && (!data.tag || otherBlockchainsFilterList.includes(data.tag.toLowerCase()));
           // types
           addData = addData && (!data.type || mediaTypes.includes(data.type));
-
           // collections
-          // TODO this doesnt work
-          //  if (collectionsBlockchain.length > 0) {
-          //    let foundStatus2 = false;
-          //    if (data.collection === collectionsBlockchain[0].name) foundStatus2 = true
-          //    addData = addData && foundStatus2;
-          //  }
+          addData = addData && (!data.collection || collectionsArray.includes(data.collection));
 
           // status
           if (status.length > 0) {
