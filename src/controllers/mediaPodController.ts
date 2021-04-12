@@ -354,16 +354,16 @@ exports.getPhotoById = async (req: express.Request, res: express.Response) => {
 exports.getBuyingPodFundingTokenAmount = async (req: express.Request, res: express.Response) => {
   try {
     const podAddress: any = req.query.PodAddress;
-    const amount: any = req.query.Amount;
+    const amount: any = Number(req.query.Amount);
     const podSnap = await db.collection(collections.mediaPods).doc(podAddress).get();
     const podData: any = podSnap.data();
     const price = getMediaPodBuyingAmount(
-      podData.AMM,
+      podData.AMM.toUpperCase(),
       podData.FundingTokenPrice,
       podData.MaxPrice,
       podData.MaxSupply,
       podData.SupplyReleased,
-      1
+      amount
     );
     res.send({ success: true, data: price });
   } catch (err) {
@@ -375,11 +375,11 @@ exports.getBuyingPodFundingTokenAmount = async (req: express.Request, res: expre
 exports.getSellingPodFundingTokenAmount = async (req: express.Request, res: express.Response) => {
   try {
     const podAddress: any = req.query.PodAddress;
-    const amount: any = req.query.Amount;
+    const amount: any = Number(req.query.Amount);
     const podSnap = await db.collection(collections.mediaPods).doc(podAddress).get();
     const podData: any = podSnap.data();
     const price = getMediaPodSellingAmount(
-      podData.AMM,
+      podData.AMM.toUpperCase(),
       podData.FundingTokenPrice,
       podData.MaxPrice,
       podData.MaxSupply,
@@ -534,6 +534,17 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
           },
           { merge: true }
         );
+
+
+      const wipQuery =  await db.collection(collections.workInProgress)
+        .where('Name', '==', name)
+        .get();
+
+      if (!wipQuery.empty) {
+        for (const doc of wipQuery.docs) {
+          await db.collection(collections.workInProgress).doc(doc.id).delete();
+        }
+      }
 
       res.send({ success: true, data: podId });
     } else {
@@ -820,7 +831,7 @@ exports.investPod = async (req: express.Request, res: express.Response) => {
       for ([tid, txnArray] of Object.entries(updateTxns)) {
         db.collection(collections.mediaPods)
           .doc(podAddress)
-          .collection(collections.Transactions)
+          .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
@@ -855,7 +866,7 @@ exports.buyMediaToken = async (req: express.Request, res: express.Response) => {
       for ([tid, txnArray] of Object.entries(updateTxns)) {
         db.collection(collections.mediaPods)
           .doc(podAddress)
-          .collection(collections.Transactions)
+          .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
@@ -878,6 +889,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
     const amount = body.Amount;
     const hash = body.Hash;
     const signature = body.Signature;
+    console.log(body);
     const blockchainRes = await mediaPod.buyPodTokens(trader, podAddress, amount, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
@@ -889,7 +901,7 @@ exports.buyPodTokens = async (req: express.Request, res: express.Response) => {
       for ([tid, txnArray] of Object.entries(updateTxns)) {
         db.collection(collections.mediaPods)
           .doc(podAddress)
-          .collection(collections.Transactions)
+          .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
@@ -912,6 +924,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
     const amount = body.Amount;
     const hash = body.Hash;
     const signature = body.Signature;
+    console.log(body);
     const blockchainRes = await mediaPod.sellPodTokens(trader, podAddress, amount, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
@@ -923,7 +936,7 @@ exports.sellPodTokens = async (req: express.Request, res: express.Response) => {
       for ([tid, txnArray] of Object.entries(updateTxns)) {
         db.collection(collections.mediaPods)
           .doc(podAddress)
-          .collection(collections.Transactions)
+          .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
@@ -994,18 +1007,21 @@ exports.storePriceHistory = cron.schedule('0 0 * * *', async () => {
     const mediaPodSnaps = await db.collection(collections.mediaPods).get();
     mediaPodSnaps.forEach((doc) => {
       const podData: any = doc.data();
-      const price = getMediaPodBuyingAmount(
-        podData.AMM,
-        podData.FundingTokenPrice,
-        podData.MaxPrice,
-        podData.MaxSupply,
-        podData.SupplyReleased,
-        1
-      );
-      doc.ref.collection(collections.priceHistory).add({
-        data: Date.now(),
-        price: price,
-      });
+      const status = podData.Status;
+      if (status && status == 'INVESTING') {
+        const price = getMediaPodBuyingAmount(
+          podData.AMM.toUpperCase(),
+          podData.FundingTokenPrice,
+          podData.MaxPrice,
+          podData.MaxSupply,
+          podData.SupplyReleased,
+          1
+        );
+        doc.ref.collection(collections.priceHistory).add({
+          data: Date.now(),
+          price: price,
+        });
+      }
     });
   } catch (err) {
     console.log(err);

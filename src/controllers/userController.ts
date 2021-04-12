@@ -361,7 +361,7 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
   }
 };
 
-const attachAddress = async (userPublicId: string) => {
+const attachAddress2 = async (userPublicId: string) => {
   return new Promise(async (resolve, reject) => {
     try {
       console.log('got call from', userPublicId);
@@ -528,7 +528,7 @@ const signUpWithWallet = async (req: express.Request, res: express.Response) => 
       });
 
       // ------------------------- attach address only test net ----------------------------
-      // await attachAddress(userPublicId);
+      // await attachAddress2(userPublicId);
 
       // ------------------------- add zero to balance history to make graph prettier ----------------------------
       addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyCrypto), 'price');
@@ -662,7 +662,7 @@ const signUp = async (req: express.Request, res: express.Response) => {
       });
 
       // ------------------------- attach address only test net ----------------------------
-      await attachAddress(userPublicId);
+      await attachAddress2(userPublicId);
 
       // ------------------------- add zero to balance history to make graph prettier ----------------------------
       addZerosToHistory(db.collection(collections.wallet).doc(uid).collection(collections.historyCrypto), 'price');
@@ -2638,11 +2638,11 @@ const getBadgesFunction = (address: string): Promise<any[]> => {
           }
 
           // if (amount > 0) { // Fixed: remove filter amount > 0 for privi badges
-            retData.push({
-              ...doc.data(),
-              Amount: amount,
-              tokenData: tokenData,
-            });
+          retData.push({
+            ...doc.data(),
+            Amount: amount,
+            tokenData: tokenData,
+          });
           // }
         });
         // console.log(retData)
@@ -3946,7 +3946,7 @@ const sumTotalViews = async (req: express.Request, res: express.Response) => {
     const userRef = db.collection(collections.user).doc(userId);
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
-    if (userData !== undefined ) {
+    if (userData !== undefined) {
       const currentProfileViews = userData.profileViews || 0;
       await userRef.update({
         profileViews: currentProfileViews + 1
@@ -3987,7 +3987,7 @@ const updateWalletAddress = async (req: express.Request, res: express.Response) 
     const userRef = db.collection(collections.user).doc(userId);
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
-    if (userData !== undefined && walletAddress ) {
+    if (userData !== undefined && walletAddress) {
 
       await userRef.update({
         address: walletAddress
@@ -4006,6 +4006,24 @@ const updateWalletAddress = async (req: express.Request, res: express.Response) 
     }
   } catch (err) {
     console.log('Error in controllers/userController -> sumTotalViews()', err);
+    res.send({ success: false });
+  }
+}
+
+const attachAddress = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    let publicId = body.publicId;
+    let publicAddress = body.publicAddress;
+    const blockchainRes = await dataProtocol.attachAddress(publicId, publicAddress, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      res.send({ success: true });
+    } else {
+      res.send({ success: false });
+    }
+
+  } catch (err) {
+    console.log('Error in controllers/userController -> attachAddress()', err);
     res.send({ success: false });
   }
 }
@@ -4082,5 +4100,6 @@ module.exports = {
   getPointsInfo,
   checkIfUserExists,
   sumTotalViews,
-  updateWalletAddress
+  updateWalletAddress,
+  attachAddress
 };

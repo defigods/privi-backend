@@ -70,7 +70,7 @@ module.exports = {
   mediaPods: 'MediaPods',
   trendingMediaPods: 'TrendingMediaPods',
   medias: 'Medias',
-  mediaUsers: 'EthMediaUsersTesting',
+  mediaUsers: 'EthMediaUsersTesting3',
   streamingListeners: 'StreamingListeners',
   streamers: 'Streamers',
   streamings: 'Streamings',
@@ -153,7 +153,7 @@ module.exports = {
   streaming: 'Streaming',
   shareStreaming: 'ShareStreaming',
 
-  ethMedia: 'EthMediaTesting',
+  ethMedia: 'EthMediaTesting3',
 
   playList: 'PlayList',
 

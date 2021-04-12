@@ -971,14 +971,16 @@ function mediaPodGetFormulaParams(amm, initialPrice, maxPrice, maxSupply, supply
 export function getMediaPodBuyingAmount(amm, initialPrice, maxPrice, maxSupply, supplyReleased, podTokenAmount) {
     const [scale, shift] = mediaPodGetFormulaParams(amm, initialPrice, maxPrice, maxSupply, supplyReleased);
     const newPodAmount = supplyReleased + podTokenAmount;
-    return mediaPodIntegral(amm, newPodAmount, supplyReleased, scale, shift);
+    const price = mediaPodIntegral(amm, newPodAmount, supplyReleased, scale, shift);
+    return price;
 }
 
 // return the funding token amount to receive
 export function getMediaPodSellingAmount(amm, initialPrice, maxPrice, maxSupply, supplyReleased, podTokenAmount) {
     const [scale, shift] = mediaPodGetFormulaParams(amm, initialPrice, maxPrice, maxSupply, supplyReleased);
     const newPodAmount = Math.max(supplyReleased - podTokenAmount, 0);
-    return mediaPodIntegral(amm, supplyReleased, newPodAmount, scale, shift);
+    const price = mediaPodIntegral(amm, supplyReleased, newPodAmount, scale, shift);
+    return price;
 }
 
 // -----------------------------------------
@@ -1021,10 +1023,10 @@ export async function getUserLiveStreamInformation(user) {
     return userInformation;
 }
 
-export function isUserValidForLiveStream(user , liveStreamSession) {
+export function isUserValidForLiveStream(user, liveStreamSession) {
 
     // check if moderator or streamer
-    
+
 
     //  check if user is able tolive stream permissions.
     return true;

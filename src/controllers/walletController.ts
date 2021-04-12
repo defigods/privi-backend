@@ -25,7 +25,7 @@ require('dotenv').config();
 //const apiKey = process.env.API_KEY;
 const apiKey = 'PRIVI'; // just for now
 const notificationsController = require('./notificationsController');
-const { publicToAddress } = require('ethereumjs-util');
+const EthUtil = require('ethereumjs-util');
 const CoinGecko = require('coingecko-api');
 
 // ---------------------- CALLED FROM POSTMAN -------------------------------
@@ -660,9 +660,9 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
     const caller = apiKey;
     const lastUpdate = Date.now();
 
-    const publicKey = '0x04' + pubKey.toString('hex');
-    const address = '0x' + (await publicToAddress(pubKey).toString('hex'));
-    console.log({ publicKey, address });
+    // const publicKey = '0x04' + pubKey.toString('hex');
+    const address = await EthUtil.publicToAddress(EthUtil.toBuffer(pubKey)).toString('hex');
+    // console.log({publicKey, address})
     const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
 
     if (blockchainRes && blockchainRes.success) {
@@ -670,8 +670,8 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
       await db.runTransaction(async (transaction) => {
         // userData - no check if firestore insert works? TODO
         transaction.update(db.collection(collections.user).doc(userId), {
-          pubKey: publicKey,
-          address: address,
+          pubKey,
+          address,
           lastUpdate: lastUpdate,
         });
       });

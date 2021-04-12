@@ -95,6 +95,8 @@ router.post('/signIn', userController.signIn);
 router.post('/signInWithWallet', userController.signInWithWallet);
 router.post('/signUp', userController.signUp);
 router.post('/signUpWithWallet', userController.signUpWithWallet);
+
+router.post('/attachAddress', authenticateJWT, userController.attachAddress);
 // router.post('/createMnemonic', userController.createMnemonic);
 //router.get('/:userId', userController.signIn);
 router.get('/email_validation/:validation_slug', userController.emailValidation);
