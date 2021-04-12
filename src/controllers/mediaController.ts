@@ -5,6 +5,7 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
+import { CollectionsOpensea, CollectionsShowTime, CollectionsWax } from "../constants/nftCollections"
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
@@ -131,6 +132,10 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           addData = addData && (!data.tag || otherBlockchainsFilterList.includes(data.tag.toLowerCase()));
           // types
           addData = addData && (!data.type || mediaTypes.includes(data.type));
+          // collections
+          addData = addData && (data.collection !== "" && (CollectionsOpensea.includes(data.collection)
+            || CollectionsWax.includes(data.collection)
+            || CollectionsShowTime.includes(data.collection)));
           // status
           if (status.length > 0) {
             let foundStatus = false;
@@ -987,15 +992,15 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
       // });
 
       await mediasRef.update({
-          Fractionalized: true,
-          FractionalizeInfo: {
-            Fraction: body.fraction,
-            FractionPrice: body.fractionPrice,
-            FractionPriceToken: body.fractionPriceToken,
-            BuyBackPrice: body.buyBackPrice,
-            BuyBackPriceToken: body.buyBackPriceToken,
-            InterestRate: body.interestRate
-          }
+        Fractionalized: true,
+        FractionalizeInfo: {
+          Fraction: body.fraction,
+          FractionPrice: body.fractionPrice,
+          FractionPriceToken: body.fractionPriceToken,
+          BuyBackPrice: body.buyBackPrice,
+          BuyBackPriceToken: body.buyBackPriceToken,
+          InterestRate: body.interestRate
+        }
       });
 
       res.send({ success: true, data: body.media });
