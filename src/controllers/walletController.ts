@@ -607,8 +607,6 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
             },
           ];
 
-    console.log('NEW WALLET DATA - ', newWalletData);
-
     db.collection(collections.user)
       .doc(userId)
       .update({ ...userData, wallets: newWalletData });
