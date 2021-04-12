@@ -209,7 +209,10 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
       updateFirebase(blockchainRes);
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/walletController -> transfer(), blockchain returned false', blockchainRes.message);
+      console.log(
+        'Error in controllers/walletController -> transfer(), blockchain returned false',
+        blockchainRes.message
+      );
       res.send({ success: false });
     }
   } catch (err) {
@@ -529,10 +532,10 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
           tokenType: element.isERC20
             ? 'CRYPTO'
             : element.isERC721
-              ? 'NFT'
-              : element.isERC721 && roll && roll.exist
-                ? 'SOCIAL'
-                : 'UNKNOWN',
+            ? 'NFT'
+            : element.isERC721 && roll && roll.exist
+            ? 'SOCIAL'
+            : 'UNKNOWN',
           balance: element.amount,
           images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND',
           isOpenSea: element.isERC721 && openSea,
@@ -555,13 +558,11 @@ module.exports.getUserRegisteredEthAccounts = async (req: express.Request, res: 
   if (!userId) return res.status(400).json({ success: false });
 
   try {
-    const docsSnaps = (
-      await db.collection(collections.wallet).doc(userId).collection(collections.registeredEthAddress).get()
-    ).docs;
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    const walletData = userData?.wallets ?? [];
 
-    const data = docsSnaps.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
-
-    return res.status(200).json({ success: true, data });
+    return res.status(200).json({ success: true, data: walletData });
   } catch (e) {
     return res.status(500).json({ success: false });
   }
@@ -569,65 +570,49 @@ module.exports.getUserRegisteredEthAccounts = async (req: express.Request, res: 
 
 module.exports.registerUserEthAccount = async (req: express.Request, res: express.Response) => {
   try {
-    const { address, userId, walletType, walletStatus, walletName  } = req.body;
-    console.log('registerUserEthAccount address/userId', address, userId)
+    const { address, userId, walletType, walletStatus, walletName } = req.body;
+    console.log('registerUserEthAccount address/userId', address, userId);
 
     // get user address registered collection
-    const walletRegisteredEthAddrSnap = await db
-      .collection(collections.wallet)
-      .doc(userId)
-      .collection(collections.registeredEthAddress)
-      .doc(address)
-      .get();
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    const walletData = userData?.wallets ?? [];
+    const filteredWalletData = walletData.filter((item) => item.walletType === walletType);
+    const preparedTokenList = await getTokenListFromAmberData(address);
 
-    // check if address is already registered
-    if (walletRegisteredEthAddrSnap.exists) {
-      console.log('registerUserEthAccount: already exist, address', address, 'user', userId);
-      const doc: any = walletRegisteredEthAddrSnap.data();
-      // console.log('existing doc', doc, (Date.now() - doc.lastUpdate), MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE)
-      if (doc.lastUpdate && Date.now() - doc.lastUpdate > MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE) {
-        const preparedTokenList = await getTokenListFromAmberData(address);
-        await db
-          .collection(collections.wallet)
-          .doc(userId)
-          .collection(collections.registeredEthAddress)
-          .doc(address)
-          .set({
-            walletType: walletType,
-            walletStatus: walletStatus,
-            tokenList: preparedTokenList,
-            name: walletName,
-            lastUpdate: Date.now(),
-          });
-        res.send({ success: true });
-      } else {
-        console.log(
-          'No eth owned token update needed only',
-          Date.now() - doc.lastUpdate,
-          'second passed',
-          'min is',
-          MIN_TIME_FOR_ETH_ADDRESS_TOKEN_UPDTAE
-        );
-        res.send({ success: true });
-      }
-    } else {
-      console.log('registerUserEthAccount: address does not exist', address, 'user', userId);
-      // setting address to collection
-      const preparedTokenList = await getTokenListFromAmberData(address);
-      await db
-        .collection(collections.wallet)
-        .doc(userId)
-        .collection(collections.registeredEthAddress)
-        .doc(address)
-        .set({
-          walletType: walletType,
-          walletStatus: walletStatus,
-          tokenList: preparedTokenList,
-          name: walletName,
-          lastUpdate: Date.now(),
-        });
-      res.send({ success: true });
-    }
+    const newWalletData =
+      filteredWalletData.length > 0
+        ? walletData.map((item) => {
+            if (item.walletType === walletType) {
+              return {
+                walletType,
+                walletStatus,
+                tokenList: preparedTokenList,
+                name: walletName,
+                address,
+                lastUpdate: Date.now(),
+              };
+            }
+            return item;
+          })
+        : [
+            ...walletData,
+            {
+              walletType,
+              walletStatus,
+              tokenList: preparedTokenList,
+              address,
+              name: walletName,
+              lastUpdate: Date.now(),
+            },
+          ];
+
+    console.log('NEW WALLET DATA - ', newWalletData);
+
+    db.collection(collections.user)
+      .doc(userId)
+      .update({ ...userData, wallets: newWalletData });
+    res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/walletController -> registerUserEthAccount()', err);
     res.send({ success: false });
@@ -639,7 +624,8 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
     const { address, userId } = req.body;
 
     // get user address registered collection
-    const walletRegisteredEthAddrSnap = await db.collection(collections.wallet)
+    const walletRegisteredEthAddrSnap = await db
+      .collection(collections.wallet)
       .doc(userId)
       .collection(collections.registeredEthAddress)
       .doc(address)
@@ -651,7 +637,8 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
       res.send({ success: false });
     }
 
-    await db.collection(collections.wallet)
+    await db
+      .collection(collections.wallet)
       .doc(userId)
       .collection(collections.registeredEthAddress)
       .doc(address)
@@ -660,13 +647,13 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/walletController -> removeUserRegisteredEthAccounts()', err);
-    res.send({ success: false });
+    res.send({ success: false, result: false });
   }
-}
+};
 
 module.exports.registerPriviWallet = async (req: express.Request, res: express.Response) => {
   try {
-    console.log({body: req.body})
+    console.log({ body: req.body });
     const { pubKey, userId } = req.body;
 
     console.log('got call from', userId);
@@ -675,7 +662,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
 
     const publicKey = '0x04' + pubKey.toString('hex');
     const address = '0x' + (await publicToAddress(pubKey).toString('hex'));
-    console.log({publicKey, address})
+    console.log({ publicKey, address });
     const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
 
     if (blockchainRes && blockchainRes.success) {
@@ -703,7 +690,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
     console.log('Error in controllers/user.ts -> attachaddress(): ', err);
     res.send({ success: false });
   }
-}
+};
 
 ///////////////////////////// gets //////////////////////////////
 
@@ -869,9 +856,8 @@ module.exports.getUserOwnedTokens = async (req: express.Request, res: express.Re
       const response = await responsePromise;
       res.send({ success: true, data: response });
     } else {
-      const catalogs = (userId !== '')
-        ? await (await db.collection(collections.mediaUsers).doc(userId).get()).data() || []
-        : [];
+      const catalogs =
+        userId !== '' ? (await (await db.collection(collections.mediaUsers).doc(userId).get()).data()) || [] : [];
 
       res.send({ success: true, data: [catalogs] });
     }
@@ -881,9 +867,8 @@ module.exports.getUserOwnedTokens = async (req: express.Request, res: express.Re
     try {
       let { userId } = req.query;
       userId = userId!.toString();
-      const catalogs = (userId !== '')
-        ? await (await db.collection(collections.mediaUsers).doc(userId).get()).data() || []
-        : [];
+      const catalogs =
+        userId !== '' ? (await (await db.collection(collections.mediaUsers).doc(userId).get()).data()) || [] : [];
 
       res.send({ success: true, data: [catalogs] });
     } catch (err) {
@@ -1113,7 +1098,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
 };
 
 module.exports.getRegisteredTokensByType = async (req: express.Request, res: express.Response) => {
-  const defaultList = ["CRYPTO", "MEDIAPOD", "NFTPOD", "FTPOD", "COMMUNITY", "SOCIAL"];
+  const defaultList = ['CRYPTO', 'MEDIAPOD', 'NFTPOD', 'FTPOD', 'COMMUNITY', 'SOCIAL'];
 
   const params = req.query;
   let requestedTypes: any = params.typeList ?? defaultList;
@@ -1264,7 +1249,7 @@ exports.saveLastRateOfTheDay = cron.schedule('0 0 * * *', async () => {
 exports.changeTokenPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-       // upload to Firestore Bucket
+      // upload to Firestore Bucket
       //  await uploadToFirestoreBucket(req.file, "uploads/tokens", "images/tokens")
 
       res.send({ success: true });
