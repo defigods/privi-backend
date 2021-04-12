@@ -535,6 +535,17 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
           { merge: true }
         );
 
+
+      const wipQuery =  await db.collection(collections.workInProgress)
+        .where('Name', '==', name)
+        .get();
+
+      if (!wipQuery.empty) {
+        for (const doc of wipQuery.docs) {
+          await db.collection(collections.workInProgress).doc(doc.id).delete();
+        }
+      }
+
       res.send({ success: true, data: podId });
     } else {
       console.log('Error in controllers/mediaPodController -> initiatePod(): ', blockchainRes.message);
