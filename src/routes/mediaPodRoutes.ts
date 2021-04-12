@@ -33,7 +33,7 @@ router.post('/changeMediaPodPhoto', authenticateJWT, upload.single('image'), med
 router.get('/getMyMediaPods/:userId', authenticateJWT, mediaPodController.getMyMediaPods);
 router.get('/getTrendingMediaPods', authenticateJWT, mediaPodController.getTrendingMediaPods);
 router.get('/getOtherMediaPods/:userId', authenticateJWT, mediaPodController.getOtherMediaPods);
-router.get('/getAllMediaPodsInfo/:pagination/:lastId', authenticateJWT, mediaPodController.getAllMediaPodsInfo);
+router.get('/getMediaPods/:pagination/:lastId', authenticateJWT, mediaPodController.getMediaPods);
 router.get('/getMediaPod/:mediaPodId', authenticateJWT, mediaPodController.getMediaPod);
 router.get('/getPhoto/:podId', mediaPodController.getPhotoById);
 router.get('/getBuyingPodFundingTokenAmount', authenticateJWT, mediaPodController.getBuyingPodFundingTokenAmount);
