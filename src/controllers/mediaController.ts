@@ -5,6 +5,7 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
+import { CollectionsOpensea, CollectionsShowTime, CollectionsWax } from "../constants/nftCollections"
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
@@ -58,8 +59,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     const mediaTypes = body.mediaTypes ?? [];
     const searchValue = body.searchValue ?? '';
     const status = body.status ?? [];
-    console.log(pagination, prevLastMediaId, body);
-
+    const collectionsArray = body.collections ?? [];
     // ret vars
     let availableSize = pageSize;
     let isLastIdPrivi = false;
@@ -124,13 +124,16 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           let addData = true;
           const data = mediaDocs[i].data();
           data.id = mediaDocs[i].id;
-          // Filter options
+          // Filter options:
           // searched Value
           if (searchValue != '') addData = addData && (data.title.toLowerCase().includes(searchValue.toLowerCase()));
-          // // blockchain
+          // blockchain
           addData = addData && (!data.tag || otherBlockchainsFilterList.includes(data.tag.toLowerCase()));
           // types
           addData = addData && (!data.type || mediaTypes.includes(data.type));
+          // collections
+          addData = addData && (!data.collection || collectionsArray.includes(data.collection));
+
           // status
           if (status.length > 0) {
             let foundStatus = false;
@@ -987,15 +990,15 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
       // });
 
       await mediasRef.update({
-          Fractionalized: true,
-          FractionalizeInfo: {
-            Fraction: body.fraction,
-            FractionPrice: body.fractionPrice,
-            FractionPriceToken: body.fractionPriceToken,
-            BuyBackPrice: body.buyBackPrice,
-            BuyBackPriceToken: body.buyBackPriceToken,
-            InterestRate: body.interestRate
-          }
+        Fractionalized: true,
+        FractionalizeInfo: {
+          Fraction: body.fraction,
+          FractionPrice: body.fractionPrice,
+          FractionPriceToken: body.fractionPriceToken,
+          BuyBackPrice: body.buyBackPrice,
+          BuyBackPriceToken: body.buyBackPriceToken,
+          InterestRate: body.interestRate
+        }
       });
 
       res.send({ success: true, data: body.media });
