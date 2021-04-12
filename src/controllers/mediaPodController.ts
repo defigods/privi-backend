@@ -8,12 +8,13 @@ import {
 } from '../functions/functions';
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 import notificationTypes from '../constants/notificationType';
-import collections from '../firebase/collections';
+import collections, { mediaPods } from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import cron from 'node-cron';
 import fs from 'fs';
 import path from 'path';
 import mediaPod from '../blockchain/mediaPod';
+import { send } from 'process';
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
@@ -118,28 +119,25 @@ exports.getOtherMediaPods = async (req: express.Request, res: express.Response) 
 
 // get media pods according to pagination and filters
 const pageSize = 6;
-const sortByOptions = ["Most Followed", "Recent"];
-const sortByTokenOptions = ["Descending", "Ascending"];
-const displayingPods = [
-  "All Pods",
-  "My Pods",
-  "My Connections",
-  "Private Pods",
-  "Public Pods",
-];
-exports.getAllMediaPodsInfo = async (req: express.Request, res: express.Response) => {
+const podStateOptions = ["Formation", "Investment", "Released"];
+const investingOptions = ["Off", "On"];
+const sortByPriceOptions = ["Descending", "Ascending"];
+const podTypeOptions = ["All", "Media Pods", "Fractionalised Media"];
+exports.getMediaPods = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
     const previousLastId = req.params.lastId;
     const params = req.query;
-    let nextLastId = "null";
-    let allMediaPods: any[] = [];
-    let followers: string[] = [];
-    if (params.userId && params.displayingCommunitiesSelection == displayingPods[2]) {
-      const userSnap = await db.collection(collections.user).doc(params.userId as string).get();
-      const userData: any = userSnap.data();
-      followers = userData && userData.followers ? userData.followers : [];
+
+    // TODO: set correct implementation of podTypeSekectuib when fractionalized pods are added to the system
+    const podTypeSelection = params.podTypeSelection;
+    if (podTypeSelection == podTypeOptions[2]) {
+      res.send({ success: true, data: [] });
+      return;
     }
+
+    let nextLastId = "null";
+    let mediaPods: any[] = [];
     // pagination and filtering
     if (pagination != undefined) {
       let communitiesSnap;
@@ -150,33 +148,38 @@ exports.getAllMediaPodsInfo = async (req: express.Request, res: express.Response
       }
       else communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').get();
       communitiesSnap.forEach((doc) => {
-        if (allMediaPods.length < pageSize) {
+        if (mediaPods.length < pageSize) {
           const data: any = doc.data();
           if (params) {
             let addData = true;
-            const userId = params.userId;
             //1. select the communities selection to show
             const displayingPodsSelection = params.displayingPodsSelection;
             if (displayingPodsSelection) {
               switch (displayingPodsSelection) {
-                case displayingPods[0]:
-                  addData = true;
+                case podStateOptions[0]:
+                  addData = addData && (data.Status && (data.Status == "FORMATION" || data.Status == "INITIATED"));
                   break;
-                case displayingPods[1]:
-                  addData = (data.Creator === userId);
+                case podStateOptions[1]:
+                  addData = addData && (data.Status && data.Status == "INVESTING");
                   break;
-                case displayingPods[2]:
-                  addData = followers.includes(data.Creator ?? '');
-                  break;
-                case displayingPods[3]:
-                  addData = Boolean(data.Private);
-                  break;
-                case displayingPods[4]:
-                  addData = !Boolean(data.Private);
+                case podStateOptions[2]:
+                  addData = addData && (data.Status && data.Status == "RELEASED");
                   break;
               }
             }
-            //2. filter by user input
+            //2. filter by investing
+            const investingSelection = params.investingSelection;
+            if (investingSelection) {
+              switch (investingSelection) {
+                case investingOptions[0]:
+                  addData = addData && !data.IsInvesting;
+                  break;
+                case investingOptions[1]:
+                  addData = addData && data.IsInvesting;
+                  break;
+              }
+            }
+            //3. filter by user input
             const searchValue: any = params.searchValue;
             if (searchValue) {
               if (searchValue.includes("#") && data.Hashtags && data.Hashtags.length > 0) {
@@ -189,86 +192,69 @@ exports.getAllMediaPodsInfo = async (req: express.Request, res: express.Response
                 if (!data.Name.toUpperCase().includes(searchValue.toUpperCase())) addData = false;
               }
             }
-            //3. filter by endorsement and trust scores
-            const trustScore = params.trustScore;
-            if (trustScore != undefined && !isNaN(Number(trustScore))) addData = addData && (data.TrustScore == undefined || data.TrustScore * 100 <= Number(trustScore));
-            const endorsementScore = params.endorsementScore;
-            if (endorsementScore != undefined && !isNaN(Number(endorsementScore))) addData = addData && (data.EndorsementScore == undefined || data.EndorsementScore * 100 <= Number(endorsementScore))
             //4. addData 
-            if (addData) allMediaPods.push(data);
+            if (addData) mediaPods.push(data);
           } else {
-            allMediaPods.push(data);
+            mediaPods.push(data);
           }
         }
       });
-      if (allMediaPods.length > 0) nextLastId = allMediaPods[allMediaPods.length - 1].PodAddress; // save last community Id (by date) before sorting
-
+      if (mediaPods.length > 0) nextLastId = mediaPods[mediaPods.length - 1].PodAddress; // save last community Id (by date) before sorting
       //Sort 1
-      const sortByOptionsSelection = params.sortByOptionsSelection;
-      if (sortByOptionsSelection) {
-        if (sortByOptionsSelection === sortByOptions[0]) {
-          //by most followers
-          allMediaPods.sort((a, b) =>
-            b.Followers && a.Followers
-              ? b.Followers.length - a.Followers.length
-              : 0
-          );
-        } else if (sortByOptionsSelection === sortByOptions[1]) {
-          //by most recent date
-          allMediaPods.sort(
-            (a, b) => Date.parse(b["StartDate"]) - Date.parse(a["StartDate"])
-          );
-        }
-      }
-      //Sort 2
-      const sortByTokenOptionsSelection = params.sortByTokenOptionsSelection;
-      if (sortByTokenOptionsSelection) {
-        if (sortByTokenOptionsSelection === sortByTokenOptions[0]) {
-          //by tokens descending
-          allMediaPods.sort((a, b) => b.FundingTokenPrice - a.FundingTokenPrice);
-        } else if (sortByTokenOptionsSelection === sortByTokenOptions[1]) {
-          //by tokens ascending
-          allMediaPods.sort((a, b) => a.FundingTokenPrice - b.FundingTokenPrice);
+      const sortByPriceSelection = params.sortByPriceSelection;
+      if (sortByPriceSelection) {
+        switch (sortByPriceSelection) {
+          case sortByPriceOptions[0]:
+            mediaPods.sort((a, b) => b.FundingTokenPrice - a.FundingTokenPrice);
+            break;
+          case sortByPriceOptions[1]:
+            mediaPods.sort((a, b) => a.FundingTokenPrice - b.FundingTokenPrice);
+            break;
         }
       }
     }
     // if no pagination and filters, just return all 
     else {
       const mediasSnap = await db.collection(collections.mediaPods).get();
-      mediasSnap.forEach((doc) => allMediaPods.push(doc.data()));
+      mediasSnap.forEach((doc) => mediaPods.push(doc.data()));
     }
-    const hasMore = allMediaPods.length == pageSize;
+    // -- for each pod add media type list to be displayed in FE --
+    // convert medias to map
+    const mediaPodsMap = {};
+    mediaPods.forEach((pod) => mediaPodsMap[pod.PodAddress] = { ...pod, MediasType: [] });
+    const promises: any[] = [];
+    // query medias in parallel
+    for (let i = 0; i < mediaPods.length; i++) {
+      const pod = mediaPods[i];
+      promises.push(db.collection(collections.mediaPods).doc(pod.PodAddress).collection(collections.medias).get());
+    }
+    const responses = await Promise.all(promises);
+    responses.forEach((mediasSnap) => {
+      mediasSnap.forEach((media) => {
+        const mediaData = media.data();
+        if (mediaData.PodAddress && mediaPodsMap[mediaData.PodAddress]) mediaPodsMap[mediaData.PodAddress].MediasType.push(mediaData.Type);
+      })
+    });
+    // add result to return array
+    mediaPods.forEach((pod, index) => {
+      mediaPods[index] = mediaPodsMap[pod.PodAddress];
+    });
+
+    // return data
+    const hasMore = mediaPods.length == pageSize;
     res.send({
       success: true,
       data: {
-        mediaPods: allMediaPods ?? [],
+        mediaPods: mediaPods ?? [],
         hasMore: hasMore,
         lastId: nextLastId
       },
     });
   } catch (err) {
-    console.log('Error in controllers/mediaPodController -> getAllMediaPodsInfo(): ', err);
+    console.log('Error in controllers/mediaPodController -> getMediaPods(): ', err);
     res.send({ success: false, error: 'Error making request' });
   }
 };
-
-// function to get all NFT Pods
-const getMediaPods = (exports.getNFTPods = (lastMediaPod): Promise<any[]> => {
-  return new Promise<any[]>(async (resolve, reject) => {
-    let podsMedia;
-    if (lastMediaPod) {
-      podsMedia = await db.collection(collections.mediaPods).startAfter(lastMediaPod).limit(5).get();
-    } else {
-      podsMedia = await db.collection(collections.mediaPods).limit(6).get();
-    }
-
-    let array: any[] = [];
-    podsMedia.docs.map((doc, i) => {
-      array.push(doc.data());
-    });
-    resolve(array);
-  });
-});
 
 exports.getMediaPod = async (req: express.Request, res: express.Response) => {
   try {
@@ -536,7 +522,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         );
 
 
-      const wipQuery =  await db.collection(collections.workInProgress)
+      const wipQuery = await db.collection(collections.workInProgress)
         .where('Name', '==', name)
         .get();
 
