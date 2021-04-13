@@ -1961,3 +1961,39 @@ exports.getChatsWIP = async (req: express.Request, res: express.Response) => {
         });
     }
 };
+
+exports.getChatsPvP = async (req: express.Request, res: express.Response) => {
+    try {
+        let body = req.body;
+        console.log("body", body);
+
+        const allChats: any[] = [];
+        const chatUserFromSnap = await db.collection(collections.chat)
+          .where("users.userTo.userId", "==", body.userId)
+          .where("users.userFrom.userId", "==", body.targetId).get();
+
+          chatUserFromSnap.forEach((doc) => {
+            console.log("chatUserFromSnap", doc.data());
+            allChats.push(doc.data());
+        });
+        const chatUserToSnap = await db.collection(collections.chat)
+          .where("users.userTo.userId", "==", body.targetId)
+          .where("users.userFrom.userId", "==", body.userId).get();
+        chatUserToSnap.forEach((doc) => {
+            allChats.push(doc.data());
+        });
+        console.log("allChats:", allChats);
+        let sortChats = allChats.sort((a, b) => (b.created > a.created) ? 1 : ((a.created > b.created) ? -1 : 0));
+
+        res.send({
+            success: true,
+            data: sortChats
+        });
+    } catch (e) {
+        console.log('Error in controllers/chatRoutes -> getChatsWIP()' + e);
+        res.send({
+            success: false,
+            error: 'Error in controllers/chatRoutes -> getChatsWIP()' + e
+        });
+    }
+};

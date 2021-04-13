@@ -965,12 +965,12 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
     let params = req.params;
     let body = req.body;
 
-    if (params && body && params.mediaPod && params.mediaId && body.media) {
+    if (params && body && params.mediaPod) {
       const mediasRef = db
         .collection(collections.mediaPods)
         .doc(params.mediaPod)
         .collection(collections.medias)
-        .doc(params.mediaId);
+        .doc(body.mediaId);
 
       // To send notification after fractionalizing if necessary (tweak fields!)
       // await notificationsController.addNotification({
@@ -1001,7 +1001,7 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
         }
       });
 
-      res.send({ success: true, data: body.media });
+      res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> fractionalizeMedia()', 'Missing data');
       res.send({ success: false, error: 'Missing data' });
@@ -1876,7 +1876,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
 
     if (body && body.media && body.userId) {
 
-      let media : any = body.media;
+      let media: any = body.media;
       let bodySave: any = {
         // Collabs: media.Collabs || {},
         HasPhoto: media.HasPhoto || false,
