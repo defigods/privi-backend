@@ -499,6 +499,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
 
       const name = body.Name;
       const description = body.Description;
+      const sharingPercent = body.SharingPercent;
       const mainHashtag = body.MainHashtag;
       const hashtags = body.Hashtags;
       const hasPhoto = body.HasPhoto;
@@ -512,6 +513,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             HasPhoto: hasPhoto || false,
             Name: name || '',
             Description: description || '',
+            SharingPercent: sharingPercent || '',
             MainHashtag: mainHashtag || '',
             Hashtags: hashtags || [],
             OpenAdvertising: openAdvertising || false,
