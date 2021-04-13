@@ -202,4 +202,7 @@ router.post(
 
 router.post('/marketingMediaCommunity/chats/lastView', authenticateJWT, mediaController.lastViewMediaMarketing);
 
+router.post('/createMedia/', authenticateJWT, mediaController.createMedia);
+
+
 module.exports = router;

@@ -5,6 +5,7 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
+import { CollectionsOpensea, CollectionsShowTime, CollectionsWax } from "../constants/nftCollections"
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
@@ -58,8 +59,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     const mediaTypes = body.mediaTypes ?? [];
     const searchValue = body.searchValue ?? '';
     const status = body.status ?? [];
-    console.log(pagination, prevLastMediaId, body);
-
+    const collectionsArray = body.collections ?? [];
     // ret vars
     let availableSize = pageSize;
     let isLastIdPrivi = false;
@@ -124,13 +124,16 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           let addData = true;
           const data = mediaDocs[i].data();
           data.id = mediaDocs[i].id;
-          // Filter options
+          // Filter options:
           // searched Value
           if (searchValue != '') addData = addData && (data.title.toLowerCase().includes(searchValue.toLowerCase()));
-          // // blockchain
+          // blockchain
           addData = addData && (!data.tag || otherBlockchainsFilterList.includes(data.tag.toLowerCase()));
           // types
           addData = addData && (!data.type || mediaTypes.includes(data.type));
+          // collections
+          addData = addData && (!data.collection || collectionsArray.includes(data.collection));
+
           // status
           if (status.length > 0) {
             let foundStatus = false;
@@ -987,15 +990,15 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
       // });
 
       await mediasRef.update({
-          Fractionalized: true,
-          FractionalizeInfo: {
-            Fraction: body.fraction,
-            FractionPrice: body.fractionPrice,
-            FractionPriceToken: body.fractionPriceToken,
-            BuyBackPrice: body.buyBackPrice,
-            BuyBackPriceToken: body.buyBackPriceToken,
-            InterestRate: body.interestRate
-          }
+        Fractionalized: true,
+        FractionalizeInfo: {
+          Fraction: body.fraction,
+          FractionPrice: body.fractionPrice,
+          FractionPriceToken: body.fractionPriceToken,
+          BuyBackPrice: body.buyBackPrice,
+          BuyBackPriceToken: body.buyBackPriceToken,
+          InterestRate: body.interestRate
+        }
       });
 
       res.send({ success: true, data: body.media });
@@ -1863,6 +1866,83 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
     res.status(200).send({
       success: false,
       error: 'Error in controllers/mediaController -> lastViewMediaMarketing():' + e,
+    });
+  }
+};
+
+export const createMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    if (body && body.media && body.userId) {
+
+      let media : any = body.media;
+      let bodySave: any = {
+        // Collabs: media.Collabs || {},
+        HasPhoto: media.HasPhoto || false,
+        Requester: body.userId,
+        MediaName: media.Title || '',
+        MediaDescription: media.Description || '',
+        MediaSymbol: media.Title.replace(/\s/g, '') || '',
+        Type: media.Type || '',
+        PaymentType: media.PaymentType || '',
+        FundingToken: media.FundingToken || '',
+        PricePerSecond: media.PricePerSecond || 0,
+        Price: media.Price || 0,
+        Royalty: media.Royalty || '',
+
+        ReleaseDate: media.ReleaseDate,
+        /*Copies: media.Copies,
+
+        IsRecord: media.IsRecord,
+        RecordToken: media.RecordToken,
+        RecordPaymentType: media.RecordPaymentType,
+        RecordPrice: media.RecordPrice,
+        RecordPricePerSecond: media.RecordPricePerSecond,
+        RecordCopies: media.RecordCopies,
+        RecordRoyalty: media.RecordRoyalty*/
+      }
+
+      if (media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
+        bodySave.RoomState = 'SCHEDULED'
+        bodySave.CountStreamers = 0;
+        bodySave.CountWatchers = 0;
+        bodySave.ExpectedDuration = 0;
+        bodySave.MainStreamer = media.Creator;
+        bodySave.RoomName = media.media.Title.replace(/\s/g, '');
+        bodySave.StartedTime = 0;
+        bodySave.EndedTime = 0;
+        bodySave.StreamingToken = '';
+        bodySave.StreamingUrl = '';
+        bodySave.TotalWatchers = 0;
+        bodySave.Video = media === "LIVE_VIDEO_TYPE";
+        bodySave.Watchers = [];
+        bodySave.OnlineModerators = [];
+        bodySave.Moderators = [];
+        bodySave.OnlineStreamers = [];
+        bodySave.Streamers = []
+        bodySave.LimitedEdition = [];
+        bodySave.PriceType = '';
+        bodySave.Price = 0;
+        bodySave.StartingTime = 0;
+        bodySave.EndingTime = 0;
+        bodySave.Rewards = '';
+      }
+
+      await db.runTransaction(async (transaction) => {
+        transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
+      });
+    } else {
+      res.status(200).send({
+        success: false,
+        error: 'Error in controllers/mediaController -> createMedia(): Non Chat Room Provided',
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> createMedia()' + e);
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> createMedia():' + e,
     });
   }
 };
