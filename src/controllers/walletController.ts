@@ -617,30 +617,46 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
   }
 };
 
+module.exports.toggleUserRegisteredEthAccounts = async (req: express.Request, res: express.Response) => {
+  try {
+    const { address, userId, newState } = req.body;
+
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    const walletData = userData?.wallets ?? [];
+    const filteredWalletData = walletData.map((wallet) => {
+      if (wallet.address !== address) return wallet;
+      return {
+        ...wallet,
+        walletStatus: newState,
+      };
+    });
+
+    await db
+      .collection(collections.user)
+      .doc(userId)
+      .update({ ...userData, wallets: filteredWalletData });
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/walletController -> toggleUserRegisteredEthAccounts()', err);
+    res.send({ success: false, result: false });
+  }
+};
+
 module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, res: express.Response) => {
   try {
     const { address, userId } = req.body;
 
-    // get user address registered collection
-    const walletRegisteredEthAddrSnap = await db
-      .collection(collections.wallet)
-      .doc(userId)
-      .collection(collections.registeredEthAddress)
-      .doc(address)
-      .get();
-
-    // check if address is already registered
-    if (!walletRegisteredEthAddrSnap.exists) {
-      console.log('No user address existing');
-      res.send({ success: false });
-    }
+    const userSnap = await db.collection(collections.user).doc(userId).get();
+    const userData = userSnap.data();
+    const walletData = userData?.wallets ?? [];
+    const filteredWalletData = walletData.filter((wallet) => wallet.address !== address);
 
     await db
-      .collection(collections.wallet)
+      .collection(collections.user)
       .doc(userId)
-      .collection(collections.registeredEthAddress)
-      .doc(address)
-      .delete();
+      .update({ ...userData, wallets: filteredWalletData });
 
     res.send({ success: true });
   } catch (err) {
