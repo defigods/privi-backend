@@ -32,6 +32,7 @@ router.post('/transfer', authenticateJWT, walletController.transfer);
 router.post('/createStreaming', authenticateJWT, walletController.createStreaming);
 router.post('/giveTip', authenticateJWT, walletController.giveTip);
 router.post('/removeUserRegisteredEthAccounts', authenticateJWT, walletController.removeUserRegisteredEthAccounts);
+router.post('/toggleUserRegisteredEthAccounts', authenticateJWT, walletController.toggleUserRegisteredEthAccounts);
 router.post('/registerPriviWallet', authenticateJWT, walletController.registerPriviWallet);
 
 // GETS
@@ -48,7 +49,7 @@ router.get('/getUidToAddressMap', authenticateJWT, walletController.getUidToAddr
 router.get('/getUserOwnedTokens', walletController.getUserOwnedTokens);
 router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.getTokenBalances_v2);
 router.get('/getAllTokenBalances/:address', authenticateJWT, walletController.getAllTokenBalances); // all token balances of the user with extra data (Type, ...)
-router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.getAllTokensWithBuyingPrice);  // for wallet buy tokens modal
+router.get('/getAllTokensWithBuyingPrice', authenticateJWT, walletController.getAllTokensWithBuyingPrice); // for wallet buy tokens modal
 router.get('/getTransactions', authenticateJWT, walletController.getTransactions);
 router.get('/getUserTokenTypeBalanceHistory', authenticateJWT, walletController.getUserTokenTypeBalanceHistory);
 router.get('/getUserTokenListByType', authenticateJWT, walletController.getUserTokenListByType);
