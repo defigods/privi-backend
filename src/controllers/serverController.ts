@@ -23,6 +23,7 @@ const priviCreditRoutes = require("../routes/priviCreditRoutes");
 const priviDataRoutes = require("../routes/priviDataRoutes");
 const liquidityPoolRoutes = require("../routes/liquidityPoolRoutes");
 const ethereumRoutes = require("../routes/ethereumRoutes");
+const waxRoutes = require("../routes/waxRoutes");
 const insuranceRoutes = require("../routes/insuranceRoutes");
 const forumRoutes = require("../routes/forumRoutes");
 const communityRoutes = require("../routes/communityRoutes");
@@ -76,6 +77,7 @@ export const startServer = (env: Env) => {
   app.use("/priviCredit", priviCreditRoutes);
   app.use("/liquidityPool", liquidityPoolRoutes);
   app.use("/ethereum", ethereumRoutes);
+  app.use("/wax", waxRoutes);
   app.use("/privi-data", priviDataRoutes);
   app.use("/forum", forumRoutes);
   app.use("/insurance", insuranceRoutes);

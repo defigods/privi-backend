@@ -19,7 +19,7 @@ module.exports = {
   rates: 'ratesOfChange',
 
   registeredEthAddress: 'RegisteredEthAddress',
-  //new histories
+  // new histories
   historyCrypto: 'HistoryCRYPTO',
   historySocial: 'HistorySOCIAL',
   historyFT: 'HistoryFTPOD',
@@ -30,6 +30,7 @@ module.exports = {
   history: 'History',
   allTransactions: 'AllTransaction',
   ethTransactions: 'EthTransactions',
+  waxTransactions: 'WaxTransactions',
   waitlist: 'Waitlist',
   cloudDatabase: 'CloudDatabase',
 
@@ -66,12 +67,12 @@ module.exports = {
   priceHistory: 'PriceHistory',
   supplyHistory: 'SupplyHistory',
   podRoleInvitation: 'PodRoleInvitation',
-  mediaPods: "MediaPods",
+  mediaPods: 'MediaPods',
   trendingMediaPods: 'TrendingMediaPods',
-  medias: "Medias",
-  streamingListeners: "StreamingListeners",
-  streamers: "Streamers",
-  streamings: "Streamings",
+  medias: 'Medias',
+  streamingListeners: 'StreamingListeners',
+  streamers: 'Streamers',
+  streamings: 'Streamings',
 
   podViewInvitation: 'PodViewInvitation',
   insurancePools: 'InsurancePools',
@@ -150,4 +151,6 @@ module.exports = {
   streaming: 'Streaming',
 
   ethMedia: 'EthMedia',
+
+  waxActions: 'WaxActions',
 };
