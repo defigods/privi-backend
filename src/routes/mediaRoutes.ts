@@ -179,8 +179,8 @@ router.post(
   mediaController.signTransactionAcceptCollab
 );
 
-router.post('/getMedias/:pagination/:lastId', mediaController.getMedias); // NOTE: It's used on public landing page hence authentication is removed
-router.post('/fractionalizeMedia/:mediaPod', authenticateJWT, mediaController.fractionalizeMedia);
+router.post('/getMedias', mediaController.getMedias); // NOTE: It's used on public landing page hence authentication is removed
+router.post('/fractionalizeMedia/:mediaId', authenticateJWT, mediaController.fractionalizeMedia);
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 
