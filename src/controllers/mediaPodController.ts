@@ -4,7 +4,7 @@ import {
   getMediaPodBuyingAmount,
   addZerosToHistory,
   getMediaPodSellingAmount,
-  generateUniqueId,
+  getCurrentFormattedDate,
 } from '../functions/functions';
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 import notificationTypes from '../constants/notificationType';
@@ -994,20 +994,22 @@ exports.changeMediaPodPhoto = async (req: express.Request, res: express.Response
 exports.storePriceHistory = cron.schedule('0 0 * * *', async () => {
   try {
     console.log('********* Media Pod storePriceHistory() cron job started *********');
+    const currFormatedDate = getCurrentFormattedDate();
     const mediaPodSnaps = await db.collection(collections.mediaPods).get();
     mediaPodSnaps.forEach((doc) => {
       const podData: any = doc.data();
+      const amm = podData.AMM;
       const status = podData.Status;
-      if (status && status == 'INVESTING') {
+      if (amm && status == 'INVESTING') {
         const price = getMediaPodBuyingAmount(
-          podData.AMM.toUpperCase(),
+          amm.toUpperCase(),
           podData.FundingTokenPrice,
           podData.MaxPrice,
           podData.MaxSupply,
           podData.SupplyReleased,
           1
         );
-        doc.ref.collection(collections.priceHistory).add({
+        doc.ref.collection(collections.priceHistory).doc(currFormatedDate).set({
           data: Date.now(),
           price: price,
         });
@@ -1022,11 +1024,12 @@ exports.storePriceHistory = cron.schedule('0 0 * * *', async () => {
 exports.storeSupplyHistory = cron.schedule('0 0 * * *', async () => {
   try {
     console.log('********* Media Pod storeSupplyHistory() cron job started *********');
+    const currFormatedDate = getCurrentFormattedDate();
     const mediaPodSnaps = await db.collection(collections.mediaPods).get();
     mediaPodSnaps.forEach((doc) => {
       const podData: any = doc.data();
       const supply = podData.SupplyReleased ?? 0;
-      doc.ref.collection(collections.supplyHistory).add({
+      doc.ref.collection(collections.supplyHistory).doc(currFormatedDate).set({
         data: Date.now(),
         supply: supply,
       });
