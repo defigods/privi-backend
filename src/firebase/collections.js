@@ -150,10 +150,17 @@ module.exports = {
 
   collabs: 'Collabs',
 
-  streaming: 'Streaming',
   shareStreaming: 'ShareStreaming',
-
-  ethMedia: 'EthMediaTesting3',
+  // MEDIAS 
+  streaming: 'Streaming', // privi media goes there
+  ethMedia: 'EthMediaTesting3', // all external media
+  waxMedia: 'WaxMedia',
+  zoraMedia: 'ZoraMedia',
+  openseaMedia: 'OpenseaMedia',
+  mirrorMedia: 'MirrorMedia',
+  foundationMedia: 'FoundationMedia',
+  topshotMedia: 'TopshotMedia',
+  sorareMedia: 'SorareMedia',
 
   playList: 'PlayList',
 
