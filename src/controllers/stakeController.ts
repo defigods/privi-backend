@@ -553,7 +553,6 @@ exports.manageReturns = cron.schedule('0 0 * * *', async () => {
     const tokenDocs = tokensSnap.docs;
     for (let i = 0; i < tokenDocs.length; i++) {
       const token = tokenDocs[i].id;
-      // const txnId = generateUniqueId();
       const date = Date.now() - 4 * 90061;
       const blockchainRes = await priviGovernance.payStakingReward(token, apiKey);
       if (blockchainRes && blockchainRes.success) {
