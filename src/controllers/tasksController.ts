@@ -337,7 +337,7 @@ exports.updateTask = (userId, title) => {
   })
 }
 
-// daily check and add new created tasks to users
+// daily check and add new created tasks (in Tasks collection) to users
 exports.addTaskToUsers = cron.schedule('0 0 * * *', async () => {
   try {
     console.log("********* Task Controller addTaskToUsers() cron job started *********");
@@ -345,14 +345,14 @@ exports.addTaskToUsers = cron.schedule('0 0 * * *', async () => {
     const allTasks = await db.collection(collections.tasks).get();
     userSnap.forEach((userDoc) => {
       const userData = userDoc.data();
-      const userTasks = userData.UserTasks;
+      const userTasks = userData.UserTasks ?? [];
       const userLevel = userData.level ?? 0;
       allTasks.forEach((taskDoc) => {
         const taskData = taskDoc.data();
         const taskLevel = taskData.Level ?? 0;
         // user meets level requirement and dont have this task yet
         if (userLevel >= taskLevel && !userTasks.find((task) => task.Id == taskDoc.id)) {
-          // possible improvement: check if user meets condition to complete this task and set correct boolean instead of 'false'
+          // TODO: check if user meets condition of completing this task and set correct boolean instead of 'false'
           userTasks.push({
             Completed: false,
             Id: taskDoc.id,

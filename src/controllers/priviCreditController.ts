@@ -239,7 +239,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const userLikes = userData.Likes ?? [];
     const creditLikes = creditData.Likes ?? [];
 
-    if(body.liked){
+    if (body.liked) {
       userLikes.push({
         date: Date.now(),
         type: "credit",
@@ -248,16 +248,16 @@ exports.like = async (req: express.Request, res: express.Response) => {
       creditLikes.push({
         date: Date.now(),
         userId: userAddress
-      }) 
-    } else{
-        userLikes.forEach((item, index) => {
-          if(creditAddress === item.id) userLikes.splice(index, 1)
-        })
-        creditLikes.forEach((item, index2) => {
-          if(userAddress === item.userId) creditLikes.splice(index2, 1)
-        }) 
+      })
+    } else {
+      userLikes.forEach((item, index) => {
+        if (creditAddress === item.id) userLikes.splice(index, 1)
+      })
+      creditLikes.forEach((item, index2) => {
+        if (userAddress === item.userId) creditLikes.splice(index2, 1)
+      })
     }
-      
+
     userSnap.ref.update({
       Likes: userLikes
     });
@@ -638,11 +638,11 @@ exports.borrowFunds = async (req: express.Request, res: express.Response) => {
       }
       const userBorrows = await priviCredit.getUserBorrowings(address, apiKey);
       if (userBorrows && userBorrows.success && userBorrows.output.length >= 3 && !userData.borrowedFromThree) {
-          let task = await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
-          await userSnap.ref.update({
-              borrowedFromThree: true,
-          });
-          res.send({success: true, task: task});
+        let task = await tasks.updateTask(address, "Borrow from 3 Credit Pools ");
+        await userSnap.ref.update({
+          borrowedFromThree: true,
+        });
+        res.send({ success: true, task: task });
       }
       res.send({ success: true });
     } else {
@@ -844,7 +844,7 @@ exports.getTrendingPriviCredits = async (req: express.Request, res: express.Resp
   try {
     const trendingCredits: any[] = [];
     const creditsSnap = await db.collection(collections.trendingPriviCredit).get();
-    for(let creditDoc of creditsSnap.docs) {
+    for (let creditDoc of creditsSnap.docs) {
       let trending = creditDoc.data();
 
       const creditSnap = await db.collection(collections.priviCredits).doc(trending.id).get();
@@ -864,7 +864,7 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
     const allCredits: any[] = [];
     const creditsSnap = await db.collection(collections.priviCredits).get();
     const popularity = 0.5;
-    for(let credit of creditsSnap.docs) {
+    for (let credit of creditsSnap.docs) {
       const data = credit.data();
       const lenders: any[] = [];
       const borrowers: any[] = [];
@@ -899,7 +899,7 @@ exports.setTrendingPriviCredits = cron.schedule('0 0 * * *', async () => {
       });
     await trendingCredits.forEach((doc: any) => {
       let docRef = db.collection(collections.trendingPriviCredit).doc();
-      batch.set(docRef, {id: doc.id});
+      batch.set(docRef, { id: doc.id });
     });
     await batch.commit();
   } catch (err) {
@@ -1070,23 +1070,24 @@ exports.getHistories = async (req: express.Request, res: express.Response) => {
 /////////////////////////// CRON JOBS //////////////////////////////
 
 // interest manager scheduled every day at 00:00
-exports.payInterest = cron.schedule('0 0 * * *', async () => {
+exports.payInterest = cron.schedule('* * * * *', async () => {
   try {
     console.log('******** Privi Credit payInterest ********');
     const creditsSnap = await db.collection(collections.priviCredits).get();
     const credits = creditsSnap.docs;
-    for (let i = 0; i <= credits.length; i++) {
+    for (let i = 0; i < credits.length; i++) {
       const creditAddress = credits[i].id;
       const data = credits[i].data();
       if (data) {
         const frequency = data.Frequency;
-        const paymentDay = 1; // fixed for now
+        const paymentDay = 1; // fixed for now, TODO: allow user to select
         if (isPaymentDay(frequency, paymentDay)) {
           const date = Date.now();
           const txnId = generateUniqueId();
           const blockchainRes = await priviCredit.payInterest(creditAddress, date, txnId, apiKey);
           if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
+            // notify user with the paid interest amount
             const transactions = blockchainRes.output.Transactions;
             let tid: string = '';
             let txnObj: any = null;
@@ -1095,12 +1096,7 @@ exports.payInterest = cron.schedule('0 0 * * *', async () => {
               const from = txnObj.From;
               const to = txnObj.To;
               if (txnObj.Type && txnObj.Type == notificationTypes.priviCreditInterest && from && to == creditAddress) {
-                /*createNotification(from, "Privi Credit - Interest Payment",
-                                    ` `,
-                                    notificationTypes.priviCreditInterest
-                                );*/
                 totalInterest += txnObj.Amount;
-
                 const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
                 const priviCreditData: any = priviCreditSnap.data();
                 await notificationsController.addNotification({
