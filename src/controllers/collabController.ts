@@ -60,6 +60,51 @@ module.exports.react = async (req: express.Request, res: express.Response) => {
     }
 };
 
+module.exports.like = async (req: express.Request, res: express.Response) => {
+	try {
+		const body = req.body;
+		const collabAddress = body.collabAddress;
+		const userAddress = body.userAddress;
+		const userSnap = await db.collection(collections.user).doc(userAddress).get();
+		const collabSnap = await db.collection(collections.collabs).doc(collabAddress).get();
+		const userData: any = userSnap.data();
+		const collabData: any = collabSnap.data();
+
+		let userLikes = userData.Likes ?? [];
+		let collabLikes = collabData.Likes ?? [];
+
+		if (collabLikes.length && collabLikes.findIndex(item => item.userId === userAddress) > -1) {
+			userLikes = userLikes.filter(item => item.id !== collabAddress);
+			collabLikes = collabLikes.filter(item => item.userId !== userAddress);
+		} else {
+			userLikes.push({
+				date: Date.now(),
+				type: "collab",
+				id: collabAddress
+			})
+			collabLikes.push({
+				date: Date.now(),
+				userId: userAddress
+			})
+		}
+
+		userSnap.ref.update({
+			Likes: userLikes
+		});
+		collabSnap.ref.update({
+			Likes: collabLikes
+		});
+
+		res.send({
+			success: true,
+			collabLikes,
+		});
+	} catch (err) {
+		console.log('Error in controllers/collabController -> like(): ', err);
+		res.send({ success: false });
+	}
+};
+
 ///////////////////////////// GET ///////////////////////////////
 // return the collabs according to the filter and sort options
 module.exports.getCollabs = async (req: express.Request, res: express.Response) => {
