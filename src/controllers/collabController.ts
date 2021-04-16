@@ -128,7 +128,7 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
             const numUpvotes = Object.keys(obj.Upvotes ?? {}).length;
             if (numUpvotes >= mean) trendingCollabs.push(obj);
         });
-        const filteredCollabs = filterCollabs(allCollabs, params);
+        const filteredCollabs = await filterCollabs(allCollabs, params);
         res.send({
             success: true, data: {
                 allCollabs: filteredCollabs,
@@ -143,7 +143,7 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
 
 const displayOptions = ["All Collabs", "My Collabs"];
 const sortByOptions = ["Most Liked", "Recent"];
-const filterCollabs = (allCollabs, params) => {
+const filterCollabs = async (allCollabs, params) => {
     const userId = params.userId;
     let filteredCollabs: any[] = [];
     // 1. filter by display option
@@ -178,10 +178,14 @@ const filterCollabs = (allCollabs, params) => {
     if (searchValue) {
         let aux = [...filteredCollabs];
         filteredCollabs = [];
-        aux.forEach((collab: any) => {
+        await Promise.all(aux.map(async (collab: any) => {
+            const userSnap = await db.collection(collections.user).doc(collab.Creator).get();
+            const userData : any = userSnap.data();
+            const userName = (userData)? userData.firstName + userData.lastName : '';
             if (
                 (collab.Idea &&
                     collab.Idea.toLowerCase().includes(searchValue.toLowerCase())) ||
+                userName.toLocaleLowerCase().includes(searchValue.toLowerCase()) ||
                 (collab.Platform &&
                     collab.Platform.name &&
                     collab.Platform.name
@@ -189,7 +193,7 @@ const filterCollabs = (allCollabs, params) => {
                         .includes(searchValue.toLowerCase()))
             )
                 filteredCollabs.push(collab);
-        });
+        }));
     }
 
     //3. sort
