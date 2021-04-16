@@ -1902,9 +1902,43 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
   }
 };
 
-// Media Smart Contract functions
+
 export const createMedia = async (req: express.Request, res: express.Response) => {
   try {
+    /* ---- AN EXAMPLE OF THE BODY ------
+      {
+        Data: {
+            "CreatorAddress": "0xeec9c9550b46cc865dc550bc17097fb7653a82f8",
+            "MediaName": "Music Video",
+            "MediaSymbol": "MVD10",
+            "ViewConditions": {
+                "ViewingType": "DYNAMIC",
+                "ViewingToken": "USDT",
+                "Price": "0.00009",
+                "IsStreamingLive": false,
+                "IsRecord": true,
+            },
+            "NftConditions": {
+                "Copies": 1,
+                "Royalty": "10",
+                "Price": "200",
+                "NftToken": "USDT"
+            },
+            "Type": "AUDIO",
+            "ReleaseDate": 0,
+            "SharingPct": "10"
+        };
+        ExtraInfo: {
+          HasPhoto,
+          Description,
+          PricingMetod,
+          Hashtags,
+          Content,  // only blog or blog snap
+          Playlist  // only playlist
+        },
+        Hash
+      }
+    */
     const body = req.body;
     const data = body.Data;
     const hash = body.Hash; // not used for now
@@ -1915,28 +1949,37 @@ export const createMedia = async (req: express.Request, res: express.Response) =
 
     const viewConditions = data.ViewConditions;
     const viewingType = viewConditions.ViewingType;
-    const viewingToken = viewConditions.ViewingToken;
+    const viewingToken = viewConditions.ViewingToken; // USDT, ETH ...
     const viewPrice = viewConditions.Price;
     const isStreamingLive = viewConditions.IsStreamingLive;
     const isRecord = viewConditions.IsRecord;
-    const streamingProportions = viewConditions.StreamingProportions;
 
     const nftConditions = data.NftConditions;
     const copies = nftConditions.Copies;
     const royalty = nftConditions.Royalty;
     const nftPrice = nftConditions.Price;
-    const nftToken = nftConditions.NftToken;
+    const nftToken = nftConditions.NftToken; // USDT, ETH ...
 
     const type = data.Type;
     const releaseDate = data.ReleaseDate;
     const sharingPct = data.SharingPct;
 
+    // additional info that needs to be stored
+    const extraInfo = body.ExtraInfo;
+    const creatorId = body.CreatorId;
+    const hasPhoto = extraInfo.HasPhoto ?? false;
+    const description = extraInfo.Description ?? '';
+    const pricingMethod = extraInfo.PaymentType ?? 'Fixed';   // Fixed or Streaming   
+    const hashtags = extraInfo.Hashtags ?? [];
+    const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
+
     const blockchainRes = await media.createMedia(creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken,
-      viewPrice, isStreamingLive, isRecord, streamingProportions, copies, royalty, nftPrice, nftToken,
+      viewPrice, isStreamingLive, isRecord, copies, royalty, nftPrice, nftToken,
       type, releaseDate, sharingPct, apiKey);
 
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
+      // add transaction data inside media 
       const output = blockchainRes.output;
       const updateTxns = output.Transactions;
       let tid = '';
@@ -1948,6 +1991,41 @@ export const createMedia = async (req: express.Request, res: express.Response) =
           .doc(tid)
           .set({ Transactions: txnArray });
       }
+      // add extra info in media doc
+      const extraData: any = {
+        HasPhoto: hasPhoto,
+        Description: description,
+        PricingMetod: pricingMethod,
+        Hashtags: hashtags,
+        Content: content,
+        CreatorId: creatorId
+      };
+      if (type === "LIVE_AUDIO_TYPE" || type === "LIVE_VIDEO_TYPE") {
+        extraData.RoomState = 'SCHEDULED';
+        extraData.CountStreamers = 0;
+        extraData.CountWatchers = 0;
+        extraData.ExpectedDuration = 0;
+        extraData.MainStreamer = creatorId;
+        extraData.RoomName = mediaName.replace(/\s/g, '');
+        extraData.StartedTime = 0;
+        extraData.EndedTime = 0;
+        extraData.StreamingToken = '';
+        extraData.StreamingUrl = '';
+        extraData.TotalWatchers = 0;
+        extraData.Video = type === "LIVE_VIDEO_TYPE";
+        extraData.Watchers = [];
+        extraData.OnlineModerators = [];
+        extraData.Moderators = [];
+        extraData.OnlineStreamers = [];
+        extraData.Streamers = []
+        extraData.LimitedEdition = [];
+        extraData.PriceType = '';
+        extraData.Price = 0;
+        extraData.StartingTime = 0;
+        extraData.EndingTime = 0;
+        extraData.Rewards = '';
+      }
+      db.collection(collections.streaming).doc(mediaSymbol).update({ ...extraData });
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
