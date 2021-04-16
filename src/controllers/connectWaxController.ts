@@ -242,13 +242,8 @@ const withdraw = async ({
  * @notice Cron that checks every X seconds if there is any transaction stored in the
  * database to be processed. The field 'action' determines whether executing swap or withdraw
  */
-// const checkTx =
 cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
-  // if (SHOULD_HANDLE_SWAP) {
   console.log('********* WAX <--> PRIVI Atomic Swaps cron job - STARTED - *********');
-
-  // Start WS server if not initialized yet
-  // (!runOnce) ? wsListen() : null;
 
   let snapshot;
   try {
