@@ -5,6 +5,20 @@ import collections from '../firebase/collections';
 import { mint as mintOnHLF, burn as burnOnHLF } from '../blockchain/coinBalance.js';
 import { updateFirebase as updateFireBaseBalance } from '../functions/functions';
 
+const { Api, JsonRpc } = require('eosjs');
+const { JsSignatureProvider } = require('eosjs/dist/eosjs-jssig');
+const fetch = require('node-fetch');
+const { TextEncoder, TextDecoder } = require('util');
+
+const rpc = new JsonRpc(process.env.WAX_NODE_URL, { fetch });
+const signatureProvider = new JsSignatureProvider([process.env.PRIVI_WAX_PRIVATE_KEY]);
+const api = new Api({
+  rpc,
+  signatureProvider,
+  textDecoder: new TextDecoder(),
+  textEncoder: new TextEncoder(),
+});
+
 const CRON_ACTION_LISTENING_FREQUENCY = 15;
 const Action = {
   SWAP_WAX: 'SWAP_WAX',
@@ -22,9 +36,10 @@ interface CommonActionData {
 }
 
 interface InsertActionData extends CommonActionData {
-  txPrivi: string,
-  txHash: string,
+  priviTx: string,
+  waxTx: string,
   random: number,
+  assetId: string,
   priviUserPublicId: string,
   description: string,
   status: string,
@@ -33,12 +48,13 @@ interface InsertActionData extends CommonActionData {
 interface SwapActionData extends CommonActionData {
   actionFirebaseId: string,
   priviUserPublicId: string,
-  txHash: string,
+  waxTx: string,
   random: number,
 }
 
 interface WithdrawActionData extends CommonActionData {
   actionFirebaseId: string,
+  assetId: string,
 }
 
 /**
@@ -80,12 +96,12 @@ const updateActionStatus = async (actionFirebaseId, status) => {
   });
 };
 
-const updateActionPriviTx = async (actionFirebaseId, priviTxHash) => {
+const updateActionPriviTx = async (actionFirebaseId, priviTx) => {
   await db.runTransaction(async (transaction) => {
     transaction.update(db.collection(
       collections.waxActions,
     ).doc(actionFirebaseId),
-    { txPrivi: priviTxHash });
+    { priviTx });
   });
 };
 
@@ -135,6 +151,29 @@ const swap = async ({
   }
 };
 
+const sendNft = async (waxUserAddress, assetId) => {
+  try {
+    await api.transact({
+      actions: [{
+        account: 'simpleassets',
+        name: 'transfer',
+        authorization: [{
+          actor: process.env.PRIVI_WAX_ACCOUNT,
+          permission: 'active',
+        }],
+        data: {
+          from: process.env.PRIVI_WAX_ACCOUNT,
+          to: waxUserAddress,
+          assetid1: assetId,
+          memo: '',
+        },
+      }],
+    });
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
+
 /**
  * @notice Withdraw NFT from Fabric to Wax User account
  */
@@ -145,6 +184,7 @@ const withdraw = async ({
   amount,
   action,
   tokenSymbol,
+  assetId,
   lastUpdateTimestamp,
   waxNetId,
 }: WithdrawActionData) => {
@@ -195,47 +235,49 @@ const withdraw = async ({
 
   console.log('Perform withdraw:', 'token', tokenSymbol, 'waxUserAddress', waxUserAddress, 'amount', amount);
 
-  /** ****
-  * TO IMPLEMENT THERE
+  try {
+    await sendNft(waxUserAddress, assetId);
+  } catch (err) {
+    console.warn('--> Withdraw: TX failed on WAX', 'error', err.message);
+
+    // if send fail, then mint back fabric coin, and set status of swap to failed
     try {
-  *   Send NFT from Privi Wax address to user Wax address
-    } catch (err) {
-      console.warn('--> Withdraw: TX failed on WAX', 'error', error, 'data', data, 'type of data is string?:', typeof data === 'string');
-      console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed');
-      const txHash = data.transactionHash;
-      updateStatusOneToOneSwap(swapDocId, 'failed');
-      updateTxOneToOneSwap(swapDocId, txHash);
-
-      const mintBack = await swapFab(
-        action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
-        '0x0000000000000000000000000000000000000000',
-        fromFabricAddress,
-        action === Action.WITHDRAW_ERC721 ? 1 : amount,
-        token,
-        'PRIVI',
-      );
-
-      if (mintBack.success) {
-        console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
-        updateStatusOneToOneSwap(swapDocId, 'failed with return');
-        updateFirebase(mintBack);
-        updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
-      } else {
-        console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
-        updateStatusOneToOneSwap(swapDocId, 'failed without return');
-      }
-  * }
-
-    console.log('--> Withdraw: TX confirmed on WAX', dataFromTx);
-    const waxTxHash = dataFromTx.transactionHash;
-    try {
-      await updateStatusOneToOneSwap(actionFirebaseId, 'confirmed');
-      await updateTxOneToOneSwap(actionFirebaseId, waxTxHash);
-    } catch (err) {
-      throw new Error(err.message);
+      await updateActionStatus(actionFirebaseId, 'failed');
+    } catch (err2) {
+      throw new Error(err2.message);
     }
 
-  ****** */
+    /** ********
+     * TO ADAPT
+     ******* */
+    // const mintBack = await mintOnHLF(
+    //   action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
+    //   '0x0000000000000000000000000000000000000000',
+    //   fromFabricAddress,
+    //   action === Action.WITHDRAW_ERC721 ? 1 : amount,
+    //   token,
+    //   'PRIVI',
+    // );
+
+    // if (mintBack.success) {
+    //   console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
+    //   updateStatusOneToOneSwap(swapDocId, 'failed with return');
+    //   updateFirebase(mintBack);
+    //   updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
+    // } else {
+    //   console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+    //   updateStatusOneToOneSwap(swapDocId, 'failed without return');
+    // }
+  }
+
+  console.log('--> Withdraw: TX confirmed on WAX', dataFromTx);
+  const waxTxHash = dataFromTx.transactionHash;
+  try {
+    await updateStatusOneToOneSwap(actionFirebaseId, 'confirmed');
+    await updateTxOneToOneSwap(actionFirebaseId, waxTxHash);
+  } catch (err) {
+    throw new Error(err.message);
+  }
 };
 
 /**
@@ -266,7 +308,7 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
     const actionData = doc.data();
 
     const {
-      txHash,
+      waxTx,
       waxUserAddress,
       random,
       priviUserPublicId,
@@ -275,6 +317,7 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
       action,
       amount,
       tokenSymbol,
+      assetId,
       lastUpdateTimestamp,
     } = actionData;
 
@@ -288,7 +331,7 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
             waxUserAddress,
             amount,
             tokenSymbol,
-            txHash,
+            waxTx,
             random,
             action,
             lastUpdateTimestamp,
@@ -307,6 +350,7 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
             amount,
             action,
             tokenSymbol,
+            assetId,
             lastUpdateTimestamp,
             waxNetId,
           });
