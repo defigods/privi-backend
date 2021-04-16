@@ -70,7 +70,7 @@ module.exports = {
   mediaPods: 'MediaPods',
   trendingMediaPods: 'TrendingMediaPods',
   medias: 'Medias',
-  mediaUsers: 'EthMediaUsersTesting3',
+  mediaUsers: 'EthMediaUsers',
   streamingListeners: 'StreamingListeners',
   streamers: 'Streamers',
   streamings: 'Streamings',
@@ -153,7 +153,7 @@ module.exports = {
   shareStreaming: 'ShareStreaming',
   // MEDIAS 
   streaming: 'Streaming', // privi media goes there
-  ethMedia: 'EthMediaTesting3', // all external media
+  ethMedia: 'EthMedia', // all external media
   waxMedia: 'WaxMedia',
   zoraMedia: 'ZoraMedia',
   openseaMedia: 'OpenseaMedia',
