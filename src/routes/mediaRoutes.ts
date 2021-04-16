@@ -202,7 +202,10 @@ router.post(
 
 router.post('/marketingMediaCommunity/chats/lastView', authenticateJWT, mediaController.lastViewMediaMarketing);
 
-router.post('/createMedia/', authenticateJWT, mediaController.createMedia);
+router.post('/createMedia', authenticateJWT, mediaController.createMedia);
+router.post('/buyMediaNFT', authenticateJWT, mediaController.buyMediaNFT);
+router.post('/openNFT', authenticateJWT, mediaController.openNFT);
+router.post('/closeNFT', authenticateJWT, mediaController.closeNFT);
 
 
 module.exports = router;
