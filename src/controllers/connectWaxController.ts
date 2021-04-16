@@ -1,406 +1,48 @@
-// import Web3 from 'web3';
 import express from 'express';
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
 import { mint as mintOnHLF, burn as burnOnHLF } from '../blockchain/coinBalance.js';
+import { updateFirebase as updateFireBaseBalance } from '../functions/functions';
 
-// import {
-//    updateTxOneToOneSwap, , getRecentSwaps as loadRecentSwaps,
-// } from '../functions/functions';
-import {
-  updateFirebase as updateFireBaseBalance,
-  updateStatusOneToOneSwap,
-  updatePriviTxOneToOneSwap,
-} from '../functions/functions';
-
-// import {
-//   ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY, ETH_INFURA_KEY, MIN_ETH_CONFIRMATION, SHOULD_HANDLE_SWAP,
-// } from '../constants/configuration';
-import { WAX_MIN_CONFIRMATIONS_NUMBER } from '../constants/configuration';
-
-// import ERC20Balance from '../contracts/ERC20Balance.json';
-// import { ethers }              from "ethers";
-// import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
-// const fs = require('fs');
-// const path = require('path');
-// require('dotenv').config();
-// const uuid = require('uuid');
-
-// // TODO: this should be the preferred method to get the private key!
-// // Get private key for API calls
-// //const apiKey = process.env.API_KEY;
-
-// // Websocket settings
-// const webSocketServer = require('websocket').server;
-// const http = require('http');
-// const https = require('https')
-// const WS_PORT = 8000;
-// let wsServer: any;
-
-// // Transaction management (Queue system):
-// // This avoids to reprocess a transaction that is being handled
-// let txQueue = [''];
-
-// // Websocket management
-// const users = new Map();
-// let connection: any;
-// let runOnce = false;
-
-// const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 const CRON_ACTION_LISTENING_FREQUENCY = 15;
-
 const Action = {
   SWAP_WAX: 'SWAP_WAX',
-  WITHDRAW_WAX: 'WITHDRAW_ETH_WAX',
+  WITHDRAW_WAX: 'WITHDRAW_WAX',
 };
 
-// // Promise return type for ethereum transactions
-// type PromiseResponse = {
-//     success: boolean,
-//     error: string,
-//     data: any
-// };
-
-// /**
-//  * @notice Start http & websocket servers to interact with the front-end
-//  */
-// const startWS = () => {
-//     try {
-//         // Determine environment (http or https)
-//         const env: string = process.argv[2];
-//         let server: any;
-//         if (env === 'dev') {
-//             server = http.createServer();
-//         } else if (env === 'devssl') {
-//             const credentials = {
-//                 key: fs.readFileSync('server.key'),
-//                 cert: fs.readFileSync('server.cert'),
-//             };
-//             server = https.createServer(credentials);
-//         } else if (env === 'prod') {
-//             const privateKey = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/privkey.pem', 'utf8');
-//             const certificate = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/cert.pem', 'utf8');
-//             const ca = fs.readFileSync('/etc/letsencrypt/live/priviweb.tech/chain.pem', 'utf8');
-//             const credentials = {
-//                 key: privateKey,
-//                 cert: certificate,
-//                 ca: ca
-//             };
-//             server = https.createServer(credentials);
-//         } else {
-//             console.log(`Warning in connectController.ts: websocket can't be started`);
-//             return false;
-//         };
-//         // Start WS server
-//         server.listen(WS_PORT);
-//         wsServer = new webSocketServer({ httpServer: server });
-//         if (env === 'devssl' || env === 'prod') {
-//             console.log(`Websocket (SSL) running on port ${WS_PORT}`);
-//         } else {
-//             console.log(`Websocket (non SSL) running on port ${WS_PORT}`);
-//         };
-//         return true;
-//     } catch (err) {
-//         console.log('Error in connectController->startWS(): ', err);
-//     };
-// };
-
-// /**
-//  * @notice Opens a websocket to listen connections from the front-ends. When a User opens
-//  * the swap screen in the front-end, automatically sends his/her publicId: this will
-//  * be stored in an array of connections to send back the result of a transaction afterwards
-//  */
-// const wsListen = () => {
-//     try {
-//         // Start WS server (only once)
-//         runOnce = true;
-//         if (startWS()) {
-//             wsServer.on('request', (request: any) => {
-//                 console.log(`Connection established`);
-//                 // TODO SECURITY: accept only allowed origin
-//                 connection = request.accept(null, request.origin);
-//                 let id: string = '';
-//                 // User sent a ping message (loaded the Swap function)
-//                 connection.on('message', function (msg: any) {
-//                     if (msg.type === 'utf8') {
-//                         // Show incoming message
-//                         const { publicId, action, message } = JSON.parse(msg.utf8Data);
-//                         id = publicId;
-//                         // Store connection
-//                         if (action === 'ping') {
-//                             users.set(publicId, connection);
-//                         }
-//                     }
-//                 });
-//                 // User disconnected: remove connection from array
-//                 connection.on('close', () => {
-//                     users.delete(id);
-//                     console.log(`User ${id} disconnected`);
-//                 });
-//                 // TODO IMPROVEMENT: check for each User if connection is still
-//                 // alive (ping). If not, remove connection from array
-//             });
-//         };
-//     } catch (err) {
-//         console.log('Error in connectController -> wsListen(): ', err);
-//     };
-// };
-
-// // get rpc corresponding to chain ID
-// const getWeb3forChain = (chainId: any): Web3 => {
-//     if(chainId === '0x3' || chainId === '3' || chainId === 3){
-//         console.log('getWeb3forChain', chainId)
-//         return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
-//     } else if (chainId === '0x4' || chainId === '4' || chainId === 4) {
-//         console.log('getWeb3forChain', chainId)
-//         return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
-//     } else if (chainId === '0x97' || chainId === '97' || chainId === 97) {
-//         console.log('getWeb3forChain', chainId)
-//         return new Web3(new Web3.providers.HttpProvider(`https://data-seed-prebsc-1-s1.binance.org:8545`))
-//     } else {
-//         return new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${ETH_INFURA_KEY}`))
-//     }
-// }
-// /**
-//  * @notice Generic function to execute Ethereum transactions with signature
-//  * @return @result: true if transaction was executed successfuly, or false otherwise
-//  * @return @error: error description if transaction failed
-//  * @return @res: transaction response
-//  * @param params.fromAddress        From account
-//  * @param params.fromAddressKey     From private key
-//  * @param params.encodedABI         Contract data
-//  * @param params.contractAddress    Contract address
-//  */
-// const executeTX = (params: any) => {
-//     return new Promise<PromiseResponse>(async (resolve) => {
-//         // get proper chain web3
-//         const chainId = params.chainId;
-//         const web3_l = getWeb3forChain((typeof chainId !== 'string') ? chainId.toString() : chainId);
-//         // console.log('executeTX: web3 ', web3_l)
-
-//         // Prepare transaction
-//         // remark: added 'pending' to avoid 'Known Transaction' error
-//         const nonce = await web3_l.eth.getTransactionCount(params.fromAddress, 'pending');
-//         const tx = {
-//             gas: 1500000,
-//             gasPrice: '30000000000',
-//             from: params.fromAddress,
-//             data: params.encodedABI,
-//             chainId: chainId,
-//             to: params.toAddress,
-//             nonce: nonce,
-//         };
-//         console.log('executeTX: trying to sign and send:', tx)
-
-//         // Sign transaction
-//         let txHash = '0x'
-//         web3_l.eth.accounts.signTransaction(tx, params.fromAddressKey)
-//             .then((signed: any) => {
-//                 // Send transaction
-//                 web3_l.eth.sendSignedTransaction(signed.rawTransaction,
-//                     async (err, hash) => {
-//                         if (err) {
-//                           console.error("sendSignedTransaction error", err);
-//                         } else {
-//                             txHash = hash;
-//                             console.error("sendSignedTransaction hash", 'hash', hash);
-//                         }
-//                       }
-//                     )
-//                     // .on('receipt', (recipt) => {
-//                     //     if (recipt.status) {
-//                     //         resolve({ success: true, error: '', data: recipt });
-//                     //     } else {
-//                     //         resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: recipt });
-//                     //     }
-//                     // })
-//                     .on('confirmation', function(confirmationNumber, receipt) {
-//                         if (receipt.status) {
-//                             resolve({ success: true, error: '', data: receipt });
-//                         } else {
-//                             resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: receipt });
-//                         }
-//                     })
-//                     .on('error', (err) => {
-//                         resolve({ success: false, error: err.toString(), data: txHash });
-//                     });
-//             })
-//             .catch((err: any) => {
-//                 console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
-//                 resolve({ success: false, error: err, data: txHash });
-//             });
-//     });
-// };
-
-// // get price for uniswap liquidity token that might be imported either as a social token or community token
-// const getMainNetPrices =  async () => {
-//     const WBTC = new Token(ChainId.MAINNET, '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599', 8)
-//     const USDC = new Token(ChainId.MAINNET, '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48', 6)
-//     try {
-//         const provider = new ethers.providers.InfuraProvider('mainnet', ETH_INFURA_KEY);
-
-//         // const pair = await Fetcher.fetchPairData(WBTC, WETH[WBTC.chainId], provider)
-//         // const route = new Route([pair], WETH[WBTC.chainId])
-//         // // console.log('ETH-wbtc',route.midPrice.toSignificant(6)) // 201.306
-//         // // console.log('ETH-wbtc inverted',route.midPrice.invert().toSignificant(6)) // 0.00496756
-//         // const ETH_WBTC_Price = route.midPrice.toSignificant(6);
-
-//         const pair2 = await Fetcher.fetchPairData(USDC, WETH[USDC.chainId], provider)
-//         const route2 = new Route([pair2], WETH[USDC.chainId])
-//         // console.log('Eth-USDC',route2.midPrice.toSignificant(6)) // 201.306
-//         // console.log('Eth-USDC inverted',route2.midPrice.invert().toSignificant(6)) // 0.00496756
-//         const ETH_USD_Price = route2.midPrice.toSignificant(10);
-
-//         const pair3 = await Fetcher.fetchPairData(USDC, WBTC, provider)
-//         const route3 = new Route([pair3], WBTC)
-//         // console.log('wbtc-USDC',route3.midPrice.toSignificant(6)) // 201.306
-//         // console.log('wbtc-USDC inverted',route3.midPrice.invert().toSignificant(6)) // 0.00496756
-//         const WBTC_USD_Price = route3.midPrice.toSignificant(10);
-
-//         return {EthInUsd: parseFloat(ETH_USD_Price), BtcInUsd: parseFloat(WBTC_USD_Price)};
-//     } catch (error) {
-//         console.log('connectController --> getMainNetPrices error', error)
-//         return {EthInUsd: 0, BtcInUsd: 0};
-//     }
-// };
-
-// const getTokenUniSwapPrices =  async (chainId, token0Address, decimals) => {
-//     const token0 = new Token(chainId, token0Address, decimals);
-//     // it is more efecient, is to use what coin it is paired with.. however for the lack of time we go with weth
-//     const token1 = new Token(chainId, chainId === 1 ? '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2' : '0xc778417E063141139Fce010982780140Aa0cD5Ab', 18)
-//     try {
-//         const netName = chainId === 3 ? 'ropsten' : chainId == 4 ? 'rinkeby' : 'mainnet';
-//         const provider = new ethers.providers.InfuraProvider(netName, ETH_INFURA_KEY);
-//         // console.log('-------------------------------------getTokenUniSwapPrices chain id', chainId, token0)
-//         const pair = await Fetcher.fetchPairData(token0, token1, provider)
-//         const route = new Route([pair], token0);
-//         const tokenInEth = parseFloat(route.midPrice.toSignificant(10));
-//         const mainNetPrices = await getMainNetPrices();
-//         const tokenInUsd = tokenInEth * mainNetPrices.EthInUsd;
-//         return {priceInEth: tokenInEth, priceInUsd: tokenInUsd};
-//     } catch (error) {
-//         console.log('connectController --> getTokenUniSwapPrices error', error)
-//         return {priceInEth: 0, priceInUsd: 0};
-//     }
-// };
-
-// const getUniSwapPrices = async (req: express.Request, res: express.Response) => {
-//     try {
-//         const { chainId, token0Address, decimals} = req.query;
-//         console.log('getUniSwapPrices req:', chainId, token0Address, decimals)
-//         const _chain: any = chainId?.toString();
-//         const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
-//         const _token0Address: any = token0Address?.toString();
-//         const _decimals: number = parseFloat(decimals ? decimals.toString() : '18');
-
-//         res.send(await getTokenUniSwapPrices(_chainId, _token0Address, _decimals));
-//     } catch (error) {
-//         res.send({priceInEth: 0, priceInUsd: 0});
-//         console.log('connectController --> getUniSwapPrices error', error)
-//     }
-
-// }
-
-// const getERC20BalnceOf = (contractAddress: string, address: any, chainId: any) => {
-//     return new Promise<number>(async (resolve) => {
-//         if (contractAddress !== ZERO_ADDRESS) {
-//             const web3_l: Web3 = getWeb3forChain(chainId);
-//             const abi: any =  ERC20Balance.abi;
-//             let contract = new web3_l.eth.Contract(abi, contractAddress);
-//             await contract.methods.balanceOf(address).call()
-//                 .then(result => {f
-//                     resolve(Number(web3_l.utils.fromWei((result), 'ether')));
-//                 })
-//                 .catch(err => {
-//                     console.log('Error in connectController.ts -> callBalance(): [call]', err);
-//                     resolve(0);
-//                 })
-//         } else {
-//             resolve(0);
-//         };
-//     });
-// };
-
-// const getEthBalanceOf = async (address: string, chainId: string): Promise<Number> => {
-//     const web3_l: Web3 = getWeb3forChain(chainId);
-//     const balanceWei = await web3_l.eth.getBalance(address);
-//     const balance = Number(web3_l.utils.fromWei(balanceWei, 'ether'));
-//     return balance;
-// }
-
-// const mintERC20PodToken = async (podAddress:string, toAddress: string, amount: string, chainId: string) => {
-//     const web3_l: Web3 = getWeb3forChain(chainId);
-//     // get factory
-//     let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
-//     const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
-
-//     // mint token amount
-//     // Choose method from PRIVIPodERC20Factory to be called
-//     const amountWei = web3_l.utils.toWei(amount, 'ether');
-//     const method = factoryContract.methods.podMint(podAddress, toAddress, amountWei).encodeABI();
-//     // Transaction parameters
-//     const paramsTX = {
-//         chainId: chainId,
-//         fromAddress: ETH_PRIVI_ADDRESS,
-//         fromAddressKey: ETH_PRIVI_KEY,
-//         encodedABI: method,
-//         toAddress: factoryContract.options.address,
-//     };
-//     // Execute transaction
-//     const { success, data } = await executeTX(paramsTX);
-//     // console.log('mintERC20PodToken', success, data)
-//     return { success, data };
-// }
-
-// const getPodTokenDeployedAddress = async (podAddress:string, chainId: string): Promise<string> => {
-//     const web3_l: Web3 = getWeb3forChain(chainId);
-//     // get factory
-//     let erc20FactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC20Factory.json')));
-//     const factoryContract = new web3_l.eth.Contract(erc20FactoryJsonContract.abi, erc20FactoryJsonContract.networks[String(chainId.split('x')[1])]["address"]);
-
-//     // add privi to accoutn
-//     await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
-//     // get deployed address
-//     const deployedAddress = await factoryContract.methods.podTokenAddresses(podAddress).call();
-//     return deployedAddress;
-
-// }
-
-type InsertActionData = {
-  txPrivi: string,
-  txHash: string,
-  waxFromAddress: string,
-  waxToAddress: string,
-  random: number,
-  priviUserPublicId: string,
+interface CommonActionData {
+  waxUserAddress: string,
   priviUserAddress: string,
   waxNetId: number,
   action: string,
-  description: string,
   amount: number,
   tokenSymbol: string,
-  status: string,
   lastUpdateTimestamp: number,
 }
 
-type SwapData = {
-  actionId: string|number,
-  priviUserPublicId: string,
-  priviUserAddress: string,
-  waxFromAddress: string,
-  amount: number,
-  tokenSymbol: string,
+interface InsertActionData extends CommonActionData {
+  txPrivi: string,
   txHash: string,
   random: number,
-  action: string,
-  lastUpdateTimestamp: string,
-  waxNetId: number
+  priviUserPublicId: string,
+  description: string,
+  status: string,
+}
+
+interface SwapActionData extends CommonActionData {
+  actionFirebaseId: string,
+  priviUserPublicId: string,
+  txHash: string,
+  random: number,
+}
+
+interface WithdrawActionData extends CommonActionData {
+  actionFirebaseId: string,
 }
 
 /**
  * @notice Stores a transaction in the database
- * @param params Relevant transaction fields to be stored
  */
 const insertAction = async (data: InsertActionData) => {
   try {
@@ -432,72 +74,39 @@ const handleAction = async (req: express.Request, res: express.Response): Promis
   }
 };
 
-// /**
-//  * @notice Updates the status of a transaction in the database
-//  * @param txHash Transaction hash
-//  * @param newStatus New transaction status
-//  */
-// const updateTx = async (txHash: string, newStatus: string) => {
+const updateActionStatus = async (actionFirebaseId, status) => {
+  await db.runTransaction(async (transaction) => {
+    transaction.update(db.collection(collections.waxActions).doc(actionFirebaseId), { status });
+  });
+};
 
-//     // Retrieve TX doc
-//     const snapshot = await db
-//         .collection(collections.ethTransactions)
-//         .where('txHash', '==', txHash)
-//         .get();
-
-//     // Update TX status
-//     for (var i in snapshot.docs) {
-//         const res = await db
-//             .collection(collections.ethTransactions)
-//             .doc(snapshot.docs[i].id)
-//             .set({ status: newStatus }, { merge: true });
-//     };
-// };
-
-// /**
-//  * @notice Check number of confirmations of a transaction in Ethereum
-//  * @return Number of confirmations (for testing, we set to 1 to get results faster)
-//  */
-// const checkTxConfirmations = async (txHash: string, chainId: string) => {
-//   const web3_l = getWeb3forChain(chainId);
-//   try {
-//     // Get transaction details
-//     const trx = await web3_l.eth.getTransaction(txHash);
-
-//     // Get current block number
-//     const currentBlock = await web3_l.eth.getBlockNumber();
-
-//     // When transaction is unconfirmed, its block number is null.
-//     // In this case we return 0 as number of confirmations
-//     return trx.blockNumber === null ? 0 : currentBlock - trx.blockNumber;
-//   } catch (err) {
-//     console.log('Error in ConnectController.ts -> checkTxConfirmations(): ', err);
-//   }
-// };
+const updateActionPriviTx = async (actionFirebaseId, priviTxHash) => {
+  await db.runTransaction(async (transaction) => {
+    transaction.update(db.collection(
+      collections.waxActions,
+    ).doc(actionFirebaseId),
+    { txPrivi: priviTxHash });
+  });
+};
 
 /**
  * @notice Swap NFT from WAX to Fabric's User account
  */
 const swap = async ({
-  actionId,
-  priviUserPublicId,
+  actionFirebaseId,
   priviUserAddress,
-  waxFromAddress,
+  waxUserAddress,
   amount,
   tokenSymbol,
-  txHash,
-  random,
   action,
-  lastUpdateTimestamp,
-  waxNetId,
-}: SwapData) => {
-  console.log('--> Swap: TX confirmed on WAX', actionId, tokenSymbol, amount, 'action', action);
+}: SwapActionData) => {
+  console.log('--> Swap: TX confirmed on WAX', actionFirebaseId, tokenSymbol, amount, 'action', action);
 
   let hlfResponse;
   try {
     hlfResponse = await mintOnHLF(
       action,
-      waxFromAddress,
+      waxUserAddress,
       priviUserAddress,
       amount,
       tokenSymbol,
@@ -508,16 +117,125 @@ const swap = async ({
   }
 
   if (!hlfResponse.success) {
-    throw new Error(hlfResponse.message);
+    console.log(
+      'Error in connectWaxController -> swap(): Mint call in Fabric not successful',
+      hlfResponse.message,
+    );
+    return;
   }
 
   console.log('--> Swap: TX confirmed on HLF: ', hlfResponse);
 
-  updateFireBaseBalance(hlfResponse);
-  updateStatusOneToOneSwap(actionId, 'confirmed');
-  updatePriviTxOneToOneSwap(actionId, hlfResponse.hash);
+  try {
+    await updateFireBaseBalance(hlfResponse);
+    await updateActionPriviTx(actionFirebaseId, hlfResponse.hash);
+    await updateActionStatus(actionFirebaseId, 'confirmed');
+  } catch (err) {
+    throw new Error(err.message);
+  }
+};
 
-  console.log('Error in connectWaxController -> swap(): Swap call in Fabric not successful', hlfResponse);
+/**
+ * @notice Withdraw NFT from Fabric to Wax User account
+ */
+const withdraw = async ({
+  actionFirebaseId,
+  priviUserAddress,
+  waxUserAddress,
+  amount,
+  action,
+  tokenSymbol,
+  lastUpdateTimestamp,
+  waxNetId,
+}: WithdrawActionData) => {
+  console.log('--> Withdraw: called with', actionFirebaseId, priviUserAddress, waxUserAddress, amount, action, tokenSymbol, lastUpdateTimestamp, waxNetId);
+
+  try {
+    updateActionStatus(actionFirebaseId, 'inProgress');
+  } catch (err) {
+    throw new Error(err.message);
+  }
+
+  let hlfResponse;
+  try {
+    hlfResponse = await burnOnHLF(
+      action,
+      priviUserAddress,
+      waxUserAddress,
+      1,
+      tokenSymbol,
+      'PRIVI',
+    );
+  } catch (err) {
+    throw new Error(err.message);
+  }
+
+  if (!hlfResponse.success) {
+    // set back swap doc to pending, so it can be tried later
+    try {
+      updateActionStatus(actionFirebaseId, 'pending');
+    } catch (err) {
+      throw new Error(err.message);
+    }
+    console.log(
+      'Error in connectWaxController -> withdraw(): Burn call in Fabric not successful',
+      hlfResponse.message,
+    );
+    return;
+  }
+
+  console.log('--> Withdraw: TX confirmed on HLF: ', hlfResponse);
+
+  try {
+    await updateFireBaseBalance(hlfResponse);
+    await updateActionPriviTx(actionFirebaseId, hlfResponse.hash);
+  } catch (err) {
+    throw new Error(err.message);
+  }
+
+  console.log('Perform withdraw:', 'token', tokenSymbol, 'waxUserAddress', waxUserAddress, 'amount', amount);
+
+  /** ****
+  * TO IMPLEMENT THERE
+    try {
+  *   Send NFT from Privi Wax address to user Wax address
+    } catch (err) {
+      console.warn('--> Withdraw: TX failed on WAX', 'error', error, 'data', data, 'type of data is string?:', typeof data === 'string');
+      console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed');
+      const txHash = data.transactionHash;
+      updateStatusOneToOneSwap(swapDocId, 'failed');
+      updateTxOneToOneSwap(swapDocId, txHash);
+
+      const mintBack = await swapFab(
+        action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
+        '0x0000000000000000000000000000000000000000',
+        fromFabricAddress,
+        action === Action.WITHDRAW_ERC721 ? 1 : amount,
+        token,
+        'PRIVI',
+      );
+
+      if (mintBack.success) {
+        console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
+        updateStatusOneToOneSwap(swapDocId, 'failed with return');
+        updateFirebase(mintBack);
+        updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
+      } else {
+        console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
+        updateStatusOneToOneSwap(swapDocId, 'failed without return');
+      }
+  * }
+
+    console.log('--> Withdraw: TX confirmed on WAX', dataFromTx);
+    const waxTxHash = dataFromTx.transactionHash;
+    try {
+      await updateStatusOneToOneSwap(actionFirebaseId, 'confirmed');
+      await updateTxOneToOneSwap(actionFirebaseId, waxTxHash);
+    } catch (err) {
+      throw new Error(err.message);
+    }
+
+  ****** */
 };
 
 /**
@@ -548,248 +266,68 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
 
   const { docs } = snapshot;
   const docsValues: any[] = Object.values(docs);
-  docsValues.forEach((doc: any) => {
-    const actionId = doc.id;
+  docsValues.forEach(async (doc: any) => {
+    const actionFirebaseId = doc.id;
     const actionData = doc.data();
 
     const {
-      txPrivi,
       txHash,
-      waxFromAddress,
-      waxToAddress,
+      waxUserAddress,
       random,
       priviUserPublicId,
       priviUserAddress,
       waxNetId,
       action,
-      description,
       amount,
       tokenSymbol,
-      status,
       lastUpdateTimestamp,
     } = actionData;
 
     switch (action) {
       case Action.SWAP_WAX:
-        const confirmations = 1;// Temporary, should get number of confirmation on WAX
-
-        if (confirmations > WAX_MIN_CONFIRMATIONS_NUMBER) {
-          try {
-            swap({
-              actionId,
-              priviUserPublicId,
-              priviUserAddress,
-              waxFromAddress,
-              amount,
-              tokenSymbol,
-              txHash,
-              random,
-              action,
-              lastUpdateTimestamp,
-              waxNetId,
-            });
-          } catch (err) {
-            throw new Error(err.message);
-          }
+        try {
+          await swap({
+            actionFirebaseId,
+            priviUserPublicId,
+            priviUserAddress,
+            waxUserAddress,
+            amount,
+            tokenSymbol,
+            txHash,
+            random,
+            action,
+            lastUpdateTimestamp,
+            waxNetId,
+          });
+        } catch (err) {
+          console.log(err.message);
         }
         break;
-        // case Action.WITHDRAW_WAX:
+      case Action.WITHDRAW_WAX:
+        try {
+          await withdraw({
+            actionFirebaseId,
+            priviUserAddress,
+            waxUserAddress,
+            amount,
+            action,
+            tokenSymbol,
+            lastUpdateTimestamp,
+            waxNetId,
+          });
+        } catch (err) {
+          console.log(err.message);
+        }
+        break;
       default:
         console.log('Unvalid action type');
         break;
     }
 
-    //   /// RELICAT START
-    //   // if (/* doc.action === Action.SWAP_APPROVE_ERC20 || */
-    //   //   doc.action === Action.WITHDRAW_ETH
-    //   //               || doc.action === Action.WITHDRAW_ERC20
-    //   //               || doc.action === Action.WITHDRAW_ERC721) {
-    //   //   console.log('performing withdraw', docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId);
-    //   //   withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId);
-    //   // }
-    //   /// RELICAT END
-
     console.log('********* WAX <--> PRIVI Atomic Swaps cron job - ENDED - *********');
   });
 });
 
-// actionId: string|number,
-//   priviUserPublicId: string,
-//   priviUserAddress: string,
-//   waxFromAddress: string,
-//   amount: number,
-//   tokenSymbol: string,
-//   txHash: string,
-//   random: number,
-//   action: string,
-//   lastUpdateTimestamp: string,
-//   waxNetId: number
-
-// /**
-//  * @notice Withdraw ETH or ERC20 tokens between Fabric's and Ethereum's User account
-//  * @param publicId User ID
-//  * @param to destination address
-//  * @param amount Amount to be swapped
-//  * @param token Ether (ETH) or coin type (DAI, UNI..)
-//  * @param txHash Transaction hash
-//  * @param lastUpdate Date of the withdrawal in Unix timestamp
-//  * @param random Random generated from the front-end as identifier for a withdraw request
-//  * @param action Action to be performed (swap ETH or swap ERC20 token)
-//  */
-
-// const withdraw = async (
-//   swapDocId: string,
-//   fromFabricAddress: string,
-//   toEthAddress: string,
-//   amount: any,
-//   action: string,
-//   token: string,
-//   date: string,
-//   chainId: string,
-// ) => {
-//   console.log('wothdraw called with', swapDocId, fromFabricAddress, toEthAddress, amount, action, token, date, chainId);
-
-//   const web3_l = getWeb3forChain(chainId);
-//   // set swap doc to in progress
-//   updateStatusOneToOneSwap(swapDocId, 'inProgress');
-//   // first burn fabric token
-//   // Withdraw in Fabric
-//   const response: any = await withdrawFab(
-//     action,
-//     fromFabricAddress,
-//     toEthAddress,
-//     action === Action.WITHDRAW_ERC721 ? 1 : amount,
-//     token,
-//     'PRIVI',
-//   );
-
-//   if (response && response.success) {
-//     console.log('burn fab', response.success);
-
-//     // Update balances in Firestore
-//     updateFirebase(response);
-//     updatePriviTxOneToOneSwap(swapDocId, response.hash);
-
-//     // Convert value into wei
-//     // const amountWei = web3_l.utils.toWei(String(amount));
-
-//     const swapManagerJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, `../contracts/${ETH_CONTRACTS_ABI_VERSION}/SwapManager.json`)));
-
-//     // console.log('swapManagerJsonContract.networks', swapManagerJsonContract.networks)
-//     const _chain: any = chainId?.toString();
-//     const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
-//     // Get SwapManager contract code
-//     const contract = new web3_l.eth.Contract(swapManagerJsonContract.abi, swapManagerJsonContract.networks[_chainId].address);
-
-//     // check if contract has balance
-//     // let contractBalanceWei = web3.eth.getBalance(contract.address);
-//     console.log('perform withdraw:', 'token', token, 'toEthAddress', toEthAddress, 'amount', amount);
-
-//     // Choose method from SwapManager to be called
-//     const method = (action === Action.WITHDRAW_ETH) ? contract.methods.withdrawEther(toEthAddress, web3_l.utils.toWei(String(amount))).encodeABI()
-//       : (action === Action.WITHDRAW_ERC20) ? contract.methods.withdrawERC20Token(token, toEthAddress, web3_l.utils.toWei(String(amount))).encodeABI()
-//         : contract.methods.withdrawERC721Token(token, toEthAddress, amount === 'NO_ID' ? '999999999' : amount, amount === 'NO_ID', false).encodeABI(); // hopefully this id won't exist, swapmanager needs update to account for minting pods
-
-//     // Transaction parameters
-//     const paramsTX = {
-//       chainId,
-//       fromAddress: ETH_PRIVI_ADDRESS,
-//       fromAddressKey: ETH_PRIVI_KEY,
-//       encodedABI: method,
-//       toAddress: contract.options.address,
-//     };
-
-//     // Execute transaction to withdraw in Ethereum
-//     const { success, error, data } = await executeTX(paramsTX);
-
-//     if (success) {
-//       console.log('--> Withdraw: TX confirmed in Ethereum', data);
-//       const txHash = data.transactionHash;
-//       //     await saveTx(paramsTx);
-//       updateStatusOneToOneSwap(swapDocId, 'confirmed');
-//       updateTxOneToOneSwap(swapDocId, txHash);
-//     } else {
-//       console.warn('--> Withdraw: TX failed in Ethereum', 'error', error, 'data', data, 'type of data is string?:', typeof data === 'string');
-//       console.warn('--> Withdraw:if send fail, then mint back fabric coin, and set status of swap to failed');
-//       const txHash = data.transactionHash;
-//       updateStatusOneToOneSwap(swapDocId, 'failed');
-//       updateTxOneToOneSwap(swapDocId, txHash);
-
-//       const mintBack = await swapFab(
-//         action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
-//         '0x0000000000000000000000000000000000000000',
-//         fromFabricAddress,
-//         action === Action.WITHDRAW_ERC721 ? 1 : amount,
-//         token,
-//         'PRIVI',
-//       );
-
-//       if (mintBack.success) {
-//         console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
-//         updateStatusOneToOneSwap(swapDocId, 'failed with return');
-//         updateFirebase(mintBack);
-//         updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
-//       } else {
-//         console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
-//         updateStatusOneToOneSwap(swapDocId, 'failed without return');
-//       }
-//     }
-//   } else {
-//     console.log('fabric burn fail', response);
-//     // set back swap doc to pending, so it can be tried later
-//     updateStatusOneToOneSwap(swapDocId, 'pending');
-//   }
-// };
-
-// // get recent swaps from db
-// const getRecentSwaps = async (req: express.Request, res: express.Response) => {
-//   const { userId, userAddress } = req.query;
-//   // console.log('getRecentSwaps', userAddress)
-//   const recentSwaps = await loadRecentSwaps(userAddress);
-//   // console.log('recentSwaps', recentSwaps)
-//   if (recentSwaps) {
-//     res.send({ success: true, data: recentSwaps });
-//   } else {
-//     res.send({ success: false });
-//   }
-// };
-
-// // get registed token from the bridge manager
-// const getBridgeRegisteredToken = async (req: express.Request, res: express.Response) => {
-//   const { chainId } = req.query;
-//   console.log('getBridgeRegisteredToken req:', chainId);
-//   const _chain: any = chainId?.toString();
-//   const _chainId: any = _chain.includes('x') ? String(_chain.split('x')[1]) : _chain;
-//   const web3 = getWeb3forChain(_chainId);
-
-//   const bridgeManagerJson = JSON.parse(fs.readFileSync(path.join(__dirname, `../contracts/${ETH_CONTRACTS_ABI_VERSION}/BridgeManager.json`)));
-//   // Get SwapManager contract code
-//   const bridgeManagerContract = new web3.eth.Contract(bridgeManagerJson.abi, bridgeManagerJson.networks[_chainId].address);
-
-//   const arrayRegisteredToken = await bridgeManagerContract.methods.getAllErc20Registered().call();
-//   // console.log('getBridgeRegisteredToken bridge array', arrayRegisteredToken)
-//   const tempArrayOfTokens: any[] = [{
-//     id: 0, name: 'Ethereum', symbol: 'ETH', amount: 0,
-//   }];
-//   arrayRegisteredToken.forEach((element, index) => {
-//     tempArrayOfTokens.push({
-//       id: (index + 1), name: element.name, symbol: element.symbol, amount: 0, address: element.deployedAddress,
-//     });
-//   });
-//   console.log('getBridgeRegisteredToken bridge , token list', tempArrayOfTokens);
-
-//   if (tempArrayOfTokens) {
-//     res.send({ success: true, data: tempArrayOfTokens });
-//   } else {
-//     res.send({ success: false });
-//   }
-// };
-
 module.exports = {
-  // registerNewERC20TokenOnSwapManager,
-  // getUniSwapPrices,
-  // getBridgeRegisteredToken,
   handleAction,
-  // checkTx,
-  // getRecentSwaps,
 };

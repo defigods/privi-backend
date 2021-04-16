@@ -21,7 +21,6 @@ const PRIVI_WALLET_PATH = 'm/44\'/60\'/0\'/0/0';
 const MIN_ETH_CONFIRMATION = 12; // > 12 to be fully secure
 const MIN_BTC_CONFIRMATION = 6; // > 6 to be fully secure
 const SHOULD_HANDLE_SWAP = false;
-const WAX_MIN_CONFIRMATIONS_NUMBER = 0; // to settle
 
 module.exports = {
   JWT_SECRET_STRING,
@@ -44,6 +43,4 @@ module.exports = {
   MIN_ETH_CONFIRMATION,
   MIN_BTC_CONFIRMATION,
   SHOULD_HANDLE_SWAP,
-
-  WAX_MIN_CONFIRMATIONS_NUMBER,
 };
