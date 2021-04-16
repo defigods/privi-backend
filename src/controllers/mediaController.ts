@@ -4,8 +4,8 @@ import path from 'path';
 import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
+import media from '../blockchain/media';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
-import { CollectionsOpensea, CollectionsShowTime, CollectionsWax } from "../constants/nftCollections"
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
@@ -1902,72 +1902,58 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
   }
 };
 
+// Media Smart Contract functions
 export const createMedia = async (req: express.Request, res: express.Response) => {
   try {
-    let body = req.body;
+    const body = req.body;
+    const data = body.Data;
+    const hash = body.Hash; // not used for now
 
-    if (body && body.media && body.userId) {
+    const creatorAddress = data.CreatorAddress;
+    const mediaName = data.MediaName;
+    const mediaSymbol = data.MediaSymbol;
 
-      let media: any = body.media;
-      let bodySave: any = {
-        // Collabs: media.Collabs || {},
-        HasPhoto: media.HasPhoto || false,
-        Requester: body.userId,
-        MediaName: media.Title || '',
-        MediaDescription: media.Description || '',
-        MediaSymbol: media.Title.replace(/\s/g, '') || '',
-        Type: media.Type || '',
-        PaymentType: media.PaymentType || '',
-        FundingToken: media.FundingToken || '',
-        PricePerSecond: media.PricePerSecond || 0,
-        Price: media.Price || 0,
-        Royalty: media.Royalty || '',
+    const viewConditions = data.ViewConditions;
+    const viewingType = viewConditions.ViewingType;
+    const viewingToken = viewConditions.ViewingToken;
+    const viewPrice = viewConditions.Price;
+    const isStreamingLive = viewConditions.IsStreamingLive;
+    const isRecord = viewConditions.IsRecord;
+    const streamingProportions = viewConditions.StreamingProportions;
 
-        ReleaseDate: media.ReleaseDate,
-        /*Copies: media.Copies,
+    const nftConditions = data.NftConditions;
+    const copies = nftConditions.Copies;
+    const royalty = nftConditions.Royalty;
+    const nftPrice = nftConditions.Price;
+    const nftToken = nftConditions.NftToken;
 
-        IsRecord: media.IsRecord,
-        RecordToken: media.RecordToken,
-        RecordPaymentType: media.RecordPaymentType,
-        RecordPrice: media.RecordPrice,
-        RecordPricePerSecond: media.RecordPricePerSecond,
-        RecordCopies: media.RecordCopies,
-        RecordRoyalty: media.RecordRoyalty*/
+    const type = data.Type;
+    const releaseDate = data.ReleaseDate;
+    const sharingPct = data.SharingPct;
+
+    const blockchainRes = await media.createMedia(creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken,
+      viewPrice, isStreamingLive, isRecord, streamingProportions, copies, royalty, nftPrice, nftToken,
+      type, releaseDate, sharingPct, apiKey);
+
+    if (blockchainRes && blockchainRes.success) {
+      await updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const updateTxns = output.Transactions;
+      let tid = '';
+      let txnArray: any = [];
+      for ([tid, txnArray] of Object.entries(updateTxns)) {
+        db.collection(collections.streaming)
+          .doc(mediaSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
       }
-
-      if (media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
-        bodySave.RoomState = 'SCHEDULED'
-        bodySave.CountStreamers = 0;
-        bodySave.CountWatchers = 0;
-        bodySave.ExpectedDuration = 0;
-        bodySave.MainStreamer = media.Creator;
-        bodySave.RoomName = media.media.Title.replace(/\s/g, '');
-        bodySave.StartedTime = 0;
-        bodySave.EndedTime = 0;
-        bodySave.StreamingToken = '';
-        bodySave.StreamingUrl = '';
-        bodySave.TotalWatchers = 0;
-        bodySave.Video = media === "LIVE_VIDEO_TYPE";
-        bodySave.Watchers = [];
-        bodySave.OnlineModerators = [];
-        bodySave.Moderators = [];
-        bodySave.OnlineStreamers = [];
-        bodySave.Streamers = []
-        bodySave.LimitedEdition = [];
-        bodySave.PriceType = '';
-        bodySave.Price = 0;
-        bodySave.StartingTime = 0;
-        bodySave.EndingTime = 0;
-        bodySave.Rewards = '';
-      }
-
-      await db.runTransaction(async (transaction) => {
-        transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
-      });
+      res.send({ success: true });
     } else {
-      res.status(200).send({
+      console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
+      res.send({
         success: false,
-        error: 'Error in controllers/mediaController -> createMedia(): Non Chat Room Provided',
+        error: blockchainRes.error,
       });
     }
   } catch (e) {
@@ -1975,6 +1961,125 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     res.status(200).send({
       success: false,
       error: 'Error in controllers/mediaController -> createMedia():' + e,
+    });
+  }
+};
+
+export const buyMediaNFT = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const data = body.Data;
+    const hash = body.Hash; // not used for now
+
+    const mediaSymbol = data.MediaSymbol;
+    const address = data.Address;
+
+    const blockchainRes = await media.buyMediaNFT(mediaSymbol, address, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      await updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const updateTxns = output.Transactions;
+      let tid = '';
+      let txnArray: any = [];
+      for ([tid, txnArray] of Object.entries(updateTxns)) {
+        db.collection(collections.streaming)
+          .doc(mediaSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+    } else {
+      console.log('Error in controllers/mediaController -> buyMediaNFT()' + blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.error,
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> buyMediaNFT()' + e);
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> buyMediaNFT():' + e,
+    });
+  }
+};
+
+export const openNFT = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const data = body.Data;
+    const hash = body.Hash; // not used for now
+
+    const mediaSymbol = data.MediaSymbol;
+    const address = data.Address;
+
+    const blockchainRes = await media.openNFT(mediaSymbol, address, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      await updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const updateTxns = output.Transactions;
+      let tid = '';
+      let txnArray: any = [];
+      for ([tid, txnArray] of Object.entries(updateTxns)) {
+        db.collection(collections.streaming)
+          .doc(mediaSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> buyMediaNFT()' + blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.error,
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> buyMediaNFT()' + e);
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> buyMediaNFT():' + e,
+    });
+  }
+};
+
+export const closeNFT = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const data = body.Data;
+    const hash = body.Hash; // not used for now
+
+    const mediaSymbol = data.MediaSymbol;
+    const address = data.Address;
+
+    const blockchainRes = await media.closeNFT(mediaSymbol, address, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      await updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const updateTxns = output.Transactions;
+      let tid = '';
+      let txnArray: any = [];
+      for ([tid, txnArray] of Object.entries(updateTxns)) {
+        db.collection(collections.streaming)
+          .doc(mediaSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> closeNFT()' + blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.error,
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> closeNFT()' + e);
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> closeNFT():' + e,
     });
   }
 };
