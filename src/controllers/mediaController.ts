@@ -1997,10 +1997,12 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         Description: description,
         PricingMetod: pricingMethod,
         Hashtags: hashtags,
-        Content: content,
         CreatorId: creatorId
       };
-      if (type === "LIVE_AUDIO_TYPE" || type === "LIVE_VIDEO_TYPE") {
+      if (type === "BLOG" || type === "BLOG_SNAP") {
+        extraData.Content = content;
+      }
+      else if (type === "LIVE_AUDIO_TYPE" || type === "LIVE_VIDEO_TYPE") {
         extraData.RoomState = 'SCHEDULED';
         extraData.CountStreamers = 0;
         extraData.CountWatchers = 0;
