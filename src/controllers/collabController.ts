@@ -128,7 +128,7 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
             const numUpvotes = Object.keys(obj.Upvotes ?? {}).length;
             if (numUpvotes >= mean) trendingCollabs.push(obj);
         });
-        const filteredCollabs = filterCollabs(allCollabs, params);
+        const filteredCollabs = await filterCollabs(allCollabs, params);
         res.send({
             success: true, data: {
                 allCollabs: filteredCollabs,
