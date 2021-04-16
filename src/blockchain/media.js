@@ -16,7 +16,6 @@ module.exports.createMedia = async (creatorAddress, mediaName, mediaSymbol, view
                 Price: viewPrice,
                 IsStreamingLive: isStreamingLive,
                 IsRecord: isRecord,
-                StreamingProportions: streamingProportions
             },
             NftConditions: {
                 Copies: copies,
