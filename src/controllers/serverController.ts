@@ -34,6 +34,7 @@ const tasksRoutes = require("../routes/tasksRoutes");
 const collabRoutes = require("../routes/collabRoutes");
 const mediaRoutes = require("../routes/mediaRoutes");
 const mediaPodRoutes = require("../routes/mediaPodRoutes");
+const fractionaliseMediaRoutes = require("../routes/fractionaliseMediaRoutes");
 
 const notificationsController = require("../controllers/notificationsController");
 
@@ -96,6 +97,7 @@ export const startServer = (env: Env) => {
   app.use("/collab", collabRoutes);
   app.use("/media", mediaRoutes);
   app.use("/mediaPod", mediaPodRoutes);
+  app.use("/fractionaliseMedia", fractionaliseMediaRoutes);
 
   // start all cron jobs
   // let name: string;
@@ -595,7 +597,7 @@ export const startSocket = (env: Env) => {
       if (chatInfo.mediaId && chatInfo.communityId && chatInfo.userId) {
         const marketingMediaCommunityChatRef = db
           .collection(collections.marketingMediaCommunityChat)
-          .doc(chatInfo.mediaId+chatInfo.communityId);
+          .doc(chatInfo.mediaId + chatInfo.communityId);
         const marketingMediaCommunityChatGet = await marketingMediaCommunityChatRef.get();
         const marketingMediaCommunityChat: any = marketingMediaCommunityChatGet.data();
 
@@ -612,8 +614,8 @@ export const startSocket = (env: Env) => {
           users: users
         });
 
-        console.log("joining room", chatInfo.mediaId+chatInfo.communityId);
-        socket.join(chatInfo.mediaId+chatInfo.communityId);
+        console.log("joining room", chatInfo.mediaId + chatInfo.communityId);
+        socket.join(chatInfo.mediaId + chatInfo.communityId);
       } else {
         console.log("Error subscribe-discord socket: No Room provided");
       }
@@ -626,7 +628,7 @@ export const startSocket = (env: Env) => {
       await db.runTransaction(async (transaction) => {
         // userData - no check if firestore insert works? TODO
         transaction.set(db.collection(collections.marketingMediaCommunityMessage).doc(uid), {
-          chatId: message.mediaId+message.communityId,
+          chatId: message.mediaId + message.communityId,
           message: message.message,
           fromId: message.fromId,
           fromName: message.fromName,
@@ -641,7 +643,7 @@ export const startSocket = (env: Env) => {
       });
       const marketingMediaCommunityChatRef = db
         .collection(collections.MarketingMediaCommunityChat)
-        .doc(message.mediaId+message.communityId);
+        .doc(message.mediaId + message.communityId);
       const marketingMediaCommunityChatGet = await marketingMediaCommunityChatRef.get();
       const marketingMediaCommunityChat: any = marketingMediaCommunityChatGet.data();
 
@@ -660,8 +662,8 @@ export const startSocket = (env: Env) => {
       const user: any = userGet.data();
 
       console.log("sending room post", message);
-      socket.to(message.mediaId+message.communityId).emit("message-marketing-media-community", {
-        chatId: message.mediaId+message.communityId,
+      socket.to(message.mediaId + message.communityId).emit("message-marketing-media-community", {
+        chatId: message.mediaId + message.communityId,
         message: message.message,
         fromId: message.fromId,
         user: {
