@@ -46,8 +46,8 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
   }
 };
 
+const MEDIA_PAGE_SIZE = 30;
 
-const pageSize = 6;
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;  // filters
@@ -65,7 +65,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     let searchValue: string = body.searchValue ?? '';
     const collection = body.collection ?? '';
     // ret vars
-    let availableSize = pageSize;
+    let availableSize = MEDIA_PAGE_SIZE;
     let medias: any[] = [];
     // --- PRIVI Medias ---
     // if the last media was from eth then means the privi medias are already retrieved
@@ -177,7 +177,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // prepare return data
     let lastId = 'null';
     let isLastIdPrivi = true;
-    let hasMore = medias.length == pageSize;
+    let hasMore = medias.length == MEDIA_PAGE_SIZE;
     if (medias.length > 0) {
       isLastIdPrivi = medias[medias.length - 1].blockchain == 'PRIVI';
       if (isLastIdPrivi) lastId = medias[medias.length - 1].MediaName;
