@@ -1125,6 +1125,8 @@ module.exports.getRegisteredTokensByType = async (req: express.Request, res: exp
   responses.forEach((blockchainResp) => {
     if (blockchainResp.success) {
       retData[blockchainResp.tokenType] = blockchainResp.output;
+    } else {
+      res.send({ success: false, data: [] });
     }
   });
   res.send({ success: true, data: retData });

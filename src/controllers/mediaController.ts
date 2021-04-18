@@ -2044,8 +2044,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         MediaDescription: MediaDescription,
         PricingMethod: pricingMethod,
         Hashtags: hashtags,
-        CreatorId: creatorId,
-        QuickCreation: true,
+        CreatorId: creatorId
       };
       if (type === 'BLOG' || type === 'BLOG_SNAP') {
         extraData.Content = content;
@@ -2076,7 +2075,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
       }
       db.collection(collections.streaming)
         .doc(mediaSymbol)
-        .update({ ...extraData });
+        .update({ ...extraData, QuickCreation: true });
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
