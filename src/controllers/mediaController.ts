@@ -61,7 +61,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // filter vars
     const blockChains = body.blockChains ?? [];
     const mediaTypes = body.mediaTypes ?? [];
-    const status = body.status ?? [];
+    const status = body.status;
     let searchValue: string = body.searchValue ?? '';
     const collection = body.collection ?? '';
     // ret vars
@@ -113,24 +113,31 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       // get the current mediaCollection
       let ethMediaCollection;
       switch (blockchain) {
-        case "WAX":
+        case 'WAX':
           ethMediaCollection = collections.waxMedia;
           break;
-        case "Zora":
+        case 'Zora':
           ethMediaCollection = collections.zoraMedia;
           break;
-        case "Opensea":
+        case 'Opensea':
           ethMediaCollection = collections.openseaMedia;
           break;
-        case "Mirror":
+        case 'Mirror':
           ethMediaCollection = collections.mirrorMedia;
           break;
-        case "Topshot":
+        case 'Topshot':
           ethMediaCollection = collections.topshotMedia;
           break;
-        case "Sorare":
+        case 'Sorare':
           ethMediaCollection = collections.sorareMedia;
           break;
+        case 'Foundation':
+          ethMediaCollection = collections.foundationMedia;
+          break;
+        // TODO: Uncomment me when `ShowtimeMedia` collection is ready
+        // case 'Showtime':
+        //   ethMediaCollection = collections.showtimeMedia;
+        //   break;
       }
       // if it matches one of the options above then query the data
       if (ethMediaCollection) {
@@ -154,8 +161,9 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           ethMediaQuery = ethMediaQuery.where('collection', '==', collection);
         }
         // 4. filter by status
-        if (status.length > 0) {  // [] means no need to filter
-          ethMediaQuery = ethMediaQuery.where('status', 'array-contains-any', status);
+        if (status) {
+          // empty value means no need to filter
+          ethMediaQuery = ethMediaQuery.where('status', 'array-contains', status);
         }
         // 5. pagination limit
         ethMediaQuery = ethMediaQuery.limit(availableSize);
