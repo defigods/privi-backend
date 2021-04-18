@@ -6,7 +6,7 @@ import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
-//import { uploadToFirestoreBucket } from '../functions/firestore'
+const FieldValue = require('firebase-admin').firestore.FieldValue;
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
@@ -1175,6 +1175,7 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
 
     if (mediaId && body.userId && body.Users) {
       const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      mediaRef.update({ shareCount: FirebaseFirestore.FieldValue.increment(1) });
       const mediaGet = await mediaRef.get();
       const media: any = mediaGet.data();
 
@@ -1278,6 +1279,29 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> likeMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const shareMediaToSocial = async (req: express.Request, res: express.Response) => {
+  try {
+    let mediaId = req.params.mediaId;
+    if (mediaId) {
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      if (mediaRef) {
+        mediaRef.update({ shareCount: FieldValue.increment(1) });
+        res.send({ success: true });
+      }
+      else {
+        console.log('Error in controllers/mediaController -> shareMediaToSocial()', "There's no document...");
+        res.send({ success: false, error: "There's no document..." });
+      }
+    } else {
+      console.log('Error in controllers/mediaController -> shareMediaToSocial()', "There's no id...");
+      res.send({ success: false, error: "There's no id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> shareMediaToSocial(): ', err);
     res.send({ success: false, error: err });
   }
 };
