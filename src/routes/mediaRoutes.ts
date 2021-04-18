@@ -132,6 +132,7 @@ router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 
 router.post('/shareMedia/:mediaId', authenticateJWT, mediaController.shareMedia);
+router.post('/shareMediaToSocial/:mediaId', authenticateJWT, mediaController.shareMediaToSocial);
 
 router.post('/createPlaylist', authenticateJWT, playlistController.createPlaylist);
 router.post('/changePlaylistPhoto', authenticateJWT, upload6.single('image'), playlistController.changePlaylistPhoto);
