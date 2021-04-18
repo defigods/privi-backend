@@ -110,13 +110,13 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
     );
 
     //  validate the user if they can access the room.
-    if(!isUserValidForLiveStream(listener,mediaSymbol)) {
+    if (!isUserValidForLiveStream(listener, mediaSymbol)) {
       ERR_MSG = 'User not allowed in this live stream session';
       console.log(
         'Error in controllers/streaming -> enterMediaLiveStreaming(): success = false.',
         ERR_MSG
       );
-      res.send({ success: false, error: ERR_MSG});
+      res.send({ success: false, error: ERR_MSG });
     }
 
 
@@ -442,7 +442,8 @@ exports.scheduleStreaming = async (req: express.Request, res: express.Response) 
       Price,
       StartingTime,
       EndingTime,
-      Rewards
+      Rewards,
+      Comments: []
     });
     res.send({ success: true, DocId: collectionRef.id });
   } catch (err) {
@@ -483,21 +484,21 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         body: JSON.stringify({
           //privacy: 'private',
           name: DocId,
-          properties: {enable_recording: 'cloud'}
+          properties: { enable_recording: 'cloud' }
         })
       };
 
       let dailyResponse;
       await fetch(ROOM_URL, options)
-        .then( res => res.json() )
-        .then( json => {
+        .then(res => res.json())
+        .then(json => {
           dailyResponse = json;
           return;
         })
-        .catch( err => {
+        .catch(err => {
           res.send({ success: false, message: ERROR_MSG.DAILY_ERROR });
         }
-      )
+        )
 
       let data = dailyResponse;
 
@@ -572,7 +573,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
         console.log(err)
         res.send({ success: false, message: ERROR_MSG.FIRESTORE_ERROR });
       }
-    } else if(streamingData.RoomState === ROOM_STATE.GOING) {
+    } else if (streamingData.RoomState === ROOM_STATE.GOING) {
       res.send({ success: true, StreamingUrl: streamingData.StreamingUrl, data: streamingData });
     } else {
       res.send({ success: false, message: 'This streaming is not scheduled' });
@@ -581,13 +582,29 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
     res.send({ success: false, message: 'You re not the main streamer' });
   }
 };
+
+exports.editStreaming = async (req: express.Request, res: express.Response) => {
+  // Get the document from Firestore
+  const { DocId, UserId, UpdatedStreamingMedia } = req.body;
+
+  if (DocId && UserId) {
+    const docSnap = await db.collection(collections.streaming).doc(DocId).get();
+    await docSnap.ref.update(UpdatedStreamingMedia);
+
+    res.send({ success: true, data: UpdatedStreamingMedia })
+  } else {
+    res.send({ success: false, message: 'Info is missing' });
+  }
+};
+
+
 exports.getStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
   const { DocId, UserId } = req.body;
 
-  if(DocId && UserId) {
+  if (DocId && UserId) {
     const docSnap = await db.collection(collections.streaming).doc(DocId).get();
-    const streamingData : any = docSnap.data();
+    const streamingData: any = docSnap.data();
 
     console.log(streamingData.StreamingUrl);
     res.send({ success: true, StreamingUrl: streamingData.StreamingUrl, data: streamingData });
@@ -670,7 +687,7 @@ exports.generateMeetingToken = async (req: express.Request, res: express.Respons
   const roomName = req.query.roomName
   const docId = req.query.docId as string;
 
-  try{
+  try {
 
     let resp = await axios.post(MEETING_TOKENS_URL, {
       headers: {
@@ -730,11 +747,11 @@ exports.listStreaming = async (req: express.Request, res: express.Response) => {
 exports.generateProtectKey = async (req: express.Request, res: express.Response) => {
   //  generate secret key.
   try {
-    let key = {data:""};
-    
+    let key = { data: "" };
+
     key.data = secretKey.create('1EEA6DC-JAM4DP2-PHVYPBN-V0XCJ9X');
     key.data = '1EEA6DC-JAM4DP2-PHVYPBN-V0XCJ9X';//temporary
-    res.send({ success: true, key});
+    res.send({ success: true, key });
   } catch (err) {
     res.send({ success: false, message: 'Error in getting firestore data' });
   }
@@ -742,27 +759,27 @@ exports.generateProtectKey = async (req: express.Request, res: express.Response)
 };
 
 exports.validateProtectKey = async (req: express.Request, res: express.Response) => {
-  const { DocId, ProtectKey} = req.body;
+  const { DocId, ProtectKey } = req.body;
   try {
-    let key = {data:""};
+    let key = { data: "" };
     const docRef = await db.collection(collections.streaming).doc(DocId);
     const streamingData = (await docRef.get()).data();
 
-    if(streamingData?.ProtectKey == ProtectKey) { // validate.
-      res.send({ success: true, docRef});
+    if (streamingData?.ProtectKey == ProtectKey) { // validate.
+      res.send({ success: true, docRef });
     }
 
-    res.send({ success: false, message:"Invalid Protect Key"});
+    res.send({ success: false, message: "Invalid Protect Key" });
   } catch (err) {
     res.send({ success: false, message: 'Error in getting firestore data' });
   }
 
 };
 
-exports.registerStreamingParticipant = async(req: express.Request, res:express.Response) => {
+exports.registerStreamingParticipant = async (req: express.Request, res: express.Response) => {
   const { DocId, UserId, ParticipantType, Room, IsAllowed } = req.body;
 
-  try{
+  try {
     const registerParticipantRef = await db.collection(collections.liveStream).add({
       UserId: UserId,
       ParticipantType: ParticipantType,
