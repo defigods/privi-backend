@@ -43,7 +43,6 @@ export const fractionalise = async (req: express.Request, res: express.Response)
 export const newBuyOrder = async (req: express.Request, res: express.Response) => {
     try {
         const body = req.body;
-        const orderId = body.OrderId;
         const amount = body.Amount;
         const price = body.Price;
         const token = body.Token;
@@ -53,7 +52,7 @@ export const newBuyOrder = async (req: express.Request, res: express.Response) =
         const hash = body.Hash;
         const signature = body.Signature;
 
-        const blockchainRes = await fractionaliseMedia.newBuyOrder(orderId, amount, price, token, tokenSymbol, bAddress, hash, signature, apiKey);
+        const blockchainRes = await fractionaliseMedia.newBuyOrder(amount, price, token, tokenSymbol, bAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             res.send({ sucess: true });
@@ -84,7 +83,7 @@ export const newSellOrder = async (req: express.Request, res: express.Response) 
         const hash = body.Hash;
         const signature = body.Signature;
 
-        const blockchainRes = await fractionaliseMedia.newSellOrder(orderId, amount, price, token, tokenSymbol, sAddress, hash, signature, apiKey);
+        const blockchainRes = await fractionaliseMedia.newSellOrder(amount, price, token, tokenSymbol, sAddress, hash, signature, apiKey);
         if (blockchainRes && blockchainRes.success) {
             updateFirebase(blockchainRes);
             res.send({ sucess: true });
