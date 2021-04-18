@@ -161,9 +161,10 @@ module.exports = {
   foundationMedia: 'FoundationMedia',
   topshotMedia: 'TopshotMedia',
   sorareMedia: 'SorareMedia',
+  showtimeMedia: 'ShowtimeMedia',
 
   // fractionalise
-  fractionalise: 'Fractionalise',
+  mediaFraction: 'MediaFraction',
 
   playList: 'PlayList',
 

@@ -180,7 +180,7 @@ router.post(
 );
 
 router.post('/getMedias', mediaController.getMedias); // NOTE: It's used on public landing page hence authentication is removed
-router.post('/fractionalizeMedia/:mediaId', authenticateJWT, mediaController.fractionalizeMedia);
+router.post('/fractionalizeMedia/:mediaId', authenticateJWT, mediaController.fractionalizeMedia); // duplicated?
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
 router.post('/rateMedia', authenticateJWT, mediaController.rateMedia);
@@ -208,5 +208,17 @@ router.post('/createMedia', authenticateJWT, mediaController.createMedia);
 router.post('/buyMediaNFT', authenticateJWT, mediaController.buyMediaNFT);
 router.post('/openNFT', authenticateJWT, mediaController.openNFT);
 router.post('/closeNFT', authenticateJWT, mediaController.closeNFT);
+
+
+// FRACTIONALISE Post
+router.post('/fractionalise', authenticateJWT, mediaController.fractionalise);
+router.post('/newBuyOrder', authenticateJWT, mediaController.newBuyOrder);
+router.post('/newSellOrder', authenticateJWT, mediaController.newSellOrder);
+router.post('/deleteBuyOrder', authenticateJWT, mediaController.deleteBuyOrder);
+router.post('/deleteSellOrder', authenticateJWT, mediaController.deleteSellOrder);
+router.post('/buyFraction', authenticateJWT, mediaController.buyFraction);
+router.post('/sellFraction', authenticateJWT, mediaController.sellFraction);
+
+// FRACTIONALISE Get
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-import { authenticateJWT} from '../middlewares/jwtAuthMiddleware';
+import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 const streamingController = require('../controllers/streamingController');
 
 // called from postman
@@ -12,17 +12,18 @@ router.post('/exitMediaStreaming', authenticateJWT, streamingController.exitMedi
 
 router.post('/initiateStreaming', authenticateJWT, streamingController.initiateStreaming);
 router.post('/createStreaming', authenticateJWT, streamingController.createStreaming);
+router.post('/editStreaming', authenticateJWT, streamingController.editStreaming);
 router.post('/getStreaming', authenticateJWT, streamingController.getStreaming);
 router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleStreaming);
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
 router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
 router.get('/getRecording', authenticateJWT, streamingController.getRecording);
 
-router.get('/generateProtectKey',authenticateJWT,streamingController.generateProtectKey);
-router.get('/validateProtectKey',authenticateJWT,streamingController.validateProtectKey);
-router.get('/validateMeetingToken',authenticateJWT,streamingController.validateMeetingToken);
-router.get('/generateMeetingToken',authenticateJWT,streamingController.generateMeetingToken);
-router.get('/getMeetingToken',authenticateJWT,streamingController.getMeetingToken);
+router.get('/generateProtectKey', authenticateJWT, streamingController.generateProtectKey);
+router.get('/validateProtectKey', authenticateJWT, streamingController.validateProtectKey);
+router.get('/validateMeetingToken', authenticateJWT, streamingController.validateMeetingToken);
+router.get('/generateMeetingToken', authenticateJWT, streamingController.generateMeetingToken);
+router.get('/getMeetingToken', authenticateJWT, streamingController.getMeetingToken);
 
 //  meeting tokens (control)
 
