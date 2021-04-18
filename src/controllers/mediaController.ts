@@ -1997,7 +1997,8 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         MediaDescription: MediaDescription,
         PricingMethod: pricingMethod,
         Hashtags: hashtags,
-        CreatorId: creatorId
+        CreatorId: creatorId,
+        QuickCreation: true
       };
       if (type === "BLOG" || type === "BLOG_SNAP") {
         extraData.Content = content;
