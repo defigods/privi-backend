@@ -164,7 +164,7 @@ module.exports = {
   showtimeMedia: 'ShowtimeMedia',
 
   // fractionalise
-  fractionalise: 'Fractionalise',
+  mediaFraction: 'MediaFraction',
 
   playList: 'PlayList',
 
