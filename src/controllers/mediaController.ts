@@ -21,21 +21,20 @@ export const registerMediaView = async (req: express.Request, res: express.Respo
     const mediaData: any = mediaRef.get();
 
     await mediaRef.update({
-      totalViews: mediaData.totalViews ?? 0 + 1
+      totalViews: mediaData.totalViews ?? 0 + 1,
     });
 
     res.send({
       success: true,
       data: {
-        totalViews: mediaData.totalViews ?? 0 + 1
-      }
+        totalViews: mediaData.totalViews ?? 0 + 1,
+      },
     });
   } catch (err) {
     console.log('Error in controllers/priviCredit -> sumTotalViews()', err);
     res.send({ success: false });
   }
 };
-
 
 export const getEthMedia = async (req: express.Request, res: express.Response) => {
   try {
@@ -52,7 +51,7 @@ const MEDIA_PAGE_SIZE = 30;
 
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
-    const body = req.body;  // filters
+    const body = req.body; // filters
     // pagination vars
     // const pagination: number = +req.params.pagination ?? 1;
     // const prevLastId: string = req.params.lastId ?? 'null'; // could be:  MediaName or title for scrapped media
@@ -74,7 +73,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     if (isPrevLastIdPrivi && blockChains.includes('PRIVI')) {
       let priviMediaQuery = db.collection(collections.streaming).orderBy('MediaName', 'asc');
       if (prevLastId != 'null') {
-        priviMediaQuery = priviMediaQuery.where('MediaName', '>', prevLastId)
+        priviMediaQuery = priviMediaQuery.where('MediaName', '>', prevLastId);
       }
       // 1. filter with query and limit with pagination size
       if (searchValue) {
@@ -83,13 +82,14 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         priviMediaQuery = priviMediaQuery.where('MediaName', '>=', searchValue).where('MediaName', '<', searchValueEnd);
       }
       // 2. filter by media types
-      if (mediaTypes.length < 7) {  // otherwise means it's ALL, so no filter needed for this field
+      if (mediaTypes.length < 7) {
+        // otherwise means it's ALL, so no filter needed for this field
         priviMediaQuery = priviMediaQuery.where('Type', 'in', mediaTypes);
       }
       // 3. get data from query
       const mediaSnap: any = await priviMediaQuery.get();
       const docs = mediaSnap.docs ?? [];
-      const now = Math.floor(Date.now() / 1000);  // filtering by release date
+      const now = Math.floor(Date.now() / 1000); // filtering by release date
       for (let i = 0; i < docs.length && availableSize > 0; i++) {
         const doc = docs[i];
         const data = doc.data();
@@ -98,15 +98,15 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         if (releaseDate && releaseDate < now) {
           medias.push({
             id: doc.id,
-            blockchain: "PRIVI",
-            ...data
+            blockchain: 'PRIVI',
+            ...data,
           });
           // update availabeSize
           availableSize--;
         }
       }
     }
-    // -- ETH Medias -- 
+    // -- ETH Medias --
     // convert blockchain list to lower case
     const otherBlockchainsList = blockChains.filter((blockchain) => blockchain !== 'PRIVI');
     // loop through otherBlockainsList and stop if available size runs out
@@ -154,7 +154,8 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           ethMediaQuery = ethMediaQuery.where('title', '>=', searchValue).where('title', '<', searchValueEnd);
         }
         // 2. filter by media types
-        if (mediaTypes.length < 7) {  // otherwise means it's ALL, so no filter needed for this field
+        if (mediaTypes.length < 7) {
+          // otherwise means it's ALL, so no filter needed for this field
           ethMediaQuery = ethMediaQuery.where('type', 'in', mediaTypes);
         }
         // 3. filter by collection
@@ -174,8 +175,8 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           const data = doc.data();
           medias.push({
             id: doc.id,
-            blockchain: "ETH",
-            ...data
+            blockchain: 'ETH',
+            ...data,
           });
           // update availabeSize
           availableSize--;
@@ -197,7 +198,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       lastId: lastId,
       isLastIdPrivi: isLastIdPrivi,
       hasMore: hasMore,
-    }
+    };
     // return data to frontend
     res.send({ success: true, ...retData });
   } catch (e) {
@@ -1038,8 +1039,8 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
           FractionPriceToken: body.fractionPriceToken,
           BuyBackPrice: body.buyBackPrice,
           BuyBackPriceToken: body.buyBackPriceToken,
-          InterestRate: body.interestRate
-        }
+          InterestRate: body.interestRate,
+        },
       });
 
       res.send({ success: true });
@@ -1051,7 +1052,7 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
     console.log('Error in controllers/mediaController -> fractionalizeMedia()', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 export const likeMedia = async (req: express.Request, res: express.Response) => {
   try {
@@ -1300,8 +1301,7 @@ export const shareMediaToSocial = async (req: express.Request, res: express.Resp
       if (mediaRef) {
         await mediaRef.update({ shareCount: FieldValue.increment(1) });
         res.send({ success: true });
-      }
-      else {
+      } else {
         console.log('Error in controllers/mediaController -> shareMediaToSocial()', "There's no document...");
         res.send({ success: false, error: "There's no document..." });
       }
@@ -1935,7 +1935,6 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
   }
 };
 
-
 export const createMedia = async (req: express.Request, res: express.Response) => {
   try {
     /* ---- AN EXAMPLE OF THE BODY ------
@@ -2002,17 +2001,32 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const creatorId = body.CreatorId;
     const hasPhoto = extraInfo.HasPhoto ?? false;
     const MediaDescription = extraInfo.MediaDescription ?? '';
-    const pricingMethod = extraInfo.PaymentType ?? 'Fixed';   // Fixed or Streaming   
+    const pricingMethod = extraInfo.PaymentType ?? 'Fixed'; // Fixed or Streaming
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
 
-    const blockchainRes = await media.createMedia(creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken,
-      viewPrice, isStreamingLive, isRecord, /*streamingProportions,*/ copies, royalty, nftPrice, nftToken,
-      type, releaseDate, sharingPct, apiKey);
+    const blockchainRes = await media.createMedia(
+      creatorAddress,
+      mediaName,
+      mediaSymbol,
+      viewingType,
+      viewingToken,
+      viewPrice,
+      isStreamingLive,
+      isRecord,
+      /*streamingProportions,*/ copies,
+      royalty,
+      nftPrice,
+      nftToken,
+      type,
+      releaseDate,
+      sharingPct,
+      apiKey
+    );
 
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
-      // add transaction data inside media 
+      // add transaction data inside media
       const output = blockchainRes.output;
       const updateTxns = output.Transactions;
       let tid = '';
@@ -2031,12 +2045,11 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         PricingMethod: pricingMethod,
         Hashtags: hashtags,
         CreatorId: creatorId,
-        QuickCreation: true
+        QuickCreation: true,
       };
-      if (type === "BLOG" || type === "BLOG_SNAP") {
+      if (type === 'BLOG' || type === 'BLOG_SNAP') {
         extraData.Content = content;
-      }
-      else if (type === "LIVE_AUDIO_TYPE" || type === "LIVE_VIDEO_TYPE") {
+      } else if (type === 'LIVE_AUDIO_TYPE' || type === 'LIVE_VIDEO_TYPE') {
         extraData.RoomState = 'SCHEDULED';
         extraData.CountStreamers = 0;
         extraData.CountWatchers = 0;
@@ -2048,12 +2061,12 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         extraData.StreamingToken = '';
         extraData.StreamingUrl = '';
         extraData.TotalWatchers = 0;
-        extraData.Video = type === "LIVE_VIDEO_TYPE";
+        extraData.Video = type === 'LIVE_VIDEO_TYPE';
         extraData.Watchers = [];
         extraData.OnlineModerators = [];
         extraData.Moderators = [];
         extraData.OnlineStreamers = [];
-        extraData.Streamers = []
+        extraData.Streamers = [];
         extraData.LimitedEdition = [];
         extraData.PriceType = '';
         extraData.Price = 0;
@@ -2061,7 +2074,9 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         extraData.EndingTime = 0;
         extraData.Rewards = '';
       }
-      db.collection(collections.streaming).doc(mediaSymbol).update({ ...extraData });
+      db.collection(collections.streaming)
+        .doc(mediaSymbol)
+        .update({ ...extraData });
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
@@ -2199,6 +2214,54 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
   }
 };
 
+export const rateMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    console.log(req.body);
+    const { mediaId, userId, ratingType, ratingValue } = req.body;
+
+    if (mediaId && userId) {
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      const media: any = mediaGet.data();
+
+      if (mediaGet.exists) {
+        if (media.Rating) {
+          let isUpdated = false;
+          let ratings = [...media.Rating];
+          ratings = ratings.map((item) => {
+            if (item.userId === userId) {
+              isUpdated = true;
+              let rateItem = { ...item };
+              rateItem[ratingType] = ratingValue;
+              return rateItem;
+            }
+            return item;
+          });
+
+          if (isUpdated === false) {
+            let newRate = { userId: userId };
+            newRate[ratingType] = ratingValue;
+            ratings.push(newRate);
+          }
+          await mediaRef.update({ Rating: ratings });
+        } else {
+          let ratings = [{ userId: userId }];
+          ratings[0][ratingType] = ratingValue;
+          await mediaRef.update({ Rating: ratings });
+        }
+
+        res.status(200).send({ success: true });
+      } else {
+        res.status(200).send({ success: false, error: 'Media not found' });
+      }
+    } else {
+      res.status(200).send({ success: false, error: 'Id not provided...' });
+    }
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+}
 
 // ------------------ FRACTIONALISE ------------------
 
@@ -2488,4 +2551,4 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
     console.log('Error in controllers/mediaController -> sellFraction()', err);
     res.send({ success: false });
   }
-};
+}
