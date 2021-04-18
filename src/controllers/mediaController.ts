@@ -46,8 +46,8 @@ export const getEthMedia = async (req: express.Request, res: express.Response) =
   }
 };
 
+const MEDIA_PAGE_SIZE = 30;
 
-const pageSize = 6;
 export const getMedias = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;  // filters
@@ -65,7 +65,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     let searchValue: string = body.searchValue ?? '';
     const collection = body.collection ?? '';
     // ret vars
-    let availableSize = pageSize;
+    let availableSize = MEDIA_PAGE_SIZE;
     let medias: any[] = [];
     // --- PRIVI Medias ---
     // if the last media was from eth then means the privi medias are already retrieved
@@ -177,7 +177,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // prepare return data
     let lastId = 'null';
     let isLastIdPrivi = true;
-    let hasMore = medias.length == pageSize;
+    let hasMore = medias.length == MEDIA_PAGE_SIZE;
     if (medias.length > 0) {
       isLastIdPrivi = medias[medias.length - 1].blockchain == 'PRIVI';
       if (isLastIdPrivi) lastId = medias[medias.length - 1].MediaName;
@@ -1955,7 +1955,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         ExtraInfo: {
           HasPhoto,
           Description,
-          PricingMetod,
+          PricingMethod,
           Hashtags,
           Content,  // only blog or blog snap
           Playlist  // only playlist
@@ -1992,13 +1992,13 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const extraInfo = body.ExtraInfo;
     const creatorId = body.CreatorId;
     const hasPhoto = extraInfo.HasPhoto ?? false;
-    const description = extraInfo.Description ?? '';
+    const MediaDescription = extraInfo.MediaDescription ?? '';
     const pricingMethod = extraInfo.PaymentType ?? 'Fixed';   // Fixed or Streaming   
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
 
     const blockchainRes = await media.createMedia(creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken,
-      viewPrice, isStreamingLive, isRecord, copies, royalty, nftPrice, nftToken,
+      viewPrice, isStreamingLive, isRecord, /*streamingProportions,*/ copies, royalty, nftPrice, nftToken,
       type, releaseDate, sharingPct, apiKey);
 
     if (blockchainRes && blockchainRes.success) {
@@ -2018,8 +2018,8 @@ export const createMedia = async (req: express.Request, res: express.Response) =
       // add extra info in media doc
       const extraData: any = {
         HasPhoto: hasPhoto,
-        Description: description,
-        PricingMetod: pricingMethod,
+        MediaDescription: MediaDescription,
+        PricingMethod: pricingMethod,
         Hashtags: hashtags,
         CreatorId: creatorId
       };
@@ -2116,8 +2116,9 @@ export const openNFT = async (req: express.Request, res: express.Response) => {
 
     const mediaSymbol = data.MediaSymbol;
     const address = data.Address;
+    const sharingId = data.SharingId;
 
-    const blockchainRes = await media.openNFT(mediaSymbol, address, apiKey);
+    const blockchainRes = await media.openNFT(mediaSymbol, address, sharingId, apiKey);
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const output = blockchainRes.output;

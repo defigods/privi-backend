@@ -4,7 +4,7 @@ const api = require("./blockchainApi");
 // TODO: add hash (calculated from FE)
 
 module.exports.createMedia = async (creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken, viewPrice, isStreamingLive, isRecord,
-    streamingProportions, copies, royalty, nftPrice, nftToken, type, releaseDate, sharingPct, caller) => {
+    copies, royalty, nftPrice, nftToken, type, releaseDate, sharingPct, caller) => {
     let blockchainRes = await axios.post(api.blockchainMediaAPI + "/createMedia", {
         Data: {
             CreatorAddress: creatorAddress,
@@ -43,11 +43,12 @@ module.exports.buyMediaNFT = async (mediaSymbol, address, caller) => {
     return blockchainRes.data;
 };
 
-module.exports.openNFT = async (mediaSymbol, address, caller) => {
+module.exports.openNFT = async (mediaSymbol, address, sharingId, caller) => {
     let blockchainRes = await axios.post(api.blockchainMediaAPI + "/openNFT", {
         Data: {
             MediaSymbol: mediaSymbol,
             Address: address,
+            SharingId: sharingId
         },
         Caller: caller
     });

@@ -14,6 +14,7 @@ const blockchainPriviLendingAPI = "http://" + FabricAppServerIP + ":" + port + "
 const blockchainPodAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodFT";
 const blockchainPodNFTPodAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodNFT";
 const blockchainPodMediaAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodMedia";
+const blockchainFractionaliseMediaAPI = "http://" + FabricAppServerIP + ":" + port + "/api/fractionaliseMedia";
 const blockchainMediaAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Media";
 const blockchainInsuranceFTAPI = "http://" + FabricAppServerIP + ":" + port + "/api/InsuranceFT";
 const blockchainInsuranceNFTAPI = "http://" + FabricAppServerIP + ":" + port + "/api/InsuranceNFT"
@@ -42,4 +43,5 @@ module.exports = {
 	blockchainSocialAPI: blockchainSocialAPI,
 	blockchainPodMediaAPI: blockchainPodMediaAPI,
 	blockchainMediaAPI: blockchainMediaAPI,
+	blockchainFractionaliseMediaAPI: blockchainFractionaliseMediaAPI,
 };

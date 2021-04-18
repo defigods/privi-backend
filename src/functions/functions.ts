@@ -79,9 +79,11 @@ export async function updateFirebase(blockchainRes) {
         // Pods FT and NFT  (NFT replaced by Media)
         const updatePods = output.UpdatePods;
         const updatePodStates = output.UpdatePodStates;
+        const updateMedias = output.UpdateMedias;
+        // Fractionalise Media
+        const updateFractionalise = output.UpdateFractionalise;
         const updateBuyingOffers = output.UpdateBuyingOffers;
         const updateSellingOffers = output.UpdateSellingOffers;
-        const updateMedias = output.UpdateMedias;
         // const updateStreamings = output.UpdateStreamings;
         // Insurance
         const updateInsurancePools = output.UpdateInsurancePools;
@@ -207,34 +209,42 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set(db.collection(colectionName).doc(podId), podState, { merge: true });
             }
         }
-        // update nft buying offers
+        // update fractionalise media 
+        if (updateFractionalise) {
+            let tokenSymbol: string = '';
+            let obj: any = null;
+            for ([tokenSymbol, obj] of Object.entries(updateFractionalise)) {
+                if (tokenSymbol) transaction.set(db.collection(collections.fractionalise).doc(tokenSymbol), obj, { merge: true });
+            }
+        }
+        // update fractionalise buying offers
         if (updateBuyingOffers) {
             let _: string = '';
             let orderObj: any = null;
             for ([_, orderObj] of Object.entries(updateBuyingOffers)) {
                 const orderId = orderObj.OrderId;
-                const podAddress = orderObj.PodAddress;
-                if (orderId && podAddress) {
+                const tokenSymbol = orderObj.TokenSymbol;
+                if (orderId && tokenSymbol) {
                     const amount = orderObj.Amount;
-                    if (amount == 0) transaction.delete(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId));
-                    else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                    if (amount == 0) transaction.delete(db.collection(collections.fractionalise).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId));
+                    else transaction.set(db.collection(collections.fractionalise).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
                 }
-                else console.log("Update Firebase: update nft buying order error ,", orderId, " order updateObject has no podAddress field");
+                else console.log("Update Firebase: update fractionalise buying order error ,", orderId, " order updateObject has no podAddress field");
             }
         }
-        // update nft selling offers
+        // update fractionalise selling offers
         if (updateSellingOffers) {
             let _: string = '';
             let orderObj: any = null;
             for ([_, orderObj] of Object.entries(updateSellingOffers)) {
                 const orderId = orderObj.OrderId;
-                const podAddress = orderObj.PodAddress;
-                if (orderId && podAddress) {
+                const tokenSymbol = orderObj.TokenSymbol;
+                if (orderId && tokenSymbol) {
                     const amount = orderObj.Amount;
-                    if (amount == 0) transaction.delete(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId));
-                    else transaction.set(db.collection(collections.podsNFT).doc(podAddress).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                    if (amount == 0) transaction.delete(db.collection(collections.fractionalise).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId));
+                    else transaction.set(db.collection(collections.fractionalise).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
                 }
-                else console.log("Update Firebase: update nft selling order error ,", orderId, " order updateObject has no podAddress field");
+                else console.log("Update Firebase: update fractionalise selling order error ,", orderId, " order updateObject has no podAddress field");
             }
         }
         // update medias 
