@@ -34,7 +34,6 @@ const tasksRoutes = require("../routes/tasksRoutes");
 const collabRoutes = require("../routes/collabRoutes");
 const mediaRoutes = require("../routes/mediaRoutes");
 const mediaPodRoutes = require("../routes/mediaPodRoutes");
-const fractionaliseMediaRoutes = require("../routes/fractionaliseMediaRoutes");
 
 const notificationsController = require("../controllers/notificationsController");
 
@@ -73,8 +72,8 @@ export const startServer = (env: Env) => {
 
   // Configure Express to use EJS
   app.set("views", path.join(__dirname, "views"));
-  app.use(express.json({limit: '50mb'}));
-  app.use(express.urlencoded({limit: '50mb'}));
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb' }));
 
   // Routes definition
   app.use("/user", userRoutes);
@@ -99,7 +98,6 @@ export const startServer = (env: Env) => {
   app.use("/collab", collabRoutes);
   app.use("/media", mediaRoutes);
   app.use("/mediaPod", mediaPodRoutes);
-  app.use("/fractionaliseMedia", fractionaliseMediaRoutes);
 
   // start all cron jobs
   // let name: string;

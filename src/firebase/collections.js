@@ -163,7 +163,7 @@ module.exports = {
   sorareMedia: 'SorareMedia',
 
   // fractionalise
-  fractionalise: 'Fractionalise',
+  mediaFraction: 'MediaFraction',
 
   playList: 'PlayList',
 

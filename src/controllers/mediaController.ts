@@ -5,11 +5,13 @@ import fs from 'fs';
 import collections, { user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
+import fractionaliseMedia from '../blockchain/fractionaliseMedia';
 import { generateUniqueId, updateFirebase } from '../functions/functions';
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
+
 
 export const registerMediaView = async (req: express.Request, res: express.Response) => {
   try {
@@ -2162,5 +2164,296 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
       success: false,
       error: 'Error in controllers/mediaController -> closeNFT():' + e,
     });
+  }
+};
+
+
+// ------------------ FRACTIONALISE ------------------
+
+export const fractionalise = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const tokenSymbol = body.TokenSymbol;
+    const ownerAddress = body.OwnerAddress;
+    const fraction = body.Fraction;
+    const buyBackPrice = body.BuyBackPrice;
+    const initialPrice = body.InitialPrice;
+    const fundingToken = body.FundingToken;
+    const interestRate = body.InterestRate;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+    console.log(body);
+    const blockchainRes = await fractionaliseMedia.fractionalise(tokenSymbol, ownerAddress, fraction, buyBackPrice,
+      initialPrice, fundingToken, interestRate, hash, signature, apiKey);
+    console.log(JSON.stringify(blockchainRes), null, 4);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/media -> fractionalise()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> fractionalise()', err);
+    res.send({ success: false });
+  }
+};
+
+export const newBuyOrder = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const amount = body.Amount;
+    const price = body.Price;
+    const token = body.Token;
+    const tokenSymbol = body.TokenSymbol;
+    const bAddress = body.BAddress;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await fractionaliseMedia.newBuyOrder(amount, price, token, tokenSymbol, bAddress, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/mediaController -> newBuyOrder()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> newBuyOrder()', err);
+    res.send({ success: false });
+  }
+};
+
+export const newSellOrder = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const amount = body.Amount;
+    const price = body.Price;
+    const token = body.Token;
+    const tokenSymbol = body.TokenSymbol;
+    const sAddress = body.SAddress;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await fractionaliseMedia.newSellOrder(amount, price, token, tokenSymbol, sAddress, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/mediaController -> newSellOrder()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> newSellOrder()', err);
+    res.send({ success: false });
+  }
+};
+
+export const deleteBuyOrder = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const orderId = body.OrderId;
+    const requesterAddress = body.RequesterAddress;
+    const tokenSymbol = body.TokenSymbol;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await fractionaliseMedia.deleteBuyOrder(orderId, requesterAddress, tokenSymbol, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/mediaController -> deleteBuyOrder()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> deleteBuyOrder()', err);
+    res.send({ success: false });
+  }
+};
+
+export const deleteSellOrder = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const orderId = body.OrderId;
+    const requesterAddress = body.RequesterAddress;
+    const tokenSymbol = body.TokenSymbol;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await fractionaliseMedia.deleteSellOrder(orderId, requesterAddress, tokenSymbol, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/mediaController -> deleteSellOrder()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> deleteSellOrder()', err);
+    res.send({ success: false });
+  }
+};
+
+export const buyFraction = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const tokenSymbol = body.TokenSymbol;
+    const sAddress = body.SAddress;
+    const orderId = body.OrderId;
+    const amount = body.Amount;
+    const buyerAddress = body.BuyerAddress;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await fractionaliseMedia.buyFraction(tokenSymbol, sAddress, orderId, amount, buyerAddress, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/mediaController -> buyFraction()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> buyFraction()', err);
+    res.send({ success: false });
+  }
+};
+
+export const sellFraction = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const tokenSymbol = body.TokenSymbol;
+    const bAddress = body.BAddress;
+    const orderId = body.OrderId;
+    const amount = body.Amount;
+    const sellerAddress = body.SellerAddress;
+
+    const hash = body.Hash;
+    const signature = body.Signature;
+
+    const blockchainRes = await fractionaliseMedia.sellFraction(tokenSymbol, bAddress, orderId, amount, sellerAddress, hash, signature, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      updateFirebase(blockchainRes);
+      const output = blockchainRes.output;
+      const transactions = output.Transactions;
+      let tid = '';
+      let txnArray: any = null;
+      for ([tid, txnArray] of Object.entries(transactions)) {
+        db.collection(collections.fractionalise)
+          .doc(tokenSymbol)
+          .collection(collections.transactions)
+          .doc(tid)
+          .set({ Transactions: txnArray });
+      }
+      res.send({ sucess: true });
+    }
+    else {
+      console.log('Error in controllers/mediaController -> sellFraction()', blockchainRes.message);
+      res.send({
+        success: false,
+        error: blockchainRes.message
+      })
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> sellFraction()', err);
+    res.send({ success: false });
   }
 };
