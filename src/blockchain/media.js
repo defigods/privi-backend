@@ -4,7 +4,31 @@ const api = require("./blockchainApi");
 // TODO: add hash (calculated from FE)
 
 module.exports.createMedia = async (creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken, viewPrice, isStreamingLive, isRecord,
-    streamingProportions, copies, royalty, nftPrice, nftToken, type, releaseDate, sharingPct, caller) => {
+    /*streamingProportions,*/ copies, royalty, nftPrice, nftToken, type, releaseDate, sharingPct, caller) => {
+    console.log({
+        Data: {
+            CreatorAddress: creatorAddress,
+            MediaName: mediaName,
+            MediaSymbol: mediaSymbol,
+            ViewConditions: {
+                ViewingType: viewingType,
+                ViewingToken: viewingToken,
+                Price: viewPrice,
+                IsStreamingLive: isStreamingLive,
+                IsRecord: isRecord,
+            },
+            NftConditions: {
+                Copies: copies,
+                Royalty: royalty,
+                Price: nftPrice,
+                NftToken: nftToken
+            },
+            Type: type,
+            ReleaseDate: releaseDate,
+            SharingPct: sharingPct
+        },
+        Caller: caller
+    })
     let blockchainRes = await axios.post(api.blockchainMediaAPI + "/createMedia", {
         Data: {
             CreatorAddress: creatorAddress,

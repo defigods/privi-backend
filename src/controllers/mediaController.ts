@@ -1974,7 +1974,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
 
     const blockchainRes = await media.createMedia(creatorAddress, mediaName, mediaSymbol, viewingType, viewingToken,
-      viewPrice, isStreamingLive, isRecord, copies, royalty, nftPrice, nftToken,
+      viewPrice, isStreamingLive, isRecord, /*streamingProportions,*/ copies, royalty, nftPrice, nftToken,
       type, releaseDate, sharingPct, apiKey);
 
     if (blockchainRes && blockchainRes.success) {
