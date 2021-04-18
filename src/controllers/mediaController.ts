@@ -1931,7 +1931,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         ExtraInfo: {
           HasPhoto,
           Description,
-          PricingMetod,
+          PricingMethod,
           Hashtags,
           Content,  // only blog or blog snap
           Playlist  // only playlist
@@ -1968,7 +1968,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const extraInfo = body.ExtraInfo;
     const creatorId = body.CreatorId;
     const hasPhoto = extraInfo.HasPhoto ?? false;
-    const description = extraInfo.Description ?? '';
+    const MediaDescription = extraInfo.MediaDescription ?? '';
     const pricingMethod = extraInfo.PaymentType ?? 'Fixed';   // Fixed or Streaming   
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
@@ -1994,8 +1994,8 @@ export const createMedia = async (req: express.Request, res: express.Response) =
       // add extra info in media doc
       const extraData: any = {
         HasPhoto: hasPhoto,
-        Description: description,
-        PricingMetod: pricingMethod,
+        MediaDescription: MediaDescription,
+        PricingMethod: pricingMethod,
         Hashtags: hashtags,
         CreatorId: creatorId
       };
