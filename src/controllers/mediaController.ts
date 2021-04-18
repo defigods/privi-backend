@@ -134,10 +134,9 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         case 'Foundation':
           ethMediaCollection = collections.foundationMedia;
           break;
-        // TODO: Uncomment me when `ShowtimeMedia` collection is ready
-        // case 'Showtime':
-        //   ethMediaCollection = collections.showtimeMedia;
-        //   break;
+        case 'Showtime':
+          ethMediaCollection = collections.showtimeMedia;
+          break;
       }
       // if it matches one of the options above then query the data
       if (ethMediaCollection) {
