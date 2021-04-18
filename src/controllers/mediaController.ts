@@ -2092,8 +2092,9 @@ export const openNFT = async (req: express.Request, res: express.Response) => {
 
     const mediaSymbol = data.MediaSymbol;
     const address = data.Address;
+    const sharingId = data.SharingId;
 
-    const blockchainRes = await media.openNFT(mediaSymbol, address, apiKey);
+    const blockchainRes = await media.openNFT(mediaSymbol, address, sharingId, apiKey);
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
