@@ -1289,7 +1289,7 @@ export const shareMediaToSocial = async (req: express.Request, res: express.Resp
     if (mediaId) {
       const mediaRef = db.collection(collections.streaming).doc(mediaId);
       if (mediaRef) {
-        mediaRef.update({ shareCount: FieldValue.increment(1) });
+        await mediaRef.update({ shareCount: FieldValue.increment(1) });
         res.send({ success: true });
       }
       else {
