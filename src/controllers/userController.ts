@@ -2196,20 +2196,6 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
     try {
       let myMedia: any[] = [];
 
-      myMedia = await getMyMediaArray(userId);
-
-      resolve(myMedia);
-    } catch (e) {
-      reject(e);
-    }
-  });
-};
-
-const getMyMediaArray = (userId: string): Promise<any[]> => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      let mediaInfo: any[] = [];
-
       const medias = await db.collection(collections.streaming).get();
 
       let mediasArray: any[] = [];
@@ -2220,8 +2206,7 @@ const getMyMediaArray = (userId: string): Promise<any[]> => {
       }
 
       if (mediasArray && mediasArray.length > 0) {
-        let requesterMedias = mediasArray.filter((med) => med.Requester === userId);
-
+        let requesterMedias = mediasArray.filter((med) => med.Requester === userId || med.CreatorId == userId);
         let mediaWithCollab: any[] = [];
         for (const media of mediasArray) {
           if (media.Collab && media.Collab != {}) {
@@ -2233,15 +2218,16 @@ const getMyMediaArray = (userId: string): Promise<any[]> => {
             }
           }
         }
-        mediaInfo = requesterMedias.concat(mediaWithCollab);
+        myMedia = requesterMedias.concat(mediaWithCollab);
       }
 
-      resolve(mediaInfo);
+      resolve(myMedia);
     } catch (e) {
       reject(e);
     }
   });
 };
+
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
