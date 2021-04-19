@@ -26,12 +26,12 @@ const Action = {
 };
 
 interface CommonActionData {
-  waxUserAddress: string,
+  waxUserAccount: string,
   priviUserAddress: string,
   waxNetId: number,
   action: string,
   amount: number,
-  tokenSymbol: string,
+  tokenName: string,
   lastUpdateTimestamp: number,
 }
 
@@ -105,27 +105,36 @@ const updateActionPriviTx = async (actionFirebaseId, priviTx) => {
   });
 };
 
+const updateActionWaxTx = async (actionFirebaseId, waxTx) => {
+  await db.runTransaction(async (transaction) => {
+    transaction.update(db.collection(
+      collections.waxActions,
+    ).doc(actionFirebaseId),
+    { txHash: waxTx });
+  });
+};
+
 /**
  * @notice Swap NFT from WAX to Fabric's User account
  */
 const swap = async ({
   actionFirebaseId,
   priviUserAddress,
-  waxUserAddress,
+  waxUserAccount,
   amount,
-  tokenSymbol,
+  tokenName,
   action,
 }: SwapActionData) => {
-  console.log('--> Swap: TX confirmed on WAX', actionFirebaseId, tokenSymbol, amount, 'action', action);
+  console.log('--> Swap: TX confirmed on WAX', actionFirebaseId, tokenName, amount, 'action', action);
 
   let hlfResponse;
   try {
     hlfResponse = await mintOnHLF(
       action,
-      waxUserAddress,
+      waxUserAccount,
       priviUserAddress,
       amount,
-      tokenSymbol,
+      tokenName,
       'PRIVI',
     );
   } catch (err) {
@@ -151,9 +160,9 @@ const swap = async ({
   }
 };
 
-const sendNft = async (waxUserAddress, assetId) => {
+const sendNft = async (waxUserAccount, assetId) => {
   try {
-    await api.transact({
+    return await api.transact({
       actions: [{
         account: 'simpleassets',
         name: 'transfer',
@@ -163,11 +172,14 @@ const sendNft = async (waxUserAddress, assetId) => {
         }],
         data: {
           from: process.env.PRIVI_WAX_ACCOUNT,
-          to: waxUserAddress,
-          assetid1: assetId,
-          memo: '',
+          to: waxUserAccount,
+          assetids: [assetId],
+          memo: 'Privi Withdrawal',
         },
       }],
+    }, {
+      blocksBehind: 3,
+      expireSeconds: 30,
     });
   } catch (err) {
     throw new Error(err.message);
@@ -180,15 +192,15 @@ const sendNft = async (waxUserAddress, assetId) => {
 const withdraw = async ({
   actionFirebaseId,
   priviUserAddress,
-  waxUserAddress,
+  waxUserAccount,
   amount,
   action,
-  tokenSymbol,
+  tokenName,
   assetId,
   lastUpdateTimestamp,
   waxNetId,
 }: WithdrawActionData) => {
-  console.log('--> Withdraw: called with', actionFirebaseId, priviUserAddress, waxUserAddress, amount, action, tokenSymbol, lastUpdateTimestamp, waxNetId);
+  console.log('--> Withdraw: called with', actionFirebaseId, priviUserAddress, waxUserAccount, amount, action, tokenName, lastUpdateTimestamp, waxNetId);
 
   try {
     updateActionStatus(actionFirebaseId, 'inProgress');
@@ -201,9 +213,9 @@ const withdraw = async ({
     hlfResponse = await burnOnHLF(
       action,
       priviUserAddress,
-      waxUserAddress,
+      waxUserAccount,
       1,
-      tokenSymbol,
+      tokenName,
       'PRIVI',
     );
   } catch (err) {
@@ -233,10 +245,20 @@ const withdraw = async ({
     throw new Error(err.message);
   }
 
-  console.log('Perform withdraw:', 'token', tokenSymbol, 'waxUserAddress', waxUserAddress, 'amount', amount);
+  console.log('Perform withdraw:', 'token', tokenName, 'waxUserAccount', waxUserAccount, 'amount', amount);
 
+  let waxTxReceipt;
   try {
-    await sendNft(waxUserAddress, assetId);
+    waxTxReceipt = await sendNft(waxUserAccount, assetId);
+
+    console.log('--> Withdraw: TX confirmed on WAX', waxTxReceipt);
+    const waxTxId = waxTxReceipt.transaction_id;
+    try {
+      await updateActionStatus(actionFirebaseId, 'confirmed');
+      await updateActionWaxTx(actionFirebaseId, waxTxId);
+    } catch (err) {
+      throw new Error(err.message);
+    }
   } catch (err) {
     console.warn('--> Withdraw: TX failed on WAX', 'error', err.message);
 
@@ -247,36 +269,34 @@ const withdraw = async ({
       throw new Error(err2.message);
     }
 
-    /** ********
-     * TO ADAPT
-     ******* */
-    // const mintBack = await mintOnHLF(
-    //   action === Action.WITHDRAW_ERC721 ? 'NFTPOD' : 'CRYPTO',
-    //   '0x0000000000000000000000000000000000000000',
-    //   fromFabricAddress,
-    //   action === Action.WITHDRAW_ERC721 ? 1 : amount,
-    //   token,
-    //   'PRIVI',
-    // );
+    let mintBackTransaction;
+    try {
+      mintBackTransaction = await mintOnHLF(
+        Action.SWAP_WAX,
+        waxUserAccount,
+        priviUserAddress,
+        1,
+        tokenName,
+        'PRIVI',
+      );
+    } catch (err2) {
+      throw new Error(err2.message);
+    }
 
-    // if (mintBack.success) {
-    //   console.warn('--> Withdraw: TX failed in Ethereum, mintback result:\n', mintBack);
-    //   updateStatusOneToOneSwap(swapDocId, 'failed with return');
-    //   updateFirebase(mintBack);
-    //   updatePriviTxOneToOneSwap(swapDocId, mintBack.hash);
-    // } else {
-    //   console.warn('--> Withdraw: TX failed in Ethereum, mintback result:', mintBack.success);
-    //   updateStatusOneToOneSwap(swapDocId, 'failed without return');
-    // }
-  }
+    console.warn('--> Withdraw: TX failed on WAX, mintback result:', mintBackTransaction);
 
-  console.log('--> Withdraw: TX confirmed on WAX', dataFromTx);
-  const waxTxHash = dataFromTx.transactionHash;
-  try {
-    await updateStatusOneToOneSwap(actionFirebaseId, 'confirmed');
-    await updateTxOneToOneSwap(actionFirebaseId, waxTxHash);
-  } catch (err) {
-    throw new Error(err.message);
+    if (!mintBackTransaction.success) {
+      updateActionStatus(actionFirebaseId, 'failed without return');
+      return;
+    }
+
+    try {
+      updateActionStatus(actionFirebaseId, 'failed with return');
+      updateFireBaseBalance(mintBackTransaction);
+      updateActionPriviTx(actionFirebaseId, mintBackTransaction.hash);
+    } catch (err2) {
+      throw new Error(err2.message);
+    }
   }
 };
 
@@ -309,14 +329,14 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
 
     const {
       waxTx,
-      waxUserAddress,
+      waxUserAccount,
       random,
       priviUserPublicId,
       priviUserAddress,
       waxNetId,
       action,
       amount,
-      tokenSymbol,
+      tokenName,
       assetId,
       lastUpdateTimestamp,
     } = actionData;
@@ -328,9 +348,9 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
             actionFirebaseId,
             priviUserPublicId,
             priviUserAddress,
-            waxUserAddress,
+            waxUserAccount,
             amount,
-            tokenSymbol,
+            tokenName,
             waxTx,
             random,
             action,
@@ -346,10 +366,10 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
           await withdraw({
             actionFirebaseId,
             priviUserAddress,
-            waxUserAddress,
+            waxUserAccount,
             amount,
             action,
-            tokenSymbol,
+            tokenName,
             assetId,
             lastUpdateTimestamp,
             waxNetId,
