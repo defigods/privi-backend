@@ -41,6 +41,7 @@ router.get('/getSellingPodFundingTokenAmount', authenticateJWT, mediaPodControll
 router.get('/getPriceHistory', authenticateJWT, mediaPodController.getPriceHistory);
 router.get('/getSupplyHistory', authenticateJWT, mediaPodController.getSupplyHistory);
 router.get('/getMediaPodTransactions', authenticateJWT, mediaPodController.getMediaPodTransactions);
+router.post('/like', authenticateJWT, mediaPodController.like);
 
 //POD SLUG
 router.get('/checkSlugExists/:urlSlug/:id/:type', userController.checkSlugExists);

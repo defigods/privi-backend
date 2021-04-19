@@ -1043,3 +1043,35 @@ exports.storeSupplyHistory = cron.schedule('0 0 * * *', async () => {
     console.log(err);
   }
 });
+
+exports.like = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body;
+    const podAddress = body.PodAddress;
+    const userAddress = body.userAddress;
+    const podSnap = await db.collection(mediaPods).doc(podAddress).get();
+    const podData: any = podSnap.data();
+
+    const podLikes = podData.Likes ?? [];
+
+    if (body.liked) {
+      podLikes.push({
+        date: Date.now(),
+        userId: userAddress,
+      });
+    } else {
+      podLikes.forEach((item, index2) => {
+        if (userAddress === item.userId) podLikes.splice(index2, 1);
+      });
+    }
+
+    podSnap.ref.update({
+      Likes: podLikes,
+    });
+
+    res.send({ success: true });
+  } catch (err) {
+    console.log('Error in controllers/mediaPodController -> like(): ', err);
+    res.send({ success: false });
+  }
+};
