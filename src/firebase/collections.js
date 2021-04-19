@@ -162,9 +162,7 @@ module.exports = {
   topshotMedia: 'TopshotMedia',
   sorareMedia: 'SorareMedia',
   showtimeMedia: 'ShowtimeMedia',
-
-  // fractionalise
-  mediaFraction: 'MediaFraction',
+  mediaFraction: 'MediaFraction', // Fractionalise
 
   playList: 'PlayList',
 

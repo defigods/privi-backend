@@ -194,6 +194,23 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       if (isLastIdPrivi) lastId = medias[medias.length - 1].MediaName;
       else lastId = medias[medias.length - 1].title;
     }
+    const mediasMap: any = {};
+    const promises: any[] = [];
+    medias.forEach((doc) => {
+      mediasMap[doc.id] = { ...doc };
+      promises.push(db.collection(collections.mediaFraction).doc(doc.id).get());
+    });
+    const responses = await Promise.all(promises);
+    responses.forEach((docSnap) => {
+      if (mediasMap[docSnap.id]) {
+        const data = docSnap.data();
+        mediasMap[docSnap.id] = {
+          ...mediasMap[docSnap.id],
+          Fraction: { ...data }
+        }
+      }
+    });
+
     const retData = {
       data: medias,
       lastId: lastId,
@@ -2278,10 +2295,8 @@ export const fractionalise = async (req: express.Request, res: express.Response)
 
     const hash = body.Hash;
     const signature = body.Signature;
-    console.log(body);
     const blockchainRes = await fractionaliseMedia.fractionalise(tokenSymbol, ownerAddress, fraction, buyBackPrice,
       initialPrice, fundingToken, interestRate, hash, signature, apiKey);
-    console.log(JSON.stringify(blockchainRes), null, 4);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       const output = blockchainRes.output;
@@ -2289,13 +2304,13 @@ export const fractionalise = async (req: express.Request, res: express.Response)
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/media -> fractionalise()', blockchainRes.message);
@@ -2304,7 +2319,6 @@ export const fractionalise = async (req: express.Request, res: express.Response)
         error: blockchainRes.message
       })
     }
-    res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/mediaController -> fractionalise()', err);
     res.send({ success: false });
@@ -2331,13 +2345,13 @@ export const newBuyOrder = async (req: express.Request, res: express.Response) =
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/mediaController -> newBuyOrder()', blockchainRes.message);
@@ -2372,13 +2386,13 @@ export const newSellOrder = async (req: express.Request, res: express.Response) 
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/mediaController -> newSellOrder()', blockchainRes.message);
@@ -2411,13 +2425,13 @@ export const deleteBuyOrder = async (req: express.Request, res: express.Response
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/mediaController -> deleteBuyOrder()', blockchainRes.message);
@@ -2450,13 +2464,13 @@ export const deleteSellOrder = async (req: express.Request, res: express.Respons
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/mediaController -> deleteSellOrder()', blockchainRes.message);
@@ -2491,13 +2505,13 @@ export const buyFraction = async (req: express.Request, res: express.Response) =
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/mediaController -> buyFraction()', blockchainRes.message);
@@ -2532,13 +2546,13 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.fractionalise)
+        db.collection(collections.mediaFraction)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ sucess: true });
+      res.send({ success: true });
     }
     else {
       console.log('Error in controllers/mediaController -> sellFraction()', blockchainRes.message);
