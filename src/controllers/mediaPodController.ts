@@ -571,29 +571,8 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const hash = body.Hash;
     const signature = body.Signature;
 
-    console.log(
-      requester,
-        podAddress,
-        mediaSymbol,
-        type,
-        paymentType,
-        copies,
-        royalty,
-        fundingToken,
-        releaseDate,
-        pricePerSecond,
-        price,
-        isRecord,
-        recordToken,
-        recordPaymentType,
-        recordPrice,
-        recordPricePerSecond,
-        recordCopies,
-        recordRoyalty,
-        hash,
-        signature,
-        apiKey
-    )
+    console.log(releaseDate, Date.now());
+
     const blockchainRes = await mediaPod.registerMedia(
       requester,
       podAddress,

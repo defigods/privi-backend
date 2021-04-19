@@ -95,6 +95,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         const data = doc.data();
         // 4. filtering by release date
         const releaseDate = data.ReleaseDate ?? 0;
+        console.log(doc.id, releaseDate, now, releaseDate && releaseDate < now)
         if (releaseDate && releaseDate < now) {
           medias.push({
             id: doc.id,
@@ -2551,3 +2552,139 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
     res.send({ success: false });
   }
 }
+
+export const changeQuickMediaPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.streaming)
+        .doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      let mediaEdited = { ...media };
+      mediaEdited.IsUploaded = true;
+
+      await mediasRef.update(mediaEdited);
+      res.send({ success: true, data: '/media/getDigitalArt/:mediaId' });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaPhoto()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaPhoto(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const changeQuickMediaAudio = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.streaming)
+        .doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      let mediaEdited = { ...media };
+      mediaEdited.IsUploaded = true;
+
+      await mediasRef.update(mediaEdited);
+      res.send({ success: true, data: '/media/getAudio/:mediaId' });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaPodPhoto()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaPodPhoto(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const changeQuickMediaVideo = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.streaming)
+        .doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      let mediaEdited = { ...media };
+      mediaEdited.IsUploaded = true;
+
+      await mediasRef.update(mediaEdited);
+      res.send({ success: true, data: '/media/getVideo/:mediaId' });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaVideo()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaVideo(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const changeQuickMediaBlog = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    if (req.file && req.params && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.streaming)
+        .doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      let mediaEdited = { ...media };
+      mediaEdited.editorPages = body.editorPages || [];
+      mediaEdited.IsUploaded = true;
+
+      /*mediaEdited.mainHashtag = body.mainHashtag || '';
+      mediaEdited.hashtags = body.hashtags || [];
+      mediaEdited.schedulePost = body.schedulePost || Date.now(); // integer timestamp eg 1609424040000
+      mediaEdited.description = body.description || '';
+      mediaEdited.descriptionArray = body.descriptionArray || [];
+      mediaEdited.author = body.author || '';
+      mediaEdited.selectedFormat = body.selectedFormat || 0; // 0 story 1 wall post
+      mediaEdited.hasPhoto = body.hasPhoto || false;*/
+      await mediasRef.update(mediaEdited);
+
+      res.send({ success: true, data: '/media/getBlog/:mediaId/:pagination' });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaBlog()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaBlog(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const changeQuickMediaBlogVideo = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.mediaId) {
+      const mediasRef = db
+        .collection(collections.streaming)
+        .doc(req.params.mediaId);
+      const mediasGet = await mediasRef.get();
+      const media: any = mediasGet.data();
+
+      let mediaEdited = { ...media };
+      if (mediaEdited.videosId && mediaEdited.videosId.length > 0) {
+        mediaEdited.videosId.push(req.file.originalname);
+      } else {
+        mediaEdited.videosId = [req.file.originalname];
+      }
+
+      await mediasRef.update(mediaEdited);
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaBlogVideo()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaBlogVideo(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
