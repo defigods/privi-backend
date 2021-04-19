@@ -674,22 +674,31 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
     const caller = apiKey;
     const lastUpdate = Date.now();
 
-    // const publicKey = '0x04' + pubKey.toString('hex');
-    const address = await EthUtil.publicToAddress(EthUtil.toBuffer(pubKey)).toString('hex');
-    // console.log({publicKey, address})
+    const publicKey = '0x04' + pubKey.toString('hex');
+    const address = '0x' + (await EthUtil.publicToAddress(EthUtil.toBuffer(pubKey)).toString('hex'));
     const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
 
     if (blockchainRes && blockchainRes.success) {
-      // set address in User DB
-      await db.runTransaction(async (transaction) => {
-        // userData - no check if firestore insert works? TODO
-        transaction.update(db.collection(collections.user).doc(userId), {
-          pubKey,
-          address,
-          lastUpdate: lastUpdate,
-        });
-      });
+      const userSnap = await db.collection(collections.user).doc(userId).get();
+      const userData = userSnap.data();
+      const walletData = userData?.wallets ?? [];
+      const preparedTokenList = await getTokenListFromAmberData(address);
 
+      const newWalletData = [
+        ...walletData,
+        {
+          walletType: "Privi",
+          walletStatus: false,
+          tokenList: preparedTokenList,
+          address,
+          name: "PriviWallet",
+          pubKey: publicKey,
+          lastUpdate: Date.now(),
+        }
+      ]
+      db.collection(collections.user) 
+        .doc(userId)
+        .update({ ...userData, wallets: newWalletData });
       res.send({
         success: true,
         uid: userId,
