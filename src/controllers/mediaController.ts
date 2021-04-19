@@ -2002,7 +2002,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const creatorId = body.CreatorId;
     const hasPhoto = extraInfo.HasPhoto ?? false;
     const MediaDescription = extraInfo.MediaDescription ?? '';
-    const pricingMethod = extraInfo.PaymentType ?? 'Fixed'; // Fixed or Streaming
+    const pricingMethod = extraInfo.PricingMethod ?? 'Fixed'; // Fixed or Streaming
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
 
@@ -2066,11 +2066,11 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         extraData.OnlineModerators = [];
         extraData.Moderators = [];
         extraData.OnlineStreamers = [];
-        extraData.Streamers = [];
+        extraData.Streamers = [creatorId];
         extraData.LimitedEdition = [];
-        extraData.PriceType = '';
-        extraData.Price = 0;
-        extraData.StartingTime = 0;
+        // extraData.PriceType = viewingType;
+        extraData.Price = viewPrice;
+        extraData.StartingTime = releaseDate;
         extraData.EndingTime = 0;
         extraData.Rewards = '';
       }
@@ -2082,7 +2082,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
       console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
       res.send({
         success: false,
-        error: blockchainRes.error,
+        error: blockchainRes.message,
       });
     }
   } catch (e) {
