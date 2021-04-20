@@ -683,18 +683,18 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
       const userData = userSnap.data();
       const walletData = userData?.wallets ?? [];
       const preparedTokenList = await getTokenListFromAmberData(address);
-
+      const newWallet = {
+        walletType: "Privi",
+        walletStatus: false,
+        tokenList: preparedTokenList,
+        address,
+        name: "PriviWallet",
+        pubKey: publicKey,
+        lastUpdate: Date.now(),
+      };
       const newWalletData = [
         ...walletData,
-        {
-          walletType: "Privi",
-          walletStatus: false,
-          tokenList: preparedTokenList,
-          address,
-          name: "PriviWallet",
-          pubKey: publicKey,
-          lastUpdate: Date.now(),
-        }
+        newWallet
       ]
       db.collection(collections.user) 
         .doc(userId)
@@ -704,6 +704,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
         uid: userId,
         address: address,
         lastUpdate: lastUpdate,
+        newWallet,
       });
     } else {
       console.log('Warning in controllers/user.ts -> attachaddress():', blockchainRes);
