@@ -228,19 +228,79 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
-
     if (mediaId) {
-      const mediaRef = db.collection(collections.streaming).doc(mediaId);
-      const mediaGet = await mediaRef.get();
-      const media: any = mediaGet.data();
-
-      if (mediaGet.exists) {
-        res.status(200).send({ success: true, data: { ...media, id: mediaId } });
+      const mediaSnap = await db.collection(collections.streaming).doc(mediaId).get();
+      const fractionaliseSnap = await db.collection(collections.mediaFraction).doc(mediaId).get();
+      if (mediaSnap.exists) {
+        let retData: any = {
+          ...mediaSnap.data(),
+          id: mediaId
+        };
+        // add fraction data if exists 
+        if (fractionaliseSnap.exists)
+          retData = {
+            ...retData,
+            Fractionalise: {
+              ...fractionaliseSnap.data()
+            }
+          }
+        res.send({ success: true, data: retData });
       } else {
-        res.status(200).send({ success: false, error: 'Media not found' });
+        res.send({ success: false, error: 'Media not found' });
       }
     } else {
-      res.status(200).send({ success: false, error: 'Id not provided...' });
+      res.send({ success: false, error: 'Id not provided...' });
+    }
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+};
+
+export const getFractionalisedMediaOffers = async (req: express.Request, res: express.Response) => {
+  try {
+    const mediaId = req.params.mediaId;
+    if (mediaId) {
+      const buyingOfferSnap = await db.collection(collections.mediaFraction).doc(mediaId).collection(collections.buyingOffers).get();
+      const sellingOfferSnap = await db.collection(collections.mediaFraction).doc(mediaId).collection(collections.sellingOffers).get();
+      const buyingOffers: any[] = [];
+      const sellingOffers: any[] = [];
+      buyingOfferSnap.forEach((doc) => {
+        buyingOffers.push(doc.data());
+      });
+      sellingOfferSnap.forEach((doc) => {
+        sellingOffers.push(doc.data());
+      });
+      res.send({
+        success: true, data: {
+          buyingOffers: buyingOffers,
+          sellingOffers: sellingOffers
+        }
+      })
+    } else {
+      res.send({ success: false, error: 'Id not provided...' });
+    }
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+};
+
+export const getFractionalisedMediaTransactions = async (req: express.Request, res: express.Response) => {
+  try {
+    const mediaId = req.params.mediaId;
+    if (mediaId) {
+      const transactionSnap = await db.collection(collections.mediaFraction).doc(mediaId).collection(collections.transactions).get();
+      let transactions: any[] = [];
+      transactionSnap.forEach((doc) => {
+        const data = doc.data();
+        const txns = data.Transactions ?? [];
+        txns.forEach((txn) => transactions.push(txn))
+      });
+      transactions = transactions.sort((a, b) => (a.Date > b.Date ? -1 : 1));
+      res.send({ success: true, data: transactions })
+    } else {
+      res.send({ success: false, error: 'Id not provided...' });
     }
   } catch (e) {
     console.log(e);
