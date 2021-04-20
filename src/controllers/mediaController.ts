@@ -2023,6 +2023,8 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
 
+    const EditorPages = body.EditorPages;
+
     const blockchainRes = await media.createMedia(
       creatorAddress,
       mediaName,
@@ -2093,7 +2095,11 @@ export const createMedia = async (req: express.Request, res: express.Response) =
       }
       db.collection(collections.streaming)
         .doc(mediaSymbol)
-        .update({ ...extraData, QuickCreation: true });
+        .update({
+          ...extraData,
+          QuickCreation: true,
+          EditorPages: EditorPages || []
+        });
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
@@ -2567,7 +2573,7 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
   }
 }
 
-export const changeQuickMediaPhoto = async (req: express.Request, res: express.Response) => {
+export const changeQuickMediaDigitalArt = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file && req.params && req.params.mediaId) {
       const mediasRef = db
@@ -2699,6 +2705,32 @@ export const changeQuickMediaBlogVideo = async (req: express.Request, res: expre
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> changeMediaBlogVideo(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const changeQuickMediaPhoto = async (req: express.Request, res: express.Response) => {
+  try {
+    let params = req.params;
+    if (params.mediaId) {
+      const mediaRef = db.collection(collections.streaming).doc(params.mediaId);
+
+      const mediaGet = await mediaRef.get();
+      const media: any = await mediaGet.data();
+
+      if (media.HasPhoto !== undefined) {
+        await mediaRef.update({
+          HasPhoto: true,
+        });
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> changeMediaPodPhoto()', "There's no file...");
+      res.send({ success: false, error: "There's no file..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> changeMediaPodPhoto(): ', err);
     res.send({ success: false, error: err });
   }
 };

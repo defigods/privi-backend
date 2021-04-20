@@ -7,6 +7,19 @@ import * as playlistController from '../controllers/playlistController';
 
 const router: Router = Router();
 
+let storage = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/mediaMainPhoto');
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, req.params.mediaId.replace(/\s/g, '') + '.png');
+  },
+});
+let upload = multer({
+  storage: storage
+});
+
 let storage1 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
     cb(null, 'uploads/media');
@@ -210,11 +223,12 @@ router.post('/openNFT', authenticateJWT, mediaController.openNFT);
 router.post('/closeNFT', authenticateJWT, mediaController.closeNFT);
 
 // QUICK MEDIA UPLOAD MEDIA
-router.post('/quick/uploadDigitalArt/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeQuickMediaPhoto);
+router.post('/quick/uploadDigitalArt/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeQuickMediaDigitalArt);
 router.post('/quick/uploadAudio/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeQuickMediaAudio);
 router.post('/quick/uploadVideo/:mediaId', authenticateJWT, upload3.single('video'), mediaController.changeQuickMediaVideo);
 router.post('/quick/uploadBlog/:mediaId', authenticateJWT, mediaController.changeQuickMediaBlog);
 router.post('/quick/uploadBlog/video/:mediaId', authenticateJWT, upload4.single('video'), mediaController.changeQuickMediaBlogVideo);
+router.post('/quick/changeMainPhoto/:mediaId', authenticateJWT, upload.single('image'), mediaController.changeQuickMediaPhoto);
 
 
 // FRACTIONALISE Post
