@@ -344,52 +344,79 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
   }
 };
 
+const PAGE_SIZE = 30;
+
 exports.getAllArtists = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
+    let isLastUser = body.isLastUser;
+    const lastId = body.lastId;
+    let count = 0;
 
+    let updatedLastId = '';
+    let updatedIsLastUser = true;
     let users: any[] = [];
 
-    const userQuery = await db.collection(collections.user).get();
-    if (!userQuery.empty) {
-      for (const doc of userQuery.docs) {
-        let data = doc.data();
-        data.id = doc.id;
-        users.push({
-          ...data,
-          isExternalUser: false,
-        });
+    if (isLastUser) {
+      let userQuery = db.collection(collections.user).orderBy('urlSlug', 'asc');
+      if (lastId != 'null' && lastId.length > 0) {
+        userQuery = userQuery.where('urlSlug', '>', lastId);
+      }
+      const userSnap: any = await userQuery.get();
+      if (!userSnap.empty) {
+        for (const doc of userSnap.docs) {
+          let data = doc.data();
+          if (
+            data.lastName?.toLowerCase().includes(body.userName.toLowerCase()) ||
+            data.firtName?.toLowerCase().includes(body.userName.toLowerCase())
+          ) {
+            data.id = doc.id;
+            users.push({
+              ...data,
+              isExternalUser: false,
+            });
+
+            count += 1;
+            updatedLastId = doc.id;
+            updatedIsLastUser = true;
+            if (count === PAGE_SIZE) {
+              break;
+            }
+          }
+        }
       }
     }
 
-    const artistQuery = await db.collection(collections.mediaUsers).get();
-    if (!artistQuery.empty) {
-      for (const doc of artistQuery.docs) {
-        let data = doc.data();
-        data.id = doc.id;
-        users.push({
-          ...data,
-          firstName: data.user,
-          isExternalUser: true,
-        });
+    if (count !== PAGE_SIZE) {
+      let artistQuery = db.collection(collections.mediaUsers).orderBy('user', 'asc');
+      if (lastId != 'null' && lastId.length > 0 && !isLastUser) {
+        artistQuery = artistQuery.where('user', '>', lastId);
       }
-    }
+      const artistSnap: any = await artistQuery.get();
+      if (!artistSnap.empty) {
+        for (const doc of artistSnap.docs) {
+          let data = doc.data();
+          if (data.tag?.toLowerCase().includes(body.userName.toLowerCase())) {
+            data.id = doc.id;
+            users.push({
+              ...data,
+              isExternalUser: true,
+            });
 
-    //flitering by name;
-    if (body.userName && body.userName.length > 0) {
-      users = users.filter((item) => {
-        console.log('item==', item);
-        return (
-          item.lastName.toLowerCase().includes(body.userName.toLowerCase()) ||
-          item.firtName.toLowerCase().includes(body.userName.toLowerCase())
-        );
-      });
+            count += 1;
+            updatedLastId = doc.id;
+            updatedIsLastUser = false;
+            if (count === PAGE_SIZE) {
+              break;
+            }
+          }
+        }
+      }
     }
 
     res.status(200).send({
       success: true,
-      data: users,
-      count: artistQuery.docs.length,
+      data: { users: users, hasMore: count === PAGE_SIZE, lastId: updatedLastId, isLastUser: updatedIsLastUser },
     });
   } catch (e) {
     console.log('Error in controllers/chatRoutes -> getAllArtists()' + e);
