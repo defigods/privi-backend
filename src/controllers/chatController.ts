@@ -344,7 +344,7 @@ exports.getUsers = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 
 exports.getAllArtists = async (req: express.Request, res: express.Response) => {
   try {
