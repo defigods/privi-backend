@@ -2,7 +2,7 @@ import express from 'express';
 import { db, firebase } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
-import collections, { user } from '../firebase/collections';
+import collections, { buyingOffers, sellingOffers, tokens, user } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
 import fractionaliseMedia from '../blockchain/fractionaliseMedia';
@@ -299,6 +299,7 @@ export const getFractionalisedMediaTransactions = async (req: express.Request, r
         const txns = data.Transactions ?? [];
         txns.forEach((txn) => transactions.push(txn))
       });
+      transactions = transactions.filter((txnObj) => txnObj.Type && txnObj.Type.includes('Fractionalise'));
       transactions = transactions.sort((a, b) => (a.Date > b.Date ? -1 : 1));
       res.send({ success: true, data: transactions })
     } else {
@@ -310,25 +311,35 @@ export const getFractionalisedMediaTransactions = async (req: express.Request, r
   }
 };
 
-const mediaTypeFilter = (media: any, mediaTypes: string[]) => {
-  return new Promise((resolve, reject) => {
-    try {
-      if (mediaTypes && mediaTypes.length > 0) {
-        let filterMedia = mediaTypes.some((typ) => typ === media.Type);
-
-        if (filterMedia) {
-          resolve(media);
-        } else {
-          resolve(false);
-        }
-      } else {
-        resolve(media);
-      }
-    } catch (e) {
-      reject(e);
+export const getFractionalisedMediaPriceHistory = async (req: express.Request, res: express.Response) => {
+  try {
+    const mediaId = req.params.mediaId;
+    if (mediaId) {
+      res.send({ success: true })
+    } else {
+      res.send({ success: false, error: 'Id not provided...' });
     }
-  });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
 };
+
+export const getFractionalisedMediaSharedOwnershipHistory = async (req: express.Request, res: express.Response) => {
+  try {
+    const mediaId = req.params.mediaId;
+    if (mediaId) {
+      res.send({ success: true })
+    } else {
+      res.send({ success: false, error: 'Id not provided...' });
+    }
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+};
+
+
 
 export const getEthMediaItem = async (req: express.Request, res: express.Response) => {
   const { id } = req.params;
@@ -2397,18 +2408,18 @@ export const fractionalise = async (req: express.Request, res: express.Response)
 export const newBuyOrder = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    const amount = body.Amount;
-    const price = body.Price;
-    const token = body.Token;
-    const tokenSymbol = body.TokenSymbol;
-    const bAddress = body.BAddress;
+    const offer = body.Offer;
+    const amount = offer.Amount;
+    const price = offer.Price;
+    const token = offer.Token;
+    const tokenSymbol = offer.TokenSymbol;
+    const bAddress = offer.BAddress;
 
     const hash = body.Hash;
     const signature = body.Signature;
-
     const blockchainRes = await fractionaliseMedia.newBuyOrder(amount, price, token, tokenSymbol, bAddress, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);
+      await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
       const transactions = output.Transactions;
       let tid = '';
@@ -2438,18 +2449,19 @@ export const newBuyOrder = async (req: express.Request, res: express.Response) =
 export const newSellOrder = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    const amount = body.Amount;
-    const price = body.Price;
-    const token = body.Token;
-    const tokenSymbol = body.TokenSymbol;
-    const sAddress = body.SAddress;
+    const offer = body.Offer;
+    const amount = offer.Amount;
+    const price = offer.Price;
+    const token = offer.Token;
+    const tokenSymbol = offer.TokenSymbol;
+    const sAddress = offer.SAddress;
 
     const hash = body.Hash;
     const signature = body.Signature;
 
     const blockchainRes = await fractionaliseMedia.newSellOrder(amount, price, token, tokenSymbol, sAddress, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);
+      await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
       const transactions = output.Transactions;
       let tid = '';
@@ -2485,7 +2497,6 @@ export const deleteBuyOrder = async (req: express.Request, res: express.Response
 
     const hash = body.Hash;
     const signature = body.Signature;
-
     const blockchainRes = await fractionaliseMedia.deleteBuyOrder(orderId, requesterAddress, tokenSymbol, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
@@ -2500,6 +2511,7 @@ export const deleteBuyOrder = async (req: express.Request, res: express.Response
           .doc(tid)
           .set({ Transactions: txnArray });
       }
+      await db.collection(collections.mediaFraction).doc(tokenSymbol).collection(buyingOffers).doc(orderId).delete();
       res.send({ success: true });
     }
     else {
@@ -2539,6 +2551,7 @@ export const deleteSellOrder = async (req: express.Request, res: express.Respons
           .doc(tid)
           .set({ Transactions: txnArray });
       }
+      await db.collection(collections.mediaFraction).doc(tokenSymbol).collection(sellingOffers).doc(orderId).delete();
       res.send({ success: true });
     }
     else {
@@ -2565,10 +2578,9 @@ export const buyFraction = async (req: express.Request, res: express.Response) =
 
     const hash = body.Hash;
     const signature = body.Signature;
-
     const blockchainRes = await fractionaliseMedia.buyFraction(tokenSymbol, sAddress, orderId, amount, buyerAddress, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);
+      await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
       const transactions = output.Transactions;
       let tid = '';
@@ -2580,6 +2592,7 @@ export const buyFraction = async (req: express.Request, res: express.Response) =
           .doc(tid)
           .set({ Transactions: txnArray });
       }
+      await db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId).delete();
       res.send({ success: true });
     }
     else {
@@ -2606,10 +2619,9 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
 
     const hash = body.Hash;
     const signature = body.Signature;
-
     const blockchainRes = await fractionaliseMedia.sellFraction(tokenSymbol, bAddress, orderId, amount, sellerAddress, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);
+      await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
       const transactions = output.Transactions;
       let tid = '';
@@ -2621,6 +2633,7 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
           .doc(tid)
           .set({ Transactions: txnArray });
       }
+      await db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId).delete();
       res.send({ success: true });
     }
     else {

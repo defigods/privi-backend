@@ -224,9 +224,8 @@ export async function updateFirebase(blockchainRes) {
             for ([orderId, orderObj] of Object.entries(updateBuyingOffers)) {
                 const tokenSymbol = orderObj.TokenSymbol;
                 if (orderId && tokenSymbol) {
-                    const amount = orderObj.Amount;
-                    if (amount == 0) transaction.delete(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId));
-                    else transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                    const amount = orderObj.Amount ?? 0;
+                    if (amount > 0) transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
                 }
                 else console.log("Update Firebase: update fractionalise buying order error ,", orderId, " order updateObject has no podAddress field");
             }
@@ -238,9 +237,8 @@ export async function updateFirebase(blockchainRes) {
             for ([orderId, orderObj] of Object.entries(updateSellingOffers)) {
                 const tokenSymbol = orderObj.TokenSymbol;
                 if (orderId && tokenSymbol) {
-                    const amount = orderObj.Amount;
-                    if (amount == 0) transaction.delete(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId));
-                    else transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                    const amount = orderObj.Amount ?? 0;
+                    if (amount > 0) transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
                 }
                 else console.log("Update Firebase: update fractionalise selling order error ,", orderId, " order updateObject has no podAddress field");
             }
