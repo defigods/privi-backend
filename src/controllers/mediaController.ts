@@ -1163,9 +1163,13 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
         mediaLikes.push(body.userId);
       }
 
-      likeIndex = userLikes.findIndex((mediaLikeId) => mediaLikeId === mediaId);
+      likeIndex = userLikes.findIndex((userLike) => userLike.type === 'media' && userLike.id === mediaId);
       if (likeIndex === -1) {
-        userLikes.push(mediaId);
+        userLikes.push({
+          id: mediaId,
+          type: 'media',
+          date: Date.now()
+        });
       }
 
       await mediaRef.update({
@@ -1266,7 +1270,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
       let userLikes: any[] = [];
       if (user.Likes && user.Likes.length > 0) {
         userLikes = [...user.Likes];
-        let likeIndex = userLikes.findIndex((mediaLikeId) => mediaLikeId === mediaId);
+        let likeIndex = userLikes.findIndex((userLike) => userLike.type === 'media' && userLike.id === mediaId);
         if (likeIndex !== -1) {
           userLikes.splice(likeIndex, 1);
         }
