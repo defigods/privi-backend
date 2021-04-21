@@ -112,10 +112,6 @@ router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBl
 router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/getEthMedia/:pagination/:lastId', mediaController.getEthMedia);
 
-// factionalise
-router.get('/getFractionalisedMediaOffers/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaOffers);
-router.get('/getFractionalisedMediaTransactions/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaTransactions);
-
 router.get('/getPlaylists', playlistController.getPlaylists);
 router.get('/getMyPlaylists/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
@@ -247,5 +243,9 @@ router.post('/buyFraction', authenticateJWT, mediaController.buyFraction);
 router.post('/sellFraction', authenticateJWT, mediaController.sellFraction);
 
 // FRACTIONALISE Get
+router.get('/getFractionalisedMediaOffers/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaOffers);
+router.get('/getFractionalisedMediaTransactions/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaTransactions);
+router.get('/getFractionalisedMediaPriceHistory/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaPriceHistory);
+router.get('/getFractionalisedMediaSharedOwnershipHistory/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaSharedOwnershipHistory);
 
 module.exports = router;
