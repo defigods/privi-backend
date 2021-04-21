@@ -2308,9 +2308,10 @@ export const rateMedia = async (req: express.Request, res: express.Response) => 
       const media: any = mediaGet.data();
 
       if (mediaGet.exists) {
+        let ratings;
         if (media.Rating) {
           let isUpdated = false;
-          let ratings = [...media.Rating];
+          ratings = [...media.Rating];
           ratings = ratings.map((item) => {
             if (item.userId === userId) {
               isUpdated = true;
@@ -2328,12 +2329,12 @@ export const rateMedia = async (req: express.Request, res: express.Response) => 
           }
           await mediaRef.update({ Rating: ratings });
         } else {
-          let ratings = [{ userId: userId }];
+          ratings = [{ userId: userId }];
           ratings[0][ratingType] = ratingValue;
           await mediaRef.update({ Rating: ratings });
         }
 
-        res.status(200).send({ success: true });
+        res.status(200).send({ success: true, ratings: ratings });
       } else {
         res.status(200).send({ success: false, error: 'Media not found' });
       }
