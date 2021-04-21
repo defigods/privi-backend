@@ -27,7 +27,7 @@ import fs from 'fs';
 import { sendNewCommunityUsersEmail } from '../email_templates/emailTemplates';
 import { ChainId, Token, WETH, Fetcher, Route } from '@uniswap/sdk';
 import { user } from 'firebase-functions/lib/providers/auth';
-import tradinionalLending from "../blockchain/traditionalLending";
+import tradinionalLending from '../blockchain/traditionalLending';
 import { send } from 'process';
 
 const chatController = require('./chatController');
@@ -199,8 +199,24 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       await chatController.createDiscordRoom(discordChatCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);*/
 
       const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Discussions', creator, user.firstName, 'general', false, []);
-      await chatController.createDiscordRoom(discordChatJarrCreation.id, 'Information', creator, user.firstName, 'announcements', false, []);
+      await chatController.createDiscordRoom(
+        discordChatJarrCreation.id,
+        'Discussions',
+        creator,
+        user.firstName,
+        'general',
+        false,
+        []
+      );
+      await chatController.createDiscordRoom(
+        discordChatJarrCreation.id,
+        'Information',
+        creator,
+        user.firstName,
+        'announcements',
+        false,
+        []
+      );
 
       db.collection(collections.community)
         .doc(communityAddress)
@@ -268,9 +284,11 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
         communityAddress: communityAddress,
       };
 
-      if ((admins && admins.length > 0) ||
+      if (
+        (admins && admins.length > 0) ||
         (userRolesArray && userRolesArray.length > 0) ||
-        (invitedUsers && invitedUsers.length > 0)) {
+        (invitedUsers && invitedUsers.length > 0)
+      ) {
         let invitationEmails = await sendNewCommunityUsersEmail(usersData, communityData);
         if (!invitationEmails) {
           console.log('failed to send invitation e-mails.');
@@ -528,9 +546,17 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
-    if (body && body.userId && body.offer && body.offer.token && body.offer.amount
-      && body.offer.paymentDate && body.offer.userId && body.offer.wipId && body.Creator) {
-
+    if (
+      body &&
+      body.userId &&
+      body.offer &&
+      body.offer.token &&
+      body.offer.amount &&
+      body.offer.paymentDate &&
+      body.offer.userId &&
+      body.offer.wipId &&
+      body.Creator
+    ) {
       const creatorSnap = await db.collection(collections.user).doc(body.Creator).get();
       const creator: any = creatorSnap.data();
 
@@ -540,13 +566,18 @@ exports.addOffer = async (req: express.Request, res: express.Response) => {
         const userData: any = userSnap.data();
 
         community = await addOfferToWorkInProgress(body.userId, body.communityId, body.offer);
-        chatController.createChatWIPFromUsers(body.offer.wipId, body.Creator, offer.userId, creator.firstName, userData.firstName);
+        chatController.createChatWIPFromUsers(
+          body.offer.wipId,
+          body.Creator,
+          offer.userId,
+          creator.firstName,
+          userData.firstName
+        );
       }
       res.send({ success: true, data: community });
-
     } else {
-      console.log('Error in controllers/communityController -> addOffer()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/communityController -> addOffer()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> addOffer()', err);
@@ -559,14 +590,21 @@ exports.changeOffer = async (req: express.Request, res: express.Response) => {
     const body = req.body;
 
     if (body && body.userId && body.communityId && body.status) {
-
-      let community: any = await changeOfferToWorkInProgress(body.userId, body.communityId, body.status, body.token, body.amount, body.notificationId || false, null, 'community');
+      let community: any = await changeOfferToWorkInProgress(
+        body.userId,
+        body.communityId,
+        body.status,
+        body.token,
+        body.amount,
+        body.notificationId || false,
+        null,
+        'community'
+      );
 
       res.send({ success: true, data: community });
-
     } else {
-      console.log('Error in controllers/communityController -> addOffer()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/communityController -> addOffer()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> addOffer()', err);
@@ -578,16 +616,38 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
   try {
     const body = req.body;
 
-    if (body && body.sender && body.receiver && body.amountPeriod && body.token &&
-      body.startDate && body.endDate && body.Hash && body.Signature && body.userId && body.communityId) {
-
-      const blockchainRes = await mediaPod.createStreaming(body.sender, body.receiver, body.amountPeriod, body.token, body.startDate, body.endDate, body.Hash, body.Signature, apiKey);
+    if (
+      body &&
+      body.sender &&
+      body.receiver &&
+      body.amountPeriod &&
+      body.token &&
+      body.startDate &&
+      body.endDate &&
+      body.Hash &&
+      body.Signature &&
+      body.userId &&
+      body.communityId
+    ) {
+      const blockchainRes = await mediaPod.createStreaming(
+        body.sender,
+        body.receiver,
+        body.amountPeriod,
+        body.token,
+        body.startDate,
+        body.endDate,
+        body.Hash,
+        body.Signature,
+        apiKey
+      );
       if (blockchainRes && blockchainRes.success) {
         const userRef = db.collection(collections.user).doc(body.userId);
         const userGet = await userRef.get();
         const user: any = userGet.data();
 
-        let notificationIndex = user.notifications.findIndex(not => not.otherItemId === body.communityId && not.type === 98)
+        let notificationIndex = user.notifications.findIndex(
+          (not) => not.otherItemId === body.communityId && not.type === 98
+        );
         if (notificationIndex !== -1) {
           await notificationsController.removeNotification({
             userId: body.userId,
@@ -595,15 +655,16 @@ exports.signTransactionAcceptOffer = async (req: express.Request, res: express.R
           });
         }
         res.send({ success: true });
-
       } else {
-        console.log('Error in controllers/communityController -> signTransactionAcceptOffer(): success = false',
-          blockchainRes.message);
-        res.send({ success: false, error: "Blockchain error" });
+        console.log(
+          'Error in controllers/communityController -> signTransactionAcceptOffer(): success = false',
+          blockchainRes.message
+        );
+        res.send({ success: false, error: 'Blockchain error' });
       }
     } else {
-      console.log('Error in controllers/communityController -> signTransactionAcceptOffer()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/communityController -> signTransactionAcceptOffer()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> signTransactionAcceptOffer()', err);
@@ -628,16 +689,15 @@ exports.getWIP = async (req: express.Request, res: express.Response) => {
       }
 
       res.send({ success: true, data: workInProgress });
-
     } else {
-      console.log('Error in controllers/communityController -> getWIP()', "Missing data");
-      res.send({ success: false, error: "Missing data" });
+      console.log('Error in controllers/communityController -> getWIP()', 'Missing data');
+      res.send({ success: false, error: 'Missing data' });
     }
   } catch (err) {
     console.log('Error in controllers/communityController -> getWIP()', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 exports.setVestingConditions = async (req: express.Request, res: express.Response) => {
   try {
@@ -906,33 +966,29 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const communityData: any = communitySnap.data();
     const userData: any = userSnap.data();
 
-    const userLikes = userData.Likes ?? [];
-    const communityLikes = communityData.Likes ?? [];
+    let userLikes = userData.Likes ?? [];
+    let communityLikes = communityData.Likes ?? [];
 
     if (body.liked) {
       userLikes.push({
         date: Date.now(),
-        type: "community",
-        id: communityAddress
-      })
+        type: 'community',
+        id: communityAddress,
+      });
       communityLikes.push({
         date: Date.now(),
-        userId: userAddress
-      })
+        userId: userAddress,
+      });
     } else {
-      userLikes.forEach((item, index) => {
-        if (communityAddress === item.id) userLikes.splice(index, 1)
-      })
-      communityLikes.forEach((item, index2) => {
-        if (userAddress === item.userId) communityLikes.splice(index2, 1)
-      })
+      userLikes = userLikes.filter((like) => like.id !== communityAddress);
+      communityLikes = communityLikes.filter((like) => like.userId !== userAddress);
     }
 
     userSnap.ref.update({
-      Likes: userLikes
+      Likes: userLikes,
     });
     communitySnap.ref.update({
-      Likes: communityLikes
+      Likes: communityLikes,
     });
 
     res.send({ success: true });
@@ -1091,14 +1147,14 @@ exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
     const communityRef = db.collection(collections.community).doc(body.CommunityAddress);
 
     await communityRef.update({
-      TotalViews: totalViews + 1
+      TotalViews: totalViews + 1,
     });
 
     res.send({
       success: true,
       data: {
-        TotalViews: totalViews + 1
-      }
+        TotalViews: totalViews + 1,
+      },
     });
   } catch (err) {
     console.log('Error in controllers/communityController -> sumTotalViews()', err);
@@ -1205,7 +1261,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
       Name: body.Name,
       Description: body.Description,
       urlSlug: body.urlSlug,
-      TwitterId: body.TwitterId
+      TwitterId: body.TwitterId,
     });
 
     res.send({
@@ -1214,7 +1270,7 @@ exports.editCommunity = async (req: express.Request, res: express.Response) => {
         Name: body.Name,
         Description: body.Description,
         urlSlug: body.urlSlug,
-        TwitterId: body.TwitterId
+        TwitterId: body.TwitterId,
       },
     });
   } catch (err) {
@@ -1632,14 +1688,9 @@ const getExtraData = async (data, rateOfChange) => {
 
 // get all communities with pagination and filtering
 const pageSize = 6;
-const sortByOptions = ["Most Followed", "Recent"];
-const sortByTokenOptions = ["Descending", "Ascending"];
-const displayingCommunities = [
-  "All Communities",
-  "My Communities",
-  "Private Communities",
-  "Public Communities",
-];
+const sortByOptions = ['Most Followed', 'Recent'];
+const sortByTokenOptions = ['Descending', 'Ascending'];
+const displayingCommunities = ['All Communities', 'My Communities', 'Private Communities', 'Public Communities'];
 exports.getCommunities = async (req: express.Request, res: express.Response) => {
   try {
     // filter stuff
@@ -1657,9 +1708,12 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
       if (previousLastId != 'null') {
         const lastCommunitySnap = await db.collection(collections.community).doc(previousLastId).get();
         const lastCommunityData: any = lastCommunitySnap.data();
-        communitiesSnap = await db.collection(collections.community).orderBy('Date').startAfter(lastCommunityData.Date ?? 0).get();
-      }
-      else communitiesSnap = await db.collection(collections.community).orderBy('Date').get();
+        communitiesSnap = await db
+          .collection(collections.community)
+          .orderBy('Date')
+          .startAfter(lastCommunityData.Date ?? 0)
+          .get();
+      } else communitiesSnap = await db.collection(collections.community).orderBy('Date').get();
       communitiesSnap.forEach((doc) => {
         if (allCommunities.length < pageSize) {
           const data: any = doc.data();
@@ -1674,20 +1728,20 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
                   addData = true;
                   break;
                 case displayingCommunities[1]:
-                  addData = (data.Creator === userId || data.Member && data.Members.includes(userId))
+                  addData = data.Creator === userId || (data.Member && data.Members.includes(userId));
                   break;
                 case displayingCommunities[2]:
-                  addData = (data.Privacy === "Private")
+                  addData = data.Privacy === 'Private';
                   break;
                 case displayingCommunities[3]:
-                  addData = (data.Privacy === "Public")
+                  addData = data.Privacy === 'Public';
                   break;
               }
             }
             //2. filter by user input
             const searchValue: any = params.searchValue;
             if (searchValue) {
-              if (searchValue.includes("#") && data.Hashtags && data.Hashtags.length > 0) {
+              if (searchValue.includes('#') && data.Hashtags && data.Hashtags.length > 0) {
                 data.Hashtags.forEach((hashtag: string) => {
                   if (!hashtag.toUpperCase().includes(searchValue.slice(1).toUpperCase())) {
                     addData = false;
@@ -1711,16 +1765,10 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
       if (sortByOptionsSelection) {
         if (sortByOptionsSelection === sortByOptions[0]) {
           //by most followers
-          allCommunities.sort((a, b) =>
-            b.Followers && a.Followers
-              ? b.Followers.length - a.Followers.length
-              : 0
-          );
+          allCommunities.sort((a, b) => (b.Followers && a.Followers ? b.Followers.length - a.Followers.length : 0));
         } else if (sortByOptionsSelection === sortByOptions[1]) {
           //by most recent date
-          allCommunities.sort(
-            (a, b) => Date.parse(b["StartDate"]) - Date.parse(a["StartDate"])
-          );
+          allCommunities.sort((a, b) => Date.parse(b['StartDate']) - Date.parse(a['StartDate']));
         }
       }
 
@@ -1740,11 +1788,12 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
       const sortByEntryLevelSelection: any = params.sortByEntryLevelSelection;
       if (sortByEntryLevelSelection && !isNaN(Number(sortByEntryLevelSelection))) {
         //by entry level
-        allCommunities = allCommunities.filter(community => community.MinimumUserLevel === parseInt(sortByEntryLevelSelection));
+        allCommunities = allCommunities.filter(
+          (community) => community.MinimumUserLevel === parseInt(sortByEntryLevelSelection)
+        );
       }
-
     }
-    // if no pagination and filters, just return all 
+    // if no pagination and filters, just return all
     else {
       const communitiesSnap = await db.collection(collections.community).get();
       communitiesSnap.forEach((doc) => allCommunities.push(doc.data()));
@@ -1771,13 +1820,10 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
         lastId: nextLastId,
       },
     });
-
   } catch (e) {
     return 'Error in controllers/communitiesControllers -> getAllCommunities()' + e;
   }
 };
-
-
 
 // get a single community data
 exports.getCommunity = async (req: express.Request, res: express.Response) => {
@@ -2824,7 +2870,7 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
         token: offer.token,
         amount: offer.amount,
         userId: offer.userId,
-        status: 'pending'
+        status: 'pending',
       };
 
       const workInProgressRef = db.collection(collections.workInProgress).doc(communityId);
@@ -2842,7 +2888,7 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
       workInProgress.Offers = offers;
 
       await workInProgressRef.update({
-        Offers: offers
+        Offers: offers,
       });
 
       const userSnap = await db.collection(collections.user).doc(creatorId).get();
@@ -2860,17 +2906,26 @@ const addOfferToWorkInProgress = (creatorId, communityId, offer) => {
           token: data.token,
           amount: data.amount,
           onlyInformation: false,
-          otherItemId: communityId
-        }
+          otherItemId: communityId,
+        },
       });
-      resolve(workInProgress)
+      resolve(workInProgress);
     } catch (e) {
-      reject(e)
+      reject(e);
     }
   });
-}
+};
 
-const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userId, typeId, status, token, amount, notificationId, paymentDate, type) => {
+const changeOfferToWorkInProgress = (exports.changeOfferToWorkInProgress = (
+  userId,
+  typeId,
+  status,
+  token,
+  amount,
+  notificationId,
+  paymentDate,
+  type
+) => {
   return new Promise(async (resolve, reject) => {
     try {
       const workInProgressRef = db.collection(collections.workInProgress).doc(typeId);
@@ -2881,9 +2936,9 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
       let previousStatus: string = '';
       let userSavedId: string = '';
 
-      let offerIndex = offers.findIndex(off => off.userId === userId);
+      let offerIndex = offers.findIndex((off) => off.userId === userId);
       if (offerIndex !== -1) {
-        previousStatus = offers[offerIndex].status
+        previousStatus = offers[offerIndex].status;
         offers[offerIndex].status = status;
         offers[offerIndex].token = token;
         offers[offerIndex].amount = amount;
@@ -2895,13 +2950,13 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
           token: token,
           amount: amount,
           paymentDate: paymentDate,
-          userId: userId
-        })
+          userId: userId,
+        });
       }
 
       workInProgress.Offers = offers;
       await workInProgressRef.update({
-        Offers: offers
+        Offers: offers,
       });
 
       const creatorSnap = await db.collection(collections.user).doc(workInProgress.Creator).get();
@@ -2914,9 +2969,9 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
         // ACCEPTED OFFER NOTIFICATION
         let numTypeNotification: number;
         if (type === 'Community') {
-          numTypeNotification = 98
+          numTypeNotification = 98;
         } else {
-          numTypeNotification = 103
+          numTypeNotification = 103;
         }
         await notificationsController.addNotification({
           userId: workInProgress.Creator,
@@ -2930,16 +2985,16 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: typeId
-          }
+            otherItemId: typeId,
+          },
         });
       } else if (status === 'declined') {
         // DECLINED OFFER NOTIFICATION
         let numTypeNotification: number;
         if (type === 'Community') {
-          numTypeNotification = 96
+          numTypeNotification = 96;
         } else {
-          numTypeNotification = 101
+          numTypeNotification = 101;
         }
         await notificationsController.addNotification({
           userId: workInProgress.Creator,
@@ -2953,8 +3008,8 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             token: offers[offerIndex].token,
             amount: offers[offerIndex].amount,
             onlyInformation: false,
-            otherItemId: typeId
-          }
+            otherItemId: typeId,
+          },
         });
         if (notificationId) {
           await notificationsController.removeNotification({
@@ -2964,13 +3019,18 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
         }
 
         let room: string = '';
-        if (user && user.firstName && creator && creator.firstName
-          && user.firstName.toLowerCase() < creator.firstName.toLowerCase()) {
-          room = "" + typeId + "" + userSavedId + "" + workInProgress.Creator;
+        if (
+          user &&
+          user.firstName &&
+          creator &&
+          creator.firstName &&
+          user.firstName.toLowerCase() < creator.firstName.toLowerCase()
+        ) {
+          room = '' + typeId + '' + userSavedId + '' + workInProgress.Creator;
         } else {
-          room = "" + typeId + "" + workInProgress.Creator + "" + userSavedId;
+          room = '' + typeId + '' + workInProgress.Creator + '' + userSavedId;
         }
-        const chatQuery = await db.collection(collections.chat).where("room", "==", room).get();
+        const chatQuery = await db.collection(collections.chat).where('room', '==', room).get();
         if (!chatQuery.empty) {
           for (const doc of chatQuery.docs) {
             let data = doc.data();
@@ -2982,15 +3042,14 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             }
           }
         }
-
       } else if (status === 'negotiating') {
         if (token === null || amount === null) {
           // REFUSED OFFER NOTIFICATION
           let numTypeNotification: number;
           if (type === 'Community') {
-            numTypeNotification = 97
+            numTypeNotification = 97;
           } else {
-            numTypeNotification = 102
+            numTypeNotification = 102;
           }
           await notificationsController.addNotification({
             userId: workInProgress.Creator,
@@ -3004,13 +3063,19 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
               token: offers[offerIndex].token,
               amount: offers[offerIndex].amount,
               onlyInformation: false,
-              otherItemId: typeId
-            }
+              otherItemId: typeId,
+            },
           });
         } else {
           if (previousStatus === 'pending') {
             // FIRST OFFER -> STATUS CHANGE FROM PENDING TO NEGOTIATING
-            chatController.createChatWIPFromUsers(typeId, workInProgress.Creator, userSavedId, creator.firstName, user.firstName);
+            chatController.createChatWIPFromUsers(
+              typeId,
+              workInProgress.Creator,
+              userSavedId,
+              creator.firstName,
+              user.firstName
+            );
 
             if (notificationId) {
               await notificationsController.removeNotification({
@@ -3019,7 +3084,9 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
               });
             }
           } else {
-            let notificationIndex = creator.notifications.findIndex(not => not.otherItemId === typeId && not.type === 97)
+            let notificationIndex = creator.notifications.findIndex(
+              (not) => not.otherItemId === typeId && not.type === 97
+            );
             if (notificationIndex !== -1) {
               await notificationsController.removeNotification({
                 userId: workInProgress.Creator,
@@ -3029,9 +3096,9 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             // ANOTHER OFFER NOTIFICATION
             let numTypeNotification: number;
             if (type === 'Community') {
-              numTypeNotification = 95
+              numTypeNotification = 95;
             } else {
-              numTypeNotification = 100
+              numTypeNotification = 100;
             }
             await notificationsController.addNotification({
               userId: offers[offerIndex].userId,
@@ -3045,8 +3112,8 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
                 token: offers[offerIndex].token,
                 amount: offers[offerIndex].amount,
                 onlyInformation: false,
-                otherItemId: typeId
-              }
+                otherItemId: typeId,
+              },
             });
           }
         }
@@ -3054,9 +3121,9 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
         //First offer - WIP already created
         let numTypeNotification: number;
         if (type === 'Community') {
-          numTypeNotification = 94
+          numTypeNotification = 94;
         } else {
-          numTypeNotification = 99
+          numTypeNotification = 99;
         }
         await notificationsController.addNotification({
           userId: userSavedId,
@@ -3070,18 +3137,17 @@ const changeOfferToWorkInProgress = exports.changeOfferToWorkInProgress = (userI
             token: token,
             amount: amount,
             onlyInformation: false,
-            otherItemId: typeId
-          }
+            otherItemId: typeId,
+          },
         });
       }
 
-      resolve(workInProgress)
+      resolve(workInProgress);
     } catch (e) {
-      reject(e)
+      reject(e);
     }
   });
-}
-
+});
 
 //save a community in the work in progress collection (to be created in the future)
 exports.saveCommunity = async (req: express.Request, res: express.Response) => {
@@ -3153,7 +3219,7 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         TargetSpreadValidation: body.TargetSpreadValidation ?? false,
         TargetPriceValidation: body.TargetPriceValidation ?? false,
         TargetSupplyValidation: body.TargetSupplyValidation ?? false,
-        InitialSupplyValidation: body.InitialSupplyValidation ?? false
+        InitialSupplyValidation: body.InitialSupplyValidation ?? false,
       };
 
       let communityAddress = body.CommunityAddress;
@@ -3167,17 +3233,29 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
         const workInProgress: any = workInProgressGet.data();
 
         if (body.directlyUpdate) {
-          communityObj.Offers = body.Offers
+          communityObj.Offers = body.Offers;
           await workInProgressRef.update(communityObj);
         } else {
           await workInProgressRef.update(communityObj);
 
-          let diffOffers = body.Offers.filter(item1 =>
-            !workInProgress.Offers.some(item2 => (item2.userId === item1.userId
-              && item2.amount === item1.amount && item2.token === item1.token)));
+          let diffOffers = body.Offers.filter(
+            (item1) =>
+              !workInProgress.Offers.some(
+                (item2) => item2.userId === item1.userId && item2.amount === item1.amount && item2.token === item1.token
+              )
+          );
 
           for (let offer of diffOffers) {
-            await changeOfferToWorkInProgress(offer.userId, body.CommunityAddress, offer.status, offer.token, offer.amount, false, offer.paymentDate, 'community');
+            await changeOfferToWorkInProgress(
+              offer.userId,
+              body.CommunityAddress,
+              offer.status,
+              offer.token,
+              offer.amount,
+              false,
+              offer.paymentDate,
+              'community'
+            );
           }
         }
       } else {
@@ -3190,13 +3268,19 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             CommunityAddress: communityAddress,
             Creator: body.Creator,
             Offers: body.Offers ?? [],
-            WIPType: 'Community'
+            WIPType: 'Community',
           });
 
         for (let offer of body.Offers) {
           const userSnap = await db.collection(collections.user).doc(offer.userId).get();
           const userData: any = userSnap.data();
-          chatController.createChatWIPFromUsers(communityAddress, body.Creator, offer.userId, creator.firstName, userData.firstName)
+          chatController.createChatWIPFromUsers(
+            communityAddress,
+            body.Creator,
+            offer.userId,
+            creator.firstName,
+            userData.firstName
+          );
 
           await notificationsController.addNotification({
             userId: offer.userId,
@@ -3210,8 +3294,8 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
               token: offer.token,
               amount: offer.amount,
               onlyInformation: false,
-              otherItemId: communityAddress
-            }
+              otherItemId: communityAddress,
+            },
           });
         }
       }

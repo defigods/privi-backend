@@ -119,10 +119,10 @@ exports.getOtherMediaPods = async (req: express.Request, res: express.Response) 
 
 // get media pods according to pagination and filters
 const pageSize = 6;
-const podStateOptions = ["Formation", "Investment", "Released"];
-const investingOptions = ["Off", "On"];
-const sortByPriceOptions = ["Descending", "Ascending"];
-const podTypeOptions = ["All", "Media Pods", "Fractionalised Media"];
+const podStateOptions = ['Formation', 'Investment', 'Released'];
+const investingOptions = ['Off', 'On'];
+const sortByPriceOptions = ['Descending', 'Ascending'];
+const podTypeOptions = ['All', 'Media Pods', 'Fractionalised Media'];
 exports.getMediaPods = async (req: express.Request, res: express.Response) => {
   try {
     const pagination: number = +req.params.pagination;
@@ -136,7 +136,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
       return;
     }
 
-    let nextLastId = "null";
+    let nextLastId = 'null';
     let mediaPods: any[] = [];
     // pagination and filtering
     if (pagination != undefined) {
@@ -144,9 +144,12 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
       if (previousLastId != 'null') {
         const lastPodSnap = await db.collection(collections.mediaPods).doc(previousLastId).get();
         const lastPodData: any = lastPodSnap.data();
-        communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').startAfter(lastPodData.Date ?? 0).get();
-      }
-      else communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').get();
+        communitiesSnap = await db
+          .collection(collections.mediaPods)
+          .orderBy('Date')
+          .startAfter(lastPodData.Date ?? 0)
+          .get();
+      } else communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').get();
       communitiesSnap.forEach((doc) => {
         if (mediaPods.length < pageSize) {
           const data: any = doc.data();
@@ -157,13 +160,13 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
             if (displayingPodsSelection) {
               switch (displayingPodsSelection) {
                 case podStateOptions[0]:
-                  addData = addData && (data.Status && (data.Status == "FORMATION" || data.Status == "INITIATED"));
+                  addData = addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INITIATED');
                   break;
                 case podStateOptions[1]:
-                  addData = addData && (data.Status && data.Status == "INVESTING");
+                  addData = addData && data.Status && data.Status == 'INVESTING';
                   break;
                 case podStateOptions[2]:
-                  addData = addData && (data.Status && data.Status == "RELEASED");
+                  addData = addData && data.Status && data.Status == 'RELEASED';
                   break;
               }
             }
@@ -182,7 +185,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
             //3. filter by user input
             const searchValue: any = params.searchValue;
             if (searchValue) {
-              if (searchValue.includes("#") && data.Hashtags && data.Hashtags.length > 0) {
+              if (searchValue.includes('#') && data.Hashtags && data.Hashtags.length > 0) {
                 data.Hashtags.forEach((hashtag: string) => {
                   if (!hashtag.toUpperCase().includes(searchValue.slice(1).toUpperCase())) {
                     addData = false;
@@ -192,7 +195,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
                 if (!data.Name.toUpperCase().includes(searchValue.toUpperCase())) addData = false;
               }
             }
-            //4. addData 
+            //4. addData
             if (addData) mediaPods.push(data);
           } else {
             mediaPods.push(data);
@@ -213,7 +216,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
         }
       }
     }
-    // if no pagination and filters, just return all 
+    // if no pagination and filters, just return all
     else {
       const mediasSnap = await db.collection(collections.mediaPods).get();
       mediasSnap.forEach((doc) => mediaPods.push(doc.data()));
@@ -221,7 +224,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
     // -- for each pod add media type list to be displayed in FE --
     // convert medias to map
     const mediaPodsMap = {};
-    mediaPods.forEach((pod) => mediaPodsMap[pod.PodAddress] = { ...pod, MediasType: [] });
+    mediaPods.forEach((pod) => (mediaPodsMap[pod.PodAddress] = { ...pod, MediasType: [] }));
     const promises: any[] = [];
     // query medias in parallel
     for (let i = 0; i < mediaPods.length; i++) {
@@ -232,8 +235,9 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
     responses.forEach((mediasSnap) => {
       mediasSnap.forEach((media) => {
         const mediaData = media.data();
-        if (mediaData.PodAddress && mediaPodsMap[mediaData.PodAddress]) mediaPodsMap[mediaData.PodAddress].MediasType.push(mediaData.Type);
-      })
+        if (mediaData.PodAddress && mediaPodsMap[mediaData.PodAddress])
+          mediaPodsMap[mediaData.PodAddress].MediasType.push(mediaData.Type);
+      });
     });
     // add result to return array
     mediaPods.forEach((pod, index) => {
@@ -247,7 +251,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
       data: {
         mediaPods: mediaPods ?? [],
         hasMore: hasMore,
-        lastId: nextLastId
+        lastId: nextLastId,
       },
     });
   } catch (err) {
@@ -523,10 +527,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
           { merge: true }
         );
 
-
-      const wipQuery = await db.collection(collections.workInProgress)
-        .where('Name', '==', name)
-        .get();
+      const wipQuery = await db.collection(collections.workInProgress).where('Name', '==', name).get();
 
       if (!wipQuery.empty) {
         for (const doc of wipQuery.docs) {
@@ -610,7 +611,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
       const media: any = mediasGet.data();
 
       await mediasRef.update({
-        IsRegistered: true
+        IsRegistered: true,
       });
 
       if (body.IsUploaded) {
@@ -639,15 +640,15 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           RecordRoyalty: recordRoyalty,
           ExclusivePermissionsList: exclusivePermissionsList,
           Rewards: rewards,
-        }
+        };
 
-        if (media.Type === "BLOG_TYPE" || media === "BLOG_SNAP_TYPE") {
+        if (media.Type === 'BLOG_TYPE' || media === 'BLOG_SNAP_TYPE') {
           bodySave.EditorPages = media.editorPages || [];
           bodySave.DescriptionArray = media.DescriptionArray || '';
         }
 
-        if (media.Type === "LIVE_AUDIO_TYPE" || media.Type === "LIVE_VIDEO_TYPE") {
-          bodySave.RoomState = 'SCHEDULED'
+        if (media.Type === 'LIVE_AUDIO_TYPE' || media.Type === 'LIVE_VIDEO_TYPE') {
+          bodySave.RoomState = 'SCHEDULED';
           bodySave.CountStreamers = 0;
           bodySave.CountWatchers = 0;
           bodySave.ExpectedDuration = 0;
@@ -658,12 +659,12 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           bodySave.StreamingToken = '';
           bodySave.StreamingUrl = '';
           bodySave.TotalWatchers = 0;
-          bodySave.Video = media === "LIVE_VIDEO_TYPE";
+          bodySave.Video = media === 'LIVE_VIDEO_TYPE';
           bodySave.Watchers = [];
           bodySave.OnlineModerators = [];
           bodySave.Moderators = [];
           bodySave.OnlineStreamers = [];
-          bodySave.Streamers = []
+          bodySave.Streamers = [];
           bodySave.LimitedEdition = [];
           bodySave.PriceType = '';
           bodySave.Price = 0;
@@ -746,11 +747,11 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           RecordPrice: media.RecordPrice,
           RecordPricePerSecond: media.RecordPricePerSecond,
           RecordCopies: media.RecordCopies,
-          RecordRoyalty: media.RecordRoyalty
-        }
+          RecordRoyalty: media.RecordRoyalty,
+        };
 
-        if (media.Type === "LIVE_AUDIO_TYPE" || media === "LIVE_VIDEO_TYPE") {
-          bodySave.RoomState = 'SCHEDULED'
+        if (media.Type === 'LIVE_AUDIO_TYPE' || media === 'LIVE_VIDEO_TYPE') {
+          bodySave.RoomState = 'SCHEDULED';
           bodySave.CountStreamers = 0;
           bodySave.CountWatchers = 0;
           bodySave.ExpectedDuration = 0;
@@ -761,19 +762,19 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           bodySave.StreamingToken = '';
           bodySave.StreamingUrl = '';
           bodySave.TotalWatchers = 0;
-          bodySave.Video = media === "LIVE_VIDEO_TYPE";
+          bodySave.Video = media === 'LIVE_VIDEO_TYPE';
           bodySave.Watchers = [];
           bodySave.OnlineModerators = [];
           bodySave.Moderators = [];
           bodySave.OnlineStreamers = [];
-          bodySave.Streamers = []
+          bodySave.Streamers = [];
           bodySave.LimitedEdition = [];
           bodySave.PriceType = '';
           bodySave.Price = 0;
           bodySave.StartingTime = 0;
           bodySave.EndingTime = 0;
           bodySave.Rewards = '';
-        } else if (media.Type === "BLOG_TYPE" || media === "BLOG_SNAP_TYPE") {
+        } else if (media.Type === 'BLOG_TYPE' || media === 'BLOG_SNAP_TYPE') {
           bodySave.EditorPages = media.editorPages;
         }
 
@@ -1052,7 +1053,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const podSnap = await db.collection(mediaPods).doc(podAddress).get();
     const podData: any = podSnap.data();
 
-    const podLikes = podData.Likes ?? [];
+    let podLikes = podData.Likes ?? [];
 
     if (body.liked) {
       podLikes.push({
@@ -1060,9 +1061,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
         userId: userAddress,
       });
     } else {
-      podLikes.forEach((item, index2) => {
-        if (userAddress === item.userId) podLikes.splice(index2, 1);
-      });
+      podLikes = podLikes.filter((item) => item.userId !== userAddress);
     }
 
     podSnap.ref.update({

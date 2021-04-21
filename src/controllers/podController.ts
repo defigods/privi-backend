@@ -136,8 +136,8 @@ exports.like = async (req: express.Request, res: express.Response) => {
     const userData: any = userSnap.data();
     const podData: any = podSnap.data();
 
-    const userLikes = userData.Likes ?? [];
-    const podLikes = podData.Likes ?? [];
+    let userLikes = userData.Likes ?? [];
+    let podLikes = podData.Likes ?? [];
 
     if (body.liked) {
       userLikes.push({
@@ -150,12 +150,8 @@ exports.like = async (req: express.Request, res: express.Response) => {
         userId: userAddress,
       });
     } else {
-      userLikes.forEach((item, index) => {
-        if (podAddress === item.id) userLikes.splice(index, 1);
-      });
-      podLikes.forEach((item, index2) => {
-        if (userAddress === item.userId) podLikes.splice(index2, 1);
-      });
+      userLikes = userLikes.filter((item) => item.id !== podAddress);
+      podLikes = podLikes.filter((item) => item.userId !== userAddress);
     }
 
     userSnap.ref.update({
