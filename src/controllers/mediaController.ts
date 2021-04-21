@@ -1158,13 +1158,13 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
         userLikes = [...user.Likes];
       }
 
-      let likeIndex = mediaLikes.findIndex((user) => user === body.userId);
-      if (likeIndex === -1) {
+      let likeIndex = mediaLikes.find((user) => user === body.userId);
+      if (!likeIndex) {
         mediaLikes.push(body.userId);
       }
 
-      likeIndex = userLikes.findIndex((userLike) => userLike.type === 'media' && userLike.id === mediaId);
-      if (likeIndex === -1) {
+      likeIndex = userLikes.find((userLike) => userLike.type === 'media' && userLike.id === mediaId);
+      if (!likeIndex) {
         userLikes.push({
           id: mediaId,
           type: 'media',
@@ -1255,11 +1255,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
 
       let likes: any[] = [];
       if (media.Likes && media.Likes.length > 0) {
-        likes = [...media.Likes];
-        let likeIndex = likes.findIndex((user) => user === body.userId);
-        if (likeIndex !== -1) {
-          likes.splice(likeIndex, 1);
-        }
+        likes = media.Likes.filter((user) => user != body.userId);
 
         await mediaRef.update({
           Likes: likes,
@@ -1267,16 +1263,11 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
         });
       }
 
-      let userLikes: any[] = [];
       if (user.Likes && user.Likes.length > 0) {
-        userLikes = [...user.Likes];
-        let likeIndex = userLikes.findIndex((userLike) => userLike.type === 'media' && userLike.id === mediaId);
-        if (likeIndex !== -1) {
-          userLikes.splice(likeIndex, 1);
-        }
+        const updatedUserLikes = user.Likes.filter((userLike) => !(userLike.type === 'media' && userLike.id === mediaId));
 
         await userRef.update({
-          Likes: userLikes,
+          Likes: updatedUserLikes,
         });
       }
 
