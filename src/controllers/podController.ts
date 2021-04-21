@@ -1,4 +1,8 @@
 import express, { response } from 'express';
+
+import Web3 from 'web3';
+import { ETH_INFURA_KEY, ETH_PRIVI_ADDRESS, ETH_CONTRACTS_ABI_VERSION, ETH_PRIVI_KEY } from '../constants/configuration';
+
 import podFTProtocol from '../blockchain/podFTProtocol';
 import podNFTProtocol from '../blockchain/podNFTProtocol';
 //import { uploadToFirestoreBucket } from '../functions/firestore'
@@ -15,8 +19,8 @@ import {
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import cron from 'node-cron';
-import fs from 'fs';
-import path from 'path';
+const fs = require('fs');
+const path = require('path');
 import coinBalance from '../blockchain/coinBalance.js';
 import mediaPod from '../blockchain/mediaPod';
 
@@ -3313,3 +3317,150 @@ exports.managePriceHistory = cron.schedule('0 0 * * *', async () => {
     console.log('Error in controllers/podController -> managePriceHistory()', err);
   }
 });
+
+const getWeb3forChain = (chainId: any): Web3 => {
+  if(chainId === '0x3' || chainId === '3' || chainId === 3){
+      console.log('getWeb3forChain', chainId)
+      return new Web3(new Web3.providers.HttpProvider(`https://ropsten.infura.io/v3/${ETH_INFURA_KEY}`))
+  } else if (chainId === '0x4' || chainId === '4' || chainId === 4) {
+      console.log('getWeb3forChain', chainId)
+      return new Web3(new Web3.providers.HttpProvider(`https://rinkeby.infura.io/v3/${ETH_INFURA_KEY}`))
+  } else if (chainId === '0x97' || chainId === '97' || chainId === 97) {
+      console.log('getWeb3forChain', chainId)
+      return new Web3(new Web3.providers.HttpProvider(`https://data-seed-prebsc-1-s1.binance.org:8545`))
+  } else {
+      return new Web3(new Web3.providers.HttpProvider(`https://mainnet.infura.io/v3/${ETH_INFURA_KEY}`))
+  }        
+}
+
+exports.exportToEthereum = async (req: express.Request, res: express.Response) => {
+  const { podId, PodAddress, tokenId, seller, buyer } = req.body;
+  const chainId = 3;
+  const web3_l: Web3 = getWeb3forChain(3);
+  // get factory
+  let erc721RoyaltyFactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PodERC721RoyaltyFactory.json')));
+  const factoryContract = new web3_l.eth.Contract(erc721RoyaltyFactoryJsonContract.abi, erc721RoyaltyFactoryJsonContract.networks['3']["address"]);
+
+  // add privi to accoutn
+  await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
+  // get deployed address
+  const method = factoryContract.methods.mintPodToken(podId, tokenId, seller).encodedABI();
+
+  // Transaction parameters
+  const paramsTX = {
+    chainId: chainId,
+    fromAddress: ETH_PRIVI_ADDRESS,
+    fromAddressKey: ETH_PRIVI_KEY,
+    encodedABI: method,
+    toAddress: factoryContract.options.address,
+  };
+
+  // Execute transaction to withdraw in Ethereum
+  const { success, error, data } = await executeTX(paramsTX);
+
+  if (success) {
+    updateFirebase(data);
+
+    let erc721RoyaltyTokenJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC721RoyaltyToken.json')));
+    const tokenContract = new web3_l.eth.Contract(erc721RoyaltyTokenJsonContract.abi, PodAddress);
+    const approveMethod = tokenContract.methods.approve(buyer, tokenId).encodedABI();
+    const approveParamTX = {
+      chainId: chainId,
+      fromAddress: ETH_PRIVI_ADDRESS,
+      fromAddressKey: ETH_PRIVI_KEY,
+      encodedABI: approveMethod,
+      toAddress: tokenContract.options.address,
+    };
+    await executeTX(approveParamTX);
+    updateFirebase(data);
+
+    const sellMethod = tokenContract.methods.marketSell(web3_l.utils.toWei('10000000000000000', 'ether'), tokenId, seller, buyer).encodedABI();
+    const sellParamTX = {
+      chainId: chainId,
+      fromAddress: ETH_PRIVI_ADDRESS,
+      fromAddressKey: ETH_PRIVI_KEY,
+      encodedABI: sellMethod,
+      toAddress: tokenContract.options.address,
+    };
+    await executeTX(sellParamTX);
+    updateFirebase(data);
+  }
+};
+
+/**
+ * @notice Generic function to execute Ethereum transactions with signature
+ * @return @result: true if transaction was executed successfuly, or false otherwise
+ * @return @error: error description if transaction failed
+ * @return @res: transaction response  
+ * @param params.fromAddress        From account
+ * @param params.fromAddressKey     From private key   
+ * @param params.encodedABI         Contract data 
+ * @param params.contractAddress    Contract address
+ */
+ const executeTX = (params: any) => {
+  return new Promise<PromiseResponse>(async (resolve) => {
+      // get proper chain web3
+      const chainId = params.chainId;
+      const web3_l = getWeb3forChain((typeof chainId !== 'string') ? chainId.toString() : chainId);
+      // console.log('executeTX: web3 ', web3_l)
+      
+      // Prepare transaction
+      // remark: added 'pending' to avoid 'Known Transaction' error
+      const nonce = await web3_l.eth.getTransactionCount(params.fromAddress, 'pending');
+      const tx = {
+          gas: 1500000,
+          gasPrice: '30000000000',
+          from: params.fromAddress,
+          data: params.encodedABI,
+          chainId: chainId,
+          to: params.toAddress,
+          nonce: nonce,
+      };
+      console.log('executeTX: trying to sign and send:', tx)
+
+      // Sign transaction
+      let txHash = '0x'
+      web3_l.eth.accounts.signTransaction(tx, params.fromAddressKey)
+          .then((signed: any) => {
+              // Send transaction
+              web3_l.eth.sendSignedTransaction(signed.rawTransaction, 
+                  async (err, hash) => {
+                      if (err) {
+                        console.error("sendSignedTransaction error", err);
+                      } else {
+                          txHash = hash;
+                          console.error("sendSignedTransaction hash", 'hash', hash);
+                      }
+                    }
+                  )
+                  // .on('receipt', (recipt) => {
+                  //     if (recipt.status) {
+                  //         resolve({ success: true, error: '', data: recipt });
+                  //     } else {
+                  //         resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: recipt });
+                  //     }
+                  // })
+                  .on('confirmation', function(confirmationNumber, receipt) {
+                      if (receipt.status) {
+                          resolve({ success: true, error: '', data: receipt });
+                      } else {
+                          resolve({ success: false, error: 'Error in ethUtils.js (A) -> executeTX()', data: receipt });
+                      }
+                  })
+                  .on('error', (err) => {
+                      resolve({ success: false, error: err.toString(), data: txHash });
+                  });
+          })
+          .catch((err: any) => {
+              console.log('Error in ethUtils.js (B) -> executeTX(): ', err);
+              resolve({ success: false, error: err, data: txHash });
+          });
+  });
+};
+
+// Promise return type for ethereum transactions
+type PromiseResponse = {
+  success: boolean,
+  error: string,
+  data: any
+};
