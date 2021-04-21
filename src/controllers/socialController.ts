@@ -2,12 +2,7 @@ import express from 'express';
 import social from '../blockchain/social';
 import coinBalance from '../blockchain/coinBalance';
 //import { uploadToFirestoreBucket } from '../functions/firestore'
-import {
-  updateFirebase,
-  getMarketPrice,
-  getSellTokenAmount,
-  getBuyTokenAmount,
-} from '../functions/functions';
+import { updateFirebase, getMarketPrice, getSellTokenAmount, getBuyTokenAmount } from '../functions/functions';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
 import fs from 'fs';
@@ -91,7 +86,7 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
     console.log('Error in controllers/socialController -> createSocialToken(): ', err);
     res.send({ success: false });
   }
-}
+};
 
 exports.buySocialToken = async (req: express.Request, res: express.Response) => {
   try {
@@ -126,10 +121,7 @@ exports.buySocialToken = async (req: express.Request, res: express.Response) => 
 
       res.send({ success: true });
     } else {
-      console.log(
-        'Error in controllers/socialController -> buySocialToken(): success = false.',
-        blockchainRes.message
-      );
+      console.log('Error in controllers/socialController -> buySocialToken(): success = false.', blockchainRes.message);
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -229,7 +221,7 @@ exports.getSocialTokens = async (req: express.Request, res: express.Response) =>
 exports.getSocialTokenAmount = async (req: express.Request, res: express.Response) => {
   try {
     const poolAddress: any = req.query.poolAddress;
-    const amount: any = req.query.amount;  // funding token amount
+    const amount: any = req.query.amount; // funding token amount
     const socialSnap = await db.collection(collections.socialPools).doc(poolAddress).get();
     const data: any = socialSnap.data();
     const fundingTokens = getBuyTokenAmount(
@@ -247,7 +239,6 @@ exports.getSocialTokenAmount = async (req: express.Request, res: express.Respons
   }
 };
 
-
 exports.editSocialToken = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
@@ -255,13 +246,13 @@ exports.editSocialToken = async (req: express.Request, res: express.Response) =>
     const tokenRef = db.collection(collections.socialPools).doc(body.PoolAddress);
 
     await tokenRef.update({
-      IsPrivate: body.hidden
+      IsPrivate: body.hidden,
     });
 
     res.send({
       success: true,
       data: {
-        IsPrivate: body.hidden
+        IsPrivate: body.hidden,
       },
     });
   } catch (err) {
@@ -279,14 +270,14 @@ exports.sumTotalViews = async (req: express.Request, res: express.Response) => {
     const creditRef = db.collection(collections.socialPools).doc(body.PoolAddress);
 
     await creditRef.update({
-      TotalViews: totalViews + 1
+      TotalViews: totalViews + 1,
     });
 
     res.send({
       success: true,
       data: {
-        TotalViews: totalViews + 1
-      }
+        TotalViews: totalViews + 1,
+      },
     });
   } catch (err) {
     console.log('Error in controllers/priviCredit -> sumTotalViews()', err);
@@ -310,27 +301,23 @@ exports.like = async (req: express.Request, res: express.Response) => {
     if (body.liked) {
       userLikes.push({
         date: Date.now(),
-        type: "socialToken",
-        id: poolAddress
-      })
+        type: 'socialToken',
+        id: poolAddress,
+      });
       socialLikes.push({
         date: Date.now(),
-        userId: userAddress
-      })
+        userId: userAddress,
+      });
     } else {
-      userLikes.forEach((item, index) => {
-        if (poolAddress === item.id) userLikes.splice(index, 1)
-      })
-      socialLikes.forEach((item, index2) => {
-        if (userAddress === item.userId) socialLikes.splice(index2, 1)
-      })
+      userLikes = userLikes.filter((item) => item.id !== poolAddress);
+      socialLikes = socialLikes.filter((item) => item.userId !== userAddress);
     }
 
     userSnap.ref.update({
-      Likes: userLikes
+      Likes: userLikes,
     });
     socialSnap.ref.update({
-      Likes: socialLikes
+      Likes: socialLikes,
     });
 
     res.send({ success: true });
