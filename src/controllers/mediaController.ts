@@ -174,13 +174,15 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         const ethSnap = await ethMediaQuery.get();
         ethSnap.forEach((doc) => {
           const data = doc.data();
-          medias.push({
-            id: doc.id,
-            blockchain: 'ETH',
-            ...data,
-          });
-          // update availabeSize
-          availableSize--;
+          if (data.url) {
+            medias.push({
+              id: doc.id,
+              blockchain: 'ETH',
+              ...data,
+            });
+            // update availabeSize
+            availableSize--;
+          }
         });
       }
     }
