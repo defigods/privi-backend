@@ -238,7 +238,7 @@ export const getMedia = async (req: express.Request, res: express.Response) => {
           ...mediaSnap.data(),
           id: mediaId
         };
-        // add fraction data if exists 
+        // add fraction data if exists
         if (fractionaliseSnap.exists)
           retData = {
             ...retData,
@@ -1140,23 +1140,45 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
     let body = req.body;
 
     if (mediaId && body.userId) {
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
       const mediaRef = db.collection(collections.streaming).doc(mediaId);
       const mediaGet = await mediaRef.get();
       const media: any = mediaGet.data();
 
-      let likes: any[] = [];
+      let mediaLikes: any[] = [];
       if (media.Likes && media.Likes.length > 0) {
-        likes = [...media.Likes];
+        mediaLikes = [...media.Likes];
       }
 
-      let likeIndex = likes.findIndex((user) => user === body.userId);
-      if (likeIndex === -1) {
-        likes.push(body.userId);
+      let userLikes: any[] = [];
+      if (user.Likes && user.Likes.length > 0) {
+        userLikes = [...user.Likes];
+      }
+
+      let likeIndex = mediaLikes.find((user) => user === body.userId);
+      if (!likeIndex) {
+        mediaLikes.push(body.userId);
+      }
+
+      likeIndex = userLikes.find((userLike) => userLike.type === 'media' && userLike.id === mediaId);
+      if (!likeIndex) {
+        userLikes.push({
+          id: mediaId,
+          type: 'media',
+          date: Date.now()
+        });
       }
 
       await mediaRef.update({
-        Likes: likes,
-        NumLikes: likes.length,
+        Likes: mediaLikes,
+        NumLikes: mediaLikes.length,
+      });
+
+      await userRef.update({
+        Likes: userLikes,
       });
 
       const userSnap = await db.collection(collections.user).doc(body.userId).get();
@@ -1203,8 +1225,8 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
       res.send({
         success: true,
         data: {
-          Likes: likes,
-          NumLikes: likes.length,
+          Likes: mediaLikes,
+          NumLikes: mediaLikes.length,
         },
       });
     } else {
@@ -1227,17 +1249,25 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
       const mediaGet = await mediaRef.get();
       const media: any = mediaGet.data();
 
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
       let likes: any[] = [];
       if (media.Likes && media.Likes.length > 0) {
-        likes = [...media.Likes];
-        let likeIndex = likes.findIndex((user) => user === body.userId);
-        if (likeIndex !== -1) {
-          likes.splice(likeIndex, 1);
-        }
+        likes = media.Likes.filter((user) => user != body.userId);
 
         await mediaRef.update({
           Likes: likes,
           NumLikes: likes.length,
+        });
+      }
+
+      if (user.Likes && user.Likes.length > 0) {
+        const updatedUserLikes = user.Likes.filter((userLike) => !(userLike.type === 'media' && userLike.id === mediaId));
+
+        await userRef.update({
+          Likes: updatedUserLikes,
         });
       }
 
