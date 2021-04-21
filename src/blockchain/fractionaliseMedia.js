@@ -18,7 +18,7 @@ module.exports.fractionalise = async (tokenSymbol, ownerAddress, fraction, buyBa
     return blockchainRes.data;
 };
 
-module.exports.newBuyOrder = async (xamount, price, token, tokenSymbol, bAddress, hash, signature, caller) => {
+module.exports.newBuyOrder = async (amount, price, token, tokenSymbol, bAddress, hash, signature, caller) => {
     const blockchainRes = await axios.post(api.blockchainFractionaliseMediaAPI + "/newBuyOrder", {
         Offer: {
             Amount: amount,
