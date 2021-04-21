@@ -3,7 +3,7 @@ import social from '../blockchain/social';
 import mediaPod from '../blockchain/mediaPod';
 import { updateFirebase, getAddresUidMap, isUserValidForLiveStream } from '../functions/functions';
 import collections, { medias, streaming } from '../firebase/collections';
-import { db } from '../firebase/firebase';
+import { db, firebase } from '../firebase/firebase';
 //import { uploadToFirestoreBucket } from '../functions/firestore'
 import fs from 'fs';
 import path from 'path';
@@ -597,6 +597,22 @@ exports.editStreaming = async (req: express.Request, res: express.Response) => {
   }
 };
 
+exports.addComment = async (req: express.Request, res: express.Response) => {
+  // Get the document from Firestore
+  const { DocId, UserId, Comment } = req.body;
+
+  if (DocId && UserId) {
+    const docSnap = await db.collection(collections.streaming).doc(DocId).get();
+
+    await docSnap.ref.update({
+      Comments: firebase.firestore.FieldValue.arrayUnion(Comment)
+    });
+
+    res.send({ success: true, data: Comment })
+  } else {
+    res.send({ success: false, message: 'Info is missing' });
+  }
+};
 
 exports.getStreaming = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
