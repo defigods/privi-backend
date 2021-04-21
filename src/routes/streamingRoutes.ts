@@ -12,7 +12,6 @@ router.post('/exitMediaStreaming', authenticateJWT, streamingController.exitMedi
 
 router.post('/initiateStreaming', authenticateJWT, streamingController.initiateStreaming);
 router.post('/createStreaming', authenticateJWT, streamingController.createStreaming);
-router.post('/editStreaming', authenticateJWT, streamingController.editStreaming);
 router.post('/getStreaming', authenticateJWT, streamingController.getStreaming);
 router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleStreaming);
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);

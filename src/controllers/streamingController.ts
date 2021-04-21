@@ -583,25 +583,11 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   }
 };
 
-exports.editStreaming = async (req: express.Request, res: express.Response) => {
-  // Get the document from Firestore
-  const { DocId, UserId, UpdatedStreamingMedia } = req.body;
-
-  if (DocId && UserId) {
-    const docSnap = await db.collection(collections.streaming).doc(DocId).get();
-    await docSnap.ref.update(UpdatedStreamingMedia);
-
-    res.send({ success: true, data: UpdatedStreamingMedia })
-  } else {
-    res.send({ success: false, message: 'Info is missing' });
-  }
-};
-
 exports.addComment = async (req: express.Request, res: express.Response) => {
   // Get the document from Firestore
-  const { DocId, UserId, Comment } = req.body;
+  const { DocId, Comment } = req.body;
 
-  if (DocId && UserId) {
+  if (DocId) {
     const docSnap = await db.collection(collections.streaming).doc(DocId).get();
 
     await docSnap.ref.update({
