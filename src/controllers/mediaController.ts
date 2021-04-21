@@ -1288,6 +1288,119 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
   }
 };
 
+export const bookmarkMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    let mediaId = req.params.mediaId;
+    let body = req.body;
+
+    if (mediaId && body.userId) {
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      const media: any = mediaGet.data();
+
+      let mediaBookmarks: any[] = [];
+      if (media.Bookmarks && media.Bookmarks.length > 0) {
+        mediaBookmarks = [...media.Bookmarks];
+      }
+
+      let userBookmarks: any[] = [];
+      if (user.Bookmarks && user.Bookmarks.length > 0) {
+        userBookmarks = [...user.Bookmarks];
+      }
+
+      let bookmarkIndex = mediaBookmarks.find((user) => user === body.userId);
+      if (!bookmarkIndex) {
+        mediaBookmarks.push(body.userId);
+      }
+
+      bookmarkIndex = userBookmarks.find((userBookmark) => userBookmark.type === 'media' && userBookmark.id === mediaId);
+      if (!bookmarkIndex) {
+        userBookmarks.push({
+          id: mediaId,
+          type: 'media',
+          date: Date.now()
+        });
+      }
+
+      await mediaRef.update({
+        Bookmarks: mediaBookmarks,
+        BookmarksNum: mediaBookmarks.length,
+      });
+
+      await userRef.update({
+        Bookmarks: userBookmarks,
+      });
+
+      res.send({
+        success: true,
+        data: {
+          Bookmarks: mediaBookmarks,
+          BookmarksNum: mediaBookmarks.length,
+        },
+      });
+    } else {
+      console.log('Error in controllers/mediaController -> bookmarkMedia()', "There's no id...");
+      res.send({ success: false, error: "There's no id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> bookmarkMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const removeBookmarkMedia = async (req: express.Request, res: express.Response) => {
+  try {
+    let mediaId = req.params.mediaId;
+    let body = req.body;
+
+    if (mediaId && body.userId) {
+      const mediaRef = db.collection(collections.streaming).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      const media: any = mediaGet.data();
+
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      let bookmarks: any[] = [];
+      if (media.Bookmarks && media.Bookmarks.length > 0) {
+        bookmarks = media.Bookmarks.filter((bookmarkUser) => bookmarkUser != body.userId);
+
+        await mediaRef.update({
+          Bookmarks: bookmarks,
+          BookmarksNum: bookmarks.length,
+        });
+      }
+
+      if (user.Bookmarks && user.Bookmarks.length > 0) {
+        const updatedUserBookmarks = user.Bookmarks.filter((userBookmark) => !(userBookmark.type === 'media' && userBookmark.id === mediaId));
+
+        await userRef.update({
+          Bookmarks: updatedUserBookmarks,
+        });
+      }
+
+      res.send({
+        success: true,
+        data: {
+          Bookmarks: bookmarks,
+          BookmarksNum: bookmarks.length || 0,
+        },
+      });
+    } else {
+      console.log('Error in controllers/mediaController -> removeBookmarkMedia()', "There's no id...");
+      res.send({ success: false, error: "There's no id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> removeBookmarkMedia(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
 export const shareMedia = async (req: express.Request, res: express.Response) => {
   try {
     let mediaId = req.params.mediaId;

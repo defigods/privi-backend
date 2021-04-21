@@ -200,6 +200,8 @@ router.post('/getMedias', mediaController.getMedias); // NOTE: It's used on publ
 router.post('/fractionalizeMedia/:mediaId', authenticateJWT, mediaController.fractionalizeMedia); // duplicated?
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
+router.post('/bookmarkMedia/:mediaId', authenticateJWT, mediaController.bookmarkMedia);
+router.post('/removeBookmarkMedia/:mediaId', authenticateJWT, mediaController.removeBookmarkMedia);
 router.post('/rateMedia', authenticateJWT, mediaController.rateMedia);
 
 router.post('/shareMedia/:mediaId', authenticateJWT, mediaController.shareMedia);
