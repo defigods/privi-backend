@@ -3380,6 +3380,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
     };
     await executeTX(sellParamTX);
     updateFirebase(data);
+
   }
 };
 
