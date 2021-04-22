@@ -97,7 +97,6 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       for (let i = 0; i < docs.length && availableSize > 0; i++) {
         const doc = docs[i];
         const data = doc.data();
-        // 4. filtering by release date
         medias.push({
           id: doc.id,
           blockchain: 'PRIVI',
@@ -3036,7 +3035,7 @@ exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
     console.log(err);
   }
 });
-// daily store the fractionalised media ownership 
+// daily store the fractionalised media ownership
 exports.storeFractionalisedMediaOwnership = cron.schedule('0 0 * * *', async () => {
   try {
     console.log('********* Media storeFractionalisedMediaOwnership() cron job started *********');
