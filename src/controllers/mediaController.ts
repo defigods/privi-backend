@@ -73,7 +73,10 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // --- PRIVI Medias ---
     // if the last media was from eth then means the privi medias are already retrieved
     if (isPrevLastIdPrivi && blockChains.includes('PRIVI')) {
-      let priviMediaQuery = db.collection(collections.streaming).orderBy('MediaName', 'asc');
+      let priviMediaQuery = db.collection(collections.streaming)
+        .where('RoomState', '!=', 'COMPLETED')
+        .orderBy('RoomState', 'asc')
+        .orderBy('MediaName', 'asc');
       if (prevLastId != 'null') {
         priviMediaQuery = priviMediaQuery.where('MediaName', '>', prevLastId);
       }
@@ -91,22 +94,17 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       // 3. get data from query
       const mediaSnap: any = await priviMediaQuery.get();
       const docs = mediaSnap.docs ?? [];
-      const now = Math.floor(Date.now() / 1000); // filtering by release date
       for (let i = 0; i < docs.length && availableSize > 0; i++) {
         const doc = docs[i];
         const data = doc.data();
         // 4. filtering by release date
-        const releaseDate = data.ReleaseDate ?? 0;
-        console.log(doc.id, releaseDate, now, releaseDate && releaseDate < now)
-        if (releaseDate && releaseDate < now) {
-          medias.push({
-            id: doc.id,
-            blockchain: 'PRIVI',
-            ...data,
-          });
-          // update availabeSize
-          availableSize--;
-        }
+        medias.push({
+          id: doc.id,
+          blockchain: 'PRIVI',
+          ...data,
+        });
+        // update availabeSize
+        availableSize--;
       }
     }
     // -- ETH Medias --
