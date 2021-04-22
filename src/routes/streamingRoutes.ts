@@ -12,20 +12,14 @@ router.post('/exitMediaLiveStreaming', authenticateJWT, streamingController.exit
 router.post('/initiateMediaStreaming', authenticateJWT, streamingController.enterMediaStreaming);
 router.post('/exitMediaStreaming', authenticateJWT, streamingController.exitMediaStreaming);
 
+router.post('/joinStreaming', authenticateJWT, streamingController.joinStreaming);
 router.post('/initiateStreaming', authenticateJWT, streamingController.initiateStreaming);
 router.post('/createStreaming', authenticateJWT, streamingController.createStreaming);
 router.post('/getStreaming', authenticateJWT, streamingController.getStreaming);
-router.post('/scheduleStreaming', authenticateJWT, streamingController.scheduleStreaming);
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
 router.post('/addComment', authenticateJWT, streamingController.addComment)
 router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
 router.get('/getRecording', authenticateJWT, streamingController.getRecording);
-
-router.get('/generateProtectKey', authenticateJWT, streamingController.generateProtectKey);
-router.get('/validateProtectKey', authenticateJWT, streamingController.validateProtectKey);
-router.get('/validateMeetingToken', authenticateJWT, streamingController.validateMeetingToken);
-router.get('/generateMeetingToken', authenticateJWT, streamingController.generateMeetingToken);
-router.get('/getMeetingToken', authenticateJWT, streamingController.getMeetingToken);
 
 //  meeting tokens (control)
 
