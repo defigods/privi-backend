@@ -3354,9 +3354,6 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
 
   // Execute transaction to withdraw in Ethereum
   const { success, error, data } = await executeTX(paramsTX);
-  console.log('/////////////////////////////////////////////////////');
-  console.log('Create Pod response -------->', success, error, data);
-  console.log('/////////////////////////////////////////////////////');
 
   if (success) {
     updateFirebase(data);
@@ -3401,7 +3398,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
       // remark: added 'pending' to avoid 'Known Transaction' error
       const nonce = await web3_l.eth.getTransactionCount(params.fromAddress, 'pending');
       const tx = {
-          gas: 1500000,
+          gas: 3000000,
           gasPrice: '30000000000',
           from: params.fromAddress,
           data: params.encodeABI,
