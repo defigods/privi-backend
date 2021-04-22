@@ -1083,7 +1083,7 @@ export const getUserMediaInfo = async (req: express.Request, res: express.Respon
           data: userData,
         });
       } else {
-        console.log('Error in controllers/mediaController -> getUserMediaInfo()', 'User not found...');
+        console.log('Error in controllers/mediaController -> getUserMediaInfo()', 'No medias...');
         res.send({ success: false, error: 'User not found...' });
       }
     } else {

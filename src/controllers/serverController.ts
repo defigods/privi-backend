@@ -34,6 +34,7 @@ const tasksRoutes = require("../routes/tasksRoutes");
 const collabRoutes = require("../routes/collabRoutes");
 const mediaRoutes = require("../routes/mediaRoutes");
 const mediaPodRoutes = require("../routes/mediaPodRoutes");
+const mediaOnCommunityRoutes = require("../routes/mediaOnCommunityRoutes");
 
 const notificationsController = require("../controllers/notificationsController");
 
@@ -98,6 +99,7 @@ export const startServer = (env: Env) => {
   app.use("/collab", collabRoutes);
   app.use("/media", mediaRoutes);
   app.use("/mediaPod", mediaPodRoutes);
+  app.use("/mediaOnCommunity", mediaOnCommunityRoutes);
 
   // start all cron jobs
   // let name: string;
