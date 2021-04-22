@@ -970,10 +970,12 @@ module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.R
     const blockchainRes = await coinBalance.getBalancesOfAddress(userAddress, apiKey);
     if (blockchainRes && blockchainRes.success) {
       const output = blockchainRes.output;
-      for (let balance of output) {
-        retData.push({ token: balance.Token, value: balance.Amount });
+      if (output) {
+        for (let balance of output) {
+          retData.push({ token: balance.Token, value: balance.Amount });
+        }
+        res.send({ success: true, data: retData });
       }
-      res.send({ success: true, data: retData });
     } else {
       console.log('cant getTokenBalances_v2 for', userAddress);
       res.send({ success: false });
