@@ -532,10 +532,10 @@ async function getTokenListFromAmberData(address: string): Promise<any> {
           tokenType: element.isERC20
             ? 'CRYPTO'
             : element.isERC721
-            ? 'NFT'
-            : element.isERC721 && roll && roll.exist
-            ? 'SOCIAL'
-            : 'UNKNOWN',
+              ? 'NFT'
+              : element.isERC721 && roll && roll.exist
+                ? 'SOCIAL'
+                : 'UNKNOWN',
           balance: element.amount,
           images: imageUrlObj ? imageUrlObj : 'NO_IMAGE_FOUND',
           isOpenSea: element.isERC721 && openSea,
@@ -583,29 +583,29 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
     const newWalletData =
       filteredWalletData.length > 0
         ? walletData.map((item) => {
-            if (item.walletType === walletType) {
-              return {
-                walletType,
-                walletStatus,
-                tokenList: preparedTokenList,
-                name: walletName,
-                address,
-                lastUpdate: Date.now(),
-              };
-            }
-            return item;
-          })
-        : [
-            ...walletData,
-            {
+          if (item.walletType === walletType) {
+            return {
               walletType,
               walletStatus,
               tokenList: preparedTokenList,
-              address,
               name: walletName,
+              address,
               lastUpdate: Date.now(),
-            },
-          ];
+            };
+          }
+          return item;
+        })
+        : [
+          ...walletData,
+          {
+            walletType,
+            walletStatus,
+            tokenList: preparedTokenList,
+            address,
+            name: walletName,
+            lastUpdate: Date.now(),
+          },
+        ];
 
     db.collection(collections.user)
       .doc(userId)
@@ -696,7 +696,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
         ...walletData,
         newWallet
       ]
-      db.collection(collections.user) 
+      db.collection(collections.user)
         .doc(userId)
         .update({ ...userData, wallets: newWalletData });
       res.send({
@@ -987,6 +987,11 @@ module.exports.getTokenBalances_v2 = async (req: express.Request, res: express.R
 module.exports.getTransactions = async (req: express.Request, res: express.Response) => {
   try {
     const userAddress: any = req.query.userAddress;
+    const page: any = req.query.page ?? '';
+    if (!userAddress) {
+      console.log('user address not provided');
+      res.send({ success: false });
+    }
     const retData: any[] = [];
     const historySnap = await db
       .collection(collections.transactions)
@@ -995,7 +1000,16 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
       .orderBy('Date', 'desc')
       .get();
     historySnap.forEach((doc) => {
-      retData.push(doc.data());
+      const data: any = doc.data();
+      const type = data.Type ? data.Type.toLowerCase() : '';
+      if (!page) retData.push(data);  // general case => return all
+      else {  // only return the data needed for the specific page
+        switch (page) {
+          case "myEarning":
+            if (type.includes('media_nft') || type.includes('media_view') || type.includes('fractionalise')) retData.push(data);
+            break;
+        }
+      }
     });
     res.send({ success: true, data: retData });
   } catch (err) {
@@ -1003,6 +1017,7 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
     res.send({ success: false });
   }
 };
+
 
 /**
  * Function used to get the user's ballance of a specific token
