@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 import coinBalance from '../blockchain/coinBalance.js';
 import mediaPod from '../blockchain/mediaPod';
+const { keccak } = require("ethereumjs-util")
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
@@ -3330,55 +3331,50 @@ const getWeb3forChain = (chainId: any): Web3 => {
 }
 
 exports.exportToEthereum = async (req: express.Request, res: express.Response) => {
-  const { podId, PodAddress, tokenId, seller, buyer } = req.body;
+  const { podName, podSymbol, mediaSymbol, creator, royalty, seller } = req.body;
   const chainId = 3;
   const web3_l: Web3 = getWeb3forChain(3);
   // get factory
-  let erc721RoyaltyFactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PodERC721RoyaltyFactory.json')));
+  let erc721RoyaltyFactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC721RoyaltyFactory.json')));
   const factoryContract = new web3_l.eth.Contract(erc721RoyaltyFactoryJsonContract.abi, erc721RoyaltyFactoryJsonContract.networks['3']["address"]);
 
   // add privi to accoutn
   await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
-  // get deployed address
-  const method = factoryContract.methods.mintPodToken(podId, tokenId, seller).encodedABI();
+
+  const method = factoryContract.methods.createPod('0', podName, podSymbol, 'ipfs://test', royalty, creator).encodeABI();
 
   // Transaction parameters
   const paramsTX = {
     chainId: chainId,
     fromAddress: ETH_PRIVI_ADDRESS,
     fromAddressKey: ETH_PRIVI_KEY,
-    encodedABI: method,
+    encodeABI: method,
     toAddress: factoryContract.options.address,
   };
 
   // Execute transaction to withdraw in Ethereum
   const { success, error, data } = await executeTX(paramsTX);
+  console.log('/////////////////////////////////////////////////////');
+  console.log('Create Pod response -------->', success, error, data);
+  console.log('/////////////////////////////////////////////////////');
 
   if (success) {
     updateFirebase(data);
 
-    let erc721RoyaltyTokenJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC721RoyaltyToken.json')));
-    const tokenContract = new web3_l.eth.Contract(erc721RoyaltyTokenJsonContract.abi, PodAddress);
-    const approveMethod = tokenContract.methods.approve(buyer, tokenId).encodedABI();
-    const approveParamTX = {
-      chainId: chainId,
-      fromAddress: ETH_PRIVI_ADDRESS,
-      fromAddressKey: ETH_PRIVI_KEY,
-      encodedABI: approveMethod,
-      toAddress: tokenContract.options.address,
-    };
-    await executeTX(approveParamTX);
-    updateFirebase(data);
+    // get deployed address
+    const mintMethod = factoryContract.methods.mintPodToken('0', keccak(mediaSymbol), seller).encodeABI();
 
-    const sellMethod = tokenContract.methods.marketSell(web3_l.utils.toWei('10000000000000000', 'ether'), tokenId, seller, buyer).encodedABI();
-    const sellParamTX = {
+    // Transaction parameters
+    const mintParamsTX = {
       chainId: chainId,
       fromAddress: ETH_PRIVI_ADDRESS,
       fromAddressKey: ETH_PRIVI_KEY,
-      encodedABI: sellMethod,
-      toAddress: tokenContract.options.address,
+      encodeABI: mintMethod,
+      toAddress: factoryContract.options.address,
     };
-    await executeTX(sellParamTX);
+
+    // Execute transaction to withdraw in Ethereum
+    await executeTX(mintParamsTX);
     updateFirebase(data);
 
   }
@@ -3391,7 +3387,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
  * @return @res: transaction response  
  * @param params.fromAddress        From account
  * @param params.fromAddressKey     From private key   
- * @param params.encodedABI         Contract data 
+ * @param params.encodeABI         Contract data 
  * @param params.contractAddress    Contract address
  */
  const executeTX = (params: any) => {
@@ -3408,7 +3404,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
           gas: 1500000,
           gasPrice: '30000000000',
           from: params.fromAddress,
-          data: params.encodedABI,
+          data: params.encodeABI,
           chainId: chainId,
           to: params.toAddress,
           nonce: nonce,

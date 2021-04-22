@@ -34,15 +34,15 @@
     "absolutePath": "/Volumes/Workspace/PRIVI/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
     "exportedSymbols": {
       "FakeInterface": [
-        5901
+        7848
       ]
     },
-    "id": 5902,
+    "id": 7849,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 5892,
+        "id": 7839,
         "literals": [
           "solidity",
           "^",
@@ -50,7 +50,7 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "33:23:36"
+        "src": "33:23:42"
       },
       {
         "abstract": false,
@@ -58,39 +58,39 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "documentation": {
-          "id": 5893,
+          "id": 7840,
           "nodeType": "StructuredDocumentation",
-          "src": "58:70:36",
+          "src": "58:70:42",
           "text": " @dev Interface of the ERC20 standard as defined in the EIP."
         },
         "fullyImplemented": false,
-        "id": 5901,
+        "id": 7848,
         "linearizedBaseContracts": [
-          5901
+          7848
         ],
         "name": "FakeInterface",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "functionSelector": "d0dbc833",
-            "id": 5900,
+            "id": 7847,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintForUser",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5898,
+              "id": 7845,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5895,
+                  "id": 7842,
                   "mutability": "mutable",
                   "name": "user",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5900,
-                  "src": "178:12:36",
+                  "scope": 7847,
+                  "src": "178:12:42",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -98,10 +98,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5894,
+                    "id": 7841,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "178:7:36",
+                    "src": "178:7:42",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -112,12 +112,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5897,
+                  "id": 7844,
                   "mutability": "mutable",
                   "name": "amount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5900,
-                  "src": "192:14:36",
+                  "scope": 7847,
+                  "src": "192:14:42",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -125,10 +125,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5896,
+                    "id": 7843,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "192:7:36",
+                    "src": "192:7:42",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -137,40 +137,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "177:30:36"
+              "src": "177:30:42"
             },
             "returnParameters": {
-              "id": 5899,
+              "id": 7846,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "216:0:36"
+              "src": "216:0:42"
             },
-            "scope": 5901,
-            "src": "157:60:36",
+            "scope": 7848,
+            "src": "157:60:42",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 5902,
-        "src": "129:90:36"
+        "scope": 7849,
+        "src": "129:90:42"
       }
     ],
-    "src": "33:187:36"
+    "src": "33:187:42"
   },
   "legacyAST": {
     "absolutePath": "/Volumes/Workspace/PRIVI/PRIVIethereum/contracts/token/interfaces/FakeInterface.sol",
     "exportedSymbols": {
       "FakeInterface": [
-        5901
+        7848
       ]
     },
-    "id": 5902,
+    "id": 7849,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 5892,
+        "id": 7839,
         "literals": [
           "solidity",
           "^",
@@ -178,7 +178,7 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "33:23:36"
+        "src": "33:23:42"
       },
       {
         "abstract": false,
@@ -186,39 +186,39 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "documentation": {
-          "id": 5893,
+          "id": 7840,
           "nodeType": "StructuredDocumentation",
-          "src": "58:70:36",
+          "src": "58:70:42",
           "text": " @dev Interface of the ERC20 standard as defined in the EIP."
         },
         "fullyImplemented": false,
-        "id": 5901,
+        "id": 7848,
         "linearizedBaseContracts": [
-          5901
+          7848
         ],
         "name": "FakeInterface",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "functionSelector": "d0dbc833",
-            "id": 5900,
+            "id": 7847,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintForUser",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5898,
+              "id": 7845,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5895,
+                  "id": 7842,
                   "mutability": "mutable",
                   "name": "user",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5900,
-                  "src": "178:12:36",
+                  "scope": 7847,
+                  "src": "178:12:42",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -226,10 +226,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5894,
+                    "id": 7841,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "178:7:36",
+                    "src": "178:7:42",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -240,12 +240,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5897,
+                  "id": 7844,
                   "mutability": "mutable",
                   "name": "amount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5900,
-                  "src": "192:14:36",
+                  "scope": 7847,
+                  "src": "192:14:42",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -253,10 +253,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5896,
+                    "id": 7843,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "192:7:36",
+                    "src": "192:7:42",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -265,26 +265,26 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "177:30:36"
+              "src": "177:30:42"
             },
             "returnParameters": {
-              "id": 5899,
+              "id": 7846,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "216:0:36"
+              "src": "216:0:42"
             },
-            "scope": 5901,
-            "src": "157:60:36",
+            "scope": 7848,
+            "src": "157:60:42",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 5902,
-        "src": "129:90:36"
+        "scope": 7849,
+        "src": "129:90:42"
       }
     ],
-    "src": "33:187:36"
+    "src": "33:187:42"
   },
   "compiler": {
     "name": "solc",
@@ -292,7 +292,7 @@
   },
   "networks": {},
   "schemaVersion": "3.3.4",
-  "updatedAt": "2021-04-17T17:20:37.742Z",
+  "updatedAt": "2021-04-21T21:39:47.006Z",
   "devdoc": {
     "details": "Interface of the ERC20 standard as defined in the EIP.",
     "kind": "dev",
