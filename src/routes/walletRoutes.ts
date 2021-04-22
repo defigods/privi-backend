@@ -34,6 +34,7 @@ router.post('/giveTip', authenticateJWT, walletController.giveTip);
 router.post('/removeUserRegisteredEthAccounts', authenticateJWT, walletController.removeUserRegisteredEthAccounts);
 router.post('/toggleUserRegisteredEthAccounts', authenticateJWT, walletController.toggleUserRegisteredEthAccounts);
 router.post('/registerPriviWallet', authenticateJWT, walletController.registerPriviWallet);
+router.post('/registerWaxWallet', authenticateJWT, walletController.registerWaxWallet);
 
 // GETS
 // crypto rates
