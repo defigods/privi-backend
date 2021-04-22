@@ -1087,13 +1087,11 @@ export const getUserMediaInfo = async (req: express.Request, res: express.Respon
         });
       } else {
         console.log('Error in controllers/mediaController -> getUserMediaInfo()', 'User not found...');
-        res.sendStatus(400);
-        res.send({ success: false });
+        res.send({ success: false, error: 'User not found...' });
       }
     } else {
       console.log('Error in controllers/mediaController -> getUserMediaInfo()', "There's no id...");
-      res.sendStatus(400);
-      res.send({ success: false });
+      res.send({ success: false, error: "There's no id..." });
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> getUserMediaInfo(): ', err);
@@ -2219,7 +2217,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
 
     const creatorAddress = data.CreatorAddress;
     const mediaName = data.MediaName;
-    const mediaSymbol = data.MediaSymbol;
+    const mediaSymbol = data.MediaSymbol.replace(/\s/g, '');
 
     const viewConditions = data.ViewConditions;
     const viewingType = viewConditions.ViewingType;
@@ -2844,6 +2842,51 @@ export const changeQuickMediaAudio = async (req: express.Request, res: express.R
     }
   } catch (err) {
     console.log('Error in controllers/mediaController -> changeMediaPodPhoto(): ', err);
+    res.send({ success: false, error: err });
+  }
+};
+
+export const notificationsExportToEthereum = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+    if (body.podId && body.mediaId) {
+      const mediaRef = db.collection(collections.mediaPods).doc(body.podId).collection(collections.medias)
+        .doc(body.mediaId);
+      const mediaGet = await mediaRef.get();
+
+      if (mediaGet.exists) {
+        let data : any = mediaGet.data();
+
+        if(data.SavedCollabs.length > 0) {
+          for(let collab of data.SavedCollabs) {
+            await notificationsController.addNotification({
+              userId: collab.id,
+              notification: {
+                type: 112,
+                typeItemId: "user",
+                itemId: body.userId,
+                follower: collab.firstName,
+                pod: data.MediaName,
+                comment: "",
+                token: "",
+                amount: 0,
+                onlyInformation: false,
+                otherItemId: "",
+              },
+            });
+          }
+        }
+
+        await mediaRef.update({notificationsCollabsExportEthereum: true});
+      }
+
+      res.send({ success: true });
+    } else {
+      console.log('Error in controllers/mediaController -> notificationsExportToEthereum()', "Missing information provided");
+      res.send({ success: false, error: "Missing information provided" });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> notificationsExportToEthereum(): ', err);
     res.send({ success: false, error: err });
   }
 };

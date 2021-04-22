@@ -224,6 +224,8 @@ router.post('/buyMediaNFT', authenticateJWT, mediaController.buyMediaNFT);
 router.post('/openNFT', authenticateJWT, mediaController.openNFT);
 router.post('/closeNFT', authenticateJWT, mediaController.closeNFT);
 
+router.post('/notifications/exportToEthereum', authenticateJWT, mediaController.notificationsExportToEthereum);
+
 // QUICK MEDIA UPLOAD MEDIA
 router.post('/quick/uploadDigitalArt/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeQuickMediaDigitalArt);
 router.post('/quick/uploadAudio/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeQuickMediaAudio);
