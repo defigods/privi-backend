@@ -20,6 +20,7 @@
     "@types/node": "^14.11.8",
     "@types/socket.io": "^2.1.12",
     "@uniswap/sdk": "^3.0.3",
+    "@waxio/waxjs": "0.0.15",
     "axios": "^0.21.1",
     "bcrypt": "^5.0.0",
     "bip39": "^3.0.3",

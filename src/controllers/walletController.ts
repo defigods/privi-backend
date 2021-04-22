@@ -718,10 +718,8 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
 
 module.exports.registerWaxWallet = async (req: express.Request, res: express.Response) => {
   try {
-    console.log({ body: req.body });
     const { userId, address, walletName } = req.body;
 
-    console.log('got call from', userId);
     const caller = apiKey;
     const lastUpdate = Date.now();
 
