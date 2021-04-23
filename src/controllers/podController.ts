@@ -3341,7 +3341,8 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
   // add privi to accoutn
   await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
 
-  const method = factoryContract.methods.createMultiCreatorPod('0', podName, podSymbol, 'ipfs://test', 2, royalties, creators).encodeABI();
+  const totalPods = await factoryContract.methods.getTotalTokenCreated().call();
+  const method = factoryContract.methods.createMultiCreatorPod('' + (totalPods + 1), podName, podSymbol, 'ipfs://test', 2, royalties, creators).encodeABI();
 
   // Transaction parameters
   const paramsTX = {
@@ -3359,7 +3360,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
     updateFirebase(data);
 
     // get deployed address
-    const mintMethod = factoryContract.methods.mintPodToken('0', keccak(mediaSymbol), seller).encodeABI();
+    const mintMethod = factoryContract.methods.mintPodToken('' + (totalPods + 1), keccak(mediaSymbol), seller).encodeABI();
 
     // Transaction parameters
     const mintParamsTX = {
@@ -3371,9 +3372,11 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
     };
 
     // Execute transaction to withdraw in Ethereum
-    await executeTX(mintParamsTX);
-    updateFirebase(data);
+    const { success, error, data: data1 } = await executeTX(mintParamsTX);
+    if (success)
+      updateFirebase(data);
 
+    res.send({success, error, data})
   }
 };
 
