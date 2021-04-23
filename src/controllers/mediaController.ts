@@ -73,10 +73,8 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // --- PRIVI Medias ---
     // if the last media was from eth then means the privi medias are already retrieved
     if (isPrevLastIdPrivi && blockChains.includes('PRIVI')) {
-      let priviMediaQuery = db.collection(collections.streaming)
-        .where('RoomState', '!=', 'COMPLETED')
-        .orderBy('RoomState', 'asc')
-        .orderBy('MediaName', 'asc');
+      let priviMediaQuery = db.collection(collections.streaming).orderBy('MediaName', 'asc');
+
       if (prevLastId != 'null') {
         priviMediaQuery = priviMediaQuery.where('MediaName', '>', prevLastId);
       }
