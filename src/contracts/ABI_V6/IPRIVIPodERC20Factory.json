@@ -142,15 +142,15 @@
     "absolutePath": "/Volumes/Workspace/PRIVI/PRIVIethereum/contracts/interfaces/IPRIVIPodERC20Factory.sol",
     "exportedSymbols": {
       "IPRIVIPodERC20Factory": [
-        5861
+        7909
       ]
     },
-    "id": 5862,
+    "id": 7910,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 5810,
+        "id": 7858,
         "literals": [
           "solidity",
           "^",
@@ -158,7 +158,7 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "33:23:21"
+        "src": "33:23:26"
       },
       {
         "abstract": false,
@@ -166,39 +166,39 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "fullyImplemented": false,
-        "id": 5861,
+        "id": 7909,
         "linearizedBaseContracts": [
-          5861
+          7909
         ],
         "name": "IPRIVIPodERC20Factory",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "functionSelector": "0fc09e2e",
-            "id": 5815,
+            "id": 7863,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "getTotalTokenCreated",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5811,
+              "id": 7859,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "123:2:21"
+              "src": "123:2:26"
             },
             "returnParameters": {
-              "id": 5814,
+              "id": 7862,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5813,
+                  "id": 7861,
                   "mutability": "mutable",
                   "name": "totalPods",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5815,
-                  "src": "149:17:21",
+                  "scope": 7863,
+                  "src": "149:17:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -206,10 +206,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5812,
+                    "id": 7860,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "149:7:21",
+                    "src": "149:7:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -218,34 +218,34 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "148:19:21"
+              "src": "148:19:26"
             },
-            "scope": 5861,
-            "src": "94:74:21",
+            "scope": 7909,
+            "src": "94:74:26",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
             "functionSelector": "22b2edeb",
-            "id": 5822,
+            "id": 7870,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "getPodAddressById",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5818,
+              "id": 7866,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5817,
+                  "id": 7865,
                   "mutability": "mutable",
                   "name": "podId",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5822,
-                  "src": "199:21:21",
+                  "scope": 7870,
+                  "src": "199:21:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -253,10 +253,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5816,
+                    "id": 7864,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "199:6:21",
+                    "src": "199:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -265,20 +265,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "198:23:21"
+              "src": "198:23:26"
             },
             "returnParameters": {
-              "id": 5821,
+              "id": 7869,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5820,
+                  "id": 7868,
                   "mutability": "mutable",
                   "name": "podAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5822,
-                  "src": "257:18:21",
+                  "scope": 7870,
+                  "src": "257:18:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -286,10 +286,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5819,
+                    "id": 7867,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "257:7:21",
+                    "src": "257:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -299,34 +299,34 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "256:20:21"
+              "src": "256:20:26"
             },
-            "scope": 5861,
-            "src": "172:105:21",
+            "scope": 7909,
+            "src": "172:105:26",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
             "functionSelector": "3325a4e4",
-            "id": 5829,
+            "id": 7877,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "getPodAddressBySymbol",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5825,
+              "id": 7873,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5824,
+                  "id": 7872,
                   "mutability": "mutable",
                   "name": "tokenSymbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5829,
-                  "src": "312:27:21",
+                  "scope": 7877,
+                  "src": "312:27:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -334,10 +334,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5823,
+                    "id": 7871,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "312:6:21",
+                    "src": "312:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -346,20 +346,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "311:29:21"
+              "src": "311:29:26"
             },
             "returnParameters": {
-              "id": 5828,
+              "id": 7876,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5827,
+                  "id": 7875,
                   "mutability": "mutable",
                   "name": "podAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5829,
-                  "src": "376:18:21",
+                  "scope": 7877,
+                  "src": "376:18:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -367,10 +367,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5826,
+                    "id": 7874,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "376:7:21",
+                    "src": "376:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -380,40 +380,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "375:20:21"
+              "src": "375:20:26"
             },
-            "scope": 5861,
-            "src": "281:115:21",
+            "scope": 7909,
+            "src": "281:115:26",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
             "documentation": {
-              "id": 5830,
+              "id": 7878,
               "nodeType": "StructuredDocumentation",
-              "src": "400:124:21",
+              "src": "400:124:26",
               "text": "@dev only MODERATOR_ROLE role can create pods\n Requirements:\n - pod should not exist before."
             },
             "functionSelector": "416aad1e",
-            "id": 5841,
+            "id": 7889,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "createPod",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5837,
+              "id": 7885,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5832,
+                  "id": 7880,
                   "mutability": "mutable",
                   "name": "podId",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "551:21:21",
+                  "scope": 7889,
+                  "src": "551:21:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -421,10 +421,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5831,
+                    "id": 7879,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "551:6:21",
+                    "src": "551:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -434,12 +434,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5834,
+                  "id": 7882,
                   "mutability": "mutable",
                   "name": "podTokenName",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "578:28:21",
+                  "scope": 7889,
+                  "src": "578:28:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -447,10 +447,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5833,
+                    "id": 7881,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "578:6:21",
+                    "src": "578:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -460,12 +460,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5836,
+                  "id": 7884,
                   "mutability": "mutable",
                   "name": "podTokenSymbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "612:30:21",
+                  "scope": 7889,
+                  "src": "612:30:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -473,10 +473,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5835,
+                    "id": 7883,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "612:6:21",
+                    "src": "612:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -485,20 +485,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "545:101:21"
+              "src": "545:101:26"
             },
             "returnParameters": {
-              "id": 5840,
+              "id": 7888,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5839,
+                  "id": 7887,
                   "mutability": "mutable",
                   "name": "podAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "665:18:21",
+                  "scope": 7889,
+                  "src": "665:18:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -506,10 +506,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5838,
+                    "id": 7886,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "665:7:21",
+                    "src": "665:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -519,40 +519,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "664:20:21"
+              "src": "664:20:26"
             },
-            "scope": 5861,
-            "src": "527:158:21",
+            "scope": 7909,
+            "src": "527:158:26",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           },
           {
             "documentation": {
-              "id": 5842,
+              "id": 7890,
               "nodeType": "StructuredDocumentation",
-              "src": "689:181:21",
+              "src": "689:181:26",
               "text": " @dev Moderator will mint the amount of pod token for the investor's account\n Requirements:\n - the caller must MODERATOR_ROLE to perform this action."
             },
             "functionSelector": "532d9c44",
-            "id": 5851,
+            "id": 7899,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintPodTokenById",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5849,
+              "id": 7897,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5844,
+                  "id": 7892,
                   "mutability": "mutable",
                   "name": "podId",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5851,
-                  "src": "904:21:21",
+                  "scope": 7899,
+                  "src": "904:21:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -560,10 +560,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5843,
+                    "id": 7891,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "904:6:21",
+                    "src": "904:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -573,12 +573,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5846,
+                  "id": 7894,
                   "mutability": "mutable",
                   "name": "account",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5851,
-                  "src": "931:15:21",
+                  "scope": 7899,
+                  "src": "931:15:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -586,10 +586,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5845,
+                    "id": 7893,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "931:7:21",
+                    "src": "931:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -600,12 +600,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5848,
+                  "id": 7896,
                   "mutability": "mutable",
                   "name": "investAmount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5851,
-                  "src": "952:20:21",
+                  "scope": 7899,
+                  "src": "952:20:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -613,10 +613,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5847,
+                    "id": 7895,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "952:7:21",
+                    "src": "952:7:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -625,40 +625,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "898:78:21"
+              "src": "898:78:26"
             },
             "returnParameters": {
-              "id": 5850,
+              "id": 7898,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "985:0:21"
+              "src": "985:0:26"
             },
-            "scope": 5861,
-            "src": "873:113:21",
+            "scope": 7909,
+            "src": "873:113:26",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           },
           {
             "functionSelector": "b176d4ba",
-            "id": 5860,
+            "id": 7908,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintPodTokenBySymbol",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5858,
+              "id": 7906,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5853,
+                  "id": 7901,
                   "mutability": "mutable",
                   "name": "tokenSymbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5860,
-                  "src": "1025:27:21",
+                  "scope": 7908,
+                  "src": "1025:27:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -666,10 +666,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5852,
+                    "id": 7900,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1025:6:21",
+                    "src": "1025:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -679,12 +679,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5855,
+                  "id": 7903,
                   "mutability": "mutable",
                   "name": "account",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5860,
-                  "src": "1058:15:21",
+                  "scope": 7908,
+                  "src": "1058:15:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -692,10 +692,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5854,
+                    "id": 7902,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1058:7:21",
+                    "src": "1058:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -706,12 +706,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5857,
+                  "id": 7905,
                   "mutability": "mutable",
                   "name": "investAmount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5860,
-                  "src": "1079:20:21",
+                  "scope": 7908,
+                  "src": "1079:20:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -719,10 +719,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5856,
+                    "id": 7904,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1079:7:21",
+                    "src": "1079:7:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -731,40 +731,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1019:84:21"
+              "src": "1019:84:26"
             },
             "returnParameters": {
-              "id": 5859,
+              "id": 7907,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "1112:0:21"
+              "src": "1112:0:26"
             },
-            "scope": 5861,
-            "src": "990:123:21",
+            "scope": 7909,
+            "src": "990:123:26",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 5862,
-        "src": "58:1057:21"
+        "scope": 7910,
+        "src": "58:1057:26"
       }
     ],
-    "src": "33:1083:21"
+    "src": "33:1083:26"
   },
   "legacyAST": {
     "absolutePath": "/Volumes/Workspace/PRIVI/PRIVIethereum/contracts/interfaces/IPRIVIPodERC20Factory.sol",
     "exportedSymbols": {
       "IPRIVIPodERC20Factory": [
-        5861
+        7909
       ]
     },
-    "id": 5862,
+    "id": 7910,
     "license": "MIT",
     "nodeType": "SourceUnit",
     "nodes": [
       {
-        "id": 5810,
+        "id": 7858,
         "literals": [
           "solidity",
           "^",
@@ -772,7 +772,7 @@
           ".0"
         ],
         "nodeType": "PragmaDirective",
-        "src": "33:23:21"
+        "src": "33:23:26"
       },
       {
         "abstract": false,
@@ -780,39 +780,39 @@
         "contractDependencies": [],
         "contractKind": "interface",
         "fullyImplemented": false,
-        "id": 5861,
+        "id": 7909,
         "linearizedBaseContracts": [
-          5861
+          7909
         ],
         "name": "IPRIVIPodERC20Factory",
         "nodeType": "ContractDefinition",
         "nodes": [
           {
             "functionSelector": "0fc09e2e",
-            "id": 5815,
+            "id": 7863,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "getTotalTokenCreated",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5811,
+              "id": 7859,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "123:2:21"
+              "src": "123:2:26"
             },
             "returnParameters": {
-              "id": 5814,
+              "id": 7862,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5813,
+                  "id": 7861,
                   "mutability": "mutable",
                   "name": "totalPods",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5815,
-                  "src": "149:17:21",
+                  "scope": 7863,
+                  "src": "149:17:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -820,10 +820,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5812,
+                    "id": 7860,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "149:7:21",
+                    "src": "149:7:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -832,34 +832,34 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "148:19:21"
+              "src": "148:19:26"
             },
-            "scope": 5861,
-            "src": "94:74:21",
+            "scope": 7909,
+            "src": "94:74:26",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
             "functionSelector": "22b2edeb",
-            "id": 5822,
+            "id": 7870,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "getPodAddressById",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5818,
+              "id": 7866,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5817,
+                  "id": 7865,
                   "mutability": "mutable",
                   "name": "podId",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5822,
-                  "src": "199:21:21",
+                  "scope": 7870,
+                  "src": "199:21:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -867,10 +867,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5816,
+                    "id": 7864,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "199:6:21",
+                    "src": "199:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -879,20 +879,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "198:23:21"
+              "src": "198:23:26"
             },
             "returnParameters": {
-              "id": 5821,
+              "id": 7869,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5820,
+                  "id": 7868,
                   "mutability": "mutable",
                   "name": "podAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5822,
-                  "src": "257:18:21",
+                  "scope": 7870,
+                  "src": "257:18:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -900,10 +900,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5819,
+                    "id": 7867,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "257:7:21",
+                    "src": "257:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -913,34 +913,34 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "256:20:21"
+              "src": "256:20:26"
             },
-            "scope": 5861,
-            "src": "172:105:21",
+            "scope": 7909,
+            "src": "172:105:26",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
             "functionSelector": "3325a4e4",
-            "id": 5829,
+            "id": 7877,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "getPodAddressBySymbol",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5825,
+              "id": 7873,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5824,
+                  "id": 7872,
                   "mutability": "mutable",
                   "name": "tokenSymbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5829,
-                  "src": "312:27:21",
+                  "scope": 7877,
+                  "src": "312:27:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -948,10 +948,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5823,
+                    "id": 7871,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "312:6:21",
+                    "src": "312:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -960,20 +960,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "311:29:21"
+              "src": "311:29:26"
             },
             "returnParameters": {
-              "id": 5828,
+              "id": 7876,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5827,
+                  "id": 7875,
                   "mutability": "mutable",
                   "name": "podAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5829,
-                  "src": "376:18:21",
+                  "scope": 7877,
+                  "src": "376:18:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -981,10 +981,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5826,
+                    "id": 7874,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "376:7:21",
+                    "src": "376:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -994,40 +994,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "375:20:21"
+              "src": "375:20:26"
             },
-            "scope": 5861,
-            "src": "281:115:21",
+            "scope": 7909,
+            "src": "281:115:26",
             "stateMutability": "view",
             "virtual": false,
             "visibility": "external"
           },
           {
             "documentation": {
-              "id": 5830,
+              "id": 7878,
               "nodeType": "StructuredDocumentation",
-              "src": "400:124:21",
+              "src": "400:124:26",
               "text": "@dev only MODERATOR_ROLE role can create pods\n Requirements:\n - pod should not exist before."
             },
             "functionSelector": "416aad1e",
-            "id": 5841,
+            "id": 7889,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "createPod",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5837,
+              "id": 7885,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5832,
+                  "id": 7880,
                   "mutability": "mutable",
                   "name": "podId",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "551:21:21",
+                  "scope": 7889,
+                  "src": "551:21:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -1035,10 +1035,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5831,
+                    "id": 7879,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "551:6:21",
+                    "src": "551:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -1048,12 +1048,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5834,
+                  "id": 7882,
                   "mutability": "mutable",
                   "name": "podTokenName",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "578:28:21",
+                  "scope": 7889,
+                  "src": "578:28:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -1061,10 +1061,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5833,
+                    "id": 7881,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "578:6:21",
+                    "src": "578:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -1074,12 +1074,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5836,
+                  "id": 7884,
                   "mutability": "mutable",
                   "name": "podTokenSymbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "612:30:21",
+                  "scope": 7889,
+                  "src": "612:30:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -1087,10 +1087,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5835,
+                    "id": 7883,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "612:6:21",
+                    "src": "612:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -1099,20 +1099,20 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "545:101:21"
+              "src": "545:101:26"
             },
             "returnParameters": {
-              "id": 5840,
+              "id": 7888,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5839,
+                  "id": 7887,
                   "mutability": "mutable",
                   "name": "podAddress",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5841,
-                  "src": "665:18:21",
+                  "scope": 7889,
+                  "src": "665:18:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1120,10 +1120,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5838,
+                    "id": 7886,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "665:7:21",
+                    "src": "665:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -1133,40 +1133,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "664:20:21"
+              "src": "664:20:26"
             },
-            "scope": 5861,
-            "src": "527:158:21",
+            "scope": 7909,
+            "src": "527:158:26",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           },
           {
             "documentation": {
-              "id": 5842,
+              "id": 7890,
               "nodeType": "StructuredDocumentation",
-              "src": "689:181:21",
+              "src": "689:181:26",
               "text": " @dev Moderator will mint the amount of pod token for the investor's account\n Requirements:\n - the caller must MODERATOR_ROLE to perform this action."
             },
             "functionSelector": "532d9c44",
-            "id": 5851,
+            "id": 7899,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintPodTokenById",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5849,
+              "id": 7897,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5844,
+                  "id": 7892,
                   "mutability": "mutable",
                   "name": "podId",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5851,
-                  "src": "904:21:21",
+                  "scope": 7899,
+                  "src": "904:21:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -1174,10 +1174,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5843,
+                    "id": 7891,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "904:6:21",
+                    "src": "904:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -1187,12 +1187,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5846,
+                  "id": 7894,
                   "mutability": "mutable",
                   "name": "account",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5851,
-                  "src": "931:15:21",
+                  "scope": 7899,
+                  "src": "931:15:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1200,10 +1200,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5845,
+                    "id": 7893,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "931:7:21",
+                    "src": "931:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -1214,12 +1214,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5848,
+                  "id": 7896,
                   "mutability": "mutable",
                   "name": "investAmount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5851,
-                  "src": "952:20:21",
+                  "scope": 7899,
+                  "src": "952:20:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1227,10 +1227,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5847,
+                    "id": 7895,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "952:7:21",
+                    "src": "952:7:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1239,40 +1239,40 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "898:78:21"
+              "src": "898:78:26"
             },
             "returnParameters": {
-              "id": 5850,
+              "id": 7898,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "985:0:21"
+              "src": "985:0:26"
             },
-            "scope": 5861,
-            "src": "873:113:21",
+            "scope": 7909,
+            "src": "873:113:26",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           },
           {
             "functionSelector": "b176d4ba",
-            "id": 5860,
+            "id": 7908,
             "implemented": false,
             "kind": "function",
             "modifiers": [],
             "name": "mintPodTokenBySymbol",
             "nodeType": "FunctionDefinition",
             "parameters": {
-              "id": 5858,
+              "id": 7906,
               "nodeType": "ParameterList",
               "parameters": [
                 {
                   "constant": false,
-                  "id": 5853,
+                  "id": 7901,
                   "mutability": "mutable",
                   "name": "tokenSymbol",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5860,
-                  "src": "1025:27:21",
+                  "scope": 7908,
+                  "src": "1025:27:26",
                   "stateVariable": false,
                   "storageLocation": "calldata",
                   "typeDescriptions": {
@@ -1280,10 +1280,10 @@
                     "typeString": "string"
                   },
                   "typeName": {
-                    "id": 5852,
+                    "id": 7900,
                     "name": "string",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1025:6:21",
+                    "src": "1025:6:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_string_storage_ptr",
                       "typeString": "string"
@@ -1293,12 +1293,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5855,
+                  "id": 7903,
                   "mutability": "mutable",
                   "name": "account",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5860,
-                  "src": "1058:15:21",
+                  "scope": 7908,
+                  "src": "1058:15:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1306,10 +1306,10 @@
                     "typeString": "address"
                   },
                   "typeName": {
-                    "id": 5854,
+                    "id": 7902,
                     "name": "address",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1058:7:21",
+                    "src": "1058:7:26",
                     "stateMutability": "nonpayable",
                     "typeDescriptions": {
                       "typeIdentifier": "t_address",
@@ -1320,12 +1320,12 @@
                 },
                 {
                   "constant": false,
-                  "id": 5857,
+                  "id": 7905,
                   "mutability": "mutable",
                   "name": "investAmount",
                   "nodeType": "VariableDeclaration",
-                  "scope": 5860,
-                  "src": "1079:20:21",
+                  "scope": 7908,
+                  "src": "1079:20:26",
                   "stateVariable": false,
                   "storageLocation": "default",
                   "typeDescriptions": {
@@ -1333,10 +1333,10 @@
                     "typeString": "uint256"
                   },
                   "typeName": {
-                    "id": 5856,
+                    "id": 7904,
                     "name": "uint256",
                     "nodeType": "ElementaryTypeName",
-                    "src": "1079:7:21",
+                    "src": "1079:7:26",
                     "typeDescriptions": {
                       "typeIdentifier": "t_uint256",
                       "typeString": "uint256"
@@ -1345,26 +1345,26 @@
                   "visibility": "internal"
                 }
               ],
-              "src": "1019:84:21"
+              "src": "1019:84:26"
             },
             "returnParameters": {
-              "id": 5859,
+              "id": 7907,
               "nodeType": "ParameterList",
               "parameters": [],
-              "src": "1112:0:21"
+              "src": "1112:0:26"
             },
-            "scope": 5861,
-            "src": "990:123:21",
+            "scope": 7909,
+            "src": "990:123:26",
             "stateMutability": "nonpayable",
             "virtual": false,
             "visibility": "external"
           }
         ],
-        "scope": 5862,
-        "src": "58:1057:21"
+        "scope": 7910,
+        "src": "58:1057:26"
       }
     ],
-    "src": "33:1083:21"
+    "src": "33:1083:26"
   },
   "compiler": {
     "name": "solc",
@@ -1372,7 +1372,7 @@
   },
   "networks": {},
   "schemaVersion": "3.3.4",
-  "updatedAt": "2021-04-21T21:39:46.619Z",
+  "updatedAt": "2021-04-23T14:01:46.792Z",
   "devdoc": {
     "kind": "dev",
     "methods": {

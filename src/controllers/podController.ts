@@ -3331,7 +3331,7 @@ const getWeb3forChain = (chainId: any): Web3 => {
 }
 
 exports.exportToEthereum = async (req: express.Request, res: express.Response) => {
-  const { podName, podSymbol, mediaSymbol, creator, royalty, seller } = req.body;
+  const { podName, podSymbol, mediaSymbol, creators, royalties, seller } = req.body;
   const chainId = 3;
   const web3_l: Web3 = getWeb3forChain(3);
   // get factory
@@ -3341,7 +3341,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
   // add privi to accoutn
   await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
 
-  const method = factoryContract.methods.createPod('0', podName, podSymbol, 'ipfs://test', royalty, creator).encodeABI();
+  const method = factoryContract.methods.createMultiCreatorPod('0', podName, podSymbol, 'ipfs://test', 2, royalties, creators).encodeABI();
 
   // Transaction parameters
   const paramsTX = {
