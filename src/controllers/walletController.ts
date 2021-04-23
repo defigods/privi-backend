@@ -730,7 +730,7 @@ module.exports.registerWaxWallet = async (req: express.Request, res: express.Res
       const userData = userSnap.data();
       const walletData = userData?.wallets ?? [];
       const newWallet = {
-        walletType: "Wax",
+        walletType: "WAX",
         name: walletName,
         pubKey: address,
         lastUpdate,

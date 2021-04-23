@@ -31,7 +31,7 @@ module.exports.send = async (req: express.Request, res: express.Response) => {
     const wax = new WaxJS.WaxJS(WAX_NODE_URL, PRIVI_WAX_ACCOUNT, [PRIVI_WAX_PRIVATE_KEY], false);
 
     if (!wax.api) {
-      throw new Error('Wax credentials error');
+      throw new Error('WAX credentials error');
     }
 
 
