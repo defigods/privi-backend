@@ -509,6 +509,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
       const hasPhoto = body.HasPhoto;
       const openAdvertising = body.OpenAdvertising;
 
+      console.log(podId, body);
       await db
         .collection(collections.mediaPods)
         .doc(podId)

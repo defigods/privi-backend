@@ -15,6 +15,30 @@ module.exports.initiatePod = async (podInfo, medias, hash, signature, caller) =>
 module.exports.registerMedia = async (requester, podAddress, mediaSymbol, type, paymentType, copies, royalty, fundingToken,
                                       releaseDate, pricePerSecond, price, isRecord, recordToken, recordPaymentType,
                                       recordPrice, recordPricePerSecond, recordCopies, recordRoyalty, hash, signature, caller) => {
+    console.log({
+        Requester: requester,
+        PodAddress: podAddress,
+        MediaSymbol: mediaSymbol,
+        Type: type,
+        PaymentType: paymentType,
+        Copies: copies,
+        Royalty: royalty,
+        FundingToken: fundingToken,
+        ReleaseDate: releaseDate,
+        PricePerSecond: pricePerSecond,
+        Price: price,
+        IsRecord: isRecord,
+        RecordToken: recordToken,
+        RecordPaymentType: recordPaymentType,
+        RecordPrice: recordPrice,
+        RecordPricePerSecond: recordPricePerSecond,
+        RecordCopies: recordCopies,
+        RecordRoyalty: recordRoyalty,
+        Hash: hash,
+        Signature: signature,
+        Caller: caller
+    })
+
     let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/registerMedia", {
         Requester: requester,
         PodAddress: podAddress,
