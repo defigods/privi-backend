@@ -23,6 +23,7 @@ const fs = require('fs');
 const path = require('path');
 import coinBalance from '../blockchain/coinBalance.js';
 import mediaPod from '../blockchain/mediaPod';
+const { keccak } = require("ethereumjs-util")
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
@@ -3330,24 +3331,25 @@ const getWeb3forChain = (chainId: any): Web3 => {
 }
 
 exports.exportToEthereum = async (req: express.Request, res: express.Response) => {
-  const { podId, PodAddress, tokenId, seller, buyer } = req.body;
+  const { podName, podSymbol, mediaSymbol, creators, royalties, seller } = req.body;
   const chainId = 3;
   const web3_l: Web3 = getWeb3forChain(3);
   // get factory
-  let erc721RoyaltyFactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PodERC721RoyaltyFactory.json')));
+  let erc721RoyaltyFactoryJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC721RoyaltyFactory.json')));
   const factoryContract = new web3_l.eth.Contract(erc721RoyaltyFactoryJsonContract.abi, erc721RoyaltyFactoryJsonContract.networks['3']["address"]);
 
   // add privi to accoutn
   await web3_l.eth.accounts.privateKeyToAccount(ETH_PRIVI_KEY);
-  // get deployed address
-  const method = factoryContract.methods.mintPodToken(podId, tokenId, seller).encodedABI();
+
+  const totalPods = await factoryContract.methods.getTotalTokenCreated().call();
+  const method = factoryContract.methods.createMultiCreatorPod('' + (totalPods + 1), podName, podSymbol, 'ipfs://test', 2, royalties, creators).encodeABI();
 
   // Transaction parameters
   const paramsTX = {
     chainId: chainId,
     fromAddress: ETH_PRIVI_ADDRESS,
     fromAddressKey: ETH_PRIVI_KEY,
-    encodedABI: method,
+    encodeABI: method,
     toAddress: factoryContract.options.address,
   };
 
@@ -3357,30 +3359,24 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
   if (success) {
     updateFirebase(data);
 
-    let erc721RoyaltyTokenJsonContract = JSON.parse(fs.readFileSync(path.join(__dirname, '../contracts/' + ETH_CONTRACTS_ABI_VERSION + '/PRIVIPodERC721RoyaltyToken.json')));
-    const tokenContract = new web3_l.eth.Contract(erc721RoyaltyTokenJsonContract.abi, PodAddress);
-    const approveMethod = tokenContract.methods.approve(buyer, tokenId).encodedABI();
-    const approveParamTX = {
+    // get deployed address
+    const mintMethod = factoryContract.methods.mintPodToken('' + (totalPods + 1), keccak(mediaSymbol), seller).encodeABI();
+
+    // Transaction parameters
+    const mintParamsTX = {
       chainId: chainId,
       fromAddress: ETH_PRIVI_ADDRESS,
       fromAddressKey: ETH_PRIVI_KEY,
-      encodedABI: approveMethod,
-      toAddress: tokenContract.options.address,
+      encodeABI: mintMethod,
+      toAddress: factoryContract.options.address,
     };
-    await executeTX(approveParamTX);
-    updateFirebase(data);
 
-    const sellMethod = tokenContract.methods.marketSell(web3_l.utils.toWei('10000000000000000', 'ether'), tokenId, seller, buyer).encodedABI();
-    const sellParamTX = {
-      chainId: chainId,
-      fromAddress: ETH_PRIVI_ADDRESS,
-      fromAddressKey: ETH_PRIVI_KEY,
-      encodedABI: sellMethod,
-      toAddress: tokenContract.options.address,
-    };
-    await executeTX(sellParamTX);
-    updateFirebase(data);
+    // Execute transaction to withdraw in Ethereum
+    const { success, error, data: data1 } = await executeTX(mintParamsTX);
+    if (success)
+      updateFirebase(data);
 
+    res.send({success, error, data})
   }
 };
 
@@ -3391,7 +3387,7 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
  * @return @res: transaction response  
  * @param params.fromAddress        From account
  * @param params.fromAddressKey     From private key   
- * @param params.encodedABI         Contract data 
+ * @param params.encodeABI         Contract data 
  * @param params.contractAddress    Contract address
  */
  const executeTX = (params: any) => {
@@ -3405,10 +3401,10 @@ exports.exportToEthereum = async (req: express.Request, res: express.Response) =
       // remark: added 'pending' to avoid 'Known Transaction' error
       const nonce = await web3_l.eth.getTransactionCount(params.fromAddress, 'pending');
       const tx = {
-          gas: 1500000,
+          gas: 3000000,
           gasPrice: '30000000000',
           from: params.fromAddress,
-          data: params.encodedABI,
+          data: params.encodeABI,
           chainId: chainId,
           to: params.toAddress,
           nonce: nonce,
