@@ -18,6 +18,7 @@ const stakeRoutes = require("../routes/stakeRoutes");
 const streamingRoutes = require("../routes/streamingRoutes");
 const lendingRoutes = require("../routes/lendingRoutes");
 const walletRoutes = require("../routes/walletRoutes");
+const waxRoutes = require("../routes/waxRoutes");
 const priviScanRoutes = require("../routes/priviScanRoutes");
 const priviCreditRoutes = require("../routes/priviCreditRoutes");
 const priviDataRoutes = require("../routes/priviDataRoutes");
@@ -83,6 +84,7 @@ export const startServer = (env: Env) => {
   app.use("/streaming", streamingRoutes);
   app.use("/lendings", lendingRoutes);
   app.use("/wallet", walletRoutes);
+  app.use("/wax", waxRoutes);
   app.use("/privi-scan", priviScanRoutes);
   app.use("/priviCredit", priviCreditRoutes);
   app.use("/liquidityPool", liquidityPoolRoutes);

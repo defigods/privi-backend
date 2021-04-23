@@ -716,6 +716,50 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
   }
 };
 
+module.exports.registerWaxWallet = async (req: express.Request, res: express.Response) => {
+  try {
+    const { userId, address, walletName } = req.body;
+
+    const caller = apiKey;
+    const lastUpdate = Date.now();
+
+    const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
+
+    if (blockchainRes && blockchainRes.success) {
+      const userSnap = await db.collection(collections.user).doc(userId).get();
+      const userData = userSnap.data();
+      const walletData = userData?.wallets ?? [];
+      const newWallet = {
+        walletType: "WAX",
+        name: walletName,
+        pubKey: address,
+        lastUpdate,
+      };
+      const newWalletData = [
+        ...walletData,
+        newWallet
+      ]
+      db.collection(collections.user) 
+        .doc(userId)
+        .update({ ...userData, wallets: newWalletData });
+      res.send({
+        success: true,
+        uid: userId,
+        address: address,
+        lastUpdate,
+        newWallet,
+      });
+    } else {
+      console.log('Warning in controllers/walletController.ts -> registerWaxWallet():', blockchainRes);
+      res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/walletController.ts -> registerWaxWallet(): ', err);
+    res.send({ success: false });
+  }
+};
+
+
 ///////////////////////////// gets //////////////////////////////
 
 module.exports.getUserTokenTypeBalanceHistory = async (req: express.Request, res: express.Response) => {
