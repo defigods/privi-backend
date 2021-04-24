@@ -3089,3 +3089,94 @@ exports.storeFractionalisedMediaOwnership = cron.schedule('0 0 * * *', async () 
     console.log(err);
   }
 });
+
+const getNFTInformation = async (id, hostUrl) => {
+  try {
+    if (!id) {
+      return;
+    }
+    const blockChains = [
+      "PRIVI",
+      "WAX",
+      "Zora",
+      "Opensea",
+      "Mirror",
+      "Foundation",
+      "Topshot",
+      "Sorare",
+      "Showtime",
+    ];
+    for (let i = 0; i < blockChains.length; i++) {
+      const blockchain = blockChains[i];
+      // get the current mediaCollection
+      let mediaCollection;
+      switch (blockchain) {
+        case 'PRIVI':
+          mediaCollection = collections.streaming;
+          break;
+        case 'WAX':
+          mediaCollection = collections.waxMedia;
+          break;
+        case 'Zora':
+          mediaCollection = collections.zoraMedia;
+          break;
+        case 'Opensea':
+          mediaCollection = collections.openseaMedia;
+          break;
+        case 'Mirror':
+          mediaCollection = collections.mirrorMedia;
+          break;
+        case 'Topshot':
+          mediaCollection = collections.topshotMedia;
+          break;
+        case 'Sorare':
+          mediaCollection = collections.sorareMedia;
+          break;
+        case 'Foundation':
+          mediaCollection = collections.foundationMedia;
+          break;
+        case 'Showtime':
+          mediaCollection = collections.showtimeMedia;
+          break;
+      }
+      if (mediaCollection) {
+        try {
+          const doc = await db.collection(mediaCollection).doc(id).get();
+          const data = doc.data();
+          if (!doc.exists || !data) {
+            continue;
+          }
+          if (blockchain === 'PRIVI') {
+            const type = data.Video ? "Video" : "Audio";
+            const url = data.Video ? path.join('uploads', 'media', id + '.mp4') : path.join('uploads', 'media', id + '.mp3');
+            return {
+              type,
+              url: `${hostUrl}/${url}`,
+            }
+          } else {
+            return {
+              type: data.type,
+              url: data.url,
+            }
+          }
+        } catch (e) {
+        }
+      }
+    }
+  } catch (e) {
+  }
+};
+
+export const getNFTMedias = async (req: express.Request, res: express.Response) => {
+  try {
+    const body = req.body; // filters
+    const nftIds = body.nftIds;
+    const hostUrl = req.protocol + '://' + req.get('host');
+    const resp = await Promise.all(nftIds.map(id => getNFTInformation(id, hostUrl)));
+    const nftInfos = resp.filter(item => item);
+    return res.status(200).send({ success: true, data: nftInfos });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+};
