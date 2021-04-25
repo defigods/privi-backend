@@ -11,7 +11,7 @@ import {
 } from '../functions/functions';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
-import { db } from '../firebase/firebase';
+import { db, firebase } from '../firebase/firebase';
 import coinBalance from '../blockchain/coinBalance.js';
 import express from 'express';
 import cron from 'node-cron';
@@ -700,7 +700,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
       ]
       db.collection(collections.user)
         .doc(userId)
-        .update({ ...userData, wallets: newWalletData });
+        .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
         success: true,
         uid: userId,
@@ -743,7 +743,7 @@ module.exports.registerWaxWallet = async (req: express.Request, res: express.Res
       ]
       db.collection(collections.user) 
         .doc(userId)
-        .update({ ...userData, wallets: newWalletData });
+        .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
         success: true,
         uid: userId,

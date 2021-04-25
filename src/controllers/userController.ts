@@ -459,6 +459,12 @@ const signUpWithWallet = async (req: express.Request, res: express.Response) => 
     if (toUid) {
       res.send({ success: false, message: 'address is already in database' });
       return;
+    } else {
+      const user = await db.collection(collections.user).where('walletAddresses', "array-contains", address).get();
+      if (!user.empty) {
+        res.send({ success: false, message: 'address is already in database' });
+        return;
+      }
     }
 
     const orgName = 'companies'; // hardcoded for now
@@ -523,6 +529,7 @@ const signUpWithWallet = async (req: express.Request, res: express.Response) => 
             creditPools: false,
           },
           urlSlug: uid,
+          walletAddresses: [address],
         });
 
       });
