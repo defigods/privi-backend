@@ -100,9 +100,9 @@ let storage6 = multer.diskStorage({
 let upload6 = multer({
   storage: storage6,
 });
-
 router.get('/getEthMedia/:id', mediaController.getEthMediaItem);
 
+router.get('/getUserMedias', authenticateJWT, mediaController.getUserMedias);
 router.get('/getMedia/:mediaId', authenticateJWT, mediaController.getMedia);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
