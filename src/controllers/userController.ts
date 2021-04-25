@@ -309,7 +309,7 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
     const address = body.address;
     if (address) {
       // Compare user & passwd between login input and DB
-      const user = await db.collection(collections.user).where('address', '==', address).get();
+      const user = await db.collection(collections.user).where('walletAddresses', "array-contains", address).get();
       // Return result
       if (user.empty) {
         console.log('not found');

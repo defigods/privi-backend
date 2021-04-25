@@ -607,9 +607,10 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
           },
         ];
 
+    const walletAddresses = newWalletData.map(wallet => wallet.address);
     db.collection(collections.user)
       .doc(userId)
-      .update({ ...userData, wallets: newWalletData });
+      .update({ ...userData, wallets: newWalletData, walletAddresses });
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/walletController -> registerUserEthAccount()', err);
@@ -652,11 +653,12 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
     const userData = userSnap.data();
     const walletData = userData?.wallets ?? [];
     const filteredWalletData = walletData.filter((wallet) => wallet.address !== address);
+    const walletAddresses = filteredWalletData.map(wallet => wallet.address);
 
     await db
       .collection(collections.user)
       .doc(userId)
-      .update({ ...userData, wallets: filteredWalletData });
+      .update({ ...userData, wallets: filteredWalletData, walletAddresses });
 
     res.send({ success: true });
   } catch (err) {
