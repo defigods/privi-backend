@@ -3025,71 +3025,6 @@ export const changeQuickMediaPhoto = async (req: express.Request, res: express.R
   }
 };
 
-
-
-// ---------------------- CRONS -----------------------
-// store daily fractionalised media price (for 1%)
-exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
-  try {
-    console.log('********* Media storeSupplyHistory() cron job started *********');
-    const mediaSnap = await db.collection(collections.mediaFraction).get();
-    const rateOfChange = await getRateOfChangeAsMap();
-    for (const doc of mediaSnap.docs) {
-      // get last price
-      let lastPrice = Infinity;
-      const priceHistorySnap = await doc.ref.collection(collections.priceHistory).orderBy('date', 'desc').get();
-      if (priceHistorySnap.docs.length > 0) lastPrice = priceHistorySnap.docs[priceHistorySnap.docs.length - 1].data().price;
-      // check if any active sell offer
-      const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
-      offerSnap.forEach((doc) => {
-        const data: any = doc.data();
-        let price = data.Price ?? 0;
-        const amount = data.Amount ?? 1;
-        const token = data.Token;
-        if (token) price *= rateOfChange[token] ?? 1;
-        lastPrice = price / (amount * 100); // its the price for each 1%
-      });
-      doc.ref.collection(collections.priceHistory).add({
-        date: Date.now(),
-        price: lastPrice
-      });
-    }
-  } catch (err) {
-    console.log(err);
-  }
-});
-// daily store the fractionalised media ownership
-exports.storeFractionalisedMediaOwnership = cron.schedule('0 0 * * *', async () => {
-  try {
-    console.log('********* Media storeFractionalisedMediaOwnership() cron job started *********');
-    const mediaSnap = await db.collection(collections.mediaFraction).get();
-    for (const doc of mediaSnap.docs) {
-      const mediaData: any = doc.data();
-      const ownerAddress = mediaData.OwnerAddress;
-      const tokenSymbol = doc.id;
-      let sharedOwnership = 1;  // its the amount that the owner has already sold
-      const blockchainRes = await coinBalance.balanceOf(ownerAddress, tokenSymbol);
-      if (blockchainRes && blockchainRes.success) {
-        // substract the amount that the owner hold
-        const balance = blockchainRes.output.Amount;
-        sharedOwnership = Math.min(0, sharedOwnership - balance);
-        // substract the amount that are in selling
-        const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
-        offerSnap.forEach((offerDoc) => {
-          const offerData: any = offerDoc.data();
-          if (offerData.SAddress == ownerAddress) sharedOwnership = Math.min(0, sharedOwnership - offerData.Amount);
-        });
-      }
-      doc.ref.collection(collections.ownershipHistory).add({
-        date: Date.now(),
-        ownership: sharedOwnership
-      });
-    }
-  } catch (err) {
-    console.log(err);
-  }
-});
-
 const getNFTInformation = async (id, hostUrl) => {
   try {
     if (!id) {
@@ -3180,3 +3115,90 @@ export const getNFTMedias = async (req: express.Request, res: express.Response) 
     return res.status(500).send({ success: false, error: e });
   }
 };
+
+// return user created medias
+export const getUserMedias = async (req: express.Request, res: express.Response) => {
+  try {
+    console.log('asdasdasdsadsadasddaaasdaadsadasda')
+    const userId = req.query.userId;
+    if (!userId) {
+      console.log('User Id not provided');
+      res.send({success: false});
+      return;
+    }
+    const retData:any[] = [];
+    const podMediaSnap = await db.collection(collections.streaming).where('Requester', '==', userId).get();
+    const simpleMediaSnap = await db.collection(collections.streaming).where('CreatorId', '==', userId).get();
+    podMediaSnap.forEach((doc) => {retData.push(doc.data())});
+    simpleMediaSnap.forEach((doc) => {retData.push(doc.data())});
+    res.send({ success: true, data: retData });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+};
+
+
+// ---------------------- CRONS -----------------------
+// store daily fractionalised media price (for 1%)
+exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
+  try {
+    console.log('********* Media storeSupplyHistory() cron job started *********');
+    const mediaSnap = await db.collection(collections.mediaFraction).get();
+    const rateOfChange = await getRateOfChangeAsMap();
+    for (const doc of mediaSnap.docs) {
+      // get last price
+      let lastPrice = Infinity;
+      const priceHistorySnap = await doc.ref.collection(collections.priceHistory).orderBy('date', 'desc').get();
+      if (priceHistorySnap.docs.length > 0) lastPrice = priceHistorySnap.docs[priceHistorySnap.docs.length - 1].data().price;
+      // check if any active sell offer
+      const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
+      offerSnap.forEach((doc) => {
+        const data: any = doc.data();
+        let price = data.Price ?? 0;
+        const amount = data.Amount ?? 1;
+        const token = data.Token;
+        if (token) price *= rateOfChange[token] ?? 1;
+        lastPrice = price / (amount * 100); // its the price for each 1%
+      });
+      doc.ref.collection(collections.priceHistory).add({
+        date: Date.now(),
+        price: lastPrice
+      });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+// daily store the fractionalised media ownership
+exports.storeFractionalisedMediaOwnership = cron.schedule('0 0 * * *', async () => {
+  try {
+    console.log('********* Media storeFractionalisedMediaOwnership() cron job started *********');
+    const mediaSnap = await db.collection(collections.mediaFraction).get();
+    for (const doc of mediaSnap.docs) {
+      const mediaData: any = doc.data();
+      const ownerAddress = mediaData.OwnerAddress;
+      const tokenSymbol = doc.id;
+      let sharedOwnership = 1;  // its the amount that the owner has already sold
+      const blockchainRes = await coinBalance.balanceOf(ownerAddress, tokenSymbol);
+      if (blockchainRes && blockchainRes.success) {
+        // substract the amount that the owner hold
+        const balance = blockchainRes.output.Amount;
+        sharedOwnership = Math.min(0, sharedOwnership - balance);
+        // substract the amount that are in selling
+        const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
+        offerSnap.forEach((offerDoc) => {
+          const offerData: any = offerDoc.data();
+          if (offerData.SAddress == ownerAddress) sharedOwnership = Math.min(0, sharedOwnership - offerData.Amount);
+        });
+      }
+      doc.ref.collection(collections.ownershipHistory).add({
+        date: Date.now(),
+        ownership: sharedOwnership
+      });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+

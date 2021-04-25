@@ -1037,6 +1037,7 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
     if (!userAddress) {
       console.log('user address not provided');
       res.send({ success: false });
+      return;
     }
     const retData: any[] = [];
     const historySnap = await db
@@ -1052,7 +1053,9 @@ module.exports.getTransactions = async (req: express.Request, res: express.Respo
       else {  // only return the data needed for the specific page
         switch (page) {
           case "myEarning":
-            if (type.includes('media_nft') || type.includes('media_view') || type.includes('fractionalise')) retData.push(data);
+            if (type.includes('media')) // type of item
+              if (type.includes('sell') || type.includes('view')) // type of operation
+                retData.push(data);
             break;
         }
       }
