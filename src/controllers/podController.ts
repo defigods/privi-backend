@@ -1999,6 +1999,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
         Hashtags: body.Hashtags ?? [],
         OpenAdvertising: body.OpenAdvertising ?? false,
         OpenInvestment: body.openInvestment ?? false,
+        SharingPercent: body.SharingPercent ?? '',
 
         Media: body.Media ?? 0,
 

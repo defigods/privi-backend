@@ -6,6 +6,7 @@ const mediaOnCommunityController = require('../controllers/mediaOnCommunityContr
 
 router.get('/get/:id', authenticateJWT, mediaOnCommunityController.getMediaOnCommunity);
 
+router.post('/getFromMediaArray', authenticateJWT, mediaOnCommunityController.getMediaOnCommunityFromMediaArray);
 router.post('/create/:userId', authenticateJWT, mediaOnCommunityController.createMediaOnCommunity);
 router.post('/accept/:id/:userId', authenticateJWT, mediaOnCommunityController.acceptMediaOnCommunity);
 router.post('/decline/:id/:userId', authenticateJWT, mediaOnCommunityController.declineMediaOnCommunity);
