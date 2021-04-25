@@ -24,19 +24,62 @@ export const getMediaOnCommunity = async (req: express.Request, res: express.Res
   }
 };
 
+export const getMediaOnCommunityFromMediaArray = async (req: express.Request, res: express.Response) => {
+  try {
+    const medias = req.body.medias;
+
+    let mediaResult : any = {};
+
+    if(medias && medias.length > 0) {
+      for(let media of medias) {
+        let mediaOnCommunities : any = [];
+
+        const docRef = await db.collection(collections.mediaOnCommunity)
+          .where('media', '==', media).get();
+
+        if (!docRef.empty) {
+          for (const doc of docRef.docs) {
+            let data = doc.data();
+            data.id = doc.id;
+            mediaOnCommunities.push(data);
+          }
+        }
+        mediaResult[media] = mediaOnCommunities;
+        res.send({ status: true, data: mediaResult });
+      }
+    } else {
+      throw new Error("No medias provided");
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaOnCommunityController -> getMediaOnCommunityFromMediaArray()', err);
+    res.send({ success: false, error: err });
+  }
+};
+
 export const createMediaOnCommunity = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    if (body.media && body.pod && body.community && body.message && body.offer) {
-      const newData = await db.collection(collections.mediaOnCommunity).add({
-        media: body.media,
-        pod: body.pod,
-        community: body.community,
-        message: body.message,
-        oldOffers: [],
-        currentOffer: body.offer
-      });
-      res.send({ sccess: true, data: newData.id });
+    if (body.media && body.pod && body.message && body.offers) {
+      let communitiesKeys = Object.keys(body.offers);
+
+      if(communitiesKeys && communitiesKeys.length > 0) {
+        for(const community of communitiesKeys) {
+          await db.collection(collections.mediaOnCommunity).add({
+            media: body.media,
+            pod: body.pod,
+            community: community,
+            message: body.message,
+            oldOffers: [],
+            currentOffer: {
+              from: 'media',
+              offer: body.offers[community],
+              status: 'pending'
+            }
+          });
+        }
+      }
+
+      res.send({ success: true });
     } else {
       throw new Error("All fields are required");
     }
