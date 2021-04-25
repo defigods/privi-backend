@@ -588,7 +588,25 @@ exports.addComment = async (req: express.Request, res: express.Response) => {
   const { DocId, Comment } = req.body;
 
   if (DocId) {
-    const docSnap = await db.collection(collections.streaming).doc(DocId).get();
+    const mediaCollections = [
+      { collection: collections.streaming, blockchain: 'Streaming' },
+      { collection: collections.waxMedia, blockchain: 'WaxMedia' },
+      { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
+      { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
+      { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
+      { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
+      { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
+      { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
+      { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' }
+    ];
+
+    let i, docSnap;
+    for (i = 0; i < mediaCollections.length; i++) {
+      docSnap = await db.collection(mediaCollections[i].collection).doc(DocId).get();
+      if (docSnap.exists) {
+        break;
+      }
+    }
 
     await docSnap.ref.update({
       Comments: firebase.firestore.FieldValue.arrayUnion(Comment)

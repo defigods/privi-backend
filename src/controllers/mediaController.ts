@@ -1158,7 +1158,6 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
 
       const mediaCollections = [
         { collection: collections.streaming, blockchain: 'Streaming' },
-        { collection: collections.ethMedia, blockchain: 'EthMedia' },
         { collection: collections.waxMedia, blockchain: 'WaxMedia' },
         { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
         { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
@@ -2485,8 +2484,26 @@ export const rateMedia = async (req: express.Request, res: express.Response) => 
     const { mediaId, userId, ratingType, ratingValue } = req.body;
 
     if (mediaId && userId) {
-      const mediaRef = db.collection(collections.streaming).doc(mediaId);
-      const mediaGet = await mediaRef.get();
+      const mediaCollections = [
+        { collection: collections.streaming, blockchain: 'Streaming' },
+        { collection: collections.waxMedia, blockchain: 'WaxMedia' },
+        { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
+        { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
+        { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
+        { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
+        { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
+        { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
+        { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' }
+      ];
+
+      let i, mediaRef, mediaGet;
+      for (i = 0; i < mediaCollections.length; i++) {
+        mediaRef = db.collection(mediaCollections[i].collection).doc(mediaId);
+        mediaGet = await mediaRef.get();
+        if (mediaGet.exists) {
+          break;
+        }
+      }
       const media: any = mediaGet.data();
 
       if (mediaGet.exists) {
