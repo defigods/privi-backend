@@ -11,7 +11,7 @@ import {
 } from '../functions/functions';
 import collections from '../firebase/collections';
 import dataProtocol from '../blockchain/dataProtocol';
-import { db } from '../firebase/firebase';
+import { db, firebase } from '../firebase/firebase';
 import coinBalance from '../blockchain/coinBalance.js';
 import express from 'express';
 import cron from 'node-cron';
@@ -607,9 +607,10 @@ module.exports.registerUserEthAccount = async (req: express.Request, res: expres
           },
         ];
 
+    const walletAddresses = newWalletData.map(wallet => wallet.address);
     db.collection(collections.user)
       .doc(userId)
-      .update({ ...userData, wallets: newWalletData });
+      .update({ ...userData, wallets: newWalletData, walletAddresses });
     res.send({ success: true });
   } catch (err) {
     console.log('Error in controllers/walletController -> registerUserEthAccount()', err);
@@ -652,11 +653,12 @@ module.exports.removeUserRegisteredEthAccounts = async (req: express.Request, re
     const userData = userSnap.data();
     const walletData = userData?.wallets ?? [];
     const filteredWalletData = walletData.filter((wallet) => wallet.address !== address);
+    const walletAddresses = filteredWalletData.map(wallet => wallet.address);
 
     await db
       .collection(collections.user)
       .doc(userId)
-      .update({ ...userData, wallets: filteredWalletData });
+      .update({ ...userData, wallets: filteredWalletData, walletAddresses });
 
     res.send({ success: true });
   } catch (err) {
@@ -698,7 +700,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
       ]
       db.collection(collections.user)
         .doc(userId)
-        .update({ ...userData, wallets: newWalletData });
+        .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
         success: true,
         uid: userId,
@@ -741,7 +743,7 @@ module.exports.registerWaxWallet = async (req: express.Request, res: express.Res
       ]
       db.collection(collections.user) 
         .doc(userId)
-        .update({ ...userData, wallets: newWalletData });
+        .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
         success: true,
         uid: userId,
