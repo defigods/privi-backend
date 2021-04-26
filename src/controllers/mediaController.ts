@@ -1,8 +1,8 @@
 import express from 'express';
-import { db, firebase } from '../firebase/firebase';
+import { db } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
-import collections, { buyingOffers, sellingOffers, tokens, user } from '../firebase/collections';
+import collections, { buyingOffers, sellingOffers} from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
 import fractionaliseMedia from '../blockchain/fractionaliseMedia';
@@ -3136,7 +3136,6 @@ export const getNFTMedias = async (req: express.Request, res: express.Response) 
 // return user created medias
 export const getUserMedias = async (req: express.Request, res: express.Response) => {
   try {
-    console.log('asdasdasdsadsadasddaaasdaadsadasda')
     const userId = req.query.userId;
     if (!userId) {
       console.log('User Id not provided');
@@ -3148,6 +3147,52 @@ export const getUserMedias = async (req: express.Request, res: express.Response)
     const simpleMediaSnap = await db.collection(collections.streaming).where('CreatorId', '==', userId).get();
     podMediaSnap.forEach((doc) => {retData.push(doc.data())});
     simpleMediaSnap.forEach((doc) => {retData.push(doc.data())});
+    res.send({ success: true, data: retData });
+  } catch (e) {
+    console.log(e);
+    return res.status(500).send({ success: false, error: e });
+  }
+};
+
+// return user media streaming
+const liveTypes = ["LIVE_AUDIO_TYPE", "LIVE_VIDEO_TYPE"];
+export const getUserMediaStreaming = async (req: express.Request, res: express.Response) => {
+  try {
+    const userId = req.query.userId;
+    const userAddress = req.query.userAddress;
+    if (!userId || !userAddress) {
+      console.log('User Id or Address not provided');
+      res.send({success: false});
+      return;
+    }
+    const retData:any[] = [];
+    // get user created medias
+    const userMedias:any[] = [];
+    const podMediaSnap = await db.collection(collections.streaming).where('Requester', '==', userId).where('Type', 'in', liveTypes).get();
+    const simpleMediaSnap = await db.collection(collections.streaming).where('CreatorId', '==', userId).where('Type', 'in', liveTypes).get();
+    podMediaSnap.forEach((doc) => {
+      const data:any = doc.data();
+      if (data.MediaSymbol) userMedias.push(data.MediaSymbol)
+    });
+    simpleMediaSnap.forEach((doc) => {
+      const data:any = doc.data();
+      if (data.MediaSymbol) userMedias.push(data.MediaSymbol)
+    });
+    // get streamings 
+    const userStreamingResponses = await Promise.all(userMedias.map((mediaSymbol) => coinBalance.getUserStreamings(userAddress, mediaSymbol, apiKey)));
+    const promises:any[] =[];
+    userStreamingResponses.forEach((resp) => {
+      if (resp && resp.success) {
+        const output = resp.output;
+        output.forEach((out) => {
+          if (out.Role == 'RECEIVER') promises.push(coinBalance.getStreaming(out.StreamingId, apiKey));
+        });
+      }
+    });
+    const mediaStreamingResponses = await Promise.all(promises);
+    mediaStreamingResponses.forEach((resp) => {
+      if (resp.success) retData.push(resp.output);
+    })
     res.send({ success: true, data: retData });
   } catch (e) {
     console.log(e);
