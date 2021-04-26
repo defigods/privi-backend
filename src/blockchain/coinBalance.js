@@ -196,3 +196,20 @@ module.exports.createStreaming = async (senderAddress, receiverAddress, frequenc
 	});
 	return blockchainRes.data;
 }
+
+module.exports.getUserStreamings = async (userAddress, token, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/getUserStreamings", {
+		UserAddress: userAddress,
+		Token: token,
+		Caller: caller,
+	});
+	return blockchainRes.data;
+}
+
+module.exports.getStreaming = async (streamingId, caller) => {
+	let blockchainRes = await axios.post(api.blockchainCoinBalanceAPI + "/getStreaming", {
+		StreamingId: streamingId,
+		Caller: caller,
+	});
+	return blockchainRes.data;
+}

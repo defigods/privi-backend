@@ -103,6 +103,7 @@ let upload6 = multer({
 router.get('/getEthMedia/:id', mediaController.getEthMediaItem);
 
 router.get('/getUserMedias', authenticateJWT, mediaController.getUserMedias);
+router.get('/getUserMediaStreaming', authenticateJWT, mediaController.getUserMediaStreaming);
 router.get('/getMedia/:mediaId', authenticateJWT, mediaController.getMedia);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
