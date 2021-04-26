@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import collections, { buyingOffers, sellingOffers, tokens, user } from '../firebase/collections';
 import { updateFirebase, getRateOfChangeAsMap } from '../functions/functions';
+const notificationsController = require("./notificationsController");
 
 const apiKey = 'PRIVI'; //process.env.API_KEY;
 
@@ -41,14 +42,19 @@ export const getMediaOnCommunityFromMediaArray = async (req: express.Request, re
           for (const doc of docRef.docs) {
             let data = doc.data();
             data.id = doc.id;
+            const communitySnap = await db.collection(collections.community).doc(data.community).get();
+            const communityData: any = communitySnap.data();
+            data.CommunityName = communityData.Name;
             mediaOnCommunities.push(data);
           }
         }
         mediaResult[media] = mediaOnCommunities;
-        res.send({ status: true, data: mediaResult });
       }
+      console.log(mediaResult)
+
+      res.send({ success: true, data: mediaResult });
     } else {
-      throw new Error("No medias provided");
+      res.send({ success: false, error: "No medias provided" });
     }
   } catch (err) {
     console.log('Error in controllers/mediaOnCommunityController -> getMediaOnCommunityFromMediaArray()', err);
@@ -59,6 +65,8 @@ export const getMediaOnCommunityFromMediaArray = async (req: express.Request, re
 export const createMediaOnCommunity = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
+    const userId = req.params.userId;
+
     if (body.media && body.pod && body.message && body.offers) {
       let communitiesKeys = Object.keys(body.offers);
 
@@ -75,6 +83,24 @@ export const createMediaOnCommunity = async (req: express.Request, res: express.
               offer: body.offers[community],
               status: 'pending'
             }
+          });
+
+          const userSnap = await db.collection(collections.user).doc(userId).get();
+          const userData: any = userSnap.data();
+          await notificationsController.addNotification({
+            userId: userId,
+            notification: {
+              type: 112,
+              typeItemId: 'user',
+              itemId: body.media,
+              follower: userData.urlSlug,
+              pod: '',
+              comment: '',
+              token: 0,
+              amount: body.offers[community],
+              onlyInformation: false,
+              otherItemId: community,
+            },
           });
         }
       }
