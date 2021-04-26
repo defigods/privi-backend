@@ -573,7 +573,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const hash = body.Hash;
     const signature = body.Signature;
 
-    console.log(releaseDate, Date.now());
+    //console.log('register date', new Date(releaseDate), Date.now());
 
     const blockchainRes = await mediaPod.registerMedia(
       requester,
@@ -613,6 +613,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
 
       await mediasRef.update({
         IsRegistered: true,
+        ReleaseDate: releaseDate,
       });
 
       if (body.IsUploaded) {
