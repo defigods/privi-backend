@@ -870,6 +870,14 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
       basicInfo.address = userData.address || '';
 
+      var bgs = [] as any;
+      basicInfo.badges.forEach(async (item, index) => {        
+        const badgeSnap = await db.collection(collections.badges).doc(item.id).get();
+        const bgData = badgeSnap.data();
+        bgs.push(bgData);
+      });
+
+      basicInfo.badges = bgs;
       res.send({ success: true, data: basicInfo });
     } else res.send({ success: false });
   } catch (err) {
@@ -2604,6 +2612,7 @@ const getBadges = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: e });
   }
 };
+
 
 const getBadgesFunction = (address: string): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
