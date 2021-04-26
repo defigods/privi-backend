@@ -1071,7 +1071,7 @@ exports.getHistories = async (req: express.Request, res: express.Response) => {
 // interest manager scheduled every day at 00:00
 exports.payInterest = cron.schedule('* * * * *', async () => {
   try {
-    console.log('******** Privi Credit payInterest ********');
+    //console.log('******** Privi Credit payInterest ********');
     const creditsSnap = await db.collection(collections.priviCredits).get();
     const credits = creditsSnap.docs;
     for (let i = 0; i < credits.length; i++) {

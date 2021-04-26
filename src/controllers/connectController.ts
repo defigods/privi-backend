@@ -465,7 +465,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
     
     if (SHOULD_HANDLE_SWAP) {
 
-        console.log('********* Swaping ETH <--> PRIVI cron job - STARTED - *********');
+        //console.log('********* Swaping ETH <--> PRIVI cron job - STARTED - *********');
 
         // Start WS server if not initialized yet
         (!runOnce) ? wsListen() : null;
@@ -479,7 +479,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
 
         // Process outstanding TX
         if (!snapshot.empty) {
-            console.log('should check Tx for swap?', !snapshot.empty);
+            //console.log('should check Tx for swap?', !snapshot.empty);
             for (let i in snapshot.docs) {
                 const doc = snapshot.docs[i].data();
                 const docId = snapshot.docs[i].id;
@@ -487,27 +487,27 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
                     doc.action === Action.WITHDRAW_ETH ||
                     doc.action === Action.WITHDRAW_ERC20 || 
                     doc.action === Action.WITHDRAW_ERC721) {
-                    console.log('performing withdraw', docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId);
+                    //console.log('performing withdraw', docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId);
                     withdraw(docId, doc.address, doc.to, doc.amount, doc.action, doc.token, doc.lastUpdate, doc.chainId)
                 } else if (doc.action === Action.SWAP_APPROVE_ERC20 || doc.action === Action.SWAP_APPROVE_ERC721) {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
-                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    //console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                     /* 
                         confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                     */
                     if (confirmations > MIN_ETH_CONFIRMATION) {
-                        console.log('approve should be set to confirmed');
+                        //console.log('approve should be set to confirmed');
                         updateStatusOneToOneSwap(docId, 'confirmed');
                         return;
                     };
                 } else {
                     const confirmations = await checkTxConfirmations(doc.txHash, doc.chainId) || 0;
-                    console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
+                    //console.log('is confirmation > ', MIN_ETH_CONFIRMATION, 'current confirmations', confirmations, confirmations > MIN_ETH_CONFIRMATION)
                     /* 
                         confirmation should be more 6 confirmation for BTC and 12 for ETH to be fully secure
                     */
                     if (confirmations > MIN_ETH_CONFIRMATION) {
-                        console.log('performing swap');
+                        //console.log('performing swap');
                         swap(docId, doc.publicId, doc.address, doc.from, doc.amount, doc.token, doc.txHash, doc.random, doc.action, doc.lastUpdate, doc.chainId);
                         return;
                     };
@@ -515,7 +515,7 @@ const checkTx = cron.schedule(`*/${TX_LISTENING_CYCLE} * * * * *`, async () => {
             };
         };
 
-        console.log('********* Swaping ETH <--> PRIVI cron job - ENDED - *********');
+        //console.log('********* Swaping ETH <--> PRIVI cron job - ENDED - *********');
 
     }
 });
