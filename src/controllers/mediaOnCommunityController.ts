@@ -127,7 +127,7 @@ export const acceptMediaOnCommunity = async (req: express.Request, res: express.
     const doc = await docRef.get();
     if (doc.exists) {
       await docRef.update({
-        "currentOffer.status": "Accept"
+        "currentOffer.status": "Accepted"
       });
 
       const existingData: any = doc.data();
