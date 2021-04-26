@@ -568,6 +568,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const recordPricePerSecond = body.RecordPricePerSecond;
     const recordCopies = body.RecordCopies;
     const recordRoyalty = body.RecordRoyalty;
+    const exclusivePermissions = body.ExclusivePermissions ?? false;
     const exclusivePermissionsList = body.ExclusivePermissionsList ?? [];
     const rewards = body.Rewards ?? [];
     const hash = body.Hash;
@@ -614,6 +615,8 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
       await mediasRef.update({
         IsRegistered: true,
         ReleaseDate: releaseDate,
+        ExclusivePermissions: exclusivePermissions || false,
+        ExclusivePermissionsList: exclusivePermissionsList || []
       });
 
       if (body.IsUploaded) {
@@ -640,7 +643,8 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           RecordPricePerSecond: recordPricePerSecond,
           RecordCopies: recordCopies,
           RecordRoyalty: recordRoyalty,
-          ExclusivePermissionsList: exclusivePermissionsList,
+          ExclusivePermissions: media.ExclusivePermissions || false,
+          ExclusivePermissionsList: media.ExclusivePermissionsList || [],
           Rewards: rewards,
         };
 
@@ -750,6 +754,8 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           RecordPricePerSecond: media.RecordPricePerSecond,
           RecordCopies: media.RecordCopies,
           RecordRoyalty: media.RecordRoyalty,
+          ExclusivePermissions: media.ExclusivePermissions || false,
+          ExclusivePermissionsList: media.ExclusivePermissionsList || []
         };
 
         if (media.Type === 'LIVE_AUDIO_TYPE' || media === 'LIVE_VIDEO_TYPE') {
@@ -777,7 +783,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           bodySave.EndingTime = 0;
           bodySave.Rewards = '';
         } else if (media.Type === 'BLOG_TYPE' || media === 'BLOG_SNAP_TYPE') {
-          bodySave.EditorPages = media.editorPages;
+          bodySave.EditorPages = media.editorPages ?? body.editorPages;
         }
 
         await db.runTransaction(async (transaction) => {

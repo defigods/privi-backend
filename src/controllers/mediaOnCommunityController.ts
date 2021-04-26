@@ -87,13 +87,18 @@ export const createMediaOnCommunity = async (req: express.Request, res: express.
 
           const userSnap = await db.collection(collections.user).doc(userId).get();
           const userData: any = userSnap.data();
+
+          const communityRef = db.collection(collections.community).doc(community);
+          const communityGet = await communityRef.get();
+          const communityDoc : any = communityGet.data();
+
           await notificationsController.addNotification({
-            userId: userId,
+            userId: communityDoc.Creator,
             notification: {
               type: 112,
               typeItemId: 'user',
               itemId: body.media,
-              follower: userData.urlSlug,
+              follower: userData.firstName,
               pod: '',
               comment: '',
               token: 0,
