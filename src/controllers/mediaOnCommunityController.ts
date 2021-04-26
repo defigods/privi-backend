@@ -79,7 +79,7 @@ export const createMediaOnCommunity = async (req: express.Request, res: express.
             message: body.message,
             oldOffers: [],
             currentOffer: {
-              from: 'media',
+              from: 'Media',
               offer: body.offers[community],
               status: 'pending'
             }
