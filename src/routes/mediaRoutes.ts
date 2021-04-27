@@ -100,7 +100,7 @@ let storage6 = multer.diskStorage({
 let upload6 = multer({
   storage: storage6,
 });
-router.get('/getEthMedia/:id', mediaController.getEthMediaItem);
+// router.get('/getEthMedia/:id', mediaController.getEthMediaItem);
 
 router.get('/getUserMedias', authenticateJWT, mediaController.getUserMedias);
 router.get('/getUserMediaStreaming', authenticateJWT, mediaController.getUserMediaStreaming);
@@ -111,7 +111,7 @@ router.post('/mediaViewed/:mediaId', mediaController.registerMediaView);
 router.get('/getDigitalArt/:mediaId', mediaController.getMediaPhoto);
 router.get('/getBlog/:mediaPod/:mediaId/:pagination', mediaController.getMediaBlog);
 router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
-router.get('/getEthMedia/:pagination/:lastId', mediaController.getEthMedia);
+// router.get('/getEthMedia/:pagination/:lastId', mediaController.getEthMedia);
 
 router.get('/getPlaylists', playlistController.getPlaylists);
 router.get('/getMyPlaylists/:userId', authenticateJWT, playlistController.getMyPlaylists);
