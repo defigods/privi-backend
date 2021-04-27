@@ -6,7 +6,7 @@ import {startServer, startSocket} from "./controllers/serverController";
 
 const env: string = process.argv[2];
 
-//const chatController = require('./controllers/chatController');
+// const chatController = require('./controllers/chatController');
 
 const main = () => {
 

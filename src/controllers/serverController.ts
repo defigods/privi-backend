@@ -1,4 +1,5 @@
 //import dotenv from 'dotenv';
+<<<<<<< HEAD
 import express from 'express';
 import path from 'path';
 import helmet from 'helmet';
@@ -40,6 +41,48 @@ const mediaOnCommunityRoutes = require('../routes/mediaOnCommunityRoutes');
 const notificationsController = require('../controllers/notificationsController');
 
 type Env = 'dev' | 'prod' | 'devssl';
+=======
+import express from "express";
+import path from "path";
+import helmet from "helmet";
+import { db } from "../firebase/firebase";
+import collections, { mediaPods } from "../firebase/collections";
+import { generateUniqueId } from "../functions/functions";
+
+const logger = require("morgan");
+const cors = require("cors");
+const https = require("https");
+const fs = require("fs");
+const os = require("os");
+
+const userRoutes = require("../routes/userRoutes");
+const podRoutes = require("../routes/podRoutes");
+const stakeRoutes = require("../routes/stakeRoutes");
+const streamingRoutes = require("../routes/streamingRoutes");
+const lendingRoutes = require("../routes/lendingRoutes");
+const walletRoutes = require("../routes/walletRoutes");
+const priviScanRoutes = require("../routes/priviScanRoutes");
+const priviCreditRoutes = require("../routes/priviCreditRoutes");
+const priviDataRoutes = require("../routes/priviDataRoutes");
+const liquidityPoolRoutes = require("../routes/liquidityPoolRoutes");
+const ethereumRoutes = require("../routes/ethereumRoutes");
+const waxRoutes = require("../routes/waxRoutes");
+const insuranceRoutes = require("../routes/insuranceRoutes");
+const forumRoutes = require("../routes/forumRoutes");
+const communityRoutes = require("../routes/communityRoutes");
+const chatRoutes = require("../routes/chatRoutes");
+const votingRoutes = require("../routes/votingRoutes");
+const userLevelsRoutes = require("../routes/userLevelsRoutes");
+const socialRoutes = require("../routes/socialRoutes");
+const tasksRoutes = require("../routes/tasksRoutes");
+const collabRoutes = require("../routes/collabRoutes");
+const mediaRoutes = require("../routes/mediaRoutes");
+const mediaPodRoutes = require("../routes/mediaPodRoutes");
+
+const notificationsController = require("../controllers/notificationsController");
+
+type Env = "dev" | "prod" | "devssl";
+>>>>>>> alexandrewolff
 
 export let myServer;
 export let io;
@@ -78,6 +121,7 @@ export const startServer = (env: Env) => {
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Routes definition
+<<<<<<< HEAD
   app.use('/user', userRoutes);
   app.use('/pod', podRoutes);
   app.use('/stake', stakeRoutes);
@@ -102,6 +146,31 @@ export const startServer = (env: Env) => {
   app.use('/media', mediaRoutes);
   app.use('/mediaPod', mediaPodRoutes);
   app.use('/mediaOnCommunity', mediaOnCommunityRoutes);
+=======
+  app.use("/user", userRoutes);
+  app.use("/pod", podRoutes);
+  app.use("/stake", stakeRoutes);
+  app.use("/streaming", streamingRoutes);
+  app.use("/lendings", lendingRoutes);
+  app.use("/wallet", walletRoutes);
+  app.use("/privi-scan", priviScanRoutes);
+  app.use("/priviCredit", priviCreditRoutes);
+  app.use("/liquidityPool", liquidityPoolRoutes);
+  app.use("/ethereum", ethereumRoutes);
+  app.use("/wax", waxRoutes);
+  app.use("/privi-data", priviDataRoutes);
+  app.use("/forum", forumRoutes);
+  app.use("/insurance", insuranceRoutes);
+  app.use("/community", communityRoutes);
+  app.use("/chat", chatRoutes);
+  app.use("/voting", votingRoutes);
+  app.use("/user-levels", userLevelsRoutes);
+  app.use("/social", socialRoutes);
+  app.use("/tasks", tasksRoutes);
+  app.use("/collab", collabRoutes);
+  app.use("/media", mediaRoutes);
+  app.use("/mediaPod", mediaPodRoutes);
+>>>>>>> alexandrewolff
 
   // start all cron jobs
   // let name: string;

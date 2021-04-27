@@ -31,6 +31,7 @@ module.exports = {
   history: 'History',
   allTransactions: 'AllTransaction',
   ethTransactions: 'EthTransactions',
+  waxTransactions: 'WaxTransactions',
   waitlist: 'Waitlist',
   cloudDatabase: 'CloudDatabase',
 
@@ -169,5 +170,7 @@ module.exports = {
   playList: 'PlayList',
 
   marketingMediaCommunityChat: 'MarketingMediaCommunityChat',
-  marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage'
+  marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage',
+
+  waxActions: 'WaxActions',
 };
