@@ -1803,10 +1803,12 @@ exports.getCommunities = async (req: express.Request, res: express.Response) => 
       const data = allCommunities[i];
       const extraData = await getExtraData(data, rateOfChange);
       let arrayMembersId: any[] = await getArrayIdCommunityMembers(data);
+      const counters = await getCommunityCounters(data);
       allCommunities[i] = {
         ...data,
         ...extraData,
         arrayMembersId: arrayMembersId,
+        counters: counters,
       };
     }
 
@@ -1951,14 +1953,15 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 };
 
 // get a single community counters
-exports.getCommunityCounters = async (req: express.Request, res: express.Response) => {
+
+
+const getCommunityCounters = async (data) => {
   try {
-    let body = req.body;
     let commentsCounter = 0;
     let commentsMonthCounter = 0;
     let conversationsMonthCounter = 0;
-    const discordId = body.discordId;
-    const communityId = body.communityId;
+    const discordId = data.DiscordId;
+    const communityId = data.CommunityAddress;
     const monthPrior = new Date(new Date().setDate(new Date().getDate() - 30));
 
     // Blog posts
@@ -2037,20 +2040,13 @@ exports.getCommunityCounters = async (req: express.Request, res: express.Respons
       }
     });
 
-    res.send({
-      success: true,
-      data: {
+    return {
         commentsCounter: commentsCounter,
         commentsMonthCounter: commentsMonthCounter,
         conversationsMonthCounter: conversationsMonthCounter,
-      },
-    });
+    }
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);
-    res.send({
-      success: false,
-      error: 'Error in controllers/communitiesControllers -> getCommunityCounters()' + e,
-    });
   }
 };
 
@@ -2155,12 +2151,13 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
 
       const extraData = await getExtraData(communityData, rateOfChange);
       let arrayMembersId: any[] = await getArrayIdCommunityMembers(communityData);
-
+      const counters = await getCommunityCounters(communityData)
       trendingCommunities.push({
         ...communityData,
         ...extraData,
         id: id,
         arrayMembersId: arrayMembersId,
+        counters: counters,
       });
     }
     res.send({ success: true, data: { trending: trendingCommunities } });

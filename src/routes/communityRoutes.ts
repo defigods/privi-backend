@@ -191,7 +191,6 @@ router.post('/transfer', authenticateJWT, communityController.transfer);
 // communities
 router.get('/getCommunities/:pagination/:lastId', authenticateJWT, communityController.getCommunities);
 router.get('/getCommunity/:communityAddress', communityController.getCommunity);
-router.post('/getCommunityCounters', authenticateJWT, communityController.getCommunityCounters);
 router.get('/getTrendingCommunities', authenticateJWT, communityController.getTrendingCommunities);
 router.get('/getMembersData', authenticateJWT, communityController.getMembersData);
 router.get('/getUserPaymentData', authenticateJWT, communityController.getUserPaymentData);

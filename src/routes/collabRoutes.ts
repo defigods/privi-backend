@@ -10,7 +10,8 @@ router.post('/upvote', authenticateJWT, collabController.upvote);
 router.post('/react', authenticateJWT, collabController.react);
 router.post('/like', authenticateJWT, collabController.like);
 
-router.get('/getCollabs', authenticateJWT, collabController.getCollabs);
+router.get('/getTrendingCollabs', authenticateJWT, collabController.getTrendingCollabs);
+router.get('/getAllCollabs', authenticateJWT, collabController.getAllCollabs);
 router.get('/getTwitterUsers', collabController.getTwitterUsers);
 
 
