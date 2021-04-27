@@ -156,7 +156,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
           if (params) {
             let addData = true;
             //1. select the communities selection to show
-            const displayingPodsSelection = params.displayingPodsSelection;
+            const displayingPodsSelection = params.podStateSelection;
             if (displayingPodsSelection) {
               switch (displayingPodsSelection) {
                 case podStateOptions[0]:
