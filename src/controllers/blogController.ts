@@ -1553,7 +1553,7 @@ const pinItemPost = (exports.pinItemPost = (dbRef, dbGet, dbItem, pinned) => {
 exports.removeStories = cron.schedule("* * */1 * *", async () => {
   // TODO at some point we should add here request with limit and offset to avoid performance issue
   try {
-    console.log("********* Stories removeStories() cron job started *********");
+    //console.log("********* Stories removeStories() cron job started *********");
 
     // Communities
     await elementWallPost(
