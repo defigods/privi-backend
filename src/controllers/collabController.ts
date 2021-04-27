@@ -107,7 +107,7 @@ module.exports.like = async (req: express.Request, res: express.Response) => {
 
 ///////////////////////////// GET ///////////////////////////////
 // return the collabs according to the filter and sort options
-module.exports.getCollabs = async (req: express.Request, res: express.Response) => {
+module.exports.getTrendingCollabs = async (req: express.Request, res: express.Response) => {
     try {
         const params = req.query;
         const allCollabs: any[] = [];
@@ -128,10 +128,9 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
             const numUpvotes = Object.keys(obj.Upvotes ?? {}).length;
             if (numUpvotes >= mean) trendingCollabs.push(obj);
         });
-        const filteredCollabs = await filterCollabs(allCollabs, params);
         res.send({
-            success: true, data: {
-                allCollabs: filteredCollabs,
+            success: true, 
+						data: {
                 trendingCollabs: trendingCollabs
             }
         });
@@ -143,76 +142,98 @@ module.exports.getCollabs = async (req: express.Request, res: express.Response) 
 
 const displayOptions = ["All Collabs", "My Collabs"];
 const sortByOptions = ["Most Liked", "Recent"];
-const filterCollabs = (allCollabs, params) => {
-	const userId = params.userId;
-	let filteredCollabs: any[] = [];
-	// 1. filter by display option
-	const displaySelection = params.displaySelection;
-	if (displaySelection) {
-		switch (displaySelection) {
-			case displayOptions[0]:
+module.exports.getAllCollabs = async (req: express.Request, res: express.Response) => {
+	try {
+			const params = req.query;
+			const allCollabs: any[] = [];
+			const collabSnap = await db.collection(collections.collabs).get();
+			collabSnap.forEach((doc) => {
+					const data = doc.data();
+					allCollabs.push({
+							CollabId: doc.id,
+							...data
+					});
+			});
+		
+			// const filteredCollabs = await filterCollabs(allCollabs, params);
+			const userId = params.userId;
+			let filteredCollabs: any[] = [];
+			// 1. filter by display option
+			const displaySelection = params.displaySelection;
+			if (displaySelection) {
+				switch (displaySelection) {
+					case displayOptions[0]:
+						filteredCollabs = [...allCollabs];
+						break;
+					case displayOptions[1]:
+						allCollabs.forEach((collab) => {
+							// creator or collaborator
+							if (
+									collab.Creator == userId ||
+											(collab.Collaborators && collab.Collaborators.find((collabObj) => collabObj.id == userId))
+							)   {
+									filteredCollabs.push(collab);
+							}
+						});
+						break;
+					default:
+						filteredCollabs = [...allCollabs];
+						break;
+				}
+			} else {
 				filteredCollabs = [...allCollabs];
-				break;
-			case displayOptions[1]:
-				allCollabs.forEach((collab) => {
-					// creator or collaborator
+			}
+
+			//2. filter by user input
+			const searchValue = params.searchValue;
+			if (searchValue) {
+				let aux = [...filteredCollabs];
+				filteredCollabs = [];
+				aux.forEach((collab: any) => {
 					if (
-							collab.Creator == userId ||
-									(collab.Collaborators && collab.Collaborators.find((collabObj) => collabObj.id == userId))
-					)   {
-							filteredCollabs.push(collab);
-					}
+						(collab.Idea &&
+								collab.Idea.toLowerCase().includes(searchValue.toString().toLowerCase())) ||
+						(collab.Platform &&
+								collab.Platform.name &&
+								collab.Platform.name
+										.toLowerCase()
+										.includes(searchValue.toString().toLowerCase()))
+					)
+						filteredCollabs.push(collab);
 				});
-				break;
-			default:
-				filteredCollabs = [...allCollabs];
-				break;
-		}
-	} else {
-		filteredCollabs = [...allCollabs];
-	}
+			}
 
-	//2. filter by user input
-	const searchValue = params.searchValue;
-	if (searchValue) {
-		let aux = [...filteredCollabs];
-		filteredCollabs = [];
-		aux.forEach((collab: any) => {
-			if (
-				(collab.Idea &&
-						collab.Idea.toLowerCase().includes(searchValue.toLowerCase())) ||
-				(collab.Platform &&
-						collab.Platform.name &&
-						collab.Platform.name
-								.toLowerCase()
-								.includes(searchValue.toLowerCase()))
-			)
-				filteredCollabs.push(collab);
-		});
-	}
-
-	//3. sort
-	const sortSelection = params.sortSelection;
-	if (sortSelection) {
-		switch (sortSelection) {
-			case sortByOptions[0]:
-				filteredCollabs.sort((a, b) => {
-					const aLikes = a.Likes ?? 0;
-					const bLikes = b.Likes ?? 0;
-					return bLikes.length - aLikes.length;
-				});
-				break;
-			case sortByOptions[1]:
-				filteredCollabs.sort((a, b) => {
-					const aDate = a.CreatedAt ?? 0;
-					const bDate = b.CreatedAt ?? 0;
+			//3. sort
+			const sortSelection = params.sortSelection;
+			if (sortSelection) {
+				switch (sortSelection) {
+					case sortByOptions[0]:
+						filteredCollabs.sort((a, b) => {
+							const aLikes = a.Likes ?? 0;
+							const bLikes = b.Likes ?? 0;
+							return bLikes.length - aLikes.length;
+						});
+						break;
+					case sortByOptions[1]:
+						filteredCollabs.sort((a, b) => {
+							const aDate = a.CreatedAt ?? 0;
+							const bDate = b.CreatedAt ?? 0;
 					return bDate - aDate;
 				});
 				break;
 		}
 	}
-	return filteredCollabs;
-}
+			res.send({
+					success: true, 
+					data: {
+							allCollabs: filteredCollabs,
+					}
+			});
+	} catch (err) {
+			console.log('Error in controllers/collabController -> getCollabs()', err);
+			res.send({ success: false });
+	}
+};
 
 
 const config2 = {
