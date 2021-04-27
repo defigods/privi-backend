@@ -218,15 +218,14 @@ export const startSocket = (env: Env) => {
 
       socket.userId = userId;
 
-      sockets[socket.userId] = socket; // save reference
+      if (!Array.isArray(sockets[userId])) sockets[userId] = [];
+      sockets[userId].push(socket); // save reference
       socket.join(userId); // subscribe to own room
 
       const userRef = db.collection(collections.user).doc(userId);
-      // const userGet = await userRef.get();
-      // const user: any = userGet.data();
       await userRef.update({
         connected: true,
-        socketId: socket.id,
+        socketId: sockets[userId].map((sock) => sock.id),
       });
       socket.broadcast.emit('user_connect_status', { userId: userId, connected: true });
     });
@@ -238,22 +237,21 @@ export const startSocket = (env: Env) => {
 
     // when the user disconnects.. perform this
     socket.on('disconnect', async () => {
-      console.log('disconnect', socket.id);
+      console.log('socket disconnect', socket.id);
 
       let usersRef = db.collection(collections.user);
-      let userRef = await usersRef.where('socketId', '==', socket.id);
+      let userRef = usersRef.where('socketId', 'array-contains', socket.id);
       const userGet = await userRef.get();
       userGet.forEach(async (user) => {
         if (user.id) {
           const userRef = db.collection(collections.user).doc(user.id);
-
-          sockets[user.id] = null;
+          sockets[user.id] = sockets[user.id].filter((sock) => sock.id !== socket.id);
+          const connected = sockets[user.id].length > 0;
           await userRef.update({
-            connected: false,
-            socketId: null,
+            connected: connected,
+            socketId: sockets[user.id].map((sock) => sock.id),
           });
-
-          socket.broadcast.emit('user_connect_status', { userId: user.id, connected: false });
+          socket.broadcast.emit('user_connect_status', { userId: user.id, connected });
         } else {
           console.log('disconnect');
         }
