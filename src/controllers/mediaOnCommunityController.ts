@@ -72,7 +72,7 @@ export const createMediaOnCommunity = async (req: express.Request, res: express.
 
       if(communitiesKeys && communitiesKeys.length > 0) {
         for(const community of communitiesKeys) {
-          await db.collection(collections.mediaOnCommunity).add({
+          let addedMediaOnCommunity = await db.collection(collections.mediaOnCommunity).add({
             media: body.media,
             pod: body.pod,
             community: community,
@@ -104,7 +104,7 @@ export const createMediaOnCommunity = async (req: express.Request, res: express.
               itemId: body.media,
               follower: userData.firstName,
               pod: media.MediaSymbol,
-              comment: '',
+              comment: addedMediaOnCommunity.id,
               token: 0,
               amount: body.offers[community],
               onlyInformation: false,

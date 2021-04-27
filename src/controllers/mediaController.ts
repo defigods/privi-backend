@@ -2423,17 +2423,17 @@ export const openNFT = async (req: express.Request, res: express.Response) => {
       }
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/mediaController -> buyMediaNFT()' + blockchainRes.message);
+      console.log('Error in controllers/mediaController -> openNFT()' + blockchainRes.message);
       res.send({
         success: false,
-        error: blockchainRes.error,
+        error: blockchainRes.message,
       });
     }
   } catch (e) {
-    console.log('Error in controllers/mediaController -> buyMediaNFT()' + e);
+    console.log('Error in controllers/mediaController -> openNFT()' + e);
     res.status(200).send({
       success: false,
-      error: 'Error in controllers/mediaController -> buyMediaNFT():' + e,
+      error: 'Error in controllers/mediaController -> openNFT():' + e,
     });
   }
 };
@@ -2448,6 +2448,7 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
     const address = data.Address;
 
     const blockchainRes = await media.closeNFT(mediaSymbol, address, apiKey);
+    console.log(blockchainRes)
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
@@ -2466,7 +2467,7 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
       console.log('Error in controllers/mediaController -> closeNFT()' + blockchainRes.message);
       res.send({
         success: false,
-        error: blockchainRes.error,
+        error: blockchainRes.message,
       });
     }
   } catch (e) {

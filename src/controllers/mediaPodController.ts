@@ -783,6 +783,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           bodySave.EndingTime = 0;
           bodySave.Rewards = '';
         } else if (media.Type === 'BLOG_TYPE' || media === 'BLOG_SNAP_TYPE') {
+          console.log(media.editorPages, body.editorPages);
           bodySave.EditorPages = media.editorPages ?? body.editorPages;
         }
 
