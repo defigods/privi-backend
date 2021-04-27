@@ -878,11 +878,13 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       basicInfo.address = userData.address || '';
 
       var bgs = [] as any;
-      basicInfo.badges.forEach(async (item, index) => {        
-        const badgeSnap = await db.collection(collections.badges).doc(item.id).get();
-        const bgData = badgeSnap.data();
-        bgs.push(bgData);
-      });
+      if(basicInfo.badges && basicInfo.badges.length > 0){
+        basicInfo.badges.forEach(async (item, index) => {        
+          const badgeSnap = await db.collection(collections.badges).doc(item.id).get();
+          const bgData = badgeSnap.data();
+          bgs.push(bgData);
+        });
+      }
 
       basicInfo.badges = bgs;
       res.send({ success: true, data: basicInfo });
