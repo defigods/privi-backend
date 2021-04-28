@@ -114,6 +114,8 @@ export async function updateFirebase(blockchainRes) {
         const updatedProtocolPool = output.UpdatedProtocolPool;
         // staking
         const updateStakings = output.UpdateStakings;
+        // auction (media)
+        const updateAuctions = output.Auctions;
 
         // social token
         const updateSocialPools = output.UpdateSocialPools;
@@ -253,6 +255,14 @@ export async function updateFirebase(blockchainRes) {
                 if (podAddress) transaction.set(db.collection(collections.mediaPods).doc(podAddress).collection(collections.medias).doc(mediaSymbol), mediaObj, { merge: true });
                 // when crated alone
                 else transaction.set(db.collection(collections.streaming).doc(mediaSymbol), mediaObj, { merge: true });
+            }
+        }
+        // update auctions 
+        if (updateAuctions) {
+            let mediaSymbol: string = '';
+            let mediaObj: any = null;
+            for ([mediaSymbol, mediaObj] of Object.entries(updateAuctions)) { // add in both colections
+                transaction.set(db.collection(collections.streaming).doc(mediaSymbol), {Auctions: mediaObj}, { merge: true });
             }
         }
         // update streamings
