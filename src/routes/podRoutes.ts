@@ -185,6 +185,7 @@ router.post('/NFT/addOffer', authenticateJWT, podController.addOffer);
 router.post('/NFT/changeOffer', authenticateJWT, podController.changeOffer);
 router.post('/NFT/signTransactionAcceptOffer', authenticateJWT, podController.signTransactionAcceptOffer);
 router.get('/NFT/getWIP/:mediaIdNFT/:userId/:notificationId', authenticateJWT, podController.getWIP);
+router.get('/NFT/getNFTsList', authenticateJWT, podController.getNFTsList);
 
 router.post('/WIP/changePhoto', authenticateJWT, upload6.single('image'), podController.changeWIPPhoto);
 router.post('/WIP/changePhotoToken', authenticateJWT, upload7.single('image'), podController.changeWIPPhotoToken);
