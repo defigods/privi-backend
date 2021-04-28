@@ -9,7 +9,7 @@ const fabricPort = 4000;
 const fabricEndpoint = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/";
 
 
-const blockchainCoinBalanceAPI = testnetEndpoint + "CoinBalance";
+const blockchainCoinBalanceAPI = testnetEndpoint + "CoinBalance";	// changed
 const blockchainDataProtocolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/DataProtocol";
 const blockchainTraditionalLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/TraditionalLending";
 const blockchainPriviLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PRIVIcredit";
@@ -17,7 +17,7 @@ const blockchainPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/ap
 const blockchainPodNFTPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodNFT";
 const blockchainPodMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodMedia";
 const blockchainFractionaliseMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/fractionaliseMedia";
-const blockchainMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Media";
+const blockchainMediaAPI = testnetEndpoint + "Media";	// changed
 const blockchainInsuranceFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceFT";
 const blockchainInsuranceNFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceNFT"
 const blockchainPriviGovernanceAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviGovernance";
@@ -26,6 +26,7 @@ const blockchainBadgesAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "
 const blockchainVotationAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Votation";
 const blockchainLiquidityPoolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviLiquidityPools";
 const blockchainSocialAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/SocialToken";
+const blockchainAuctionsAPI = testnetEndpoint + "Auction";
 
 module.exports = {
 	blockchainCoinBalanceAPI: blockchainCoinBalanceAPI,
@@ -45,4 +46,5 @@ module.exports = {
 	blockchainPodMediaAPI: blockchainPodMediaAPI,
 	blockchainMediaAPI: blockchainMediaAPI,
 	blockchainFractionaliseMediaAPI: blockchainFractionaliseMediaAPI,
+	blockchainAuctionsAPI: blockchainAuctionsAPI,
 };
