@@ -60,7 +60,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // const isPrevLastIdPrivi: boolean = req.params.isLastIdPrivi == "false" ? false : true;
     const pagination: number = body.pagination ?? 1;
     const prevLastId: string = body.lastId ?? 'null'; // could be:  MediaName or title for scrapped media
-    const isPrevLastIdPrivi: boolean = body.isLastIdPrivi ?? true;
+    const prevLastIdBlockchain: string = body.lastIdBlockchain ?? 'PRIVI';
     // filter vars
     const blockChains = body.blockChains ?? [];
     const mediaTypes = body.mediaTypes ?? [];
@@ -72,7 +72,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     let medias: any[] = [];
     // --- PRIVI Medias ---
     // if the last media was from eth then means the privi medias are already retrieved
-    if (isPrevLastIdPrivi && blockChains.includes('PRIVI')) {
+    if (prevLastIdBlockchain === 'PRIVI' && blockChains.includes('PRIVI')) {
       let priviMediaQuery = db.collection(collections.streaming).orderBy('MediaName', 'asc');
 
       if (prevLastId != 'null') {
@@ -108,7 +108,14 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     // convert blockchain list to lower case
     const otherBlockchainsList = blockChains.filter((blockchain) => blockchain !== 'PRIVI');
     // loop through otherBlockainsList and stop if available size runs out
-    for (let i = 0; i < otherBlockchainsList.length && availableSize > 0; i++) {
+    let i = 0;
+    // loop until meet the last blockchain
+    if (prevLastIdBlockchain && prevLastIdBlockchain !== 'PRIVI') {
+      while (otherBlockchainsList[i] !== prevLastIdBlockchain) {
+        i++;
+      }
+    }
+    for (;i < otherBlockchainsList.length && availableSize > 0; i++) {
       const blockchain = otherBlockchainsList[i];
       // get the current mediaCollection
       let ethMediaCollection;
@@ -142,7 +149,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       if (ethMediaCollection) {
         let ethMediaQuery = db.collection(ethMediaCollection).orderBy('title', 'asc');
         // if last media was ETH
-        if (!isPrevLastIdPrivi && prevLastId != 'null') {
+        if (prevLastIdBlockchain === blockchain && prevLastId != 'null') {
           ethMediaQuery = ethMediaQuery.where('title', '>', prevLastId);
         }
         // 1. filter with query and limit with pagination size
@@ -174,7 +181,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           if (data.url) {
             medias.push({
               id: doc.id,
-              blockchain: 'ETH',
+              blockchain,
               ...data,
             });
             // update availabeSize
@@ -186,12 +193,14 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
     // prepare return data
     let lastId = 'null';
+    let lastIdBlockchain = 'PRIVI';
     let isLastIdPrivi = true;
     let hasMore = medias.length == MEDIA_PAGE_SIZE;
     if (medias.length > 0) {
       isLastIdPrivi = medias[medias.length - 1].blockchain == 'PRIVI';
       if (isLastIdPrivi) lastId = medias[medias.length - 1].MediaName;
       else lastId = medias[medias.length - 1].title;
+      lastIdBlockchain = medias[medias.length - 1].blockchain;
     }
     const mediasMap: any = {};
     const promises: any[] = [];
@@ -212,8 +221,8 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
     const retData = {
       data: medias,
-      lastId: lastId,
-      isLastIdPrivi: isLastIdPrivi,
+      lastId,
+      lastIdBlockchain,
       hasMore: hasMore,
     };
     // return data to frontend
