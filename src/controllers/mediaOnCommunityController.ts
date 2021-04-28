@@ -101,7 +101,7 @@ export const createMediaOnCommunity = async (req: express.Request, res: express.
             notification: {
               type: 113,
               typeItemId: 'user',
-              itemId: body.media,
+              itemId: userId,
               follower: userData.firstName,
               pod: media.MediaSymbol,
               comment: addedMediaOnCommunity.id,
