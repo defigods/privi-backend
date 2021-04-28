@@ -18,6 +18,7 @@ import {
 } from '../functions/functions';
 import collections from '../firebase/collections';
 import { db } from '../firebase/firebase';
+import axios from 'axios';
 import cron from 'node-cron';
 const fs = require('fs');
 const path = require('path');
@@ -3086,6 +3087,40 @@ exports.checkPodInfo = async (req: express.Request, res: express.Response) => {
     return 'Error in controllers/podController -> checkPodInfo(): ' + e;
   }
 };
+
+exports.getNFTsList = async (req: express.Request, res: express.Response) => {
+  const { address } = req.query;
+  axios.post('https://api.thegraph.com/subgraphs/name/seniordev32/privi-pods', {
+    query: `
+      {
+        nfts {
+          id
+          tokenId
+          tokenURI
+          account (where: { address: "${address}" } ) {
+            id
+            address
+          }
+        }
+      }
+    `
+  })
+  .then((response) => {
+    if (response.data.errors) {
+      res.send({ success: false, error: [response.data.errors[0].message] });
+      return;
+    }
+    const nfts = [...(response.data.data.nfts || [])];
+    for (const nft of nfts) {
+      console.log(nft);
+    }
+    res.send({ success: true, nfts });
+  })
+  .catch((error) => {
+    console.error(error)
+    res.send({ success: false, error });
+  })
+}
 
 //////////////////////////////////////////////////////////////
 /////////////////////////// CRON JOBS //////////////////////////////
