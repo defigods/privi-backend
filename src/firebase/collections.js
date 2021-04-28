@@ -166,6 +166,7 @@ module.exports = {
   mediaFraction: 'MediaFraction', // Fractionalise
   ownershipHistory: 'OwnershipHistory',
   mediaOnCommunity: 'MediaOnCommunity',
+  mediaOnCommunityChat: 'MediaOnCommunityChat',
 
   playList: 'PlayList',
 
