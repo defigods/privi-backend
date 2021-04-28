@@ -28,7 +28,7 @@ export const createAuction = async (req: express.Request, res: express.Response)
         let txnArray: any = null;
         for ([tid, txnArray] of Object.entries(transactions)) {
             db.collection(collections.streaming)
-            .doc(tokenSymbol)
+            .doc(mediaSymbol)
             .collection(collections.transactions)
             .doc(tid)
             .set({ Transactions: txnArray });
@@ -52,7 +52,7 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       const mediaSymbol = data.MediaSymbol;
       const tokenSymbol = data.TokenSymbol;
       const owner = data.Owner;
-      const address = data.Address;
+      const address = data.Address; // bidder address
       const amount = data.Amount;
       
       const blockchainRes = await auction.placeBid(mediaSymbol, tokenSymbol, owner, address, amount, apiKey);
@@ -64,11 +64,17 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
           let txnArray: any = null;
           for ([tid, txnArray] of Object.entries(transactions)) {
               db.collection(collections.streaming)
-              .doc(tokenSymbol)
+              .doc(mediaSymbol)
               .collection(collections.transactions)
               .doc(tid)
               .set({ Transactions: txnArray });
           }
+          // add bid to history
+          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.bidHistory).add({
+              date: Date.now(),
+              bidderAddress: address,
+              price: amount,
+          })
           res.send({success: true});
       }
       else {
@@ -98,7 +104,7 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
           let txnArray: any = null;
           for ([tid, txnArray] of Object.entries(transactions)) {
               db.collection(collections.streaming)
-              .doc(tokenSymbol)
+              .doc(mediaSymbol)
               .collection(collections.transactions)
               .doc(tid)
               .set({ Transactions: txnArray });
@@ -132,7 +138,7 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
           let txnArray: any = null;
           for ([tid, txnArray] of Object.entries(transactions)) {
               db.collection(collections.streaming)
-              .doc(tokenSymbol)
+              .doc(mediaSymbol)
               .collection(collections.transactions)
               .doc(tid)
               .set({ Transactions: txnArray });
