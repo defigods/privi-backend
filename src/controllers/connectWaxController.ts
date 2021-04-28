@@ -317,9 +317,9 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
     throw new Error(err.message);
   }
 
-  if (snapshot.empty) {
-    return console.log('No pending action');
-  }
+  // if (snapshot.empty) {
+  //   return console.log('No pending action');
+  // }
 
   const { docs } = snapshot;
   const docsValues: any[] = Object.values(docs);
