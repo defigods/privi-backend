@@ -26,6 +26,8 @@ import { sockets } from './serverController';
 import { LEVELS, ONE_DAY } from '../constants/userLevels';
 import { send } from 'process';
 const uuid = require('uuid');
+const ethUtil = require('ethereumjs-util');
+const sigUtil = require('eth-sig-util');
 
 const walletController = require('./walletController');
 const levels = require('./userLevelsController');
@@ -307,48 +309,69 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
   try {
     const body = req.body;
     const address = body.address;
+    const signature = body.signature;
     if (address) {
-      // Compare user & passwd between login input and DB
-      const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
-      // Return result
-      if (user.empty) {
-        console.log('not found');
-        res.send({ isSignedIn: false, userData: {}, message: "Wallet Address doesn't exsit" });
-      } else {
-        console.log('found from address');
-        const data = user.docs[0].data();
-
-        if (!data.notifications) {
-          data.notifications = [];
+      // Recover signature to verify signer as wallet owner.
+      const msgParams = [
+        {
+          type: 'string',
+          name: 'Message',
+          value: 'Hi, Alice'
+        },
+        {
+          type: 'uint32',
+          name: 'A number',
+          value: '1337'
         }
-        // data.notifications.concat(allWallPost);
+      ]
+      const recovered = sigUtil.recoverTypedSignatureLegacy({ data: msgParams, sig: signature })
 
-        let success = true;
+      if (ethUtil.toChecksumAddress(recovered) !== ethUtil.toChecksumAddress(address)) {
+        console.log('Failed to verify signer');
+        res.send({ isSignedIn: false, userData: {}, message: "Signer verification failed" });
+      } else {
+        // Compare user & passwd between login input and DB
+        const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
+        // Return result
+        if (user.empty) {
+          console.log('not found');
+          res.send({ isSignedIn: false, userData: {}, message: "Wallet Address doesn't exsit" });
+        } else {
+          console.log('found from address');
+          const data = user.docs[0].data();
 
-        data.id = user.docs[0].id;
-        if (success) {
-          console.log('Login successful');
+          if (!data.notifications) {
+            data.notifications = [];
+          }
+          // data.notifications.concat(allWallPost);
 
-          // Generate an access token
-          let expiryDate = new Date();
-          expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
+          let success = true;
 
-          const accessToken = jwt.sign(
-            {
-              id: data.id,
-              email: data.email,
-              role: data.role,
-              iat: Date.now(),
-              exp: expiryDate.getTime(),
-            },
-            configuration.JWT_SECRET_STRING
-          );
+          data.id = user.docs[0].id;
+          if (success) {
+            console.log('Login successful');
 
-          res.send({
-            isSignedIn: true,
-            userData: data,
-            accessToken: accessToken,
-          });
+            // Generate an access token
+            let expiryDate = new Date();
+            expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
+
+            const accessToken = jwt.sign(
+              {
+                id: data.id,
+                email: data.email,
+                role: data.role,
+                iat: Date.now(),
+                exp: expiryDate.getTime(),
+              },
+              configuration.JWT_SECRET_STRING
+            );
+
+            res.send({
+              isSignedIn: true,
+              userData: data,
+              accessToken: accessToken,
+            });
+          }
         }
       }
     } else {
