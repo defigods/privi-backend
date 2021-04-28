@@ -173,12 +173,12 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           ethMediaQuery = ethMediaQuery.where('status', 'array-contains', status);
         }
         // 5. pagination limit
-        ethMediaQuery = ethMediaQuery.limit(availableSize);
+        // ethMediaQuery = ethMediaQuery.limit(availableSize);
         // 6. get data from query
         const ethSnap = await ethMediaQuery.get();
         ethSnap.forEach((doc) => {
           const data = doc.data();
-          if (data.url) {
+          if (data.url && data.url !== 'Error' && availableSize) {
             medias.push({
               id: doc.id,
               blockchain,
