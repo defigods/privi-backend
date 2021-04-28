@@ -190,23 +190,58 @@ module.exports.saveCollectionDataInJSON = async (req: express.Request, res: expr
 module.exports.transfer = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
-    const userId = body.UserId;
-    const from = body.From; //  passed as address from frontend
-    const to = body.To; // passed as address from frontend
+    const fromUserId = body.UserId;
+    const fromCommunityId = body.From; //  passed as Community ID/Address (it's the same)
+    const toUserId = body.To; // passed as User ID
     const amount = body.Amount;
     const token = body.Token;
     const type = body.Type;
     const hash = body.Hash;
     const signature = body.Signature;
     // console.log(body);
-    if (!req.body.priviUser.id || req.body.priviUser.id != userId) {
+    if (!req.body.priviUser.id || req.body.priviUser.id != fromUserId) {
       console.log('error: jwt user is not the same as fromUid');
       res.send({ success: false, message: 'jwt user is not the same as fromUid' });
       return;
     }
-    const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
+
+    const toUser = (await db.collection(collections.user).doc(toUserId).get()).data();
+    const fromUser = (await db.collection(collections.user).doc(fromUserId).get()).data();
+    const fromCommunity = (await db.collection(collections.community).doc(fromCommunityId).get()).data();
+
+    const toAddress = toUser?.address;
+    const fromAddress = fromCommunity?.CommunityAddress;
+
+    const blockchainRes = await coinBalance.transfer(
+      fromAddress,
+      toAddress,
+      amount,
+      token,
+      type,
+      hash,
+      signature,
+      apiKey
+    );
+
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
+
+      await notificationsController.addNotification({
+        userId: toUserId,
+        notification: {
+          type: 115,
+          typeItemId: 'user',
+          itemId: fromUserId,
+          follower: fromUser?.firstName,
+          pod: fromCommunity?.Name ?? '',
+          comment: '',
+          token: token,
+          amount: amount,
+          onlyInformation: true,
+          otherItemId: fromCommunityId,
+        },
+      });
+
       res.send({ success: true });
     } else {
       console.log(
