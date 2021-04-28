@@ -1,32 +1,34 @@
-// const FabricAppServerIP = "207.154.215.199";
-// const FabricAppServerIP = "127.0.0.1"; // for testing local
-// const FabricAppServerIP = "167.99.245.246"; // for testing
+// const fabricAppServerIP = "207.154.215.199";
+// const fabricAppServerIP = "127.0.0.1"; // for testing local
+const testnetAppServerIP = "167.99.245.246"; // test
+const testnetPort = 4000;
+const testnetEndpoint = "http://" + testnetAppServerIP + ":" + testnetPort + "/api/";
 
-const FabricAppServerIP = "64.225.22.17"; // main
-const port = 4000;
-const blockchainApi = "http://" + FabricAppServerIP + ":" + port + "/api/fabric";
+const fabricAppServerIP = "64.225.22.17"; // main
+const fabricPort = 4000;
+const fabricEndpoint = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/";
 
 
-const blockchainCoinBalanceAPI = "http://" + FabricAppServerIP + ":" + port + "/api/CoinBalance";
-const blockchainDataProtocolAPI = "http://" + FabricAppServerIP + ":" + port + "/api/DataProtocol";
-const blockchainTraditionalLendingAPI = "http://" + FabricAppServerIP + ":" + port + "/api/TraditionalLending";
-const blockchainPriviLendingAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PRIVIcredit";
-const blockchainPodAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodFT";
-const blockchainPodNFTPodAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodNFT";
-const blockchainPodMediaAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PodMedia";
-const blockchainFractionaliseMediaAPI = "http://" + FabricAppServerIP + ":" + port + "/api/fractionaliseMedia";
-const blockchainMediaAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Media";
-const blockchainInsuranceFTAPI = "http://" + FabricAppServerIP + ":" + port + "/api/InsuranceFT";
-const blockchainInsuranceNFTAPI = "http://" + FabricAppServerIP + ":" + port + "/api/InsuranceNFT"
-const blockchainPriviGovernanceAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PriviGovernance";
-const blockchainCommunityAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Communities";
-const blockchainBadgesAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Badges";
-const blockchainVotationAPI = "http://" + FabricAppServerIP + ":" + port + "/api/Votation";
-const blockchainLiquidityPoolAPI = "http://" + FabricAppServerIP + ":" + port + "/api/PriviLiquidityPools";
-const blockchainSocialAPI = "http://" + FabricAppServerIP + ":" + port + "/api/SocialToken";
+const blockchainCoinBalanceAPI = testnetEndpoint + "CoinBalance";	// changed
+const blockchainDataProtocolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/DataProtocol";
+const blockchainTraditionalLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/TraditionalLending";
+const blockchainPriviLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PRIVIcredit";
+const blockchainPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodFT";
+const blockchainPodNFTPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodNFT";
+const blockchainPodMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodMedia";
+const blockchainFractionaliseMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/fractionaliseMedia";
+const blockchainMediaAPI = testnetEndpoint + "Media";	// changed
+const blockchainInsuranceFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceFT";
+const blockchainInsuranceNFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceNFT"
+const blockchainPriviGovernanceAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviGovernance";
+const blockchainCommunityAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Communities";
+const blockchainBadgesAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Badges";
+const blockchainVotationAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Votation";
+const blockchainLiquidityPoolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviLiquidityPools";
+const blockchainSocialAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/SocialToken";
+const blockchainAuctionsAPI = testnetEndpoint + "Auction";
 
 module.exports = {
-	blockchainApi: blockchainApi,
 	blockchainCoinBalanceAPI: blockchainCoinBalanceAPI,
 	blockchainDataProtocolAPI: blockchainDataProtocolAPI,
 	blockchainTraditionalLendingAPI: blockchainTraditionalLendingAPI,
@@ -44,4 +46,5 @@ module.exports = {
 	blockchainPodMediaAPI: blockchainPodMediaAPI,
 	blockchainMediaAPI: blockchainMediaAPI,
 	blockchainFractionaliseMediaAPI: blockchainFractionaliseMediaAPI,
+	blockchainAuctionsAPI: blockchainAuctionsAPI,
 };
