@@ -625,20 +625,17 @@ module.exports.toggleUserRegisteredEthAccounts = async (req: express.Request, re
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
     const walletData = userData?.wallets ?? [];
-    const filteredWalletData = walletData.map((wallet) => {
-      if (wallet.address !== address) return wallet;
-      return {
-        ...wallet,
-        walletStatus: newState,
-      };
-    });
+    const filteredWalletData = walletData.map((wallet) => ({
+      ...wallet,
+      walletStatus: wallet.address !== address ? (newState ? false : wallet.walletStatus) : newState,
+    }));
 
     await db
       .collection(collections.user)
       .doc(userId)
       .update({ ...userData, wallets: filteredWalletData });
 
-    res.send({ success: true });
+    res.send({ success: true, data: filteredWalletData });
   } catch (err) {
     console.log('Error in controllers/walletController -> toggleUserRegisteredEthAccounts()', err);
     res.send({ success: false, result: false });
@@ -741,7 +738,7 @@ module.exports.registerWaxWallet = async (req: express.Request, res: express.Res
         ...walletData,
         newWallet
       ]
-      db.collection(collections.user) 
+      db.collection(collections.user)
         .doc(userId)
         .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
