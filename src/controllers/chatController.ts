@@ -61,11 +61,18 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
         room = '' + userTo.userId + '' + userFrom.userId;
       }
 
+      let dir = 'uploads/chat/one-to-one/' + room;
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      }
+
       const chatQuery = await db.collection(collections.chat).where('room', '==', room).get();
       if (!chatQuery.empty) {
         for (const doc of chatQuery.docs) {
           let data = doc.data();
           data.id = doc.id;
+
           res.status(200).send({
             success: true,
             data: data,
@@ -227,7 +234,9 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
           if (data && data.messages && data.messages.length > 0) {
             for (let i = 0; i < data.messages.length; i++) {
               const messageGet = await db.collection(collections.message).doc(data.messages[i]).get();
-              messages.push(messageGet.data());
+              let msg : any = messageGet.data();
+              msg.id = messageGet.id;
+              messages.push(msg);
 
               if (i === data.messages.length - 1) {
                 res.status(200).send({
@@ -1877,6 +1886,245 @@ const discordGetMediaMessage = (
     }
   });
 };
+
+//MEDIA CHAT 1-to-1
+
+exports.chatUploadPhotoMessage = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.room && req.params.from && req.params.to) {
+      let message: any = await addMediaMessageChat(
+        req.params.room,
+        req.params.from,
+        req.params.to,
+        'photo',
+        req.file,
+        '.png'
+      );
+
+      res.send({
+        success: true,
+        data: message,
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/chatRoutes -> chatUploadPhotoMessage() ' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+exports.chatUploadAudioMessage = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.room && req.params.from && req.params.to) {
+      let message: any = await addMediaMessageChat(
+        req.params.room,
+        req.params.from,
+        req.params.to,
+        'audio',
+        req.file,
+        '.mp3'
+      );
+
+      res.send({
+        success: true,
+        data: message,
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/chatRoutes -> chatUploadAudioMessage() ' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+exports.chatUploadVideoMessage = async (req: express.Request, res: express.Response) => {
+  try {
+    if (req.file && req.params && req.params.room && req.params.from && req.params.to) {
+      let message: any = await addMediaMessageChat(
+        req.params.room,
+        req.params.from,
+        req.params.to,
+        'video',
+        req.file,
+        '.mp4'
+      );
+
+      res.send({
+        success: true,
+        data: message,
+      });
+    }
+  } catch (e) {
+    console.log('Error in controllers/chatRoutes -> chatUploadVideoMessage() ' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+const addMediaMessageChat = (
+  room: string,
+  from: string,
+  to: string,
+  type: string,
+  file: any,
+  extension: string
+) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      const uid = generateUniqueId();
+
+      const userSnap = await db.collection(collections.user).doc(from).get();
+      const user: any = userSnap.data();
+
+      await db.runTransaction(async (transaction) => {
+        // userData - no check if firestore insert works? TODO
+        transaction.set(db.collection(collections.message).doc(uid), {
+          room: room,
+          message: '',
+          from: from,
+          to: to,
+          created: Date.now(),
+          seen: false,
+          type: type
+        });
+      });
+
+      const chatQuery = await db.collection(collections.chat).where('room', '==', room).get();
+      if (!chatQuery.empty) {
+        for (const doc of chatQuery.docs) {
+          let data = doc.data();
+          let messages: any = data.messages;
+          messages.push(uid);
+
+          db.collection(collections.chat).doc(doc.id).update({
+            messages: messages,
+            lastMessage: type,
+            lastMessageDate: Date.now(),
+          });
+        }
+      }
+
+      let dir = 'uploads/chat/one-to-one/' + room;
+
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir);
+      } else {
+        fs.rename(file.path, dir + '/' + uid + extension, function (err) {
+          if (err) console.log('ERROR: ' + err);
+        });
+      }
+
+      resolve({
+        id: uid,
+        room: room,
+        message: '',
+        from: from,
+        to: to,
+        created: Date.now(),
+        seen: false,
+        type: type,
+      });
+    } catch (e) {
+      console.log(e);
+      reject(e);
+    }
+  });
+};
+
+exports.chatGetPhotoMessage = async (req: express.Request, res: express.Response) => {
+  try {
+    let room = req.params.room;
+    let from = req.params.from;
+    let messageId = req.params.messageId;
+    console.log(req.params, room && from && messageId);
+
+    if (room && from && messageId) {
+      await chatGetMediaMessage(room, from, messageId, '.png', 'image', res);
+    } else {
+      console.log('Error in controllers/chatRoutes -> chatGetPhotoMessage()', "There's no id...");
+      res.sendStatus(400); // bad request
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/chatRoutes -> chatGetPhotoMessage() ' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+exports.chatGetAudioMessage = async (req: express.Request, res: express.Response) => {
+  try {
+    let room = req.params.room;
+    let from = req.params.from;
+    let messageId = req.params.messageId;
+
+    if (room && from && messageId) {
+      await chatGetMediaMessage(room, from, messageId, '.mp3', 'audio', res);
+    } else {
+      console.log('Error in controllers/chatRoutes -> chatGetAudioMessage()', "There's no id...");
+      res.sendStatus(400); // bad request
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/chatRoutes -> chatGetAudioMessage() ' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+exports.chatGetVideoMessage = async (req: express.Request, res: express.Response) => {
+  try {
+    let room = req.params.room;
+    let from = req.params.from;
+    let messageId = req.params.messageId;
+
+    if (room && from && messageId) {
+      await chatGetMediaMessage(room, from, messageId, '.mp4', 'video', res);
+    } else {
+      console.log('Error in controllers/chatRoutes -> chatGetVideoMessage()', "There's no id...");
+      res.sendStatus(400); // bad request
+      res.send({ success: false });
+    }
+  } catch (e) {
+    console.log('Error in controllers/chatRoutes -> chatGetVideoMessage() ' + e);
+    res.send({ success: false, error: e });
+  }
+};
+
+const chatGetMediaMessage = (
+  room: string,
+  from: string,
+  messageId: string,
+  extension: string,
+  type: string,
+  res: express.Response
+) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const directoryPath = path.join('uploads', 'chat', 'one-to-one', room);
+      fs.readdir(directoryPath, function (err, files) {
+        //handling error
+        if (err) {
+          return console.log('Unable to scan directory: ' + err);
+        }
+        //listing all files using forEach
+        files.forEach(function (file) {
+          // Do whatever you want to do with the file
+          //console.log(file);
+        });
+      });
+
+      // stream the image back by loading the file
+      res.setHeader('Content-Type', type);
+      let raw = fs.createReadStream(
+        path.join('uploads', 'chat', 'one-to-one', room, messageId + extension)
+      );
+      raw.on('error', function (err) {
+        console.log(err);
+        res.sendStatus(400);
+      });
+      raw.pipe(res);
+    } catch (e) {
+      reject(e);
+    }
+  });
+};
+
 
 exports.checkChatFoldersExists = () => {
   return new Promise(async (resolve, reject) => {

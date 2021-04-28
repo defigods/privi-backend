@@ -6,6 +6,50 @@ let router = express.Router();
 
 let chatController = require('../controllers/chatController');
 
+// CHAT 1-to-1
+let storage11 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/one-to-one/' + req.params.room)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.png')
+  }
+});
+
+let upload11 = multer({
+  storage: storage11
+});
+
+let storage12 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/one-to-one/' + req.params.room)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp3')
+  }
+});
+
+let upload12 = multer({
+  storage: storage12
+});
+
+let storage13 = multer.diskStorage({
+  destination: function (req: any, file: any, cb: any) {
+    cb(null, 'uploads/chat/one-to-one/' + req.params.room)
+  },
+  filename: function (req: any, file: any, cb: any) {
+    console.log(file);
+    cb(null, file.originalname + '.mp4')
+  }
+});
+
+let upload13 = multer({
+  storage: storage13
+});
+
+// DISCORD
 let storage = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
     cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
@@ -59,6 +103,14 @@ router.post('/getMessages', authenticateJWT, chatController.getMessages);
 router.post('/messagesNotSeen', authenticateJWT, chatController.getMessagesNotSeen);
 router.post('/lastView', authenticateJWT, chatController.lastView);
 router.post('/newChat', authenticateJWT, chatController.createChat);
+
+router.post('/addMessagePhoto/:room/:from/:to', authenticateJWT, upload11.single('image'), chatController.chatUploadPhotoMessage);
+router.post('/addMessageAudio/:room/:from/:to', authenticateJWT, upload12.single('audio'), chatController.chatUploadAudioMessage);
+router.post('/addMessageVideo/:room/:from/:to', authenticateJWT, upload13.single('video'), chatController.chatUploadVideoMessage);
+router.get('/getMessagePhoto/:room/:from/:messageId', chatController.chatGetPhotoMessage);
+router.get('/getMessageAudio/:room/:from/:messageId', chatController.chatGetAudioMessage);
+router.get('/getMessageVideo/:room/:from/:messageId', chatController.chatGetVideoMessage);
+
 router.post('/getAllArtists', chatController.getAllArtists);
 
 router.post('/discord/getChat', authenticateJWT, chatController.discordGetChat);

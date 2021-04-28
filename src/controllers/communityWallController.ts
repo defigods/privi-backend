@@ -382,7 +382,7 @@ exports.makeResponseCommunityWallPost = async (req: express.Request, res: expres
         userId: communityWallPost.createdBy,
         notification: {
           type: 82,
-          typeItemId: 'community',
+          typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
           pod: communityWallPost.communityId, // pod === community
@@ -422,7 +422,7 @@ exports.likePost = async (req: express.Request, res: express.Response) => {
         userId: communityWallPost.createdBy,
         notification: {
           type: 77,
-          typeItemId: 'community',
+          typeItemId: 'user',
           itemId: body.userId,
           follower: body.userName,
           pod: '',

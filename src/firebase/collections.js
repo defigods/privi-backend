@@ -167,6 +167,7 @@ module.exports = {
   ownershipHistory: 'OwnershipHistory',
   mediaOnCommunity: 'MediaOnCommunity',
   bidHistory: 'BidHistory', 
+  mediaOnCommunityChat: 'MediaOnCommunityChat',
 
   playList: 'PlayList',
 
