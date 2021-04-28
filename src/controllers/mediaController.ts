@@ -3115,7 +3115,7 @@ const getNFTInformation = async (id, hostUrl) => {
               id,
               type,
               url: `${hostUrl}/${url}`,
-              price: data.Price,
+              price: data.Price ? data.Price : data.ViewConditions?.Price,
               paymentType: data.PaymentType ? data.PaymentType : data.ViewConditions?.ViewingType,
             }
           } else {
