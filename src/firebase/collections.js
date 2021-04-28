@@ -31,6 +31,7 @@ module.exports = {
   history: 'History',
   allTransactions: 'AllTransaction',
   ethTransactions: 'EthTransactions',
+  waxTransactions: 'WaxTransactions',
   waitlist: 'Waitlist',
   cloudDatabase: 'CloudDatabase',
 
@@ -70,7 +71,6 @@ module.exports = {
   mediaPods: 'MediaPods',
   trendingMediaPods: 'TrendingMediaPods',
   medias: 'Medias',
-  mediaUsers: 'EthMediaUsers',
   streamingListeners: 'StreamingListeners',
   streamers: 'Streamers',
   streamings: 'Streamings',
@@ -152,16 +152,17 @@ module.exports = {
 
   shareStreaming: 'ShareStreaming',
   // MEDIAS 
-  streaming: 'Streaming', // privi media goes there
   ethMedia: 'EthMedia', // all external media
-  waxMedia: 'WaxMedia',
-  zoraMedia: 'ZoraMedia',
-  openseaMedia: 'OpenseaMedia',
-  mirrorMedia: 'MirrorMedia',
-  foundationMedia: 'FoundationMedia',
-  topshotMedia: 'TopshotMedia',
-  sorareMedia: 'SorareMedia',
-  showtimeMedia: 'ShowtimeMedia',
+  mediaUsers: 'EthMediaUsers',
+  waxMedia: 'EthMediaWax',
+  zoraMedia: 'EthMediaZora',
+  openseaMedia: 'EthMediaOpensea',
+  mirrorMedia: 'EthMediaMirror',
+  foundationMedia: 'EthMediaFoundation',
+  topshotMedia: 'EthMediaTopshot',
+  sorareMedia: 'EthMediaSorare',
+  showtimeMedia: 'EthMediaShowtime',
+  streaming: 'Streaming', // privi media goes there
   mediaFraction: 'MediaFraction', // Fractionalise
   ownershipHistory: 'OwnershipHistory',
   mediaOnCommunity: 'MediaOnCommunity',
@@ -169,5 +170,7 @@ module.exports = {
   playList: 'PlayList',
 
   marketingMediaCommunityChat: 'MarketingMediaCommunityChat',
-  marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage'
+  marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage',
+
+  waxActions: 'WaxActions',
 };

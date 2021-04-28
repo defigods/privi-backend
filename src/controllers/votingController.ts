@@ -403,7 +403,7 @@ exports.makeVote = async (req: express.Request, res: express.Response) => {
 exports.endVoting = cron.schedule('* */1 * * *', async () => {
     // TODO at some point we should add here request with limit and offset to avoid performance issue
     try {
-        console.log("********* Voting endVoting() cron job started *********");
+        //console.log("********* Voting endVoting() cron job started *********");
         const votingSnap = await db.collection(collections.voting).get();
         votingSnap.forEach(async (voting) => {
             let votingData = voting.data()

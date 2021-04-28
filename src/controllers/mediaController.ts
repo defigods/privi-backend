@@ -38,16 +38,16 @@ export const registerMediaView = async (req: express.Request, res: express.Respo
   }
 };
 
-export const getEthMedia = async (req: express.Request, res: express.Response) => {
-  try {
-    const docsSnap = (await db.collection(collections.ethMedia).get()).docs;
-    const data = docsSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+// export const getEthMedia = async (req: express.Request, res: express.Response) => {
+//   try {
+//     const docsSnap = (await db.collection(collections.ethMedia).get()).docs;
+//     const data = docsSnap.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
 
-    return res.status(200).send({ success: true, data });
-  } catch (e) {
-    return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
-  }
-};
+//     return res.status(200).send({ success: true, data });
+//   } catch (e) {
+//     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media' });
+//   }
+// };
 
 const MEDIA_PAGE_SIZE = 30;
 
@@ -344,21 +344,21 @@ export const getFractionalisedMediaSharedOwnershipHistory = async (req: express.
 
 
 
-export const getEthMediaItem = async (req: express.Request, res: express.Response) => {
-  const { id } = req.params;
-  try {
-    const docRef = db.collection(collections.ethMedia).doc(id);
-    const doc = await docRef.get();
+// export const getEthMediaItem = async (req: express.Request, res: express.Response) => {
+//   const { id } = req.params;
+//   try {
+//     const docRef = db.collection(collections.ethMedia).doc(id);
+//     const doc = await docRef.get();
 
-    if (!doc.exists) return res.status(404).send({ success: false, message: 'Invalid document id' });
+//     if (!doc.exists) return res.status(404).send({ success: false, message: 'Invalid document id' });
 
-    const data = { id: doc.id, ...doc.data() };
+//     const data = { id: doc.id, ...doc.data() };
 
-    return res.status(200).send({ success: true, data });
-  } catch (e) {
-    return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media item' });
-  }
-};
+//     return res.status(200).send({ success: true, data });
+//   } catch (e) {
+//     return res.status(500).send({ success: false, message: 'Unable to retrieve Eth media item' });
+//   }
+// };
 
 export const changeMediaPhoto = async (req: express.Request, res: express.Response) => {
   try {
@@ -2423,17 +2423,17 @@ export const openNFT = async (req: express.Request, res: express.Response) => {
       }
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/mediaController -> buyMediaNFT()' + blockchainRes.message);
+      console.log('Error in controllers/mediaController -> openNFT()' + blockchainRes.message);
       res.send({
         success: false,
-        error: blockchainRes.error,
+        error: blockchainRes.message,
       });
     }
   } catch (e) {
-    console.log('Error in controllers/mediaController -> buyMediaNFT()' + e);
+    console.log('Error in controllers/mediaController -> openNFT()' + e);
     res.status(200).send({
       success: false,
-      error: 'Error in controllers/mediaController -> buyMediaNFT():' + e,
+      error: 'Error in controllers/mediaController -> openNFT():' + e,
     });
   }
 };
@@ -2448,6 +2448,7 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
     const address = data.Address;
 
     const blockchainRes = await media.closeNFT(mediaSymbol, address, apiKey);
+    console.log(blockchainRes)
     if (blockchainRes && blockchainRes.success) {
       await updateFirebase(blockchainRes);
       const output = blockchainRes.output;
@@ -2466,7 +2467,7 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
       console.log('Error in controllers/mediaController -> closeNFT()' + blockchainRes.message);
       res.send({
         success: false,
-        error: blockchainRes.error,
+        error: blockchainRes.message,
       });
     }
   } catch (e) {
