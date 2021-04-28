@@ -118,8 +118,8 @@ exports.getOtherMediaPods = async (req: express.Request, res: express.Response) 
 };
 
 // get media pods according to pagination and filters
-const pageSize = 6;
-const podStateOptions = ['Formation', 'Investment', 'Released'];
+const pageSize = 10;
+const podStateOptions = ['All', 'Formation', 'Investment', 'Released'];
 const investingOptions = ['Off', 'On'];
 const sortByPriceOptions = ['Descending', 'Ascending'];
 const podTypeOptions = ['All', 'Media Pods', 'Fractionalised Media'];
@@ -151,21 +151,25 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
           .get();
       } else communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').get();
       communitiesSnap.forEach((doc) => {
+         
         if (mediaPods.length < pageSize) {
           const data: any = doc.data();
-          if (params) {
+          if (params && params.podStateSelection !== podStateOptions[0]) {
             let addData = true;
             //1. select the communities selection to show
             const displayingPodsSelection = params.podStateSelection;
             if (displayingPodsSelection) {
               switch (displayingPodsSelection) {
                 case podStateOptions[0]:
-                  addData = addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INITIATED');
+                  addData = addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INVESTING' || data.Status == 'RELEASED');
                   break;
                 case podStateOptions[1]:
-                  addData = addData && data.Status && data.Status == 'INVESTING';
+                  addData = addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INITIATED');
                   break;
                 case podStateOptions[2]:
+                  addData = addData && data.Status && data.Status == 'INVESTING';
+                  break;
+                case podStateOptions[3]:
                   addData = addData && data.Status && data.Status == 'RELEASED';
                   break;
               }
