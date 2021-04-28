@@ -198,6 +198,12 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     const type = body.Type;
     const hash = body.Hash;
     const signature = body.Signature;
+    const communityName = body.CommunityName;
+
+    const userRef = db.collection(collections.user).doc(userId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
     // console.log(body);
     if (!req.body.priviUser.id || req.body.priviUser.id != userId) {
       console.log('error: jwt user is not the same as fromUid');
@@ -207,6 +213,51 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     const blockchainRes = await coinBalance.transfer(from, to, amount, token, type, hash, signature, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
+
+      // in case of contribution to community
+      if (communityName) {
+        const communityRef = db.collection(collections.community).doc(to);
+        const communityGet = await communityRef.get();
+        const community: any = communityGet.data();
+
+        let newContributions: any[] = [];
+        if (community?.Contributions?.length) {
+          newContributions = [...community.Contributions];
+        }
+
+        newContributions.push({
+          userId,
+          amount,
+          token,
+          date: Date.now(),
+        });
+
+        communityRef.update({
+          Contributions: newContributions,
+        });
+
+        if (community?.Members?.length) {
+          const members: any[] = [...community.Members];
+          members.forEach((member) => {
+            notificationsController.addNotification({
+              userId: member.id,
+              notification: {
+                type: 114,
+                typeItemId: 'user',
+                itemId: userId,
+                follower: user.firstName,
+                pod: communityName,
+                comment: '',
+                token,
+                amount,
+                onlyInformation: false,
+                otherItemId: to,
+              },
+            });
+          });
+        }
+      }
+
       res.send({ success: true });
     } else {
       console.log(
@@ -741,7 +792,7 @@ module.exports.registerWaxWallet = async (req: express.Request, res: express.Res
         ...walletData,
         newWallet
       ]
-      db.collection(collections.user) 
+      db.collection(collections.user)
         .doc(userId)
         .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
