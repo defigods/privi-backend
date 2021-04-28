@@ -8,6 +8,7 @@ router.get('/get/:id', authenticateJWT, mediaOnCommunityController.getMediaOnCom
 router.get('/accept/:id/:userId', authenticateJWT, mediaOnCommunityController.acceptMediaOnCommunity);
 router.get('/decline/:id/:userId', authenticateJWT, mediaOnCommunityController.declineMediaOnCommunity);
 
+router.get('/getByCommunity/:id', authenticateJWT, mediaOnCommunityController.getMediaWithCommunityId);
 router.post('/getFromMediaArray', authenticateJWT, mediaOnCommunityController.getMediaOnCommunityFromMediaArray);
 router.post('/create/:userId', authenticateJWT, mediaOnCommunityController.createMediaOnCommunity);
 router.post('/newOffer/:id/:userId', authenticateJWT, mediaOnCommunityController.newOfferMediaOnCommunity);

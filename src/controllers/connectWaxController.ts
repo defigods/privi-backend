@@ -305,7 +305,7 @@ const withdraw = async ({
  * database to be processed. The field 'action' determines whether executing swap or withdraw
  */
 cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
-  console.log('********* WAX <--> PRIVI Atomic Swaps cron job - STARTED - *********');
+  //console.log('********* WAX <--> PRIVI Atomic Swaps cron job - STARTED - *********');
 
   let snapshot;
   try {
@@ -317,9 +317,9 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
     throw new Error(err.message);
   }
 
-  if (snapshot.empty) {
-    return console.log('No pending action');
-  }
+  // if (snapshot.empty) {
+  //   return console.log('No pending action');
+  // }
 
   const { docs } = snapshot;
   const docsValues: any[] = Object.values(docs);
@@ -383,7 +383,7 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
         break;
     }
 
-    console.log('********* WAX <--> PRIVI Atomic Swaps cron job - ENDED - *********');
+    //console.log('********* WAX <--> PRIVI Atomic Swaps cron job - ENDED - *********');
   });
 });
 
