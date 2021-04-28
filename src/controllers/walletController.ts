@@ -198,6 +198,12 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     const type = body.Type;
     const hash = body.Hash;
     const signature = body.Signature;
+    const communityName = body.CommunityName;
+
+    const userRef = db.collection(collections.user).doc(fromUserId);
+    const userGet = await userRef.get();
+    const user: any = userGet.data();
+
     // console.log(body);
     if (!req.body.priviUser.id || req.body.priviUser.id != fromUserId) {
       console.log('error: jwt user is not the same as fromUid');
@@ -226,6 +232,49 @@ module.exports.transfer = async (req: express.Request, res: express.Response) =>
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
 
+      // in case of contribution to community
+      if (communityName) {
+        const communityRef = db.collection(collections.community).doc(toUserId);
+        const communityGet = await communityRef.get();
+        const community: any = communityGet.data();
+
+        let newContributions: any[] = [];
+        if (community?.Contributions?.length) {
+          newContributions = [...community.Contributions];
+        }
+
+        newContributions.push({
+          fromUserId,
+          amount,
+          token,
+          date: Date.now(),
+        });
+
+        communityRef.update({
+          Contributions: newContributions,
+        });
+
+        if (community?.Members?.length) {
+          const members: any[] = [...community.Members];
+          members.forEach((member) => {
+            notificationsController.addNotification({
+              userId: member.id,
+              notification: {
+                type: 114,
+                typeItemId: 'user',
+                itemId: fromUserId,
+                follower: user.firstName,
+                pod: communityName,
+                comment: '',
+                token,
+                amount,
+                onlyInformation: false,
+                otherItemId: '',
+              },
+            });
+          });
+        }
+      }
       await notificationsController.addNotification({
         userId: toUserId,
         notification: {

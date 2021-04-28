@@ -790,6 +790,7 @@ interface BasicInfo {
   verified: boolean;
   urlSlug: string;
   address: string;
+  myNFTPods: any[];
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -821,6 +822,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       verified: false,
       urlSlug: userId,
       address: '',
+      myNFTPods: [],
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -872,6 +874,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         userData.urlSlug ||
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
       basicInfo.address = userData.address || '';
+      basicInfo.myNFTPods = await getPodsArray(userData.myNFTPods, collections.podsNFT, 'NFT') || [];
 
       var bgs = [] as any;
       if (basicInfo.badges && basicInfo.badges.length > 0) {
