@@ -16,7 +16,7 @@ import {
   getUidFromEmail,
   updateFirebase,
   getMarketPrice,
-  getAddresUidMap
+  getAddresUidMap,
 } from '../functions/functions';
 import path from 'path';
 import fs from 'fs';
@@ -309,7 +309,7 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
     const address = body.address;
     if (address) {
       // Compare user & passwd between login input and DB
-      const user = await db.collection(collections.user).where('walletAddresses', "array-contains", address).get();
+      const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
       // Return result
       if (user.empty) {
         console.log('not found');
@@ -350,11 +350,10 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
             accessToken: accessToken,
           });
         }
-
       }
     } else {
       console.log('Wallet Address required');
-      res.send({ isSignedIn: false, userData: {}, message: "Address required" });
+      res.send({ isSignedIn: false, userData: {}, message: 'Address required' });
     }
   } catch (err) {
     console.log('Error in controllers/user.ts -> signIn(): ', err);
@@ -418,9 +417,7 @@ const attachAddress2 = async (userPublicId: string) => {
 };
 
 const signUpWithWallet = async (req: express.Request, res: express.Response) => {
-
   try {
-
     const body = req.body;
 
     const firstName = body.firstName;
@@ -460,7 +457,7 @@ const signUpWithWallet = async (req: express.Request, res: express.Response) => 
       res.send({ success: false, message: 'address is already in database' });
       return;
     } else {
-      const user = await db.collection(collections.user).where('walletAddresses', "array-contains", address).get();
+      const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
       if (!user.empty) {
         res.send({ success: false, message: 'address is already in database' });
         return;
@@ -531,7 +528,6 @@ const signUpWithWallet = async (req: express.Request, res: express.Response) => 
           urlSlug: uid,
           walletAddresses: [address],
         });
-
       });
 
       // ------------------------- attach address only test net ----------------------------
@@ -561,7 +557,7 @@ const signUpWithWallet = async (req: express.Request, res: express.Response) => 
     console.log('Error in controllers/user.ts -> signUp(): ', err);
     res.send({ success: false, message: 'Error in controllers/user.ts -> signUp():' });
   }
-}
+};
 
 const signUp = async (req: express.Request, res: express.Response) => {
   try {
@@ -942,14 +938,14 @@ const toggleHideItem = async (req: express.Request, res: express.Response) => {
     if (hiddens[itemId]) delete hiddens[itemId];
     else hiddens[itemId] = true;
     snap.ref.update({
-      Hiddens: hiddens
+      Hiddens: hiddens,
     });
     res.send({ success: true });
   } catch (err) {
     console.log(err);
     res.send({ success: false });
   }
-}
+};
 
 const getAllInfoProfile = async (req: express.Request, res: express.Response) => {
   try {
@@ -960,7 +956,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
 
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData: any = userSnap.data();
-    const hiddens = userData.Hiddens ?? {};
+    const hiddens = userData?.Hiddens ?? {};
     if (userData !== undefined) {
       let badges: any[] = await getBadgesFunction(userAddress);
       let myPodsAndInvested: any = await getMyPodsAndInvestedFunction(userId);
@@ -977,12 +973,15 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         myPodsAndInvested.NFT = myPodsAndInvested.NFT.filter((obj) => !obj.PodAddress || !hiddens[obj.PodAddress]);
         myCommunities = myCommunities.filter((obj) => !obj.CommunityAddress || !hiddens[obj.CommunityAddress]);
         mySocialTokens = mySocialTokens.filter((obj) => !obj.PoolAddress || !hiddens[obj.PoolAddress]);
-        myCreditPools.myBorrowingPriviCredits = myCreditPools.myBorrowingPriviCredits.filter((obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]);
-        myCreditPools.myLendingPriviCredits = myCreditPools.myLendingPriviCredits.filter((obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]);
+        myCreditPools.myBorrowingPriviCredits = myCreditPools.myBorrowingPriviCredits.filter(
+          (obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]
+        );
+        myCreditPools.myLendingPriviCredits = myCreditPools.myLendingPriviCredits.filter(
+          (obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]
+        );
         myWorkInProgress = [];
-        myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol])
-      }
-      else if (userId == loggedUserId) {
+        myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
+      } else if (userId == loggedUserId) {
         badges.forEach((item, index) => {
           badges[index].hidden = hiddens[item.Symbol] != undefined;
         });
@@ -1214,8 +1213,11 @@ const postToWall = async (req: express.Request, res: express.Response) => {
       res.send(data);
 
       // send message back to socket
-      if (sockets[req.body.priviUser.id]) {
-        sockets[req.body.priviUser.id].emit('new wall post', data);
+      const userAllSockets = sockets[req.body.priviUser.id];
+      if (userAllSockets && userAllSockets.length > 0) {
+        userAllSockets.forEach((socket) => {
+          socket.emit('new wall post', data);
+        });
       }
     } else {
       console.log('parameters required');
@@ -1448,7 +1450,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
               },
             });
           }
-        };
+        }
       }
     } else {
       console.log('Error in controllers/profile -> getFollowers()', 'Error getting followers');
@@ -2247,7 +2249,6 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
   });
 };
 
-
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   console.log(userId);
@@ -2398,7 +2399,6 @@ const updateNewBadge = async (req: express.Request, res: express.Response) => {
 const changeUserProfilePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-
       // upload to Firestore Bucket
       // await uploadToFirestoreBucket(req.file, "uploads/users", "images/users")
 
@@ -2560,7 +2560,7 @@ const getPointsInfo = async (req: express.Request, res: express.Response) => {
     const retData = {
       currPoints: userData.Points ?? 0,
       remainingPoints: lowestTopPoint > currUserPoints ? lowestTopPoint - currUserPoints : 0,
-      history: history
+      history: history,
     };
     res.send({ success: true, data: retData });
   } catch (e) {
@@ -2572,7 +2572,7 @@ const getPointsInfo = async (req: express.Request, res: express.Response) => {
 // get all badges registered in the system
 const getAllBadges = async (req: express.Request, res: express.Response) => {
   try {
-    const blockchainRes = await coinBalance.getTokenListByType("BADGE", apiKey);
+    const blockchainRes = await coinBalance.getTokenListByType('BADGE', apiKey);
     if (blockchainRes && blockchainRes.success) {
       const badgeSymbolList = blockchainRes.output ?? [];
       const retData: any[] = [];
@@ -2580,11 +2580,10 @@ const getAllBadges = async (req: express.Request, res: express.Response) => {
       badgesSnap.forEach((doc) => {
         const data: any = doc.data();
         if (badgeSymbolList.includes(data.Symbol)) retData.push(data);
-      })
+      });
       res.send({ success: true, data: retData });
-    }
-    else {
-      console.log("error: ", blockchainRes.message)
+    } else {
+      console.log('error: ', blockchainRes.message);
       res.send({ success: false });
     }
   } catch (e) {
@@ -2623,7 +2622,6 @@ const getBadges = async (req: express.Request, res: express.Response) => {
     res.send({ success: false, error: e });
   }
 };
-
 
 const getBadgesFunction = (address: string): Promise<any[]> => {
   return new Promise(async (resolve, reject) => {
@@ -2745,7 +2743,6 @@ const createBadge = async (req: express.Request, res: express.Response) => {
 const changeBadgePhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
-
       // upload to Firestore Bucket
       // await uploadToFirestoreBucket(req.file, "uploads/badges", "images/badges")
 
@@ -2770,8 +2767,6 @@ const changeBadgePhoto = async (req: express.Request, res: express.Response) => 
     res.send({ success: false });
   }
 };
-
-
 
 const getBadgePhotoById = async (req: express.Request, res: express.Response) => {
   try {
@@ -3936,8 +3931,7 @@ const checkIfUserExists = async (req: express.Request, res: express.Response) =>
   } catch (e) {
     return 'Error in controllers/userController -> checkIfUserExists(): ' + e;
   }
-}
-
+};
 
 /**
  * Function increase user's profileViews from id.
@@ -3955,18 +3949,18 @@ const sumTotalViews = async (req: express.Request, res: express.Response) => {
     if (userData !== undefined) {
       const currentProfileViews = userData.profileViews || 0;
       await userRef.update({
-        profileViews: currentProfileViews + 1
+        profileViews: currentProfileViews + 1,
       });
 
       res.send({
         success: true,
         data: {
-          TotalViews: currentProfileViews + 1
-        }
+          TotalViews: currentProfileViews + 1,
+        },
       });
     } else {
       res.send({
-        success: false
+        success: false,
       });
     }
   } catch (err) {
@@ -3994,27 +3988,26 @@ const updateWalletAddress = async (req: express.Request, res: express.Response) 
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
     if (userData !== undefined && walletAddress) {
-
       await userRef.update({
-        address: walletAddress
+        address: walletAddress,
       });
 
       res.send({
         success: true,
         data: {
-          address: walletAddress
-        }
+          address: walletAddress,
+        },
       });
     } else {
       res.send({
-        success: false
+        success: false,
       });
     }
   } catch (err) {
     console.log('Error in controllers/userController -> sumTotalViews()', err);
     res.send({ success: false });
   }
-}
+};
 
 const attachAddress = async (req: express.Request, res: express.Response) => {
   try {
@@ -4027,13 +4020,11 @@ const attachAddress = async (req: express.Request, res: express.Response) => {
     } else {
       res.send({ success: false });
     }
-
   } catch (err) {
     console.log('Error in controllers/userController -> attachAddress()', err);
     res.send({ success: false });
   }
-}
-
+};
 
 module.exports = {
   emailValidation,
@@ -4107,5 +4098,5 @@ module.exports = {
   checkIfUserExists,
   sumTotalViews,
   updateWalletAddress,
-  attachAddress
+  attachAddress,
 };

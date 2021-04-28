@@ -3103,13 +3103,19 @@ const getNFTInformation = async (id, hostUrl) => {
             const type = data.Video ? "Video" : "Audio";
             const url = data.Video ? path.join('uploads', 'media', id + '.mp4') : path.join('uploads', 'media', id + '.mp3');
             return {
+              id,
               type,
               url: `${hostUrl}/${url}`,
+              price: data.Price,
+              paymentType: data.PaymentType ? data.PaymentType : data.ViewConditions?.ViewingType,
             }
           } else {
             return {
+              id,
               type: data.type,
               url: data.url,
+              price: data.price,
+              paymentType: data.status ? data.status[0] : '',
             }
           }
         } catch (e) {
