@@ -16,7 +16,7 @@ const blockchainPriviLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPo
 const blockchainPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodFT";
 const blockchainPodNFTPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodNFT";
 const blockchainPodMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodMedia";
-const blockchainFractionaliseMediaAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/fractionaliseMedia";
+const blockchainFractionaliseMediaAPI = testnetEndpoint + "fractionaliseMedia";	// changed
 const blockchainMediaAPI = testnetEndpoint + "Media";	// changed
 const blockchainInsuranceFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceFT";
 const blockchainInsuranceNFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceNFT"
@@ -26,7 +26,7 @@ const blockchainBadgesAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "
 const blockchainVotationAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Votation";
 const blockchainLiquidityPoolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviLiquidityPools";
 const blockchainSocialAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/SocialToken";
-const blockchainAuctionsAPI = testnetEndpoint + "Auction";
+const blockchainAuctionsAPI = testnetEndpoint + "Auction";	// changed
 
 module.exports = {
 	blockchainCoinBalanceAPI: blockchainCoinBalanceAPI,
