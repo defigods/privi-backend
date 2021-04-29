@@ -988,11 +988,11 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools: any = await getMyCreditPools(userId);
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
-      let myMedia: any[] = await getMyMediaFunction(userId);
-      let ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
-      let curatedMedia: any[] = await getCuratedMedia(userId);
-      let likedMedia: any[] = await getLikedMedia(userId);
-
+      // let myMedia: any[] = await getMyMediaFunction(userId);
+      const ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
+      const curatedMedia: any[] = await getCuratedMedia(userId);
+      const likedMedia: any[] = await getLikedMedia(userId);
+      let myMedia: any[] = mergeMedias(ownedMedia, curatedMedia, likedMedia);
       // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
         badges = badges.filter((obj) => !obj.Symbol || !hiddens[obj.Symbol]);
@@ -1008,9 +1008,6 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         );
         myWorkInProgress = [];
         myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
-        ownedMedia = ownedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
-        likedMedia = likedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
-        curatedMedia = curatedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
       } else if (userId == loggedUserId) {
         badges.forEach((item, index) => {
           badges[index].hidden = hiddens[item.Symbol] != undefined;
@@ -1038,15 +1035,6 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         });
         myMedia.forEach((item, index) => {
           myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
-        });
-        ownedMedia.forEach((item, index) => {
-          myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
-        });
-        likedMedia.forEach((item, index) => {
-          likedMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
-        });
-        curatedMedia.forEach((item, index) => {
-          curatedMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
       }
 
@@ -2372,6 +2360,54 @@ const getLikedMedia = async (userId) => {
   }
   return likedMedias;
 };
+
+// merge medias
+const mergeMedias = (ownedMedia, curatedMedia, likedMedia):any[] => {
+  const myMedia:any[] = [];
+  ownedMedia.forEach((media) => {
+    if (media.MediaSymbol) {
+      const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
+      if (foundIndex != -1) {
+        const foundMedia:any = {...myMedia[foundIndex]};
+        const state = foundMedia.State ?? {};
+        state.Owned = true;
+        foundMedia.State = state;
+        myMedia[foundIndex] = foundMedia;
+      } else {
+        myMedia.push({...media, State: {Owned: true}});
+      }
+    }
+  });
+  curatedMedia.forEach((media) => {
+    if (media.MediaSymbol) {
+      const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
+      if (foundIndex != -1) {
+        const foundMedia:any = {...myMedia[foundIndex]};
+        const state = foundMedia.State ?? {};
+        state.Curated = true;
+        foundMedia.State = state;
+        myMedia[foundIndex] = foundMedia;
+      } else {
+        myMedia.push({...media, State: {Curated: true}});
+      }
+    }
+  });
+  likedMedia.forEach((media) => {
+    if (media.MediaSymbol) {
+      const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
+      if (foundIndex != -1) {
+        const foundMedia:any = {...myMedia[foundIndex]};
+        const state = foundMedia.State ?? {};
+        state.Liked = true;
+        foundMedia.State = state;
+        myMedia[foundIndex] = foundMedia;
+      } else {
+        myMedia.push({...media, State: {Liked: true}});
+      }
+    }
+  });
+  return myMedia;
+}
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
