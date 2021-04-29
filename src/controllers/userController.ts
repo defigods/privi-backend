@@ -988,10 +988,8 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools: any = await getMyCreditPools(userId);
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
-      // let myMedia: any[] = await getMyMediaFunction(userId);
+      let myMedia: any[] = await getMyMediaFunction(userId);
       let ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
-      let curatedMedia: any[] = await getCuratedMedia(userId);
-      let likedMedia: any[] = await getLikedMedia(userId);
 
       // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
@@ -1007,10 +1005,8 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           (obj) => !obj.CreditAddress || !hiddens[obj.CreditAddress]
         );
         myWorkInProgress = [];
-        // myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
+        myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
         ownedMedia = ownedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
-        likedMedia = likedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
-        curatedMedia = curatedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
       } else if (userId == loggedUserId) {
         badges.forEach((item, index) => {
           badges[index].hidden = hiddens[item.Symbol] != undefined;
@@ -1036,18 +1032,11 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         myWorkInProgress.forEach((item, index) => {
           myWorkInProgress[index].hidden = hiddens[item.id] != undefined;
         });
-        // myMedia.forEach((item, index) => {
-        //   myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
-        // });
+        myMedia.forEach((item, index) => {
+          myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
+        });
         ownedMedia.forEach((item, index) => {
-          ownedMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
-        });
-        likedMedia.forEach((item, index) => {
-          console.log(item);
-          likedMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
-        });
-        curatedMedia.forEach((item, index) => {
-          curatedMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
+          myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
       }
 
@@ -1060,10 +1049,8 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
           myWorkInProgress: myWorkInProgress,
-          // myMedia: myMedia,
-          ownedMedia: ownedMedia,
-          likedMedia: likedMedia,
-          curatedMedia: curatedMedia
+          myMedia: myMedia,
+          ownedMedia: ownedMedia
         },
       });
     } else {
@@ -2306,57 +2293,9 @@ const getOwnedMediaFunction = async (userAddress) => {
     const promises :any[] = [];
     mediaSymbolList.forEach((mediaSymbol) => promises.push(db.collection(collections.streaming).doc(mediaSymbol).get()));
     const responses = await Promise.all(promises);
-    responses.forEach((snap) => {
-      if (snap.exists) ownedMedias.push(snap.data())
-    });
+    responses.forEach((snap) => ownedMedias.push(snap.data));
   }
   return ownedMedias;
-}
-
-// get curated media
-const getCuratedMedia = async (userId) => {
-  let medias : any[] = [];
-  const userGet = await db.collection(collections.user).doc(userId).get();
-  if (userGet.exists) {
-    let userData: any = { ...userGet.data() };
-    let mediaCurated : any[] = [...userData.MediaCurated || []];
-
-    if(mediaCurated.length > 0) {
-      for(let mediaCur of mediaCurated) {
-        const mediaRef = db.collection(collections.streaming).doc(mediaCur);
-        const mediaGet = await mediaRef.get();
-        if(mediaGet.exists) {
-          const media: any = mediaGet.data();
-          media.id = mediaGet.id;
-          medias.push(media)
-        }
-      }
-    }
-  }
-  return medias;
-}
-
-// get liked media
-const getLikedMedia = async (userId) => {
-  const userGet = await db.collection(collections.user).doc(userId).get();
-  const likedMedias:any[] = [];
-  if (userGet.exists) {
-    // get liked media symbol list
-    const userData: any = userGet.data();
-    const likes = userData.Likes ?? [];
-    const likedMediaSymbolList:string[] = [];
-    likes.forEach((likeObj) => {
-      if (likeObj && likeObj.type == 'media' && likeObj.id) likedMediaSymbolList.push(likeObj.id);
-    });
-    // get liked media data
-    const promises :any[] = [];
-    likedMediaSymbolList.forEach((mediaSymbol) => promises.push(db.collection(collections.streaming).doc(mediaSymbol).get()));
-    const responses = await Promise.all(promises);
-    responses.forEach((snap) => {
-      if (snap.exists) likedMedias.push(snap.data())
-    });
-  }
-  return likedMedias;
 }
 
 const getReceivables = async (req: express.Request, res: express.Response) => {

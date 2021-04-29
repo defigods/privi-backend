@@ -2546,7 +2546,7 @@ export const openNFT = async (req: express.Request, res: express.Response) => {
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ success: true });
+      res.send({ success: true, nftId: mediaSymbol });
     } else {
       console.log('Error in controllers/mediaController -> openNFT()' + blockchainRes.message);
       res.send({
@@ -2587,7 +2587,7 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ success: true });
+      res.send({ success: true, nftId: mediaSymbol });
     } else {
       console.log('Error in controllers/mediaController -> closeNFT()' + blockchainRes.message);
       res.send({
@@ -2714,7 +2714,7 @@ export const fractionalise = async (req: express.Request, res: express.Response)
       }
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/media -> fractionalise() blockchain call failed', blockchainRes.message);
+      console.log('Error in controllers/media -> fractionalise()', blockchainRes.message);
       res.send({
         success: false,
         error: blockchainRes.message,
