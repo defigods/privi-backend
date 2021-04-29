@@ -753,11 +753,9 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
     console.log({ body: req.body });
     const { pubKey, userId } = req.body;
 
-    console.log('got call from', userId);
     const caller = apiKey;
     const lastUpdate = Date.now();
 
-    const publicKey = '0x04' + pubKey.toString('hex');
     const address = '0x' + (await EthUtil.publicToAddress(EthUtil.toBuffer(pubKey)).toString('hex'));
     const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
 
@@ -772,7 +770,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
         tokenList: preparedTokenList,
         address,
         name: "PriviWallet",
-        pubKey: publicKey,
+        pubKey,
         lastUpdate: Date.now(),
       };
       const newWalletData = [
@@ -1269,7 +1267,7 @@ module.exports.getAllTokensWithBuyingPrice = async (req: express.Request, res: e
 };
 
 module.exports.getRegisteredTokensByType = async (req: express.Request, res: express.Response) => {
-  const defaultList = ['CRYPTO', 'MEDIAPOD', 'NFTPOD', 'FTPOD', 'COMMUNITY', 'SOCIAL'];
+  const defaultList = ['CRYPTO', 'MEDIAPOD', 'NFTMEDIA', 'COMMUNITY', 'SOCIAL', 'BADGE'];
 
   const params = req.query;
   let requestedTypes: any = params.typeList ?? defaultList;
@@ -1281,7 +1279,7 @@ module.exports.getRegisteredTokensByType = async (req: express.Request, res: exp
   const responses = await Promise.all(promises);
   responses.forEach((blockchainResp) => {
     if (blockchainResp.success) {
-      retData[blockchainResp.tokenType] = blockchainResp.output;
+      retData[blockchainResp.tokenType] = blockchainResp.output ?? [];
     } else {
       res.send({ success: false, data: [] });
     }
