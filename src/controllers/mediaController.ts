@@ -1294,7 +1294,6 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
       if(userGet.exists) {
         user = userGet.data();
         const userMediaLiked = [...(user.MediaLiked ?? [])];
-        const tag = 
         userMediaLiked.push({mediaID: mediaId, tag: blockchainTag});
         await userRef.update({
           MediaLiked: userMediaLiked,
