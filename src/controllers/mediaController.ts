@@ -1156,6 +1156,36 @@ export const getMediaCurated = async (req: express.Request, res: express.Respons
   }
 };
 
+const getMediaLiked = async (req: express.Request, res: express.Response) => {
+  try {
+    let userId = req.params.userId;
+
+    if (userId) {
+      const userGet = await db.collection(collections.user).doc(userId).get();
+
+      if (userGet.exists) {
+        let userData: any = { ...userGet.data() };
+
+        let mediaLiked : any[] = [...userData.Likes || []];
+
+        res.send({
+          success: true,
+          data: mediaLiked,
+        });
+      } else {
+        console.log('Error in controllers/mediaController -> getMediaLiked()', 'No medias...');
+        res.send({ success: false, error: 'User not found...' });
+      }
+    } else {
+      console.log('Error in controllers/mediaController -> getMediaLiked()', "There's no id...");
+      res.send({ success: false, error: "There's no id..." });
+    }
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> getMediaLiked(): ', err);
+    res.send({ success: false, error: err });
+  }
+}
+
 export const fractionalizeMedia = async (req: express.Request, res: express.Response) => {
   try {
     let params = req.params;
