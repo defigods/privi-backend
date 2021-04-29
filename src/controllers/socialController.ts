@@ -9,7 +9,8 @@ import fs from 'fs';
 import path from 'path';
 const notificationsController = require('./notificationsController');
 
-const apiKey = process.env.API_KEY;
+// const apiKey = process.env.API_KEY;
+const apiKey = 'PRIVI';
 
 // ----------------------------------- POST -------------------------------------------
 
