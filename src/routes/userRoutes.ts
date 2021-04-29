@@ -231,4 +231,7 @@ router.get('/getUserMediaInfo/:userId', mediaController.getUserMediaInfo);
 //USER WALLET
 router.post('/updateWalletAddress', authenticateJWT, userController.updateWalletAddress);
 
+//USER MEDIA
+router.get('/media/getMediaCurated/:userId', /*authenticateJWT,*/ mediaController.getMediaCurated);
+
 module.exports = router;
