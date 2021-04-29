@@ -166,28 +166,32 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
           ethMediaQuery = ethMediaQuery.where('type', 'in', mediaTypes);
         }
         // 3. filter by collection
-        if (collection) {
-          ethMediaQuery = ethMediaQuery.where('collection', '==', collection);
-        }
+        // if (collection) {
+        //   ethMediaQuery = ethMediaQuery.where('collection', '==', collection);
+        // }
         // 4. filter by status
         if (status) {
           // empty value means no need to filter
-          ethMediaQuery = ethMediaQuery.where('status', 'array-contains', status);
+          // ethMediaQuery = ethMediaQuery.where('status', 'array-contains', status);
         }
         // 5. pagination limit
         // ethMediaQuery = ethMediaQuery.limit(availableSize);
         // 6. get data from query
         const ethSnap = await ethMediaQuery.get();
-        ethSnap.forEach((doc) => {
+        ethSnap.forEach(doc => {
           const data = doc.data();
-          if (data.url && data.url !== 'Error' && availableSize) {
-            medias.push({
-              id: doc.id,
-              blockchain,
-              ...data,
-            });
-            // update availabeSize
-            availableSize--;
+          if (availableSize && data.url && data.url !== 'Error') {
+            if (!status || data.status.includes(status)) {
+              if (!collection || data.collection === collection) {
+                medias.push({
+                  id: doc.id,
+                  blockchain,
+                  ...data,
+                });
+                // update availabeSize
+                availableSize--;
+              }
+            }
           }
         });
       }
