@@ -168,6 +168,7 @@ module.exports = {
   mediaOnCommunity: 'MediaOnCommunity',
   bidHistory: 'BidHistory', 
   mediaOnCommunityChat: 'MediaOnCommunityChat',
+  mediaOnCommunityMessage: 'MediaOnCommunityMessage',
 
   playList: 'PlayList',
 

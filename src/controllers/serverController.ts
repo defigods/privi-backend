@@ -658,5 +658,80 @@ export const startSocket = (env: Env) => {
         type: 'text',
       });
     });
+
+    //MEDIA ON COMMUNITY CHAT SOCKET
+    socket.on('subscribe-mediaOnCommunity', async function (chatInfo) {
+      if (chatInfo.chatId) {
+        const mediaOnCommunityChatRef = db.collection(collections.mediaOnCommunityChat).doc(chatInfo.chatId);
+        const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
+        const mediaOnCommunityChat : any = mediaOnCommunityChatGet.data();
+
+        let users: any[] = [...mediaOnCommunityChat.users];
+        let findUserIndex = users.findIndex((user, i) => chatInfo.userId === user.userId);
+        if (findUserIndex !== -1) {
+          users[findUserIndex].lastView = Date.now();
+          users[findUserIndex].userConnected = true;
+        }
+
+        console.log('joining room', chatInfo.chatId);
+        socket.join(chatInfo.chatId);
+      } else {
+        console.log('Error subscribe-discord socket: No Room provided');
+      }
+    });
+
+    socket.on('numberMessages-mediaOnCommunity', async function (room) {
+      // Not need it now, think how to implement it
+    });
+
+    socket.on('add-message-mediaOnCommunity', async function (message) {
+      console.log('message', message);
+
+      const uid = generateUniqueId();
+      await db.runTransaction(async (transaction) => {
+        // userData - no check if firestore insert works? TODO
+        transaction.set(db.collection(collections.mediaOnCommunityMessage).doc(uid), {
+          room: message.room,
+          message: message.message,
+          from: message.from,
+          created: Date.now(),
+          seen: [],
+          type: 'text',
+        });
+      });
+      const mediaOnCommunityChatRef = db.collection(collections.mediaOnCommunityChat).doc(message.chatId);
+      const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
+      const mediaOnCommunityChat : any = mediaOnCommunityChatGet.data();
+
+      let messages: any = mediaOnCommunityChat.messages;
+      messages.push(uid);
+
+      await mediaOnCommunityChatRef.update({
+        messages: messages,
+        lastMessage: message.message,
+        lastMessageDate: Date.now(),
+      });
+
+      /*const messageQuery = await db.collection(collections.message)
+          .where("to", "==", message.to)
+          .where("seen", "==", false).get();
+      if (!messageQuery.empty) {
+        socket.to(message.to).emit('numberMessages', { number: messageQuery.docs.length });
+      }*/
+      const userRef = db.collection(collections.user).doc(message.from);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      console.log('sending room post', message);
+      socket.to(message.discordRoom).emit('message-mediaOnCommunity', {
+        room: message.room,
+        message: message.message,
+        from: message.from,
+        created: Date.now(),
+        seen: [],
+        id: uid,
+        type: 'text',
+      });
+    });
   });
 };
