@@ -1182,7 +1182,7 @@ export const getMediaLiked = async (req: express.Request, res: express.Response)
       if (userGet.exists) {
         let userData: any = { ...userGet.data() };
 
-        let mediaLiked : any[] = [...(userData.MediaLikes ?? [])];
+        let mediaLiked : any[] = [...(userData.MediaLiked ?? [])];
         let medias : any[] = [];
         if(mediaLiked.length > 0) {
           for(let mediaLike of mediaLiked) {
@@ -1277,10 +1277,10 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
       let user: any;
       if(userGet.exists) {
         user = userGet.data();
-        const userMediaLikes = [...(user.MediaLikes ?? [])];
-        userMediaLikes.push(mediaId);
+        const userMediaLiked = [...(user.MediaLiked ?? [])];
+        userMediaLiked.push(mediaId);
         await userRef.update({
-          MediaLikes: userMediaLikes,
+          MediaLiked: userMediaLiked,
         });
       }
 
@@ -1417,9 +1417,9 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const userMediaLikes = ([...user.MediaLikes] || []).filter(id => id != mediaId);
+      const userMediaLikes = ([...(user.MediaLiked|| [])]).filter(id => id != mediaId);
       await userRef.update({
-        MediaLikes: userMediaLikes,
+        MediaLiked: userMediaLikes,
       });
 
       let likes: any[] = [];
