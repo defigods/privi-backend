@@ -1062,7 +1062,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myMedia: myMedia,
           ownedMedia: ownedMedia,
           likedMedia: likedMedia,
-          curatedMedia: curatedMedia
+          curatedMedia: curatedMedia,
         },
       });
     } else {
@@ -2060,8 +2060,19 @@ const getMyCommunitiesFunction = (userId): Promise<any[]> => {
       const user: any = userRef.data();
       let myCommunities: any[] = [];
 
-      if (user.JoinedCommunities && user.JoinedCommunities.length > 0) {
-        myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
+      const joinedCommunities: any[] = user.JoinedCommunities || [];
+      const creatorCommunitiesSnap = await db.collection(collections.community).where('Creator', '==', userId).get();
+
+      if (creatorCommunitiesSnap.docs.length > 0) {
+        creatorCommunitiesSnap.docs.map((doc) => {
+          if (!joinedCommunities.some((id) => id === doc.id)) {
+            joinedCommunities.push(doc.id);
+          }
+        });
+      }
+
+      if (joinedCommunities && joinedCommunities.length > 0) {
+        myCommunities = await getCommunitiesArray(joinedCommunities, collections.community);
       }
       resolve(myCommunities);
     } catch (e) {
@@ -2079,7 +2090,7 @@ const getCommunitiesArray = (arrayCommunities: any[], collection: any): Promise<
       if (communityRef.exists) {
         let communityData: any = communityRef.data();
 
-        if (communityData.TokenSymbol) {
+        if (communityData.TokenSymbol && !communityData.TokenSymbol.empty) {
           const token = await db.collection(collections.tokens).doc(communityData.TokenSymbol).get();
           communityData.tokenData = token.data();
         }
@@ -2302,61 +2313,65 @@ const getOwnedMediaFunction = async (userAddress) => {
   const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
   if (blockchainRes && blockchainRes.success) {
     const mediaSymbolList = blockchainRes.output;
-    const promises :any[] = [];
-    mediaSymbolList.forEach((mediaSymbol) => promises.push(db.collection(collections.streaming).doc(mediaSymbol).get()));
+    const promises: any[] = [];
+    mediaSymbolList.forEach((mediaSymbol) =>
+      promises.push(db.collection(collections.streaming).doc(mediaSymbol).get())
+    );
     const responses = await Promise.all(promises);
     responses.forEach((snap) => {
-      if (snap.exists) ownedMedias.push(snap.data())
+      if (snap.exists) ownedMedias.push(snap.data());
     });
   }
   return ownedMedias;
-}
+};
 
 // get curated media
 const getCuratedMedia = async (userId) => {
-  let medias : any[] = [];
+  let medias: any[] = [];
   const userGet = await db.collection(collections.user).doc(userId).get();
   if (userGet.exists) {
     let userData: any = { ...userGet.data() };
-    let mediaCurated : any[] = [...userData.MediaCurated || []];
+    let mediaCurated: any[] = [...(userData.MediaCurated || [])];
 
-    if(mediaCurated.length > 0) {
-      for(let mediaCur of mediaCurated) {
+    if (mediaCurated.length > 0) {
+      for (let mediaCur of mediaCurated) {
         const mediaRef = db.collection(collections.streaming).doc(mediaCur);
         const mediaGet = await mediaRef.get();
-        if(mediaGet.exists) {
+        if (mediaGet.exists) {
           const media: any = mediaGet.data();
           media.id = mediaGet.id;
-          medias.push(media)
+          medias.push(media);
         }
       }
     }
   }
   return medias;
-}
+};
 
 // get liked media
 const getLikedMedia = async (userId) => {
   const userGet = await db.collection(collections.user).doc(userId).get();
-  const likedMedias:any[] = [];
+  const likedMedias: any[] = [];
   if (userGet.exists) {
     // get liked media symbol list
     const userData: any = userGet.data();
     const likes = userData.Likes ?? [];
-    const likedMediaSymbolList:string[] = [];
+    const likedMediaSymbolList: string[] = [];
     likes.forEach((likeObj) => {
       if (likeObj && likeObj.type == 'media' && likeObj.id) likedMediaSymbolList.push(likeObj.id);
     });
     // get liked media data
-    const promises :any[] = [];
-    likedMediaSymbolList.forEach((mediaSymbol) => promises.push(db.collection(collections.streaming).doc(mediaSymbol).get()));
+    const promises: any[] = [];
+    likedMediaSymbolList.forEach((mediaSymbol) =>
+      promises.push(db.collection(collections.streaming).doc(mediaSymbol).get())
+    );
     const responses = await Promise.all(promises);
     responses.forEach((snap) => {
-      if (snap.exists) likedMedias.push(snap.data())
+      if (snap.exists) likedMedias.push(snap.data());
     });
   }
   return likedMedias;
-}
+};
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
