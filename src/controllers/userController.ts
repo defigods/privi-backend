@@ -1043,7 +1043,6 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
         likedMedia.forEach((item, index) => {
-          console.log(item);
           likedMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
         curatedMedia.forEach((item, index) => {
