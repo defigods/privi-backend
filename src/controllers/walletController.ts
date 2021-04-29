@@ -753,11 +753,9 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
     console.log({ body: req.body });
     const { pubKey, userId } = req.body;
 
-    console.log('got call from', userId);
     const caller = apiKey;
     const lastUpdate = Date.now();
 
-    const publicKey = '0x04' + pubKey.toString('hex');
     const address = '0x' + (await EthUtil.publicToAddress(EthUtil.toBuffer(pubKey)).toString('hex'));
     const blockchainRes = await dataProtocol.attachAddress(userId, address, caller);
 
@@ -772,7 +770,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
         tokenList: preparedTokenList,
         address,
         name: "PriviWallet",
-        pubKey: publicKey,
+        pubKey,
         lastUpdate: Date.now(),
       };
       const newWalletData = [
