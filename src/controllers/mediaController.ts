@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
-import collections, { buyingOffers, sellingOffers, badgesHistory } from '../firebase/collections';
+import collections, { buyingOffers, sellingOffers, badgesHistory, mediaFraction } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
 import fractionaliseMedia from '../blockchain/fractionaliseMedia';
@@ -1178,8 +1178,8 @@ export const getMediaCurated = async (req: express.Request, res: express.Respons
 
 export const getMediaLiked = async (req: express.Request, res: express.Response) => {
   try {
-    let userId = req.params.userId;
-
+    const userId = req.params.userId;
+    const blockchainTag = req.body.tag ?? 'privi';
     if (userId) {
       const userGet = await db.collection(collections.user).doc(userId).get();
 
@@ -1190,32 +1190,11 @@ export const getMediaLiked = async (req: express.Request, res: express.Response)
         let medias : any[] = [];
         if(mediaLiked.length > 0) {
           for(let mediaLike of mediaLiked) {
-
-            const mediaCollections = [
-              { collection: collections.streaming, blockchain: 'Streaming' },
-              { collection: collections.waxMedia, blockchain: 'WaxMedia' },
-              { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
-              { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
-              { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
-              { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
-              { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
-              { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
-              { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
-            ];
-          
-            let i, mediaRef, mediaGet;
-            for (i = 0; i < mediaCollections.length; i++) {
-              mediaRef = db.collection(mediaCollections[i].collection).doc(mediaLike);
-              mediaGet = await mediaRef.get();
-              if (mediaGet.exists) {
-                break;
-              }
-            }
-
-            if(mediaGet.exists) {
-              const media: any = mediaGet.data();
-              medias.push(media)
-            }
+            const mediaRef = db.collection(mediaCollections[mediaLike.tag].collection).doc(mediaLike.mediaID);
+            const mediaGet = await mediaRef.get();
+            if(!mediaGet.exists) throw new Error('media not exist');
+            const media: any = mediaGet.data();
+            medias.push(media)
           }
         }
         res.send({
@@ -1288,10 +1267,24 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
   }
 };
 
+const mediaCollections = {
+  'privi': { collection: collections.streaming, blockchain: 'Streaming' },
+  'wax': { collection: collections.waxMedia, blockchain: 'WaxMedia' },
+  'zora': { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
+  'opensea': { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
+  'mirror': { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
+  'foundation': { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
+  'topshot': { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
+  'sorare': { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
+  'showtime': { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
+};
+
 export const likeMedia = async (req: express.Request, res: express.Response) => {
   try {
-    let mediaId = req.params.mediaId;
-    let body = req.body;
+    const mediaId = req.params.mediaId;
+    const body = req.body;
+    const userId = body.userId;
+    const blockchainTag = body.tag ?? 'privi';
 
     if (mediaId && body.userId && body.priviUser.id === body.userId) {
       const userRef = db.collection(collections.user).doc(body.userId);
@@ -1301,121 +1294,99 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
       if(userGet.exists) {
         user = userGet.data();
         const userMediaLiked = [...(user.MediaLiked ?? [])];
-        userMediaLiked.push(mediaId);
+        userMediaLiked.push({mediaID: mediaId, tag: blockchainTag});
         await userRef.update({
           MediaLiked: userMediaLiked,
         });
       }
 
-      const mediaCollections = [
-        { collection: collections.streaming, blockchain: 'Streaming' },
-        { collection: collections.waxMedia, blockchain: 'WaxMedia' },
-        { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
-        { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
-        { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
-        { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
-        { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
-        { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
-        { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
-      ];
+      const mediaRef = db.collection(mediaCollections[blockchainTag].collection).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      if (!mediaGet.exists) throw new Error('media not exist');
+      const media: any = mediaGet.data();
 
-      let i, mediaRef, mediaGet;
-      for (i = 0; i < mediaCollections.length; i++) {
-        mediaRef = db.collection(mediaCollections[i].collection).doc(mediaId);
-        mediaGet = await mediaRef.get();
-        if (mediaGet.exists) {
-          break;
-        }
+      let mediaLikes: any[] = [];
+      if (media.Likes && media.Likes.length > 0) {
+        mediaLikes = [...media.Likes];
       }
 
-      if (i === mediaCollections.length) {
-        throw new Error('media not exist');
-      } else {
-        const media: any = mediaGet.data();
+      let userLikes: any[] = [];
+      if (user.Likes && user.Likes.length > 0) {
+        userLikes = [...user.Likes];
+      }
 
-        let mediaLikes: any[] = [];
-        if (media.Likes && media.Likes.length > 0) {
-          mediaLikes = [...media.Likes];
-        }
+      let likeIndex = mediaLikes.find((user) => user === body.userId);
+      if (!likeIndex) {
+        mediaLikes.push(body.userId);
+      }
 
-        let userLikes: any[] = [];
-        if (user.Likes && user.Likes.length > 0) {
-          userLikes = [...user.Likes];
-        }
+      likeIndex = userLikes.find((userLike) => userLike.type === 'media' && userLike.id === mediaId);
+      if (!likeIndex) {
+        userLikes.push({
+          id: mediaId,
+          type: 'media',
+          date: Date.now(),
+          blockchain: mediaCollections[blockchainTag].blockchain,
+        });
+      }
 
-        let likeIndex = mediaLikes.find((user) => user === body.userId);
-        if (!likeIndex) {
-          mediaLikes.push(body.userId);
-        }
+      await mediaRef.update({
+        Likes: mediaLikes,
+        NumLikes: mediaLikes.length,
+      });
 
-        likeIndex = userLikes.find((userLike) => userLike.type === 'media' && userLike.id === mediaId);
-        if (!likeIndex) {
-          userLikes.push({
-            id: mediaId,
-            type: 'media',
-            date: Date.now(),
-            blockchain: mediaCollections[i].blockchain,
+      await userRef.update({
+        Likes: userLikes,
+      });
+
+      const userSnap = await db.collection(collections.user).doc(body.userId).get();
+      const userData: any = userSnap.data();
+
+      await notificationsController.addNotification({
+        userId: media.Requester,
+        notification: {
+          type: 108,
+          typeItemId: 'user',
+          itemId: body.userId,
+          follower: userData.firstName,
+          pod: '',
+          comment: '',
+          token: mediaId,
+          amount: 0,
+          onlyInformation: false,
+          otherItemId: '',
+        },
+      });
+
+      if (media.Collabs && media.Collabs !== {}) {
+        let collabs: any[] = Object.keys(media.Collabs);
+
+        for (let collab of collabs) {
+          await notificationsController.addNotification({
+            userId: collab,
+            notification: {
+              type: 108,
+              typeItemId: 'user',
+              itemId: body.userId,
+              follower: userData.firstName,
+              pod: '',
+              comment: '',
+              token: mediaId,
+              amount: 0,
+              onlyInformation: false,
+              otherItemId: '',
+            },
           });
         }
+      }
 
-        await mediaRef.update({
+      res.send({
+        success: true,
+        data: {
           Likes: mediaLikes,
           NumLikes: mediaLikes.length,
-        });
-
-        await userRef.update({
-          Likes: userLikes,
-        });
-
-        const userSnap = await db.collection(collections.user).doc(body.userId).get();
-        const userData: any = userSnap.data();
-
-        await notificationsController.addNotification({
-          userId: media.Requester,
-          notification: {
-            type: 108,
-            typeItemId: 'user',
-            itemId: body.userId,
-            follower: userData.firstName,
-            pod: '',
-            comment: '',
-            token: mediaId,
-            amount: 0,
-            onlyInformation: false,
-            otherItemId: '',
-          },
-        });
-
-        if (media.Collabs && media.Collabs !== {}) {
-          let collabs: any[] = Object.keys(media.Collabs);
-
-          for (let collab of collabs) {
-            await notificationsController.addNotification({
-              userId: collab,
-              notification: {
-                type: 108,
-                typeItemId: 'user',
-                itemId: body.userId,
-                follower: userData.firstName,
-                pod: '',
-                comment: '',
-                token: mediaId,
-                amount: 0,
-                onlyInformation: false,
-                otherItemId: '',
-              },
-            });
-          }
-        }
-
-        res.send({
-          success: true,
-          data: {
-            Likes: mediaLikes,
-            NumLikes: mediaLikes.length,
-          },
-        });
-      }
+        },
+      });
     } else {
       console.log('Error in controllers/mediaController -> likeMedia()', "There's no id...");
       res.send({ success: false, error: "There's no id..." });
@@ -1428,74 +1399,51 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
 
 export const removeLikeMedia = async (req: express.Request, res: express.Response) => {
   try {
-    let mediaId = req.params.mediaId;
-    let body = req.body;
-
+    const mediaId = req.params.mediaId;
+    const body = req.body;
+    const blockchainTag = body.tag ?? 'privi';
     if (mediaId && body.userId) {
+      const mediaRef = db.collection(mediaCollections[blockchainTag].collection).doc(mediaId);
+      const mediaGet = await mediaRef.get();
+      if (!mediaGet.exists) throw new Error('media not exist');
+      const userRef = db.collection(collections.user).doc(body.userId);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
 
-      const mediaCollections = [
-        { collection: collections.streaming, blockchain: 'Streaming' },
-        { collection: collections.waxMedia, blockchain: 'WaxMedia' },
-        { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
-        { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
-        { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
-        { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
-        { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
-        { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
-        { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
-      ];
+      const userMediaLikes = ([...(user.MediaLiked|| [])]).filter(media => media.mediaID != mediaId);
+      await userRef.update({
+        MediaLiked: userMediaLikes,
+      });
+  
+      const media: any = mediaGet.data();
 
-      let i, mediaRef, mediaGet;
-      for (i = 0; i < mediaCollections.length; i++) {
-        mediaRef = db.collection(mediaCollections[i].collection).doc(mediaId);
-        mediaGet = await mediaRef.get();
-        if (mediaGet.exists) {
-          break;
-        }
+      let likes: any[] = [];
+      if (media.Likes && media.Likes.length > 0) {
+        likes = media.Likes.filter((user) => user != body.userId);
+
+        await mediaRef.update({
+          Likes: likes,
+          NumLikes: likes.length,
+        });
       }
 
-      if (i === mediaCollections.length) {
-        throw new Error('media not exist');
-      } else {
-        const userRef = db.collection(collections.user).doc(body.userId);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+      if (user.Likes && user.Likes.length > 0) {
+        const updatedUserLikes = user.Likes.filter(
+          (userLike) => !(userLike.type === 'media' && userLike.id === mediaId)
+        );
 
-        const userMediaLikes = ([...(user.MediaLiked|| [])]).filter(id => id != mediaId);
         await userRef.update({
-          MediaLiked: userMediaLikes,
-        });
-  
-        const media: any = mediaGet.data();
-
-        let likes: any[] = [];
-        if (media.Likes && media.Likes.length > 0) {
-          likes = media.Likes.filter((user) => user != body.userId);
-  
-          await mediaRef.update({
-            Likes: likes,
-            NumLikes: likes.length,
-          });
-        }
-  
-        if (user.Likes && user.Likes.length > 0) {
-          const updatedUserLikes = user.Likes.filter(
-            (userLike) => !(userLike.type === 'media' && userLike.id === mediaId)
-          );
-  
-          await userRef.update({
-            Likes: updatedUserLikes,
-          });
-        }
-  
-        res.send({
-          success: true,
-          data: {
-            Likes: likes,
-            NumLikes: likes.length || 0,
-          },
+          Likes: updatedUserLikes,
         });
       }
+
+      res.send({
+        success: true,
+        data: {
+          Likes: likes,
+          NumLikes: likes.length || 0,
+        },
+      });
     } else {
       console.log('Error in controllers/mediaController -> removeLikeMedia()', "There's no id...");
       res.send({ success: false, error: "There's no id..." });
