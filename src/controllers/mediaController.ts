@@ -1138,9 +1138,25 @@ export const getMediaCurated = async (req: express.Request, res: express.Respons
 
         let mediaCurated : any[] = [...userData.MediaCurated || []];
 
+        let medias : any[] = [];
+
+        if(mediaCurated.length > 0) {
+          for(let mediaCur of mediaCurated) {
+            const mediaRef = db.collection(collections.streaming).doc(mediaCur);
+            const mediaGet = await mediaRef.get();
+
+            if(mediaGet.exists) {
+              const media: any = mediaGet.data();
+              media.id = mediaGet.id;
+
+              medias.push(media)
+            }
+          }
+        }
+
         res.send({
           success: true,
-          data: mediaCurated,
+          data: medias,
         });
       } else {
         console.log('Error in controllers/mediaController -> getMediaCurated()', 'No medias...');
@@ -2530,7 +2546,7 @@ export const openNFT = async (req: express.Request, res: express.Response) => {
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ success: true });
+      res.send({ success: true, nftId: mediaSymbol });
     } else {
       console.log('Error in controllers/mediaController -> openNFT()' + blockchainRes.message);
       res.send({
@@ -2571,7 +2587,7 @@ export const closeNFT = async (req: express.Request, res: express.Response) => {
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      res.send({ success: true });
+      res.send({ success: true, nftId: mediaSymbol });
     } else {
       console.log('Error in controllers/mediaController -> closeNFT()' + blockchainRes.message);
       res.send({
