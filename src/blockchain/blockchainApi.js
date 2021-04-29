@@ -24,7 +24,7 @@ const blockchainCommunityAPI = 'http://' + fabricAppServerIP + ':' + fabricPort 
 const blockchainBadgesAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/Badges';
 const blockchainVotationAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/Votation';
 const blockchainLiquidityPoolAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/PriviLiquidityPools';
-const blockchainSocialAPI = fabricEndpoint + 'SocialToken';	// changed
+const blockchainSocialAPI = testnetEndpoint + 'SocialToken';	// changed
 const blockchainAuctionsAPI = testnetEndpoint + 'Auction';	// changed
 const blockchainExchangeAPI = testnetEndpoint + 'Exchange';	// changed
 

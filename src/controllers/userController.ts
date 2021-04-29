@@ -993,6 +993,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       const curatedMedia: any[] = await getCuratedMedia(userId);
       const likedMedia: any[] = await getLikedMedia(userId);
       let myMedia: any[] = mergeMedias(ownedMedia, curatedMedia, likedMedia);
+      myMedia = await getFractionData(myMedia);
       // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
         badges = badges.filter((obj) => !obj.Symbol || !hiddens[obj.Symbol]);
@@ -1037,7 +1038,6 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
       }
-
       res.send({
         success: true,
         data: {
@@ -1048,9 +1048,6 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myCreditPools: myCreditPools,
           myWorkInProgress: myWorkInProgress,
           myMedia: myMedia,
-          ownedMedia: ownedMedia,
-          likedMedia: likedMedia,
-          curatedMedia: curatedMedia,
         },
       });
     } else {
@@ -2407,6 +2404,28 @@ const mergeMedias = (ownedMedia, curatedMedia, likedMedia):any[] => {
     }
   });
   return myMedia;
+}
+
+// get fraction data
+const getFractionData = async (medias) => {
+  const mediaMap = {};
+  const promises:any[] = [];
+  medias.forEach((media) => {
+    mediaMap[media.MediaSymbol] = media;
+    promises.push(db.collection(collections.mediaFraction).doc(media.MediaSymbol).get());
+  });
+  const responses = await Promise.all(promises);
+  responses.forEach((snap) => {
+    if (snap.exists) mediaMap[snap.id] = {
+      ...mediaMap[snap.id],
+      Fraction: snap.data()
+    }
+  });
+  const res:any[] = [];
+  for (const [id, obj] of Object.entries(mediaMap)) {
+    res.push(obj);
+  }
+  return res;
 }
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
