@@ -2022,7 +2022,7 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
           }
           podInfo.push(podData);
         }
-        resolve();
+        resolve(podRef);
       });
       podTasks.push(podTask);
     });
