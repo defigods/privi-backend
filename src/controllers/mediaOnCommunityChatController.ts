@@ -93,7 +93,7 @@ const mediaOnCommunityChatCreation = (exports.mediaOnCommunityChatCreation = asy
   });
 });
 
-const checkIfUserIsAdmin = (chatId, adminId): Promise<boolean> => {
+/*const checkIfUserIsAdmin = (chatId, adminId): Promise<boolean> => {
   return new Promise(async (resolve, reject) => {
     const discordChatRef = db.collection(collections.discordChat).doc(chatId);
     const discordChatGet = await discordChatRef.get();
@@ -105,25 +105,25 @@ const checkIfUserIsAdmin = (chatId, adminId): Promise<boolean> => {
       resolve(false);
     }
   });
-};
+};*/
 
 exports.addUserToRoom = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    let checkIsAdmin: boolean;
-    if (body.adminRequired) {
+    let checkIsAdmin: boolean = true;
+    /*if (body.adminRequired) {
       checkIsAdmin = await checkIfUserIsAdmin(body.discordChatId, body.adminId);
     } else {
       checkIsAdmin = true;
-    }
+    }*/
 
-    if (checkIsAdmin) {
-      let discordRoom = await addUserToRoomFunction(body.discordChatId, body.discordRoomId, body.userId, 'Member');
+    if (checkIsAdmin && body.chatId && body.userId) {
+      let chatRoom = await addUserToRoomFunction(body.chatId, body.userId);
 
       res.send({
         success: true,
-        data: discordRoom,
+        data: chatRoom,
       });
     } else {
       res.send({
@@ -140,20 +140,18 @@ exports.addUserToRoom = async (req: express.Request, res: express.Response) => {
   }
 };
 
-const addUserToRoomFunction = (exports.addUserToRoomFunction = (discordChatId, discordRoomId, userId, typeUser) => {
+const addUserToRoomFunction = (exports.addUserToRoomFunction = (chatId, userId) => {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log(discordChatId, discordRoomId, userId);
+      console.log(chatId, userId);
 
-      const discordRoomRef = db
-        .collection(collections.discordChat)
-        .doc(discordChatId)
-        .collection(collections.discordRoom)
-        .doc(discordRoomId);
-      const discordRoomGet = await discordRoomRef.get();
-      const discordRoom: any = discordRoomGet.data();
+      const mediaOnCommunityChatRef = db
+        .collection(collections.mediaOnCommunityChat)
+        .doc(chatId);
+      const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
+      const mediaOnCommunityChat: any = mediaOnCommunityChatGet.data();
 
-      let users = [...discordRoom.users];
+      let users = [...mediaOnCommunityChat.users];
 
       let findIndexUser = users.findIndex((usr) => usr.userId === userId);
       if (findIndexUser === -1) {
@@ -161,39 +159,37 @@ const addUserToRoomFunction = (exports.addUserToRoomFunction = (discordChatId, d
         let data: any = userSnap.data();
 
         users.push({
-          type: typeUser,
           userId: userId,
           userName: data.firstName,
           userConnected: false,
           lastView: Date.now(),
         });
 
-        await discordRoomRef.update({
-          users: users,
+        await mediaOnCommunityChatRef.update({
+          users: users
         });
 
-        discordRoom.users = users;
+        mediaOnCommunityChat.users = users;
       }
 
-      resolve(discordRoom);
+      resolve(mediaOnCommunityChat);
     } catch (e) {
       reject('Error in controllers/mediaOnCommunityChatController -> mediaOnCommunityChatController()' + e);
     }
   });
 });
 
-const removeUserToRoom = (exports.removeUserToRoom = (discordChatId, discordRoomId, userId) => {
+const removeUserToRoom = (exports.removeUserToRoom = (chatId, userId) => {
   return new Promise(async (resolve, reject) => {
     try {
-      const discordRoomRef = db
-        .collection(collections.discordChat)
-        .doc(discordChatId)
-        .collection(collections.discordRoom)
-        .doc(discordRoomId);
-      const discordRoomGet = await discordRoomRef.get();
-      const discordRoom: any = discordRoomGet.data();
+      const mediaOnCommunityChatRef = db
+        .collection(collections.mediaOnCommunityChat)
+        .doc(chatId);
+      const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
+      const mediaOnCommunityChat: any = mediaOnCommunityChatGet.data();
 
-      let users = [...discordRoom.users];
+
+      let users = [...mediaOnCommunityChat.users];
 
       let findIndexUser = users.findIndex((usr) => usr.userId === userId);
       if (findIndexUser !== -1) {
@@ -201,13 +197,13 @@ const removeUserToRoom = (exports.removeUserToRoom = (discordChatId, discordRoom
           users.splice(findIndexUser, 1);
         }
 
-        await discordRoomRef.update({
-          users: users,
+        await mediaOnCommunityChatRef.update({
+          users: users
         });
 
-        discordRoom.users = users;
+        mediaOnCommunityChat.users = users;
       }
-      resolve(discordRoom);
+      resolve(mediaOnCommunityChat);
     } catch (e) {
       reject('Error in controllers/mediaOnCommunityChatController -> mediaOnCommunityChatController()' + e);
     }
@@ -218,50 +214,45 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    const discordRoomRef = db
-      .collection(collections.discordChat)
-      .doc(body.discordChatId)
-      .collection(collections.discordRoom)
-      .doc(body.discordRoom);
-    const discordRoomGet = await discordRoomRef.get();
-    const discordRoom: any = discordRoomGet.data();
+    if(body.chatId) {
+      const mediaOnCommunityChatRef = db
+        .collection(collections.mediaOnCommunityChat)
+        .doc(body.chatId);
+      const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
+      const mediaOnCommunityChat: any = mediaOnCommunityChatGet.data();
 
-    let messages: any[] = [];
-    if (discordRoom.messages && discordRoom.messages.length > 0) {
-      for (let i = 0; i < discordRoom.messages.length; i++) {
-        const messageGet = await db.collection(collections.discordMessage).doc(discordRoom.messages[i]).get();
+      let messages: any[] = [];
+      if (mediaOnCommunityChat.messages && mediaOnCommunityChat.messages.length > 0) {
+        for (let i = 0; i < mediaOnCommunityChat.messages.length; i++) {
+          const messageGet = await db.collection(collections.mediaOnCommunityMessage).doc(mediaOnCommunityChat.messages[i]).get();
 
-        let discordMsg: any = messageGet.data();
+          let mediaOnCommunityMessage : any = messageGet.data();
 
-        const userRef = db.collection(collections.user).doc(discordMsg.from);
-        const userGet = await userRef.get();
-        const user: any = userGet.data();
+          const userRef = db.collection(collections.user).doc(mediaOnCommunityMessage.from);
+          const userGet = await userRef.get();
+          const user: any = userGet.data();
 
-        discordMsg['user'] = {
-          id: userGet.id,
-          name: user.firstName,
-          level: user.level || 1,
-          cred: user.cred || 0,
-          salutes: user.salutes || 0,
-        };
-        discordMsg.id = messageGet.id;
-        messages.push(discordMsg);
+          mediaOnCommunityMessage.id = messageGet.id;
+          messages.push(mediaOnCommunityMessage);
 
-        if (i === discordRoom.messages.length - 1) {
-          messages.sort((a, b) => {
-            return a.created - b.created;
-          });
-          res.status(200).send({
-            success: true,
-            data: messages,
-          });
+          if (i === mediaOnCommunityChat.messages.length - 1) {
+            messages.sort((a, b) => {
+              return a.created - b.created;
+            });
+            res.status(200).send({
+              success: true,
+              data: messages,
+            });
+          }
         }
+      } else {
+        res.status(200).send({
+          success: true,
+          data: [],
+        });
       }
     } else {
-      res.status(200).send({
-        success: true,
-        data: [],
-      });
+      //TODO: ERROR
     }
   } catch (e) {
     console.log('Error in controllers/mediaOnCommunityChatController -> mediaOnCommunityChatController()' + e);
@@ -277,31 +268,29 @@ exports.lastView = async (req: express.Request, res: express.Response) => {
   try {
     let body = req.body;
 
-    if (body.userId && body.discordChat && body.discordRoom) {
-      const discordRoomRef = db
-        .collection(collections.discordChat)
-        .doc(body.discordChat)
-        .collection(collections.discordRoom)
-        .doc(body.discordRoom);
-      const discordRoomGet = await discordRoomRef.get();
-      const discordRoom: any = discordRoomGet.data();
-      if (discordRoom) {
-        let users = [...discordRoom.users];
+    if (body.userId && body.chatId && body.room && body.lastView) {
+      const mediaOnCommunityChatRef = db
+        .collection(collections.mediaOnCommunityChat)
+        .doc(body.chatId);
+      const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
+      const mediaOnCommunityChat: any = mediaOnCommunityChatGet.data();
+      if (mediaOnCommunityChat) {
+        let users = [...mediaOnCommunityChat.users];
         let userIndex = users.findIndex((usr, i) => usr.userId === body.userId);
         users[userIndex].lastView = body.lastView;
-        await discordRoomRef.update({
-          users: users,
+        await mediaOnCommunityChatRef.update({
+          users: users
         });
       }
-      const messageQuery = await db.collection(collections.discordMessage).where('room', '==', body.room).get();
+      const messageQuery = await db.collection(collections.mediaOnCommunityMessage).where('room', '==', body.room).get();
       if (!messageQuery.empty) {
         for (const doc of messageQuery.docs) {
           let data = doc.data();
           if (!data.seen.includes(body.userId)) {
             let usersSeen = [...data.seen];
             usersSeen.push(body.userId);
-            await db.collection(collections.discordMessage).doc(doc.id).update({
-              seen: usersSeen,
+            await db.collection(collections.mediaOnCommunityMessage).doc(doc.id).update({
+              seen: usersSeen
             });
           }
         }
