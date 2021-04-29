@@ -17,7 +17,7 @@ let storage = multer.diskStorage({
   },
 });
 let upload = multer({
-  storage: storage
+  storage: storage,
 });
 
 let storage1 = multer.diskStorage({
@@ -104,7 +104,7 @@ let upload6 = multer({
 
 router.get('/getUserMedias', authenticateJWT, mediaController.getUserMedias);
 router.get('/getUserMediaStreaming', authenticateJWT, mediaController.getUserMediaStreaming);
-router.get('/getMedia/:mediaId', authenticateJWT, mediaController.getMedia);
+router.get('/getMedia/:mediaId', mediaController.getMedia);
 router.get('/getAudio/:mediaId', mediaController.getMediaAudio);
 router.get('/getVideo/:mediaId', mediaController.getMediaVideo);
 router.post('/mediaViewed/:mediaId', mediaController.registerMediaView);
@@ -229,13 +229,37 @@ router.post('/closeNFT', authenticateJWT, mediaController.closeNFT);
 router.post('/notifications/exportToEthereum', authenticateJWT, mediaController.notificationsExportToEthereum);
 
 // QUICK MEDIA UPLOAD MEDIA
-router.post('/quick/uploadDigitalArt/:mediaId', authenticateJWT, upload1.single('image'), mediaController.changeQuickMediaDigitalArt);
-router.post('/quick/uploadAudio/:mediaId', authenticateJWT, upload2.single('audio'), mediaController.changeQuickMediaAudio);
-router.post('/quick/uploadVideo/:mediaId', authenticateJWT, upload3.single('video'), mediaController.changeQuickMediaVideo);
+router.post(
+  '/quick/uploadDigitalArt/:mediaId',
+  authenticateJWT,
+  upload1.single('image'),
+  mediaController.changeQuickMediaDigitalArt
+);
+router.post(
+  '/quick/uploadAudio/:mediaId',
+  authenticateJWT,
+  upload2.single('audio'),
+  mediaController.changeQuickMediaAudio
+);
+router.post(
+  '/quick/uploadVideo/:mediaId',
+  authenticateJWT,
+  upload3.single('video'),
+  mediaController.changeQuickMediaVideo
+);
 router.post('/quick/uploadBlog/:mediaId', authenticateJWT, mediaController.changeQuickMediaBlog);
-router.post('/quick/uploadBlog/video/:mediaId', authenticateJWT, upload4.single('video'), mediaController.changeQuickMediaBlogVideo);
-router.post('/quick/changeMainPhoto/:mediaId', authenticateJWT, upload.single('image'), mediaController.changeQuickMediaPhoto);
-
+router.post(
+  '/quick/uploadBlog/video/:mediaId',
+  authenticateJWT,
+  upload4.single('video'),
+  mediaController.changeQuickMediaBlogVideo
+);
+router.post(
+  '/quick/changeMainPhoto/:mediaId',
+  authenticateJWT,
+  upload.single('image'),
+  mediaController.changeQuickMediaPhoto
+);
 
 // FRACTIONALISE Post
 router.post('/fractionalise', authenticateJWT, mediaController.fractionalise);
@@ -248,8 +272,20 @@ router.post('/sellFraction', authenticateJWT, mediaController.sellFraction);
 
 // FRACTIONALISE Get
 router.get('/getFractionalisedMediaOffers/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaOffers);
-router.get('/getFractionalisedMediaTransactions/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaTransactions);
-router.get('/getFractionalisedMediaPriceHistory/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaPriceHistory);
-router.get('/getFractionalisedMediaSharedOwnershipHistory/:mediaId', authenticateJWT, mediaController.getFractionalisedMediaSharedOwnershipHistory);
+router.get(
+  '/getFractionalisedMediaTransactions/:mediaId',
+  authenticateJWT,
+  mediaController.getFractionalisedMediaTransactions
+);
+router.get(
+  '/getFractionalisedMediaPriceHistory/:mediaId',
+  authenticateJWT,
+  mediaController.getFractionalisedMediaPriceHistory
+);
+router.get(
+  '/getFractionalisedMediaSharedOwnershipHistory/:mediaId',
+  authenticateJWT,
+  mediaController.getFractionalisedMediaSharedOwnershipHistory
+);
 
 module.exports = router;
