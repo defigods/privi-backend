@@ -58,15 +58,12 @@ module.exports.getTokensOfAddress = async (userAddress) => {
 
 module.exports.getTokensOfAddressByType = async (userAddress, tokenType) => {
 	const config = {
-		method: 'get',
-		headers: { 'Content-Type': 'application/json' },
-		url: api.blockchainCoinBalanceAPI + "/getTokensOfAddressByType",
-		params: JSON.stringify({
+		params: {
 			Address: userAddress,
-			TokenType: tokenType,
-		})
-	}
-	let blockchainRes = await axios(config);
+			TokenType: tokenType,	
+		}
+	};
+	const blockchainRes = await axios.get(api.blockchainCoinBalanceAPI + "/getTokensOfAddressByType", config);
 	return blockchainRes.data;
 };
 
