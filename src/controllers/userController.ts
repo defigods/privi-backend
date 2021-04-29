@@ -316,19 +316,19 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
         {
           type: 'string',
           name: 'Message',
-          value: 'Hi, Alice'
+          value: 'Hi, Alice',
         },
         {
           type: 'uint32',
           name: 'A number',
-          value: '1337'
-        }
-      ]
-      const recovered = sigUtil.recoverTypedSignatureLegacy({ data: msgParams, sig: signature })
+          value: '1337',
+        },
+      ];
+      const recovered = sigUtil.recoverTypedSignatureLegacy({ data: msgParams, sig: signature });
 
       if (ethUtil.toChecksumAddress(recovered) !== ethUtil.toChecksumAddress(address)) {
         console.log('Failed to verify signer');
-        res.send({ isSignedIn: false, userData: {}, message: "Signer verification failed" });
+        res.send({ isSignedIn: false, userData: {}, message: 'Signer verification failed' });
       } else {
         // Compare user & passwd between login input and DB
         const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
@@ -897,7 +897,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         userData.urlSlug ||
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
       basicInfo.address = userData.address || '';
-      basicInfo.myNFTPods = await getPodsArray(userData.myNFTPods, collections.podsNFT, 'NFT') || [];
+      basicInfo.myNFTPods = (await getPodsArray(userData.myNFTPods, collections.podsNFT, 'NFT')) || [];
 
       var bgs = [] as any;
       if (basicInfo.badges && basicInfo.badges.length > 0) {
@@ -2009,25 +2009,30 @@ const getPodsFollowedFunction = (userId) => {
 const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     let podInfo: any[] = [];
-    arrayPods.forEach(async (item, i) => {
-      const podRef = await db.collection(collection).doc(item).get();
-
-      if (podRef.exists) {
-        let podData: any = podRef.data();
-        podData.type = type;
-
-        if (podData.TokenSymbol) {
-          const token = await db.collection(collections.tokens).doc(podData.TokenSymbol).get();
-          podData.tokenData = token.data();
+    let podTasks: Promise<any>[] = [];
+    arrayPods.forEach((item) => {
+      const podTask = new Promise(async (resolve, reject) => {
+        const podRef = await db.collection(collection).doc(item).get();
+        if (podRef.exists) {
+          let podData: any = podRef.data();
+          podData.type = type;
+          if (podData.TokenSymbol) {
+            const token = await db.collection(collections.tokens).doc(podData.TokenSymbol).get();
+            podData.tokenData = token.data();
+          }
+          podInfo.push(podData);
         }
-
-        await podInfo.push(podData);
-      }
-
-      if (arrayPods.length === i + 1) {
-        resolve(podInfo);
-      }
+        resolve();
+      });
+      podTasks.push(podTask);
     });
+    Promise.all(podTasks)
+      .then(() => {
+        resolve(podInfo);
+      })
+      .catch(() => {
+        resolve([]);
+      });
   });
 };
 
