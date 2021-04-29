@@ -1156,7 +1156,7 @@ export const getMediaCurated = async (req: express.Request, res: express.Respons
   }
 };
 
-const getMediaLiked = async (req: express.Request, res: express.Response) => {
+export const getMediaLiked = async (req: express.Request, res: express.Response) => {
   try {
     let userId = req.params.userId;
 
