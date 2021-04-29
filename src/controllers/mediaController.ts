@@ -2372,20 +2372,21 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const mediaName = data.MediaName;
     const mediaSymbol = data.MediaSymbol.replace(/\s/g, '');
 
-    const viewConditions = data.ViewConditions;
-    const viewingType = viewConditions.ViewingType;
-    const viewingToken = viewConditions.ViewingToken; // USDT, ETH ...
-    const viewPrice = viewConditions.Price;
-    const isStreamingLive = viewConditions.IsStreamingLive;
-    const isRecord = viewConditions.IsRecord;
+    const viewConditions = data.ViewConditions || {};
+    const viewingType = viewConditions.ViewingType || '';
+    const viewingToken = viewConditions.ViewingToken || ''; // USDT, ETH ...
+    const viewPrice = viewConditions.Price || 0;
+    const isStreamingLive = viewConditions.IsStreamingLive || false;
+    const isRecord = viewConditions.IsRecord || false;
 
-    const nftConditions = data.NftConditions;
-    const copies = nftConditions.Copies;
-    const royalty = nftConditions.Royalty;
-    const nftPrice = nftConditions.Price;
-    const nftToken = nftConditions.NftToken; // USDT, ETH ...
+    const nftConditions = data.NftConditions || {};
+    const copies = nftConditions.Copies || 0;
+    const royalty = nftConditions.Royalty || 0;
+    const nftPrice = nftConditions.Price || 0;
+    const nftToken = nftConditions.NftToken || ''; // USDT, ETH ...
 
     const type = data.Type;
+    const purpose = data.Purpose;
     const releaseDate = data.ReleaseDate;
     const sharingPct = data.SharingPct;
 
@@ -2400,39 +2401,76 @@ export const createMedia = async (req: express.Request, res: express.Response) =
 
     const EditorPages = body.EditorPages;
 
-    const blockchainRes = await media.createMedia(
-      creatorAddress,
-      mediaName,
-      mediaSymbol,
-      viewingType,
-      viewingToken,
-      viewPrice,
-      isStreamingLive,
-      isRecord,
-      /*streamingProportions,*/ copies,
-      royalty,
-      nftPrice,
-      nftToken,
-      type,
-      releaseDate,
-      sharingPct,
-      apiKey
-    );
+    console.log('entra aquiiiii 0', purpose, body)
 
-    if (blockchainRes && blockchainRes.success) {
-      await updateFirebase(blockchainRes);
-      // add transaction data inside media
-      const output = blockchainRes.output;
-      const updateTxns = output.Transactions;
-      let tid = '';
-      let txnArray: any = [];
-      for ([tid, txnArray] of Object.entries(updateTxns)) {
-        db.collection(collections.streaming)
-          .doc(mediaSymbol)
-          .collection(collections.transactions)
-          .doc(tid)
-          .set({ Transactions: txnArray });
+    if(purpose != 4) {
+      const blockchainRes = await media.createMedia(
+        creatorAddress,
+        mediaName,
+        mediaSymbol,
+        viewingType,
+        viewingToken,
+        viewPrice,
+        isStreamingLive,
+        isRecord,
+        /*streamingProportions,*/ copies,
+        royalty,
+        nftPrice,
+        nftToken,
+        type,
+        releaseDate,
+        sharingPct,
+        apiKey
+      );
+
+      if (blockchainRes && blockchainRes.success) {
+        await updateFirebase(blockchainRes);
+        // add transaction data inside media
+        const output = blockchainRes.output;
+        const updateTxns = output.Transactions;
+        let tid = '';
+        let txnArray: any = [];
+        for ([tid, txnArray] of Object.entries(updateTxns)) {
+          db.collection(collections.streaming)
+            .doc(mediaSymbol)
+            .collection(collections.transactions)
+            .doc(tid)
+            .set({ Transactions: txnArray });
+        }
+        await extraActionsCreateMedia(false, hasPhoto, MediaDescription, pricingMethod, hashtags, creatorId, type,
+          content, mediaName, viewPrice, releaseDate, mediaSymbol, EditorPages);
+      } else {
+        console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
+        res.send({
+          success: false,
+          error: blockchainRes.message,
+        });
       }
+    } else {
+      console.log('entra aquiiiii')
+      let initialData : any = {
+        MediaName: mediaName,
+        MediaSymbol: mediaSymbol,
+        Type: type
+      }
+      await extraActionsCreateMedia(initialData, hasPhoto, MediaDescription, pricingMethod, hashtags, creatorId, type,
+                                    content, mediaName, viewPrice, releaseDate, mediaSymbol, EditorPages);
+    }
+
+    res.send({ success: true });
+  } catch (e) {
+    console.log('Error in controllers/mediaController -> createMedia()' + e);
+    res.status(200).send({
+      success: false,
+      error: 'Error in controllers/mediaController -> createMedia():' + e,
+    });
+  }
+};
+
+const extraActionsCreateMedia = async (initialData, hasPhoto, MediaDescription, pricingMethod, hashtags, creatorId, type,
+                                       content, mediaName, viewPrice, releaseDate, mediaSymbol, EditorPages) => {
+  return new Promise(async (resolve, reject) => {
+    try {
       // add extra info in media doc
       const extraData: any = {
         HasPhoto: hasPhoto,
@@ -2468,13 +2506,26 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         extraData.EndingTime = 0;
         extraData.Rewards = '';
       }
-      db.collection(collections.streaming)
-        .doc(mediaSymbol)
-        .update({
-          ...extraData,
-          QuickCreation: true,
-          EditorPages: EditorPages || [],
+
+      if(!initialData) {
+        db.collection(collections.streaming)
+          .doc(mediaSymbol)
+          .update({
+            ...initialData,
+            ...extraData,
+            QuickCreation: true,
+            EditorPages: EditorPages || [],
+          });
+      } else {
+        await db.runTransaction(async (transaction) => {
+          transaction.set(db.collection(collections.streaming).doc(mediaSymbol), {
+            ...initialData,
+            ...extraData,
+            QuickCreation: true,
+            EditorPages: EditorPages || [],
+          });
         });
+      }
 
       const userRef = db.collection(collections.user).doc(creatorId);
       const userGet = await userRef.get();
@@ -2485,23 +2536,12 @@ export const createMedia = async (req: express.Request, res: express.Response) =
       await userRef.update({
         MediaCurated: mediaCurated
       });
-
-      res.send({ success: true });
-    } else {
-      console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
-      res.send({
-        success: false,
-        error: blockchainRes.message,
-      });
+      resolve();
+    } catch(e) {
+      reject(e)
     }
-  } catch (e) {
-    console.log('Error in controllers/mediaController -> createMedia()' + e);
-    res.status(200).send({
-      success: false,
-      error: 'Error in controllers/mediaController -> createMedia():' + e,
-    });
-  }
-};
+  })
+}
 
 export const buyMediaNFT = async (req: express.Request, res: express.Response) => {
   try {
