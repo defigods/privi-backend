@@ -1182,11 +1182,22 @@ export const getMediaLiked = async (req: express.Request, res: express.Response)
       if (userGet.exists) {
         let userData: any = { ...userGet.data() };
 
-        let mediaLiked : any[] = [...userData.Likes || []];
-
+        let mediaLiked : any[] = [...(userData.MediaLikes ?? [])];
+        let medias : any[] = [];
+        if(mediaLiked.length > 0) {
+          for(let mediaLike of mediaLiked) {
+            const mediaRef = db.collection(collections.streaming).doc(mediaLike);
+            const mediaGet = await mediaRef.get();
+            if(mediaGet.exists) {
+              const media: any = mediaGet.data();
+              media.id = mediaGet.id;
+              medias.push(media)
+            }
+          }
+        }
         res.send({
           success: true,
-          data: mediaLiked,
+          data: medias,
         });
       } else {
         console.log('Error in controllers/mediaController -> getMediaLiked()', 'No medias...');
@@ -1262,7 +1273,16 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
     if (mediaId && body.userId && body.priviUser.id === body.userId) {
       const userRef = db.collection(collections.user).doc(body.userId);
       const userGet = await userRef.get();
-      const user: any = userGet.data();
+      
+      let user: any;
+      if(userGet.exists) {
+        user = userGet.data();
+        const userMediaLikes = [...(user.MediaLikes ?? [])];
+        userMediaLikes.push(mediaId);
+        await userRef.update({
+          MediaLikes: userMediaLikes,
+        });
+      }
 
       const mediaCollections = [
         { collection: collections.streaming, blockchain: 'Streaming' },
@@ -1396,6 +1416,11 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
       const userRef = db.collection(collections.user).doc(body.userId);
       const userGet = await userRef.get();
       const user: any = userGet.data();
+
+      const userMediaLikes = ([...user.MediaLikes] || []).filter(id => id != mediaId);
+      await userRef.update({
+        MediaLikes: userMediaLikes,
+      });
 
       let likes: any[] = [];
       if (media.Likes && media.Likes.length > 0) {
