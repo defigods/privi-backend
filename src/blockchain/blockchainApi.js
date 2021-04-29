@@ -8,24 +8,25 @@ const fabricAppServerIP = '64.225.22.17'; // main
 const fabricPort = 4000;
 const fabricEndpoint = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/';
 
-const blockchainCoinBalanceAPI = testnetEndpoint + 'CoinBalance'; // changed
-const blockchainDataProtocolAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/DataProtocol';
-const blockchainTraditionalLendingAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/TraditionalLending';
-const blockchainPriviLendingAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/PRIVIcredit';
-const blockchainPodAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/PodFT';
-const blockchainPodNFTPodAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/PodNFT';
-const blockchainPodMediaAPI = testnetEndpoint + 'PodMedia'; // changed
-const blockchainFractionaliseMediaAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/fractionaliseMedia';
-const blockchainMediaAPI = testnetEndpoint + 'Media'; // changed
-const blockchainInsuranceFTAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/InsuranceFT';
-const blockchainInsuranceNFTAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/InsuranceNFT';
-const blockchainPriviGovernanceAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/PriviGovernance';
-const blockchainCommunityAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/Communities';
-const blockchainBadgesAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/Badges';
-const blockchainVotationAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/Votation';
-const blockchainLiquidityPoolAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/PriviLiquidityPools';
-const blockchainSocialAPI = 'http://' + fabricAppServerIP + ':' + fabricPort + '/api/SocialToken';
-const blockchainAuctionsAPI = testnetEndpoint + 'Auction';
+
+const blockchainCoinBalanceAPI = testnetEndpoint + "CoinBalance";	// changed
+const blockchainDataProtocolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/DataProtocol";
+const blockchainTraditionalLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/TraditionalLending";
+const blockchainPriviLendingAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PRIVIcredit";
+const blockchainPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodFT";
+const blockchainPodNFTPodAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PodNFT";
+const blockchainPodMediaAPI = testnetAppServerIP + "PodMedia";	// changed
+const blockchainFractionaliseMediaAPI = testnetEndpoint + "fractionaliseMedia";	// changed
+const blockchainMediaAPI = testnetEndpoint + "Media";	// changed
+const blockchainInsuranceFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceFT";
+const blockchainInsuranceNFTAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/InsuranceNFT"
+const blockchainPriviGovernanceAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviGovernance";
+const blockchainCommunityAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Communities";
+const blockchainBadgesAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Badges";
+const blockchainVotationAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/Votation";
+const blockchainLiquidityPoolAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/PriviLiquidityPools";
+const blockchainSocialAPI = "http://" + fabricAppServerIP + ":" + fabricPort + "/api/SocialToken";
+const blockchainAuctionsAPI = testnetEndpoint + "Auction";	// changed
 
 module.exports = {
   blockchainCoinBalanceAPI: blockchainCoinBalanceAPI,

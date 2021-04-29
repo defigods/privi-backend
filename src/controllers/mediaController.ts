@@ -2714,7 +2714,7 @@ export const fractionalise = async (req: express.Request, res: express.Response)
       }
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/media -> fractionalise()', blockchainRes.message);
+      console.log('Error in controllers/media -> fractionalise() blockchain call failed', blockchainRes.message);
       res.send({
         success: false,
         error: blockchainRes.message,
