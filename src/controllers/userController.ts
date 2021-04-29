@@ -12,7 +12,6 @@ import badge from '../blockchain/badge';
 import {
   addZerosToHistory,
   generateUniqueId,
-  getRateOfChangeAsMap,
   getUidFromEmail,
   updateFirebase,
   getMarketPrice,
@@ -24,7 +23,6 @@ import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
 import { sockets } from './serverController';
 import { LEVELS, ONE_DAY } from '../constants/userLevels';
-import { send } from 'process';
 const uuid = require('uuid');
 const ethUtil = require('ethereumjs-util');
 const sigUtil = require('eth-sig-util');
@@ -38,7 +36,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bip39 = require('bip39');
 const hdkey = require('hdkey');
-const { privateToPublic, publicToAddress, toChecksumAddress } = require('ethereumjs-util');
+const { privateToPublic, publicToAddress } = require('ethereumjs-util');
 const { PRIVI_WALLET_PATH } = require('../constants/configuration');
 
 // require('dotenv').config();
@@ -991,6 +989,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let myCreditPools: any = await getMyCreditPools(userId);
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
       let myMedia: any[] = await getMyMediaFunction(userId);
+      let ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
 
       // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
@@ -1007,6 +1006,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         );
         myWorkInProgress = [];
         myMedia = myMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
+        ownedMedia = ownedMedia.filter((obj) => !obj.MediaSymbol || !hiddens[obj.MediaSymbol]);
       } else if (userId == loggedUserId) {
         badges.forEach((item, index) => {
           badges[index].hidden = hiddens[item.Symbol] != undefined;
@@ -1035,6 +1035,9 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         myMedia.forEach((item, index) => {
           myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
+        ownedMedia.forEach((item, index) => {
+          myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
+        });
       }
 
       res.send({
@@ -1047,6 +1050,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myCreditPools: myCreditPools,
           myWorkInProgress: myWorkInProgress,
           myMedia: myMedia,
+          ownedMedia: ownedMedia
         },
       });
     } else {
@@ -2279,6 +2283,20 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
     }
   });
 };
+
+// get owned media
+const getOwnedMediaFunction = async (userAddress) => {
+  const ownedMedias: any[] = [];
+  const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
+  if (blockchainRes && blockchainRes.success) {
+    const mediaSymbolList = blockchainRes.output;
+    const promises :any[] = [];
+    mediaSymbolList.forEach((mediaSymbol) => promises.push(db.collection(collections.streaming).doc(mediaSymbol).get()));
+    const responses = await Promise.all(promises);
+    responses.forEach((snap) => ownedMedias.push(snap.data));
+  }
+  return ownedMedias;
+}
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
