@@ -2511,7 +2511,6 @@ const extraActionsCreateMedia = async (initialData, hasPhoto, MediaDescription, 
         db.collection(collections.streaming)
           .doc(mediaSymbol)
           .update({
-            ...initialData,
             ...extraData,
             QuickCreation: true,
             EditorPages: EditorPages || [],
