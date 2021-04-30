@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
-import collections, { buyingOffers, sellingOffers, badgesHistory, mediaFraction } from '../firebase/collections';
+import collections, { buyingOffers, sellingOffers } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
 import fractionaliseMedia from '../blockchain/fractionaliseMedia';
@@ -208,22 +208,6 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       else lastId = medias[medias.length - 1].title;
       lastIdBlockchain = medias[medias.length - 1].blockchain;
     }
-    const mediasMap: any = {};
-    const promises: any[] = [];
-    medias.forEach((doc) => {
-      mediasMap[doc.id] = { ...doc };
-      promises.push(db.collection(collections.mediaFraction).doc(doc.id).get());
-    });
-    const responses = await Promise.all(promises);
-    responses.forEach((docSnap) => {
-      if (mediasMap[docSnap.id]) {
-        const data = docSnap.data();
-        mediasMap[docSnap.id] = {
-          ...mediasMap[docSnap.id],
-          Fraction: { ...data },
-        };
-      }
-    });
 
     const retData = {
       data: medias,
@@ -243,23 +227,14 @@ export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
     const { mediaId, tag } = req.params;
     if (mediaId) {
-      const mediaSnap = await db.collection(mediaCollections[tag].collection).doc(mediaId).get();
-      const bidHistory = await db.collection(mediaCollections[tag].collection).doc(mediaId).collection('BidHistory').get();
-      const fractionaliseSnap = await db.collection(collections.mediaFraction).doc(mediaId).get();
+      const mediaSnap = await db.collection(collections.streaming).doc(mediaId).get();
+      const bidHistory = await db.collection(collections.streaming).doc(mediaId).collection('BidHistory').get();
       if (mediaSnap.exists) {
         let retData: any = {
           ...mediaSnap.data(),
           id: mediaId,
           BidHistory: bidHistory ? bidHistory.docs.map((doc) => doc.data()) : [],
         };
-        // add fraction data if exists
-        if (fractionaliseSnap.exists)
-          retData = {
-            ...retData,
-            Fractionalise: {
-              ...fractionaliseSnap.data(),
-            },
-          };
         res.send({ success: true, data: retData });
       } else {
         res.send({ success: false, error: 'Media not found' });
@@ -278,12 +253,12 @@ export const getFractionalisedMediaOffers = async (req: express.Request, res: ex
     const mediaId = req.params.mediaId;
     if (mediaId) {
       const buyingOfferSnap = await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(mediaId)
         .collection(collections.buyingOffers)
         .get();
       const sellingOfferSnap = await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(mediaId)
         .collection(collections.sellingOffers)
         .get();
@@ -316,7 +291,7 @@ export const getFractionalisedMediaTransactions = async (req: express.Request, r
     const mediaId = req.params.mediaId;
     if (mediaId) {
       const transactionSnap = await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(mediaId)
         .collection(collections.transactions)
         .get();
@@ -344,9 +319,9 @@ export const getFractionalisedMediaPriceHistory = async (req: express.Request, r
     if (mediaId) {
       const retData: any[] = [];
       const snap = await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(mediaId)
-        .collection(collections.priceHistory)
+        .collection(collections.fractionPriceHistory)
         .get();
       snap.forEach((doc) => retData.push(doc.data()));
       res.send({ success: true, data: retData });
@@ -365,9 +340,9 @@ export const getFractionalisedMediaSharedOwnershipHistory = async (req: express.
     if (mediaId) {
       const retData: any[] = [];
       const snap = await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(mediaId)
-        .collection(collections.ownershipHistory)
+        .collection(collections.fractionOwnershipHistory)
         .get();
       snap.forEach((doc) => retData.push(doc.data()));
       res.send({ success: true, data: retData });
@@ -2765,7 +2740,7 @@ export const fractionalise = async (req: express.Request, res: express.Response)
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
@@ -2814,7 +2789,7 @@ export const newBuyOrder = async (req: express.Request, res: express.Response) =
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
@@ -2864,7 +2839,7 @@ export const newSellOrder = async (req: express.Request, res: express.Response) 
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
@@ -2908,13 +2883,13 @@ export const deleteBuyOrder = async (req: express.Request, res: express.Response
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      await db.collection(collections.mediaFraction).doc(tokenSymbol).collection(buyingOffers).doc(orderId).delete();
+      await db.collection(collections.streaming).doc(tokenSymbol).collection(buyingOffers).doc(orderId).delete();
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> deleteBuyOrder()', blockchainRes.message);
@@ -2954,13 +2929,13 @@ export const deleteSellOrder = async (req: express.Request, res: express.Respons
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      await db.collection(collections.mediaFraction).doc(tokenSymbol).collection(sellingOffers).doc(orderId).delete();
+      await db.collection(collections.streaming).doc(tokenSymbol).collection(sellingOffers).doc(orderId).delete();
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> deleteSellOrder()', blockchainRes.message);
@@ -3003,14 +2978,14 @@ export const buyFraction = async (req: express.Request, res: express.Response) =
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
       await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(tokenSymbol)
         .collection(collections.sellingOffers)
         .doc(orderId)
@@ -3057,14 +3032,14 @@ export const sellFraction = async (req: express.Request, res: express.Response) 
       let tid = '';
       let txnArray: any = null;
       for ([tid, txnArray] of Object.entries(transactions)) {
-        db.collection(collections.mediaFraction)
+        db.collection(collections.streaming)
           .doc(tokenSymbol)
           .collection(collections.transactions)
           .doc(tid)
           .set({ Transactions: txnArray });
       }
       await db
-        .collection(collections.mediaFraction)
+        .collection(collections.streaming)
         .doc(tokenSymbol)
         .collection(collections.buyingOffers)
         .doc(orderId)
@@ -3459,28 +3434,31 @@ export const getUserMediaStreaming = async (req: express.Request, res: express.R
 exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
   try {
     console.log('********* Media storeSupplyHistory() cron job started *********');
-    const mediaSnap = await db.collection(collections.mediaFraction).get();
+    const mediaSnap = await db.collection(collections.streaming).get();
     const rateOfChange = await getRateOfChangeAsMap();
     for (const doc of mediaSnap.docs) {
-      // get last price
-      let lastPrice = Infinity;
-      const priceHistorySnap = await doc.ref.collection(collections.priceHistory).orderBy('date', 'desc').get();
-      if (priceHistorySnap.docs.length > 0)
-        lastPrice = priceHistorySnap.docs[priceHistorySnap.docs.length - 1].data().price;
-      // check if any active sell offer
-      const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
-      offerSnap.forEach((doc) => {
-        const data: any = doc.data();
-        let price = data.Price ?? 0;
-        const amount = data.Amount ?? 1;
-        const token = data.Token;
-        if (token) price *= rateOfChange[token] ?? 1;
-        lastPrice = price / (amount * 100); // its the price for each 1%
-      });
-      doc.ref.collection(collections.priceHistory).add({
-        date: Date.now(),
-        price: lastPrice,
-      });
+      const data = doc.data();
+      if (data && data.Fraction) {
+        // get last price
+        let lastPrice = Infinity;
+        const priceHistorySnap = await doc.ref.collection(collections.fractionPriceHistory).orderBy('date', 'desc').get();
+        if (priceHistorySnap.docs.length > 0)
+          lastPrice = priceHistorySnap.docs[priceHistorySnap.docs.length - 1].data().price;
+        // check if any active sell offer
+        const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
+        offerSnap.forEach((offerDoc) => {
+          const offerData: any = offerDoc.data();
+          let price = offerData.Price ?? 0;
+          const amount = offerData.Amount ?? 1;
+          const token = offerData.Token;
+          if (token) price *= rateOfChange[token] ?? 1;
+          lastPrice = price / (amount * 100); // its the price for each 1%
+        });
+        doc.ref.collection(collections.fractionPriceHistory).add({
+          date: Date.now(),
+          price: lastPrice,
+        });
+      }
     }
   } catch (err) {
     console.log(err);
@@ -3490,28 +3468,30 @@ exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
 exports.storeFractionalisedMediaOwnership = cron.schedule('0 0 * * *', async () => {
   try {
     console.log('********* Media storeFractionalisedMediaOwnership() cron job started *********');
-    const mediaSnap = await db.collection(collections.mediaFraction).get();
+    const mediaSnap = await db.collection(collections.streaming).get();
     for (const doc of mediaSnap.docs) {
       const mediaData: any = doc.data();
-      const ownerAddress = mediaData.OwnerAddress;
-      const tokenSymbol = doc.id;
-      let sharedOwnership = 1; // its the amount that the owner has already sold
-      const blockchainRes = await coinBalance.balanceOf(ownerAddress, tokenSymbol);
-      if (blockchainRes && blockchainRes.success) {
-        // substract the amount that the owner hold
-        const balance = blockchainRes.output.Amount;
-        sharedOwnership = Math.min(0, sharedOwnership - balance);
-        // substract the amount that are in selling
-        const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
-        offerSnap.forEach((offerDoc) => {
-          const offerData: any = offerDoc.data();
-          if (offerData.SAddress == ownerAddress) sharedOwnership = Math.min(0, sharedOwnership - offerData.Amount);
+      if (mediaData && mediaData.Fraction) {
+        const ownerAddress = mediaData.OwnerAddress;
+        const tokenSymbol = doc.id;
+        let sharedOwnership = 1; // its the amount that the owner has already sold
+        const blockchainRes = await coinBalance.balanceOf(ownerAddress, tokenSymbol);
+        if (blockchainRes && blockchainRes.success) {
+          // substract the amount that the owner hold
+          const balance = blockchainRes.output.Amount;
+          sharedOwnership = Math.min(0, sharedOwnership - balance);
+          // substract the amount that are in selling
+          const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
+          offerSnap.forEach((offerDoc) => {
+            const offerData: any = offerDoc.data();
+            if (offerData.SAddress == ownerAddress) sharedOwnership = Math.min(0, sharedOwnership - offerData.Amount);
+          });
+        }
+        doc.ref.collection(collections.fractionOwnershipHistory).add({
+          date: Date.now(),
+          ownership: sharedOwnership,
         });
       }
-      doc.ref.collection(collections.ownershipHistory).add({
-        date: Date.now(),
-        ownership: sharedOwnership,
-      });
     }
   } catch (err) {
     console.log(err);
