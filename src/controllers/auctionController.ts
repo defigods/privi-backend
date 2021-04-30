@@ -1,5 +1,5 @@
 import express from 'express';
-import { updateFirebase } from '../functions/functions';
+import { updateFirebase, saveTransactions } from '../functions/functions';
 import auction from '../blockchain/auction';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
@@ -16,23 +16,14 @@ export const createAuction = async (req: express.Request, res: express.Response)
     const owner = data.Owner;
     const bidIncrement = data.BidIncrement;
     const startTime = data.StartTime;
+    // const startTime = Math.floor(Date.now()/1000)+10;
     const endTime = data.EndTime;
     const ipfHash = data.IpfHash; 
     
     const blockchainRes = await auction.createAuction(mediaSymbol, tokenSymbol, owner, bidIncrement, startTime, endTime, ipfHash, apiKey);
     if (blockchainRes && blockchainRes.success) {
         updateFirebase(blockchainRes);
-        const output = blockchainRes.output;
-        const transactions = output.Transactions;
-        let tid = '';
-        let txnArray: any = null;
-        for ([tid, txnArray] of Object.entries(transactions)) {
-            db.collection(collections.streaming)
-            .doc(mediaSymbol)
-            .collection(collections.transactions)
-            .doc(tid)
-            .set({ Transactions: txnArray });
-        }
+        saveTransactions(db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions), blockchainRes);
         res.send({success: true});
     }
     else {
@@ -58,17 +49,7 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       const blockchainRes = await auction.placeBid(mediaSymbol, tokenSymbol, owner, address, amount, apiKey);
       if (blockchainRes && blockchainRes.success) {
           updateFirebase(blockchainRes);
-          const output = blockchainRes.output;
-          const transactions = output.Transactions;
-          let tid = '';
-          let txnArray: any = null;
-          for ([tid, txnArray] of Object.entries(transactions)) {
-              db.collection(collections.streaming)
-              .doc(mediaSymbol)
-              .collection(collections.transactions)
-              .doc(tid)
-              .set({ Transactions: txnArray });
-          }
+          saveTransactions(db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions), blockchainRes);
           // add bid to history
           db.collection(collections.streaming).doc(mediaSymbol).collection(collections.bidHistory).add({
               date: Date.now(),
@@ -98,17 +79,7 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       const blockchainRes = await auction.cancelAuction(mediaSymbol, tokenSymbol, owner, apiKey);
       if (blockchainRes && blockchainRes.success) {
           updateFirebase(blockchainRes);
-          const output = blockchainRes.output;
-          const transactions = output.Transactions;
-          let tid = '';
-          let txnArray: any = null;
-          for ([tid, txnArray] of Object.entries(transactions)) {
-              db.collection(collections.streaming)
-              .doc(mediaSymbol)
-              .collection(collections.transactions)
-              .doc(tid)
-              .set({ Transactions: txnArray });
-          }
+          saveTransactions(db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions), blockchainRes);
           res.send({success: true});
       }
       else {
@@ -132,17 +103,7 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       const blockchainRes = await auction.withdrawAuction(mediaSymbol, tokenSymbol, owner, apiKey);
       if (blockchainRes && blockchainRes.success) {
           updateFirebase(blockchainRes);
-          const output = blockchainRes.output;
-          const transactions = output.Transactions;
-          let tid = '';
-          let txnArray: any = null;
-          for ([tid, txnArray] of Object.entries(transactions)) {
-              db.collection(collections.streaming)
-              .doc(mediaSymbol)
-              .collection(collections.transactions)
-              .doc(tid)
-              .set({ Transactions: txnArray });
-          }
+          saveTransactions(db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions), blockchainRes);
           res.send({success: true});
       }
       else {

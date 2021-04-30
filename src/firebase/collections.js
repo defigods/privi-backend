@@ -179,4 +179,5 @@ module.exports = {
 
   //Exchange
   exchange: 'Exchange',
+  offers: 'Offers',
 };
