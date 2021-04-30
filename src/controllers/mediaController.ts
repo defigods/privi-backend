@@ -243,10 +243,11 @@ export const getMarketplaceMedias = async (req: express.Request, res: express.Re
 
 export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
-    const { mediaId, tag } = req.params;
+    let { mediaId, tag } = req.params;
+    tag = tag ?? 'privi';
     if (mediaId) {
-      const mediaSnap = await db.collection(collections.streaming).doc(mediaId).get();
-      const bidHistory = await db.collection(collections.streaming).doc(mediaId).collection('BidHistory').get();
+      const mediaSnap = await db.collection(mediaCollections[tag].collection).doc(mediaId).get();
+      const bidHistory = await db.collection(mediaCollections[tag].collection).doc(mediaId).collection('BidHistory').get();
       if (mediaSnap.exists) {
         let retData: any = {
           ...mediaSnap.data(),
