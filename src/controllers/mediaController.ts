@@ -241,10 +241,10 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
 export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
-    const mediaId = req.params.mediaId;
+    const { mediaId, tag } = req.params;
     if (mediaId) {
-      const mediaSnap = await db.collection(collections.streaming).doc(mediaId).get();
-      const bidHistory = await db.collection(collections.streaming).doc(mediaId).collection('BidHistory').get();
+      const mediaSnap = await db.collection(mediaCollections[tag].collection).doc(mediaId).get();
+      const bidHistory = await db.collection(mediaCollections[tag].collection).doc(mediaId).collection('BidHistory').get();
       const fractionaliseSnap = await db.collection(collections.mediaFraction).doc(mediaId).get();
       if (mediaSnap.exists) {
         let retData: any = {
