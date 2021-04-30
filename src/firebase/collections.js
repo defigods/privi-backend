@@ -163,8 +163,8 @@ module.exports = {
   sorareMedia: 'EthMediaSorare',
   showtimeMedia: 'EthMediaShowtime',
   streaming: 'Streaming', // privi media goes there
-  mediaFraction: 'MediaFraction', // Fractionalise
-  ownershipHistory: 'OwnershipHistory',
+  fractionPriceHistory: 'FractionPriceHistory',
+  fractionOwnershipHistory: 'FractionOwnershipHistory',
   mediaOnCommunity: 'MediaOnCommunity',
   bidHistory: 'BidHistory', 
   mediaOnCommunityChat: 'MediaOnCommunityChat',
@@ -176,4 +176,7 @@ module.exports = {
   marketingMediaCommunityMessage: 'MarketingMediaCommunityMessage',
 
   waxActions: 'WaxActions',
+
+  //Exchange
+  exchange: 'Exchange',
 };

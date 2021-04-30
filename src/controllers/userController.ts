@@ -988,13 +988,10 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools: any = await getMyCreditPools(userId);
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
-      // let myMedia: any[] = await getMyMediaFunction(userId);
       const ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
       const curatedMedia: any[] = await getCuratedMedia(userId);
       const likedMedia: any[] = await getLikedMedia(userId);
-      console.log(likedMedia)
       let myMedia: any[] = mergeMedias(ownedMedia, curatedMedia, likedMedia);
-      myMedia = await getFractionData(myMedia);
       // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
         badges = badges.filter((obj) => !obj.Symbol || !hiddens[obj.Symbol]);
@@ -2298,8 +2295,6 @@ const getOwnedMediaFunction = async (userAddress) => {
   const ownedMedias: any[] = [];
   //const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
   const blockchainRes = await coinBalance.getBalancesByType(userAddress, 'NFTMEDIA', 'PRIVI');
-  //console.log('----------------------');
-  //console.log(blockchainRes);
 
   if (blockchainRes && blockchainRes.success) {
     const mediaNFT = blockchainRes.output;
@@ -2307,7 +2302,6 @@ const getOwnedMediaFunction = async (userAddress) => {
     var outputArray:any = Object.keys(mediaNFT).map((key) => {
       return mediaNFT[key];
     });
-
     outputArray.forEach((media) =>
       promises.push(db.collection(collections.streaming).doc(media.Token).get())
     );
@@ -2318,8 +2312,8 @@ const getOwnedMediaFunction = async (userAddress) => {
         let data = snap.data()
         data.Amount = outputArray[index].Amount
         ownedMedias.push(data);
-    }
-  });
+      }
+    });
   }
   return ownedMedias;
 };
@@ -2461,28 +2455,6 @@ const mergeMedias = (ownedMedia, curatedMedia, likedMedia):any[] => {
     }
   });
   return myMedia;
-}
-
-// get fraction data
-const getFractionData = async (medias) => {
-  const mediaMap = {};
-  const promises:any[] = [];
-  medias.forEach((media) => {
-    mediaMap[media.MediaSymbol] = media;
-    //promises.push(db.collection(collections.mediaFraction).doc(media.MediaSymbol).get());
-  });
-  const responses = await Promise.all(promises);
-  responses.forEach((snap) => {
-    if (snap.exists) mediaMap[snap.id] = {
-      ...mediaMap[snap.id],
-      Fraction: snap.data()
-    }
-  });
-  const res:any[] = [];
-  for (const [id, obj] of Object.entries(mediaMap)) {
-    res.push(obj);
-  }
-  return res;
 }
 
 const getReceivables = async (req: express.Request, res: express.Response) => {

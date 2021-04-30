@@ -76,7 +76,7 @@ export async function updateFirebase(blockchainRes) {
         const updateTokens = output.UpdateTokens;
         const updateBalances = output.UpdateBalances;
         const updateTransactions = output.Transactions;
-        // Pods FT and NFT  (NFT replaced by Media)
+        // Media Pods
         const updatePods = output.UpdatePods;
         const updatePodStates = output.UpdatePodStates;
         const updateMedias = output.UpdateMedias;
@@ -85,6 +85,8 @@ export async function updateFirebase(blockchainRes) {
         const updateBuyingOffers = output.UpdateBuyingOffers;
         const updateSellingOffers = output.UpdateSellingOffers;
         // const updateStreamings = output.UpdateStreamings;
+        // auction (media)
+        const updateAuctions = output.Auctions;
         // Insurance
         const updateInsurancePools = output.UpdateInsurancePools;
         const updateInsuranceStates = output.UpdateInsuranceStates;
@@ -114,12 +116,12 @@ export async function updateFirebase(blockchainRes) {
         const updatedProtocolPool = output.UpdatedProtocolPool;
         // staking
         const updateStakings = output.UpdateStakings;
-        // auction (media)
-        const updateAuctions = output.Auctions;
-
         // social token
         const updateSocialPools = output.UpdateSocialPools;
         const updateSocialPoolStates = output.UpdateSocialPoolStates;
+        // exchange
+        const updateExchange = output.Exchanges;
+        const updateOffers = output.Offers; 
 
         // update badges
         if (updateBadges) {
@@ -216,7 +218,7 @@ export async function updateFirebase(blockchainRes) {
             let tokenSymbol: string = '';
             let obj: any = null;
             for ([tokenSymbol, obj] of Object.entries(updateFractionalise)) {
-                if (tokenSymbol) transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol), obj, { merge: true });
+                if (tokenSymbol) transaction.set(db.collection(collections.streaming).doc(tokenSymbol), {Fraction: obj}, { merge: true });
             }
         }
         // update fractionalise buying offers
@@ -227,7 +229,7 @@ export async function updateFirebase(blockchainRes) {
                 const tokenSymbol = orderObj.TokenSymbol;
                 if (orderId && tokenSymbol) {
                     const amount = orderObj.Amount ?? 0;
-                    if (amount > 0) transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
+                    if (amount > 0) transaction.set(db.collection(collections.streaming).doc(tokenSymbol).collection(collections.buyingOffers).doc(orderId), orderObj, { merge: true });
                 }
                 else console.log("Update Firebase: update fractionalise buying order error ,", orderId, " order updateObject has no podAddress field");
             }
@@ -240,7 +242,7 @@ export async function updateFirebase(blockchainRes) {
                 const tokenSymbol = orderObj.TokenSymbol;
                 if (orderId && tokenSymbol) {
                     const amount = orderObj.Amount ?? 0;
-                    if (amount > 0) transaction.set(db.collection(collections.mediaFraction).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
+                    if (amount > 0) transaction.set(db.collection(collections.streaming).doc(tokenSymbol).collection(collections.sellingOffers).doc(orderId), orderObj, { merge: true });
                 }
                 else console.log("Update Firebase: update fractionalise selling order error ,", orderId, " order updateObject has no podAddress field");
             }
