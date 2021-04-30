@@ -225,7 +225,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 
 export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
-    const mediaId = req.params.mediaId;
+    const { mediaId, tag } = req.params;
     if (mediaId) {
       const mediaSnap = await db.collection(collections.streaming).doc(mediaId).get();
       const bidHistory = await db.collection(collections.streaming).doc(mediaId).collection('BidHistory').get();
