@@ -720,7 +720,7 @@ module.exports.registerPriviWallet = async (req: express.Request, res: express.R
 
 module.exports.registerWaxWallet = async (req: express.Request, res: express.Response) => {
   try {
-    const { userId, address, walletName } = req.body;
+    const { userId, address, walletName, pubKeys } = req.body;
 
     const caller = apiKey;
     const lastUpdate = Date.now();
@@ -732,23 +732,23 @@ module.exports.registerWaxWallet = async (req: express.Request, res: express.Res
       const userData = userSnap.data();
       const walletData = userData?.wallets ?? [];
       const newWallet = {
-        walletType: "WAX",
+        walletType: 'WAX',
         name: walletName,
-        pubKey: address,
+        pubKeys,
+        address,
         lastUpdate,
       };
       const newWalletData = [
         ...walletData,
-        newWallet
-      ]
+        newWallet,
+      ];
       db.collection(collections.user) 
         .doc(userId)
         .update({ ...userData, wallets: newWalletData, walletAddresses: firebase.firestore.FieldValue.arrayUnion(address) });
       res.send({
         success: true,
         uid: userId,
-        address: address,
-        lastUpdate,
+        address,
         newWallet,
       });
     } else {
