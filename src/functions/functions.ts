@@ -1,6 +1,6 @@
 import { db } from "../firebase/firebase";
 import coinBalance from "../blockchain/coinBalance.js";
-import collections from "../firebase/collections";
+import collections, { exchange } from "../firebase/collections";
 import axios from "axios";
 const { mnemonicToSeed } = require('bip39')
 const { fromMasterSeed } = require('hdkey')
@@ -120,7 +120,7 @@ export async function updateFirebase(blockchainRes) {
         const updateSocialPools = output.UpdateSocialPools;
         const updateSocialPoolStates = output.UpdateSocialPoolStates;
         // exchange
-        const updateExchange = output.Exchanges;
+        const updateExchanges = output.Exchanges;
         const updateOffers = output.Offers; 
 
         // update badges
@@ -486,6 +486,25 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set((db.collection(collections.socialPools).doc(address)), obj, { merge: true });
             }
         }
+        // // update exchange
+        // if (updateExchanges) {
+        //     let exchangeId: string = '';
+        //     let obj:any = {};
+        //     for ([exchangeId, obj] of Object.entries(updateExchanges)) {
+        //         if (exchangeId) transaction.set(db.collection(collections.exchange).doc(exchangeId), obj, { merge:true });
+        //     }
+        // }
+        // // update offers
+        // if (updateOffers) {
+        //     let offerId: string = '';
+        //     let obj:any = {};
+        //     for ([offerId, obj] of Object.entries(updateOffers)) {
+        //         const exchangeId = obj.ExchangeId;
+        //         const amount = obj.Amount;
+        //         if (offerId && exchangeId && amount > 0) transaction.set(db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).doc(offerId), obj, { merge:true });
+        //         else if (amount == 0) transaction.delete(db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).doc(offerId));
+        //     }
+        // }
     });
 }
 
@@ -1059,4 +1078,15 @@ export function isUserValidForLiveStream(user, liveStreamSession) {
     //  check if user is able tolive stream permissions.
     return true;
 
+}
+
+// save transaction to the items doc
+export async function saveTransactions(collectionRef, blockchainRes) {
+    const output = blockchainRes.output;
+    const transactions = output.Transactions;
+    let tid = '';
+    let txnArray: any = null;
+    for ([tid, txnArray] of Object.entries(transactions)) {
+        collectionRef.doc(tid).set({Transactions: txnArray});
+    }
 }

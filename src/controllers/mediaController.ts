@@ -223,6 +223,24 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
   }
 };
 
+// return all medias with Auctions or Exchange
+export const getMarketplaceMedias = async (req: express.Request, res: express.Response) => {
+  try {
+    const retData:any[] = [];
+    const snap = await db.collection(collections.streaming).get();
+    snap.forEach((doc) => {
+      const data = doc.data();
+      if (data && (data.Auctions || data.Exchange)) retData.push(data);
+    });
+    // TODO: add exchange data to the media with Exchange list field. Just return info needed for BE.
+    
+    res.send({success: true, data:retData});
+  } catch (err) {
+    console.log('Error in controllers/mediaController -> getMarketplaceMedias()', err);
+    res.send({ success: false });
+  }
+};
+
 export const getMedia = async (req: express.Request, res: express.Response) => {
   try {
     const { mediaId, tag } = req.params;
