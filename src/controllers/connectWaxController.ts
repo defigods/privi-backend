@@ -1,9 +1,11 @@
+/* eslint-disable no-console */
 import express from 'express';
 import cron from 'node-cron';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
 import { mint as mintOnHLF, burn as burnOnHLF } from '../blockchain/coinBalance.js';
-import { updateFirebase as updateFireBaseBalance } from '../functions/functions';
+import { updateFirebase, updateFirebase as updateFireBaseBalance } from '../functions/functions';
+import coinBalance from '../blockchain/coinBalance.js';
 
 const { Api, JsonRpc } = require('eosjs');
 const { JsSignatureProvider } = require('eosjs/dist/eosjs-jssig');
@@ -387,6 +389,48 @@ cron.schedule(`*/${CRON_ACTION_LISTENING_FREQUENCY} * * * * *`, async () => {
   });
 });
 
-module.exports = {
+interface RegisterNFTDto {
+  name: string;
+  category: string;
+  assetId: string;
+}
+
+const registerNFT = async (req: express.Request, res: express.Response): Promise<void> => {
+  const param: RegisterNFTDto = req.body;
+
+  if (!param.assetId) {
+    res.status(400).send({
+      message: 'assetId cannot be empty',
+      success: false,
+    });
+  }
+
+  try {
+    const blockChainRes = await coinBalance.registerToken(
+      param.name,
+      'NFT',
+      param.category,
+      0,
+      param.assetId,
+      'PRIVI',
+    );
+
+    if (blockChainRes && blockChainRes.success) {
+      updateFirebase(blockChainRes);
+    } else {
+      console.log('blockChainRes success = false', blockChainRes);
+    }
+  } catch (e) {
+    console.log('Error in controllers/connectWaxController -> registerNFT()', e);
+
+    res.send({
+      success: false,
+      message: e.message,
+    });
+  }
+};
+
+export default {
   handleAction,
+  registerNFT,
 };
