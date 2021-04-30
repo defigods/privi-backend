@@ -1522,11 +1522,11 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
 
           let followingObj = {
             id: following,
-            name: followingData.firstName,
-            endorsementScore: followingData.endorsementScore,
-            trustScore: followingData.trustScore,
-            numFollowers: followingData.numFollowers,
-            numFollowings: followingData.numFollowings,
+            name: followingData?.firstName,
+            endorsementScore: followingData?.endorsementScore,
+            trustScore: followingData?.trustScore,
+            numFollowers: followingData?.numFollowers,
+            numFollowings: followingData?.numFollowings,
             isFollowing: numFollowing,
           };
 
@@ -2023,7 +2023,7 @@ const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<
           }
           podInfo.push(podData);
         }
-        resolve();
+        resolve(podRef);
       });
       podTasks.push(podTask);
     });
@@ -2295,17 +2295,30 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
 // get owned media
 const getOwnedMediaFunction = async (userAddress) => {
   const ownedMedias: any[] = [];
-  const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
+  //const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
+  const blockchainRes = await coinBalance.getBalancesByType(userAddress, 'NFTMEDIA', 'PRIVI');
+  //console.log('----------------------');
+  //console.log(blockchainRes);
+
   if (blockchainRes && blockchainRes.success) {
-    const mediaSymbolList = blockchainRes.output;
+    const mediaNFT = blockchainRes.output;
     const promises: any[] = [];
-    mediaSymbolList.forEach((mediaSymbol) =>
-      promises.push(db.collection(collections.streaming).doc(mediaSymbol).get())
+    var outputArray:any = Object.keys(mediaNFT).map((key) => {
+      return mediaNFT[key];
+    });
+
+    outputArray.forEach((media) =>
+      promises.push(db.collection(collections.streaming).doc(media.Token).get())
     );
     const responses = await Promise.all(promises);
-    responses.forEach((snap) => {
-      if (snap.exists) ownedMedias.push(snap.data());
-    });
+
+    responses.forEach((snap, index) => {
+      if (snap.exists) {
+        let data = snap.data()
+        data.Amount = outputArray[index].Amount
+        ownedMedias.push(data);
+    }
+  });
   }
   return ownedMedias;
 };
