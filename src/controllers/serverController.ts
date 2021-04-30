@@ -85,7 +85,7 @@ export const startServer = (env: Env) => {
   app.use('/streaming', streamingRoutes);
   app.use('/lendings', lendingRoutes);
   app.use('/wallet', walletRoutes);
-  app.use('/wax', waxRoutes);
+  // app.use('/wax', waxRoutes);
   app.use('/privi-scan', priviScanRoutes);
   app.use('/priviCredit', priviCreditRoutes);
   app.use('/liquidityPool', liquidityPoolRoutes);
@@ -664,7 +664,7 @@ export const startSocket = (env: Env) => {
       if (chatInfo.chatId) {
         const mediaOnCommunityChatRef = db.collection(collections.mediaOnCommunityChat).doc(chatInfo.chatId);
         const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
-        const mediaOnCommunityChat : any = mediaOnCommunityChatGet.data();
+        const mediaOnCommunityChat: any = mediaOnCommunityChatGet.data();
 
         let users: any[] = [...mediaOnCommunityChat.users];
         let findUserIndex = users.findIndex((user, i) => chatInfo.userId === user.userId);
@@ -701,7 +701,7 @@ export const startSocket = (env: Env) => {
       });
       const mediaOnCommunityChatRef = db.collection(collections.mediaOnCommunityChat).doc(message.chatId);
       const mediaOnCommunityChatGet = await mediaOnCommunityChatRef.get();
-      const mediaOnCommunityChat : any = mediaOnCommunityChatGet.data();
+      const mediaOnCommunityChat: any = mediaOnCommunityChatGet.data();
 
       let messages: any = mediaOnCommunityChat.messages;
       messages.push(uid);

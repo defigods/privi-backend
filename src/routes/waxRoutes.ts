@@ -1,11 +1,12 @@
-import express from 'express';
+// import express from 'express';
 
-import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
+// import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
 
-const router = express.Router();
+// // import connectController from '../controllers/connectWaxController';
 
-const connectController = require('../controllers/connectWaxController');
+// const router = express.Router();
 
-router.post('/send', authenticateJWT, connectController.handleAction);
+// router.post('/send', authenticateJWT, connectController.handleAction);
+// // router.post('/registerNFT', authenticateJWT, connectController.registerNFT);
 
-module.exports = router;
+// module.exports = router;

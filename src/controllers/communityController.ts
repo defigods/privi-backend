@@ -1498,6 +1498,7 @@ exports.getMembersData = async (req: express.Request, res: express.Response) => 
         } else {
           console.log('Error in controllers/communitiesControllers -> getMembersData()', 'Error getting Token info');
           res.send({ success: false, error: 'Error getting Token info' });
+          return;
         }
       }
 
