@@ -178,7 +178,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         // ethMediaQuery = ethMediaQuery.limit(availableSize);
         // 6. get data from query
         const ethSnap = await ethMediaQuery.get();
-        ethSnap.forEach(doc => {
+        ethSnap.forEach((doc) => {
           const data = doc.data();
           if (availableSize && data.url && data.url !== 'Error') {
             if (!status || data.status.includes(status)) {
@@ -1115,20 +1115,20 @@ export const getMediaCurated = async (req: express.Request, res: express.Respons
       if (userGet.exists) {
         let userData: any = { ...userGet.data() };
 
-        let mediaCurated : any[] = [...userData.MediaCurated || []];
+        let mediaCurated: any[] = [...(userData.MediaCurated || [])];
 
-        let medias : any[] = [];
+        let medias: any[] = [];
 
-        if(mediaCurated.length > 0) {
-          for(let mediaCur of mediaCurated) {
+        if (mediaCurated.length > 0) {
+          for (let mediaCur of mediaCurated) {
             const mediaRef = db.collection(collections.streaming).doc(mediaCur);
             const mediaGet = await mediaRef.get();
 
-            if(mediaGet.exists) {
+            if (mediaGet.exists) {
               const media: any = mediaGet.data();
               media.id = mediaGet.id;
 
-              medias.push(media)
+              medias.push(media);
             }
           }
         }
@@ -1161,15 +1161,15 @@ export const getMediaLiked = async (req: express.Request, res: express.Response)
       if (userGet.exists) {
         let userData: any = { ...userGet.data() };
 
-        let mediaLiked : any[] = [...(userData.MediaLiked ?? [])];
-        let medias : any[] = [];
-        if(mediaLiked.length > 0) {
-          for(let mediaLike of mediaLiked) {
+        let mediaLiked: any[] = [...(userData.MediaLiked ?? [])];
+        let medias: any[] = [];
+        if (mediaLiked.length > 0) {
+          for (let mediaLike of mediaLiked) {
             const mediaRef = db.collection(mediaCollections[mediaLike.tag].collection).doc(mediaLike.mediaID);
             const mediaGet = await mediaRef.get();
-            if(!mediaGet.exists) throw new Error('media not exist');
+            if (!mediaGet.exists) throw new Error('media not exist');
             const media: any = mediaGet.data();
-            medias.push(media)
+            medias.push(media);
           }
         }
         res.send({
@@ -1188,7 +1188,7 @@ export const getMediaLiked = async (req: express.Request, res: express.Response)
     console.log('Error in controllers/mediaController -> getMediaLiked(): ', err);
     res.send({ success: false, error: err });
   }
-}
+};
 
 export const fractionalizeMedia = async (req: express.Request, res: express.Response) => {
   try {
@@ -1243,33 +1243,34 @@ export const fractionalizeMedia = async (req: express.Request, res: express.Resp
 };
 
 const mediaCollections = {
-  'privi': { collection: collections.streaming, blockchain: 'Streaming' },
-  'wax': { collection: collections.waxMedia, blockchain: 'WaxMedia' },
-  'zora': { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
-  'opensea': { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
-  'mirror': { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
-  'foundation': { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
-  'topshot': { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
-  'sorare': { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
-  'showtime': { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
+  privi: { collection: collections.streaming, blockchain: 'Streaming' },
+  wax: { collection: collections.waxMedia, blockchain: 'WaxMedia' },
+  zora: { collection: collections.zoraMedia, blockchain: 'ZoraMedia' },
+  opensea: { collection: collections.openseaMedia, blockchain: 'OpenseaMedia' },
+  mirror: { collection: collections.mirrorMedia, blockchain: 'MirrorMedia' },
+  foundation: { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
+  topshot: { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
+  sorare: { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
+  showtime: { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
 };
 
 export const likeMedia = async (req: express.Request, res: express.Response) => {
   try {
     const mediaId = req.params.mediaId;
     const body = req.body;
+    const creator = body.creator;
     const userId = body.userId;
     const blockchainTag = body.tag ?? 'privi';
 
     if (mediaId && body.userId && body.priviUser.id === body.userId) {
       const userRef = db.collection(collections.user).doc(body.userId);
       const userGet = await userRef.get();
-      
+
       let user: any;
-      if(userGet.exists) {
+      if (userGet.exists) {
         user = userGet.data();
         const userMediaLiked = [...(user.MediaLiked ?? [])];
-        userMediaLiked.push({mediaID: mediaId, tag: blockchainTag});
+        userMediaLiked.push({ mediaID: mediaId, tag: blockchainTag });
         await userRef.update({
           MediaLiked: userMediaLiked,
         });
@@ -1313,6 +1314,34 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
       await userRef.update({
         Likes: userLikes,
       });
+
+      if (creator) {
+        const mediaEthUserRef = db.collection(collections.mediaUsers).doc(creator);
+        const mediaEthUserGet = await mediaRef.get();
+
+        if (!mediaEthUserGet.exists) throw new Error('creator does not exist');
+        else if (media) {
+          const mediaUser: any = mediaGet.data();
+
+          let mediaCatalog = mediaUser.catalog;
+          let ethMedia = mediaCatalog.find((m) => (m.id && m.id === mediaId) || m.title === media.title);
+
+          if (ethMedia) {
+            ethMedia.Likes = mediaLikes;
+            ethMedia.NumLikes = mediaLikes.length;
+
+            mediaCatalog.splice(
+              mediaCatalog.findIndex((m) => (m.id && m.id === mediaId) || m.title === media.title),
+              1,
+              ethMedia
+            );
+
+            await mediaEthUserRef.update({
+              catalog: mediaCatalog,
+            });
+          }
+        }
+      }
 
       const userSnap = await db.collection(collections.user).doc(body.userId).get();
       const userData: any = userSnap.data();
@@ -1376,6 +1405,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
   try {
     const mediaId = req.params.mediaId;
     const body = req.body;
+    const creator = body.creator;
     const blockchainTag = body.tag ?? 'privi';
     if (mediaId && body.userId) {
       const mediaRef = db.collection(mediaCollections[blockchainTag].collection).doc(mediaId);
@@ -1385,11 +1415,11 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const userMediaLikes = ([...(user.MediaLiked|| [])]).filter(media => media.mediaID != mediaId);
+      const userMediaLikes = [...(user.MediaLiked || [])].filter((media) => media.mediaID != mediaId);
       await userRef.update({
         MediaLiked: userMediaLikes,
       });
-  
+
       const media: any = mediaGet.data();
 
       let likes: any[] = [];
@@ -1400,6 +1430,34 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
           Likes: likes,
           NumLikes: likes.length,
         });
+
+        if (creator) {
+          const mediaEthUserRef = db.collection(collections.mediaUsers).doc(creator);
+          const mediaEthUserGet = await mediaRef.get();
+
+          if (!mediaEthUserGet.exists) throw new Error('creator does not exist');
+          else if (media) {
+            const mediaUser: any = mediaGet.data();
+
+            let mediaCatalog = mediaUser.catalog;
+            let ethMedia = mediaCatalog.find((m) => (m.id && m.id === mediaId) || m.title === media.title);
+
+            if (ethMedia) {
+              ethMedia.Likes = likes;
+              ethMedia.NumLikes = likes.length;
+
+              mediaCatalog.splice(
+                mediaCatalog.findIndex((m) => (m.id && m.id === mediaId) || m.title === media.title),
+                1,
+                ethMedia
+              );
+
+              await mediaEthUserRef.update({
+                catalog: mediaCatalog,
+              });
+            }
+          }
+        }
       }
 
       if (user.Likes && user.Likes.length > 0) {
@@ -2376,9 +2434,9 @@ export const createMedia = async (req: express.Request, res: express.Response) =
 
     const EditorPages = body.EditorPages;
 
-    console.log('entra aquiiiii 0', purpose, body)
+    console.log('entra aquiiiii 0', purpose, body);
 
-    if(purpose != 4) {
+    if (purpose != 4) {
       const blockchainRes = await media.createMedia(
         creatorAddress,
         mediaName,
@@ -2412,8 +2470,21 @@ export const createMedia = async (req: express.Request, res: express.Response) =
             .doc(tid)
             .set({ Transactions: txnArray });
         }
-        await extraActionsCreateMedia(false, hasPhoto, MediaDescription, pricingMethod, hashtags, creatorId, type,
-          content, mediaName, viewPrice, releaseDate, mediaSymbol, EditorPages);
+        await extraActionsCreateMedia(
+          false,
+          hasPhoto,
+          MediaDescription,
+          pricingMethod,
+          hashtags,
+          creatorId,
+          type,
+          content,
+          mediaName,
+          viewPrice,
+          releaseDate,
+          mediaSymbol,
+          EditorPages
+        );
       } else {
         console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
         res.send({
@@ -2422,14 +2493,27 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         });
       }
     } else {
-      console.log('entra aquiiiii')
-      let initialData : any = {
+      console.log('entra aquiiiii');
+      let initialData: any = {
         MediaName: mediaName,
         MediaSymbol: mediaSymbol,
-        Type: type
-      }
-      await extraActionsCreateMedia(initialData, hasPhoto, MediaDescription, pricingMethod, hashtags, creatorId, type,
-                                    content, mediaName, viewPrice, releaseDate, mediaSymbol, EditorPages);
+        Type: type,
+      };
+      await extraActionsCreateMedia(
+        initialData,
+        hasPhoto,
+        MediaDescription,
+        pricingMethod,
+        hashtags,
+        creatorId,
+        type,
+        content,
+        mediaName,
+        viewPrice,
+        releaseDate,
+        mediaSymbol,
+        EditorPages
+      );
     }
 
     res.send({ success: true });
@@ -2442,8 +2526,21 @@ export const createMedia = async (req: express.Request, res: express.Response) =
   }
 };
 
-const extraActionsCreateMedia = async (initialData, hasPhoto, MediaDescription, pricingMethod, hashtags, creatorId, type,
-                                       content, mediaName, viewPrice, releaseDate, mediaSymbol, EditorPages) => {
+const extraActionsCreateMedia = async (
+  initialData,
+  hasPhoto,
+  MediaDescription,
+  pricingMethod,
+  hashtags,
+  creatorId,
+  type,
+  content,
+  mediaName,
+  viewPrice,
+  releaseDate,
+  mediaSymbol,
+  EditorPages
+) => {
   return new Promise(async (resolve, reject) => {
     try {
       // add extra info in media doc
@@ -2482,7 +2579,7 @@ const extraActionsCreateMedia = async (initialData, hasPhoto, MediaDescription, 
         extraData.Rewards = '';
       }
 
-      if(!initialData) {
+      if (!initialData) {
         db.collection(collections.streaming)
           .doc(mediaSymbol)
           .update({
@@ -2503,19 +2600,19 @@ const extraActionsCreateMedia = async (initialData, hasPhoto, MediaDescription, 
 
       const userRef = db.collection(collections.user).doc(creatorId);
       const userGet = await userRef.get();
-      const user : any = userGet.data();
+      const user: any = userGet.data();
 
-      let mediaCurated : string[] = [...user.MediaCurated || []];
+      let mediaCurated: string[] = [...(user.MediaCurated || [])];
       mediaCurated.push(mediaSymbol);
       await userRef.update({
-        MediaCurated: mediaCurated
+        MediaCurated: mediaCurated,
       });
       resolve();
-    } catch(e) {
-      reject(e)
+    } catch (e) {
+      reject(e);
     }
-  })
-}
+  });
+};
 
 export const buyMediaNFT = async (req: express.Request, res: express.Response) => {
   try {
@@ -3441,7 +3538,10 @@ exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
       if (data && data.Fraction) {
         // get last price
         let lastPrice = Infinity;
-        const priceHistorySnap = await doc.ref.collection(collections.fractionPriceHistory).orderBy('date', 'desc').get();
+        const priceHistorySnap = await doc.ref
+          .collection(collections.fractionPriceHistory)
+          .orderBy('date', 'desc')
+          .get();
         if (priceHistorySnap.docs.length > 0)
           lastPrice = priceHistorySnap.docs[priceHistorySnap.docs.length - 1].data().price;
         // check if any active sell offer
