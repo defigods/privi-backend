@@ -127,7 +127,7 @@ const swap = async ({
   tokenName,
   action,
 }: SwapActionData) => {
-  console.log('--> Swap: TX confirmed on WAX', actionFirebaseId, tokenName, amount, 'action', action);
+  // console.log('--> Swap: TX confirmed on WAX', actionFirebaseId, tokenName, amount, 'action', action);
 
   let hlfResponse;
   try {
@@ -140,14 +140,14 @@ const swap = async ({
       'PRIVI',
     );
   } catch (err) {
-    throw new Error(err.message);
+    // throw new Error(err.message);
   }
 
   if (!hlfResponse.success) {
-    console.log(
-      'Error in connectWaxController -> swap(): Mint call in Fabric not successful',
-      hlfResponse.message,
-    );
+    // console.log(
+    //   'Error in connectWaxController -> swap(): Mint call in Fabric not successful',
+    //   hlfResponse.message,
+    // );
     return;
   }
 

@@ -12,7 +12,6 @@ import badge from '../blockchain/badge';
 import {
   addZerosToHistory,
   generateUniqueId,
-  getRateOfChangeAsMap,
   getUidFromEmail,
   updateFirebase,
   getMarketPrice,
@@ -24,8 +23,9 @@ import configuration from '../constants/configuration';
 import { sendEmailValidation, sendForgotPasswordEmail } from '../email_templates/emailTemplates';
 import { sockets } from './serverController';
 import { LEVELS, ONE_DAY } from '../constants/userLevels';
-import { send } from 'process';
 const uuid = require('uuid');
+const ethUtil = require('ethereumjs-util');
+const sigUtil = require('eth-sig-util');
 
 const walletController = require('./walletController');
 const levels = require('./userLevelsController');
@@ -36,7 +36,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const bip39 = require('bip39');
 const hdkey = require('hdkey');
-const { privateToPublic, publicToAddress, toChecksumAddress } = require('ethereumjs-util');
+const { privateToPublic, publicToAddress } = require('ethereumjs-util');
 const { PRIVI_WALLET_PATH } = require('../constants/configuration');
 
 // require('dotenv').config();
@@ -307,48 +307,69 @@ const signInWithWallet = async (req: express.Request, res: express.Response) => 
   try {
     const body = req.body;
     const address = body.address;
+    const signature = body.signature;
     if (address) {
-      // Compare user & passwd between login input and DB
-      const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
-      // Return result
-      if (user.empty) {
-        console.log('not found');
-        res.send({ isSignedIn: false, userData: {}, message: "Wallet Address doesn't exsit" });
+      // Recover signature to verify signer as wallet owner.
+      const msgParams = [
+        {
+          type: 'string',
+          name: 'Message',
+          value: 'Hi, Alice',
+        },
+        {
+          type: 'uint32',
+          name: 'A number',
+          value: '1337',
+        },
+      ];
+      const recovered = sigUtil.recoverTypedSignatureLegacy({ data: msgParams, sig: signature });
+
+      if (ethUtil.toChecksumAddress(recovered) !== ethUtil.toChecksumAddress(address)) {
+        console.log('Failed to verify signer');
+        res.send({ isSignedIn: false, userData: {}, message: 'Signer verification failed' });
       } else {
-        console.log('found from address');
-        const data = user.docs[0].data();
+        // Compare user & passwd between login input and DB
+        const user = await db.collection(collections.user).where('walletAddresses', 'array-contains', address).get();
+        // Return result
+        if (user.empty) {
+          console.log('not found');
+          res.send({ isSignedIn: false, userData: {}, message: "Wallet Address doesn't exsit" });
+        } else {
+          console.log('found from address');
+          const data = user.docs[0].data();
 
-        if (!data.notifications) {
-          data.notifications = [];
-        }
-        // data.notifications.concat(allWallPost);
+          if (!data.notifications) {
+            data.notifications = [];
+          }
+          // data.notifications.concat(allWallPost);
 
-        let success = true;
+          let success = true;
 
-        data.id = user.docs[0].id;
-        if (success) {
-          console.log('Login successful');
+          data.id = user.docs[0].id;
+          if (success) {
+            console.log('Login successful');
 
-          // Generate an access token
-          let expiryDate = new Date();
-          expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
+            // Generate an access token
+            let expiryDate = new Date();
+            expiryDate.setDate(new Date().getDate() + configuration.LOGIN_EXPIRY_DAYS);
 
-          const accessToken = jwt.sign(
-            {
-              id: data.id,
-              email: data.email,
-              role: data.role,
-              iat: Date.now(),
-              exp: expiryDate.getTime(),
-            },
-            configuration.JWT_SECRET_STRING
-          );
+            const accessToken = jwt.sign(
+              {
+                id: data.id,
+                email: data.email,
+                role: data.role,
+                iat: Date.now(),
+                exp: expiryDate.getTime(),
+              },
+              configuration.JWT_SECRET_STRING
+            );
 
-          res.send({
-            isSignedIn: true,
-            userData: data,
-            accessToken: accessToken,
-          });
+            res.send({
+              isSignedIn: true,
+              userData: data,
+              accessToken: accessToken,
+            });
+          }
         }
       }
     } else {
@@ -790,6 +811,7 @@ interface BasicInfo {
   verified: boolean;
   urlSlug: string;
   address: string;
+  myNFTPods: any[];
 }
 
 const getBasicInfo = async (req: express.Request, res: express.Response) => {
@@ -821,6 +843,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
       verified: false,
       urlSlug: userId,
       address: '',
+      myNFTPods: [],
     };
     const userSnap = await db.collection(collections.user).doc(userId).get();
     const userData = userSnap.data();
@@ -872,6 +895,7 @@ const getBasicInfo = async (req: express.Request, res: express.Response) => {
         userData.urlSlug ||
         userData.firstName + (userData.lastName !== undefined && userData.lastName !== ` ` ? userData.lastName : '');
       basicInfo.address = userData.address || '';
+      basicInfo.myNFTPods = (await getPodsArray(userData.myNFTPods, collections.podsNFT, 'NFT')) || [];
 
       var bgs = [] as any;
       if (basicInfo.badges && basicInfo.badges.length > 0) {
@@ -964,8 +988,13 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools: any = await getMyCreditPools(userId);
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
-      let myMedia: any[] = await getMyMediaFunction(userId);
-
+      // let myMedia: any[] = await getMyMediaFunction(userId);
+      const ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
+      const curatedMedia: any[] = await getCuratedMedia(userId);
+      const likedMedia: any[] = await getLikedMedia(userId);
+      console.log(likedMedia)
+      let myMedia: any[] = mergeMedias(ownedMedia, curatedMedia, likedMedia);
+      myMedia = await getFractionData(myMedia);
       // filter the hidden ones for the visiting user and remove all the workInProgress
       if (!loggedUserId || userId != loggedUserId) {
         badges = badges.filter((obj) => !obj.Symbol || !hiddens[obj.Symbol]);
@@ -1010,7 +1039,6 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
           myMedia[index].hidden = hiddens[item.MediaSymbol] != undefined;
         });
       }
-
       res.send({
         success: true,
         data: {
@@ -1495,11 +1523,11 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
 
           let followingObj = {
             id: following,
-            name: followingData.firstName,
-            endorsementScore: followingData.endorsementScore,
-            trustScore: followingData.trustScore,
-            numFollowers: followingData.numFollowers,
-            numFollowings: followingData.numFollowings,
+            name: followingData?.firstName,
+            endorsementScore: followingData?.endorsementScore,
+            trustScore: followingData?.trustScore,
+            numFollowers: followingData?.numFollowers,
+            numFollowings: followingData?.numFollowings,
             isFollowing: numFollowing,
           };
 
@@ -1983,25 +2011,30 @@ const getPodsFollowedFunction = (userId) => {
 const getPodsArray = (arrayPods: any[], collection: any, type: string): Promise<any[]> => {
   return new Promise((resolve, reject) => {
     let podInfo: any[] = [];
-    arrayPods.forEach(async (item, i) => {
-      const podRef = await db.collection(collection).doc(item).get();
-
-      if (podRef.exists) {
-        let podData: any = podRef.data();
-        podData.type = type;
-
-        if (podData.TokenSymbol) {
-          const token = await db.collection(collections.tokens).doc(podData.TokenSymbol).get();
-          podData.tokenData = token.data();
+    let podTasks: Promise<any>[] = [];
+    arrayPods.forEach((item) => {
+      const podTask = new Promise(async (resolve, reject) => {
+        const podRef = await db.collection(collection).doc(item).get();
+        if (podRef.exists) {
+          let podData: any = podRef.data();
+          podData.type = type;
+          if (podData.TokenSymbol) {
+            const token = await db.collection(collections.tokens).doc(podData.TokenSymbol).get();
+            podData.tokenData = token.data();
+          }
+          podInfo.push(podData);
         }
-
-        await podInfo.push(podData);
-      }
-
-      if (arrayPods.length === i + 1) {
-        resolve(podInfo);
-      }
+        resolve(podRef);
+      });
+      podTasks.push(podTask);
     });
+    Promise.all(podTasks)
+      .then(() => {
+        resolve(podInfo);
+      })
+      .catch(() => {
+        resolve([]);
+      });
   });
 };
 
@@ -2013,8 +2046,19 @@ const getMyCommunitiesFunction = (userId): Promise<any[]> => {
       const user: any = userRef.data();
       let myCommunities: any[] = [];
 
-      if (user.JoinedCommunities && user.JoinedCommunities.length > 0) {
-        myCommunities = await getCommunitiesArray(user.JoinedCommunities, collections.community);
+      const joinedCommunities: any[] = user.JoinedCommunities || [];
+      const creatorCommunitiesSnap = await db.collection(collections.community).where('Creator', '==', userId).get();
+
+      if (creatorCommunitiesSnap.docs.length > 0) {
+        creatorCommunitiesSnap.docs.map((doc) => {
+          if (!joinedCommunities.some((id) => id === doc.id)) {
+            joinedCommunities.push(doc.id);
+          }
+        });
+      }
+
+      if (joinedCommunities && joinedCommunities.length > 0) {
+        myCommunities = await getCommunitiesArray(joinedCommunities, collections.community);
       }
       resolve(myCommunities);
     } catch (e) {
@@ -2032,7 +2076,7 @@ const getCommunitiesArray = (arrayCommunities: any[], collection: any): Promise<
       if (communityRef.exists) {
         let communityData: any = communityRef.data();
 
-        if (communityData.TokenSymbol) {
+        if (communityData.TokenSymbol && !communityData.TokenSymbol.empty) {
           const token = await db.collection(collections.tokens).doc(communityData.TokenSymbol).get();
           communityData.tokenData = token.data();
         }
@@ -2248,6 +2292,198 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
     }
   });
 };
+
+// get owned media
+const getOwnedMediaFunction = async (userAddress) => {
+  const ownedMedias: any[] = [];
+  //const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
+  const blockchainRes = await coinBalance.getBalancesByType(userAddress, 'NFTMEDIA', 'PRIVI');
+  //console.log('----------------------');
+  //console.log(blockchainRes);
+
+  if (blockchainRes && blockchainRes.success) {
+    const mediaNFT = blockchainRes.output;
+    const promises: any[] = [];
+    var outputArray:any = Object.keys(mediaNFT).map((key) => {
+      return mediaNFT[key];
+    });
+
+    outputArray.forEach((media) =>
+      promises.push(db.collection(collections.streaming).doc(media.Token).get())
+    );
+    const responses = await Promise.all(promises);
+
+    responses.forEach((snap, index) => {
+      if (snap.exists) {
+        let data = snap.data()
+        data.Amount = outputArray[index].Amount
+        ownedMedias.push(data);
+    }
+  });
+  }
+  return ownedMedias;
+};
+
+// get curated media
+const getCuratedMedia = async (userId) => {
+  let medias: any[] = [];
+  const userGet = await db.collection(collections.user).doc(userId).get();
+  if (userGet.exists) {
+    let userData: any = { ...userGet.data() };
+    let mediaCurated: any[] = [...(userData.MediaCurated || [])];
+
+    if (mediaCurated.length > 0) {
+      for (let mediaCur of mediaCurated) {
+        const mediaRef = db.collection(collections.streaming).doc(mediaCur);
+        const mediaGet = await mediaRef.get();
+        if (mediaGet.exists) {
+          const media: any = mediaGet.data();
+          media.id = mediaGet.id;
+          medias.push(media);
+        }
+      }
+    }
+  }
+  return medias;
+};
+
+// get liked media
+const getLikedMedia = async (userId) => {
+  const userGet = await db.collection(collections.user).doc(userId).get();
+  const likedMedias: any[] = [];
+
+  if (userGet.exists) {
+    // get liked media symbol list
+    const userData: any = userGet.data();
+    const mediaLiked = userData.MediaLiked ?? [];
+
+    if (mediaLiked.length > 0) {
+      for (let mediaLike of mediaLiked) {
+        let mediaRef : any;
+        let mediaGet : any;
+        if(mediaLike.tag && mediaLike.tag === 'privi') {
+          mediaRef = db.collection(collections.streaming).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'wax') {
+          mediaRef = db.collection(collections.waxMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'zora') {
+          mediaRef = db.collection(collections.zoraMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'sorare') {
+          mediaRef = db.collection(collections.sorareMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'opensea') {
+          mediaRef = db.collection(collections.openseaMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'mirror') {
+          mediaRef = db.collection(collections.mirrorMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'foundation') {
+          mediaRef = db.collection(collections.foundationMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(!mediaLike.tag) {
+          mediaRef = db.collection(collections.streaming).doc(mediaLike);
+          mediaGet = await mediaRef.get();
+        }
+
+        if (mediaGet.exists) {
+          const media: any = mediaGet.data();
+          media.id = mediaGet.id;
+          likedMedias.push(media);
+        }
+      }
+    }
+    /*const likedMediaSymbolList: string[] = [];
+    likes.forEach((likeObj) => {
+      if (likeObj && likeObj.type == 'media' && likeObj.id) likedMediaSymbolList.push(likeObj.id);
+    });
+    // get liked media data
+    const promises: any[] = [];
+    likedMediaSymbolList.forEach((mediaSymbol) =>
+      promises.push(db.collection(collections.streaming).doc(mediaSymbol).get())
+    );
+    const responses = await Promise.all(promises);
+    responses.forEach((snap) => {
+      if (snap.exists) likedMedias.push(snap.data());
+    });*/
+    console.log(likedMedias.length);
+  }
+  return likedMedias;
+};
+
+// merge medias
+const mergeMedias = (ownedMedia, curatedMedia, likedMedia):any[] => {
+  const myMedia:any[] = [];
+  ownedMedia.forEach((media) => {
+    if (media.MediaSymbol) {
+      const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
+      if (foundIndex != -1) {
+        const foundMedia:any = {...myMedia[foundIndex]};
+        const state = foundMedia.State ?? {};
+        state.Owned = true;
+        foundMedia.State = state;
+        myMedia[foundIndex] = foundMedia;
+      } else {
+        myMedia.push({...media, State: {Owned: true}});
+      }
+    }
+  });
+  curatedMedia.forEach((media) => {
+    if (media.MediaSymbol) {
+      const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
+      if (foundIndex != -1) {
+        const foundMedia:any = {...myMedia[foundIndex]};
+        const state = foundMedia.State ?? {};
+        state.Curated = true;
+        foundMedia.State = state;
+        myMedia[foundIndex] = foundMedia;
+      } else {
+        myMedia.push({...media, State: {Curated: true}});
+      }
+    }
+  });
+  likedMedia.forEach((media) => {
+    console.log(media);
+    if (media.MediaSymbol) {
+      const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
+      if (foundIndex != -1) {
+        const foundMedia:any = {...myMedia[foundIndex]};
+        const state = foundMedia.State ?? {};
+        state.Liked = true;
+        foundMedia.State = state;
+        myMedia[foundIndex] = foundMedia;
+      } else {
+        myMedia.push({...media, State: {Liked: true}});
+      }
+    } else {
+      myMedia.push({...media, State: {Liked: true}});
+    }
+  });
+  return myMedia;
+}
+
+// get fraction data
+const getFractionData = async (medias) => {
+  const mediaMap = {};
+  const promises:any[] = [];
+  medias.forEach((media) => {
+    mediaMap[media.MediaSymbol] = media;
+    //promises.push(db.collection(collections.mediaFraction).doc(media.MediaSymbol).get());
+  });
+  const responses = await Promise.all(promises);
+  responses.forEach((snap) => {
+    if (snap.exists) mediaMap[snap.id] = {
+      ...mediaMap[snap.id],
+      Fraction: snap.data()
+    }
+  });
+  const res:any[] = [];
+  for (const [id, obj] of Object.entries(mediaMap)) {
+    res.push(obj);
+  }
+  return res;
+}
 
 const getReceivables = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
