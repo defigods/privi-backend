@@ -992,6 +992,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       const ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
       const curatedMedia: any[] = await getCuratedMedia(userId);
       const likedMedia: any[] = await getLikedMedia(userId);
+      console.log(likedMedia)
       let myMedia: any[] = mergeMedias(ownedMedia, curatedMedia, likedMedia);
       myMedia = await getFractionData(myMedia);
       // filter the hidden ones for the visiting user and remove all the workInProgress
@@ -2350,11 +2351,50 @@ const getCuratedMedia = async (userId) => {
 const getLikedMedia = async (userId) => {
   const userGet = await db.collection(collections.user).doc(userId).get();
   const likedMedias: any[] = [];
+
   if (userGet.exists) {
     // get liked media symbol list
     const userData: any = userGet.data();
-    const likes = userData.Likes ?? [];
-    const likedMediaSymbolList: string[] = [];
+    const mediaLiked = userData.MediaLiked ?? [];
+
+    if (mediaLiked.length > 0) {
+      for (let mediaLike of mediaLiked) {
+        let mediaRef : any;
+        let mediaGet : any;
+        if(mediaLike.tag && mediaLike.tag === 'privi') {
+          mediaRef = db.collection(collections.streaming).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'wax') {
+          mediaRef = db.collection(collections.waxMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'zora') {
+          mediaRef = db.collection(collections.zoraMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'sorare') {
+          mediaRef = db.collection(collections.sorareMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'opensea') {
+          mediaRef = db.collection(collections.openseaMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'mirror') {
+          mediaRef = db.collection(collections.mirrorMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(mediaLike.tag && mediaLike.tag === 'foundation') {
+          mediaRef = db.collection(collections.foundationMedia).doc(mediaLike.mediaID);
+          mediaGet = await mediaRef.get();
+        } else if(!mediaLike.tag) {
+          mediaRef = db.collection(collections.streaming).doc(mediaLike);
+          mediaGet = await mediaRef.get();
+        }
+
+        if (mediaGet.exists) {
+          const media: any = mediaGet.data();
+          media.id = mediaGet.id;
+          likedMedias.push(media);
+        }
+      }
+    }
+    /*const likedMediaSymbolList: string[] = [];
     likes.forEach((likeObj) => {
       if (likeObj && likeObj.type == 'media' && likeObj.id) likedMediaSymbolList.push(likeObj.id);
     });
@@ -2366,7 +2406,8 @@ const getLikedMedia = async (userId) => {
     const responses = await Promise.all(promises);
     responses.forEach((snap) => {
       if (snap.exists) likedMedias.push(snap.data());
-    });
+    });*/
+    console.log(likedMedias.length);
   }
   return likedMedias;
 };
@@ -2403,6 +2444,7 @@ const mergeMedias = (ownedMedia, curatedMedia, likedMedia):any[] => {
     }
   });
   likedMedia.forEach((media) => {
+    console.log(media);
     if (media.MediaSymbol) {
       const foundIndex = myMedia.findIndex((m) => m.MediaSymbol == media.MediaSymbol);
       if (foundIndex != -1) {
@@ -2414,6 +2456,8 @@ const mergeMedias = (ownedMedia, curatedMedia, likedMedia):any[] => {
       } else {
         myMedia.push({...media, State: {Liked: true}});
       }
+    } else {
+      myMedia.push({...media, State: {Liked: true}});
     }
   });
   return myMedia;
@@ -2425,7 +2469,7 @@ const getFractionData = async (medias) => {
   const promises:any[] = [];
   medias.forEach((media) => {
     mediaMap[media.MediaSymbol] = media;
-    promises.push(db.collection(collections.mediaFraction).doc(media.MediaSymbol).get());
+    //promises.push(db.collection(collections.mediaFraction).doc(media.MediaSymbol).get());
   });
   const responses = await Promise.all(promises);
   responses.forEach((snap) => {
