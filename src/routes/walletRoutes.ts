@@ -47,6 +47,7 @@ router.get('/getEmailToAddressMap', authenticateJWT, walletController.getEmailTo
 router.get('/getUidToAddressMap', authenticateJWT, walletController.getUidToAddressMap);
 
 // user balance and txns
+router.get('/getBalancesOfTokenHolders', walletController.getBalancesOfTokenHolders);
 router.get('/getUserOwnedTokens', walletController.getUserOwnedTokens);
 router.get('/getTokenBalances_v2/:address', authenticateJWT, walletController.getTokenBalances_v2);
 router.get('/getAllTokenBalances/:address', authenticateJWT, walletController.getAllTokenBalances); // all token balances of the user with extra data (Type, ...)

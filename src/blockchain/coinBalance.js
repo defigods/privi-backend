@@ -29,6 +29,20 @@ module.exports.balanceOf = async (userAddress, token) => {
 	return blockchainRes.data;
 };
 
+module.exports.getBalancesOfTokenHolders = async (token, caller) => {
+	const config = {
+		method: 'get',
+		headers: { 'Content-Type': 'application/json' },
+		url: api.blockchainCoinBalanceAPI + "/getBalancesOfTokenHolders",
+		data: JSON.stringify({
+			Token: token,
+			Caller: caller
+		})
+	}
+	let blockchainRes = await axios(config);
+	return blockchainRes.data;
+};
+
 module.exports.getBalancesOfAddress = async (userAddress, caller) => {
 	const config = {
 		method: 'get',

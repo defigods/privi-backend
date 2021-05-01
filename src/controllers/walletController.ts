@@ -983,6 +983,27 @@ module.exports.getUserTokenListByType = async (req: express.Request, res: expres
   }
 };
 
+module.exports.getBalancesOfTokenHolders = async (req: express.Request, res: express.Response) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      console.log('token empty')
+      res.send({success: false, message: 'No token'});
+      return;
+    }
+    const blockchainRes = await coinBalance.getBalancesOfTokenHolders(token, apiKey);
+    if (blockchainRes && blockchainRes.success) {
+      res.send({success: true, data: blockchainRes.output});
+    } else {
+      console.log('Error in controllers/walletController -> getBalancesOfTokenHolders()', blockchainRes.message);
+    res.send({ success: false });
+    }
+  } catch (err) {
+    console.log('Error in controllers/walletController -> getBalancesOfTokenHolders()', err);
+    res.send({ success: false });
+  }
+};
+
 module.exports.getUserOwnedTokens = async (req: express.Request, res: express.Response) => {
   try {
     let { userId } = req.query;
