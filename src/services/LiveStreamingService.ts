@@ -1,6 +1,12 @@
 import firebase from 'firebase';
 import { dailySteamingService } from './DailyStreamingService';
-import { MeetingToken, RoomState, streamingFirebaseRepository, StreamingResource } from './StreamingFirebaseRepository';
+import {
+  MediaType,
+  MeetingToken,
+  RoomState,
+  streamingFirebaseRepository,
+  StreamingResource,
+} from './StreamingFirebaseRepository';
 
 export class LiveStreamingService {
   public async joinStreaming({ streamingId, userId }: JoinStreamingParams): Promise<JoinStreamingResult> {
@@ -14,6 +20,8 @@ export class LiveStreamingService {
       return {
         roomUrl,
         meetingToken: token,
+        participantMode:
+          streaming.Type === MediaType.LiveVideo ? ParticipantMode.Video : ParticipantMode.Audio,
       };
     }
 
@@ -25,20 +33,23 @@ export class LiveStreamingService {
       throw new Error('Cannot join streaming that is was already ended');
     }
 
-    const roomUrl = streaming.StreamingUrl!; // url is ensured to be defined for RoomState.Going
+    const roomUrl = streaming.StreamingUrl ?? ''; // url is ensured to be defined for RoomState.Going
 
-    const { token } =
-      participantType == ParticipantType.SecondaryStreamer
-        ? await this.joinStreamingAsStreamer(userId, streaming)
-        : await this.joinStreamingAsAudience(userId, streaming);
+    const { token, participantMode } = [
+      ParticipantType.MainStreamer,
+      ParticipantType.SecondaryStreamer,
+    ].includes(participantType)
+      ? await this.joinStreamingAsStreamer(userId, streaming)
+      : await this.joinStreamingAsAudience(userId, streaming);
 
     return {
       roomUrl,
       meetingToken: token,
+      participantMode,
     };
   }
 
-  public async endStreamingAsMainStreamer({ streamingId, userId }: JoinStreamingParams) {
+  public async endStreamingAsMainStreamer({ streamingId, userId }: EndStreamingParams): Promise<void> {
     const streaming = await streamingFirebaseRepository.getOrThrow(streamingId);
     const participantType = this.getParticipantType(userId, streaming);
 
@@ -48,12 +59,12 @@ export class LiveStreamingService {
 
     await streamingFirebaseRepository.update(streaming.id, {
       RoomState: RoomState.Completed,
-      EndedTime: firebase.firestore.Timestamp.fromDate(new Date()),
+      EndedTime: Date.now(),
     });
 
     if (streaming.RoomState === RoomState.Going) {
       await dailySteamingService.deleteRoom({
-        roomName: streaming.RoomName!,
+        roomName: streaming.RoomName ?? '',
       });
     }
   }
@@ -65,7 +76,7 @@ export class LiveStreamingService {
       throw new Error('Only main streamer is allowed to start a stream');
     }
 
-    const { roomUrl, roomName } = await dailySteamingService.createRoom({
+    const { roomName, roomUrl } = await dailySteamingService.createRoom({
       enableRecording: streaming.Video,
     });
 
@@ -73,7 +84,7 @@ export class LiveStreamingService {
       RoomName: roomName,
       StreamingUrl: roomUrl,
       RoomState: RoomState.Going,
-      StartedTime: firebase.firestore.Timestamp.fromDate(new Date()),
+      StartedTime: Date.now(),
     });
 
     return {
@@ -83,11 +94,17 @@ export class LiveStreamingService {
   }
 
   private async joinStreamingAsStreamer(userId: string, streaming: StreamingResource) {
-    return await this.createOrGetMeetingToken({ userId, streaming, isOwner: true });
+    return {
+      ...(await this.createOrGetMeetingToken({ userId, streaming, isOwner: true })),
+      participantMode: streaming.Type === MediaType.LiveVideo ? ParticipantMode.Video : ParticipantMode.Audio,
+    };
   }
 
   private async joinStreamingAsAudience(userId: string, streaming: StreamingResource) {
-    return await this.createOrGetMeetingToken({ userId, streaming, isOwner: false });
+    return {
+      ...(await this.createOrGetMeetingToken({ userId, streaming, isOwner: false })),
+      participantMode: ParticipantMode.Observer,
+    };
   }
 
   private async createOrGetMeetingToken({
@@ -110,7 +127,7 @@ export class LiveStreamingService {
 
     const newMeetingToken = await dailySteamingService.createMeetingToken({
       userId,
-      roomName: streaming.RoomName!,
+      roomName: streaming.RoomName ?? '',
       isOwner,
     });
 
@@ -151,6 +168,12 @@ export enum ParticipantType {
   Watcher,
 }
 
+export enum ParticipantMode {
+  Video = 'video',
+  Audio = 'audio',
+  Observer = 'observer',
+}
+
 type JoinStreamingParams = {
   streamingId: string;
   userId: string;
@@ -159,6 +182,7 @@ type JoinStreamingParams = {
 type JoinStreamingResult = {
   roomUrl: string;
   meetingToken: string;
+  participantMode: ParticipantMode;
 };
 
 type EndStreamingParams = {

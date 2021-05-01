@@ -2,7 +2,7 @@ import express from 'express';
 const router = express.Router();
 
 import { authenticateJWT } from '../middlewares/jwtAuthMiddleware';
-const streamingController = require('../controllers/streamingController');
+import * as streamingController from '../controllers/streamingController';
 
 // called from postman
 router.post('/initiateMediaLiveStreaming', authenticateJWT, streamingController.initiateMediaLiveStreaming);
@@ -17,7 +17,7 @@ router.post('/initiateStreaming', authenticateJWT, streamingController.initiateS
 router.post('/createStreaming', authenticateJWT, streamingController.createStreaming);
 router.post('/getStreaming', authenticateJWT, streamingController.getStreaming);
 router.post('/endStreaming', authenticateJWT, streamingController.endStreaming);
-router.post('/addComment', authenticateJWT, streamingController.addComment)
+router.post('/addComment', authenticateJWT, streamingController.addComment);
 router.get('/listStreaming', authenticateJWT, streamingController.listStreaming);
 router.get('/getRecording', authenticateJWT, streamingController.getRecording);
 

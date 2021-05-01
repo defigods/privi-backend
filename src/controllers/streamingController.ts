@@ -6,7 +6,7 @@ import { db, firebase } from '../firebase/firebase';
 import { isUserValidForLiveStream, updateFirebase } from '../functions/functions';
 import { dailySteamingService } from '../services/DailyStreamingService';
 import { liveStreamingService } from '../services/LiveStreamingService';
-const fetch = require('node-fetch');
+import { streamingFirebaseRepository } from '../services/StreamingFirebaseRepository';
 
 //const apiKey = process.env.API_KEY;
 const apiKey = 'PRIVI';
@@ -30,28 +30,38 @@ enum ERROR_MSG {
 // ----------------------------------- POST -------------------------------------------
 
 // streamer starts the live streaming
-exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
+export const initiateMediaLiveStreaming = async (
+  req: express.Request,
+  res: express.Response
+): Promise<void> => {
   try {
     const body = req.body;
     const podAddress = body.PodAddress;
     const mediaSymbol = body.MediaSymbol;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await mediaPod.initiateMediaLiveStreaming(podAddress, mediaSymbol, hash, signature, apiKey);
+    const blockchainRes = await mediaPod.initiateMediaLiveStreaming(
+      podAddress,
+      mediaSymbol,
+      hash,
+      signature,
+      apiKey
+    );
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes); // update media inside pod obj
+      await updateFirebase(blockchainRes); // update media inside pod obj
       // add media in an outer colection "Streaming"
       const output = blockchainRes.output;
       const updateMedias = output.UpdateMedias;
-      let mediaSymbol: string = '';
+      let mediaSymbol = '';
       let mediaObj: any = null;
       for ([mediaSymbol, mediaObj] of Object.entries(updateMedias)) {
-        db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
+        await db.collection(collections.streaming).doc(mediaSymbol).set(mediaObj);
         const streamerPrortions = mediaObj.StreamingProportions;
         const streamerAddresses = Object.keys(streamerPrortions);
         // add the streamer docs for accumulated price tracking
-        streamerAddresses.forEach((streamerAddress) => {
-          db.collection(collections.streaming)
+        streamerAddresses.forEach(async streamerAddress => {
+          await db
+            .collection(collections.streaming)
             .doc(mediaSymbol)
             .collection(collections.streamers)
             .doc(streamerAddress)
@@ -77,7 +87,7 @@ exports.initiateMediaLiveStreaming = async (req: express.Request, res: express.R
 };
 
 // a listener joins the streaming
-exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
+export const enterMediaLiveStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   try {
     const body = req.body;
     const listener = body.Listener; // userId
@@ -105,7 +115,7 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
     }
 
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes); // update media inside pod
+      await updateFirebase(blockchainRes); // update media inside pod
       // update media in "Streaming"
       const output = blockchainRes.output;
       const updateStreaming = output.UpdateStreaming;
@@ -118,12 +128,13 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
         totalPricePerSecond += pricePerSecond;
         // update the receiver (streamers)
         if (receiverAddress && pricePerSecond) {
-          db.collection(collections.streaming)
+          await db
+            .collection(collections.streaming)
             .doc(mediaSymbol)
             .collection(collections.streamers)
             .doc(receiverAddress)
             .get()
-            .then((streamerSnap) => {
+            .then(streamerSnap => {
               // store curr accumulated price, update LastUpadte field and pricePerSecond
               const data: any = streamerSnap;
               let newAccumulatedAmount = data.AccumulatedAmount ?? 0;
@@ -133,14 +144,16 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
               newAccumulatedAmount += newPricePerSecond * timeDiff;
               newLastUpdate = Date.now();
               newPricePerSecond += pricePerSecond;
-              streamerSnap.ref.update({
+
+              return streamerSnap.ref.update({
                 AccumulatedAmount: newAccumulatedAmount,
                 PricePerSecond: newPricePerSecond,
                 LastUpdate: newLastUpdate,
               });
             });
         }
-        db.collection(collections.streaming)
+        await db
+          .collection(collections.streaming)
           .doc(mediaSymbol)
           .collection(collections.streamingListeners)
           .doc(listener)
@@ -173,7 +186,7 @@ exports.enterMediaLiveStreaming = async (req: express.Request, res: express.Resp
 };
 
 // a listener leaves the streaming
-exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Response) => {
+export const exitMediaLiveStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   try {
     const body = req.body;
     const listener = body.Listener;
@@ -181,7 +194,7 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
     const mediaSymbol = body.MediaSymbol;
     const blockchainRes = await mediaPod.exitMediaLiveStreaming(listener, podAddress, mediaSymbol, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);
+      await updateFirebase(blockchainRes);
       // delete listener doc inside media and updating streamer doc fields
       const listenerStreamingSnap = await db
         .collection(collections.streaming)
@@ -190,18 +203,19 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
         .doc(listener)
         .collection(collections.streamings)
         .get();
-      listenerStreamingSnap.forEach((doc) => {
+      listenerStreamingSnap.forEach(async doc => {
         const data: any = doc.data();
         const receiverAddress = data.ReceiverAddress;
         const pricePerSecond = data.AmountPerPeriod; // price per second
         // update the receivers (streamers)
         if (receiverAddress && pricePerSecond) {
-          db.collection(collections.streaming)
+          await db
+            .collection(collections.streaming)
             .doc(mediaSymbol)
             .collection(collections.streamers)
             .doc(receiverAddress)
             .get()
-            .then((streamerSnap) => {
+            .then(async streamerSnap => {
               // store curr accumulated price, update LastUpadte field and pricePerSecond
               const data: any = streamerSnap;
               let newAccumulatedAmount = data.AccumulatedAmount ?? 0;
@@ -211,16 +225,18 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
               newAccumulatedAmount += newPricePerSecond * timeDiff;
               newLastUpdate = Date.now();
               newPricePerSecond -= pricePerSecond;
-              streamerSnap.ref.update({
+
+              return streamerSnap.ref.update({
                 AccumulatedAmount: newAccumulatedAmount,
                 PricePerSecond: newPricePerSecond,
                 LastUpdate: newLastUpdate,
               });
             });
         }
-        doc.ref.delete();
+        await doc.ref.delete();
       });
-      db.collection(collections.streaming)
+      await db
+        .collection(collections.streaming)
         .doc(mediaSymbol)
         .collection(collections.streamingListeners)
         .doc(listener)
@@ -240,7 +256,7 @@ exports.exitMediaLiveStreaming = async (req: express.Request, res: express.Respo
 };
 
 // a listener joins the streaming
-exports.enterMediaStreaming = async (req: express.Request, res: express.Response) => {
+export const enterMediaStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   try {
     const body = req.body;
     const listener = body.Listener; // userId
@@ -257,11 +273,11 @@ exports.enterMediaStreaming = async (req: express.Request, res: express.Response
       apiKey
     );
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes); // update media inside pod
+      await updateFirebase(blockchainRes); // update media inside pod
       // update media in "Streaming"
       const output = blockchainRes.output;
       const updateStreaming = output.UpdateStreaming;
-      let totalPricePerSecond = 0;
+      const totalPricePerSecond = 0;
 
       console.log(output, output.UpdateMedias, updateStreaming);
 
@@ -277,7 +293,10 @@ exports.enterMediaStreaming = async (req: express.Request, res: express.Response
         });
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> enterMediaStreaming(): success = false.', blockchainRes.message);
+      console.log(
+        'Error in controllers/streaming -> enterMediaStreaming(): success = false.',
+        blockchainRes.message
+      );
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -287,7 +306,7 @@ exports.enterMediaStreaming = async (req: express.Request, res: express.Response
 };
 
 // a listener leaves the streaming
-exports.exitMediaStreaming = async (req: express.Request, res: express.Response) => {
+export const exitMediaStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   try {
     const body = req.body;
     const listener = body.Listener;
@@ -295,17 +314,21 @@ exports.exitMediaStreaming = async (req: express.Request, res: express.Response)
     const mediaSymbol = body.MediaSymbol;
     const blockchainRes = await mediaPod.exitMediaLiveStreaming(listener, podAddress, mediaSymbol, apiKey);
     if (blockchainRes && blockchainRes.success) {
-      updateFirebase(blockchainRes);
+      await updateFirebase(blockchainRes);
       // delete listener doc inside media and updating streamer doc fields
 
-      db.collection(collections.streaming)
+      await db
+        .collection(collections.streaming)
         .doc(mediaSymbol)
         .collection(collections.streamingListeners)
         .doc(listener)
         .delete();
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> exitMediaStreaming(): success = false.', blockchainRes.message);
+      console.log(
+        'Error in controllers/streaming -> exitMediaStreaming(): success = false.',
+        blockchainRes.message
+      );
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -315,7 +338,7 @@ exports.exitMediaStreaming = async (req: express.Request, res: express.Response)
 };
 
 // viewer joins to the steaming (a call per viewer)
-exports.initiateStreaming = async (req: express.Request, res: express.Response) => {
+export const initiateStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   try {
     const body = req.body;
     const sender = body.SenderAddress;
@@ -343,7 +366,10 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
     if (blockchainRes && blockchainRes.success) {
       res.send({ success: true });
     } else {
-      console.log('Error in controllers/streaming -> createStreaming(): success = false.', blockchainRes.message);
+      console.log(
+        'Error in controllers/streaming -> createStreaming(): success = false.',
+        blockchainRes.message
+      );
       res.send({ success: false, error: blockchainRes.message });
     }
   } catch (err) {
@@ -352,11 +378,11 @@ exports.initiateStreaming = async (req: express.Request, res: express.Response) 
   }
 };
 
-exports.joinStreaming = async (req: express.Request, res: express.Response) => {
+export const joinStreaming = async (req: express.Request, res: express.Response, next): Promise<void> => {
   const { streamingId } = req.body;
   const userId = req.body.priviUser.id;
 
-  const result = await liveStreamingService.joinStreaming({ streamingId, userId });
+  const result = await liveStreamingService.joinStreaming({ streamingId, userId }).catch(next);
 
   res.send(result);
 };
@@ -376,7 +402,7 @@ exports.joinStreaming = async (req: express.Request, res: express.Response) => {
 */
 
 // TODO: Remove this endpoint - create is handled by joinStreaming
-exports.createStreaming = async (req: express.Request, res: express.Response) => {
+export const createStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   // Get the document from Firestore
   const { DocId, isRecord, UserId, IsProtected, ProtectKey } = req.body;
 
@@ -388,16 +414,16 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
     if (streamingData.RoomState === ROOM_STATE.SCHEDULED) {
       const roomName = DocId;
 
-      let { roomUrl } = await dailySteamingService.createRoom({ roomName, enableRecording: false });
+      const { roomUrl } = await dailySteamingService.createRoom({ roomName, enableRecording: false });
 
       try {
-        docSnap.ref.update({
+        await docSnap.ref.update({
           RoomName: roomName,
           StreamingUrl: roomUrl,
           StartedTime: Date.now(),
           RoomState: ROOM_STATE.GOING,
         });
-        let resData = docSnap.data();
+        const resData = docSnap.data();
         console.log(resData);
 
         // Blockchain Integration part
@@ -469,7 +495,7 @@ exports.createStreaming = async (req: express.Request, res: express.Response) =>
   }
 };
 
-exports.addComment = async (req: express.Request, res: express.Response) => {
+export const addComment = async (req: express.Request, res: express.Response): Promise<void> => {
   // Get the document from Firestore
   const { DocId, Comment } = req.body;
 
@@ -483,7 +509,7 @@ exports.addComment = async (req: express.Request, res: express.Response) => {
       { collection: collections.foundationMedia, blockchain: 'FoundationMedia' },
       { collection: collections.topshotMedia, blockchain: 'TopshotMedia' },
       { collection: collections.sorareMedia, blockchain: 'SorareMedia' },
-      { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' }
+      { collection: collections.showtimeMedia, blockchain: 'ShowtimeMedia' },
     ];
 
     let i, docSnap;
@@ -495,28 +521,21 @@ exports.addComment = async (req: express.Request, res: express.Response) => {
     }
 
     await docSnap.ref.update({
-      Comments: firebase.firestore.FieldValue.arrayUnion(Comment)
+      Comments: firebase.firestore.FieldValue.arrayUnion(Comment),
     });
 
-    res.send({ success: true, data: Comment })
+    res.send({ success: true, data: Comment });
   } else {
     res.send({ success: false, message: 'Info is missing' });
   }
 };
 
-exports.getStreaming = async (req: express.Request, res: express.Response) => {
-  // Get the document from Firestore
-  const { DocId, UserId } = req.body;
+export const getStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
+  const { streamingId } = req.body;
 
-  if (DocId && UserId) {
-    const docSnap = await db.collection(collections.streaming).doc(DocId).get();
-    const streamingData: any = docSnap.data();
+  const streaming = await streamingFirebaseRepository.getOrThrow(streamingId);
 
-    console.log(streamingData.StreamingUrl);
-    res.send({ success: true, StreamingUrl: streamingData.StreamingUrl, data: streamingData });
-  } else {
-    res.send({ success: false, message: 'Info is missing' });
-  }
+  res.send(streaming);
 };
 
 /*
@@ -533,11 +552,11 @@ exports.getStreaming = async (req: express.Request, res: express.Response) => {
  ** **
 */
 
-exports.getRecording = async (req: express.Request, res: express.Response) => {
+export const getRecording = async (req: express.Request, res: express.Response): Promise<void> => {
   const roomName = req.query.roomNumber;
   try {
     const GET_RECORDING_URL = `${RECORDING_URL}?room_name=${roomName}`;
-    let resp = await axios.get(GET_RECORDING_URL, {
+    const resp = await axios.get(GET_RECORDING_URL, {
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${DAILY_API_KEY}`,
@@ -549,11 +568,12 @@ exports.getRecording = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.endStreaming = async (req: express.Request, res: express.Response) => {
+export const endStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   const { streamingId } = req.body;
   const userId = req.body.priviUser.id;
 
-  return await liveStreamingService.endStreamingAsMainStreamer({ streamingId, userId });
+  await liveStreamingService.endStreamingAsMainStreamer({ streamingId, userId });
+  res.send();
 };
 
 /*
@@ -568,11 +588,11 @@ exports.endStreaming = async (req: express.Request, res: express.Response) => {
 
  ** **
 */
-exports.listStreaming = async (req: express.Request, res: express.Response) => {
+export const listStreaming = async (req: express.Request, res: express.Response): Promise<void> => {
   try {
     const collectionRef = await db.collection(collections.streaming).get();
-    let streamings = {};
-    collectionRef.docs.forEach((doc) => {
+    const streamings = {};
+    collectionRef.docs.forEach(doc => {
       streamings[doc.id] = { ...doc.data() };
     });
     res.send({ success: true, streamings });
@@ -581,7 +601,10 @@ exports.listStreaming = async (req: express.Request, res: express.Response) => {
   }
 };
 
-exports.registerStreamingParticipant = async (req: express.Request, res: express.Response) => {
+export const registerStreamingParticipant = async (
+  req: express.Request,
+  res: express.Response
+): Promise<void> => {
   const { DocId, UserId, ParticipantType, Room, IsAllowed } = req.body;
 
   try {

@@ -56,6 +56,11 @@ export const startServer = (env: Env) => {
   // Show API calls in console
   app.use(logger('dev'));
 
+  // Handle internal server errors
+  app.use((error, req, res, next) => {
+    return res.status(500).json({ error: error.toString() });
+  });
+
   // CORS policy
   // *** TODO: filter by priviweb.tech origin if Env='prod' ***
   app.use(cors());

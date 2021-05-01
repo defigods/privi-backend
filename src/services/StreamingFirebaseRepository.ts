@@ -29,7 +29,7 @@ export class StreamingFirebaseRepository {
     return result;
   }
 
-  public async update(id: string, resource: Partial<Omit<StreamingResource, 'id'>>) {
+  public async update(id: string, resource: Partial<Omit<StreamingResource, 'id'>>): Promise<void> {
     await this.collection.doc(id).update(resource);
   }
 
@@ -56,8 +56,12 @@ export class StreamingFirebaseRepository {
   public async saveMeetingToken(
     { streamingId, userId }: { streamingId: string; userId: string },
     resource: MeetingToken
-  ) {
-    await this.collection.doc(streamingId).collection(MEETING_TOKENS_SUBCOLLECTION_NAME).doc(userId).set(resource);
+  ): Promise<void> {
+    await this.collection
+      .doc(streamingId)
+      .collection(MEETING_TOKENS_SUBCOLLECTION_NAME)
+      .doc(userId)
+      .set(resource);
   }
 }
 
@@ -92,7 +96,7 @@ export type StreamingResource = {
   CountWatchers: number;
   CreatorAddress: string;
   CreatorId: UserID;
-  EndedTime?: firebase.firestore.Timestamp;
+  EndedTime?: number;
   EndingTime: number;
   ExpectedDuration: number;
   HasPhoto: boolean;
@@ -115,11 +119,11 @@ export type StreamingResource = {
   PriceType: string;
   PricingMethod: PricingMethod;
   Rewards: string;
-  RoomName?: string;
+  RoomName: string | null;
   RoomState: RoomState;
   SessionId?: Record<UserID, string>;
   SharingPct: number;
-  StartedTime?: firebase.firestore.Timestamp;
+  StartedTime?: number;
   StartingTime: number;
   Streamers: UserID[];
   StreamingToken: string;

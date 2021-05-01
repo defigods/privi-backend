@@ -12,7 +12,7 @@ export class DailyStreamingService {
       baseURL: DAILY_API_URL,
     });
 
-    this.axiosIntance.defaults.headers.common['Authorization'] = `Bearer ${DAILY_API_KEY}`;
+    this.axiosIntance.defaults.headers.common.Authorization = `Bearer ${DAILY_API_KEY}`;
     this.axiosIntance.defaults.headers.common['Content-Type'] = 'application/json';
   }
 
@@ -21,8 +21,8 @@ export class DailyStreamingService {
       ...(roomName ? { name: roomName } : {}), // empty name tell Daily.co to generate random name
       // ref: https://www.daily.co/blog/intro-to-room-access-control/
       privacy: 'private',
-      owner_only_broadcast: true,
       properties: {
+        owner_only_broadcast: true,
         ...(enableRecording ? { enable_recording: 'cloud' } : {}),
       },
     };
@@ -61,7 +61,7 @@ export class DailyStreamingService {
 
     return {
       token: response.data.token,
-      isOwner: isOwner,
+      isOwner,
     };
   }
 }
