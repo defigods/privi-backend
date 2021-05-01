@@ -1069,68 +1069,68 @@ exports.getHistories = async (req: express.Request, res: express.Response) => {
 /////////////////////////// CRON JOBS //////////////////////////////
 
 // interest manager scheduled every day at 00:00
-exports.payInterest = cron.schedule('* * * * *', async () => {
-  try {
-    //console.log('******** Privi Credit payInterest ********');
-    const creditsSnap = await db.collection(collections.priviCredits).get();
-    const credits = creditsSnap.docs;
-    for (let i = 0; i < credits.length; i++) {
-      const creditAddress = credits[i].id;
-      const data = credits[i].data();
-      if (data) {
-        const frequency = data.Frequency;
-        const paymentDay = 1; // fixed for now, TODO: allow user to select
-        if (isPaymentDay(frequency, paymentDay)) {
-          const date = Date.now();
-          const txnId = generateUniqueId();
-          const blockchainRes = await priviCredit.payInterest(creditAddress, date, txnId, apiKey);
-          if (blockchainRes && blockchainRes.success) {
-            updateFirebase(blockchainRes);
-            // notify user with the paid interest amount
-            const transactions = blockchainRes.output.Transactions;
-            let tid: string = '';
-            let txnObj: any = null;
-            let totalInterest = data.TotalInterest ?? 0;
-            for ([tid, txnObj] of Object.entries(transactions)) {
-              const from = txnObj.From;
-              const to = txnObj.To;
-              if (txnObj.Type && txnObj.Type == notificationTypes.priviCreditInterest && from && to == creditAddress) {
-                totalInterest += txnObj.Amount;
-                const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
-                const priviCreditData: any = priviCreditSnap.data();
-                await notificationsController.addNotification({
-                  userId: from,
-                  notification: {
-                    type: 44,
-                    typeItemId: 'user',
-                    itemId: from,
-                    follower: '',
-                    pod: priviCreditData.CreditName,
-                    comment: '',
-                    token: '',
-                    amount: totalInterest,
-                    onlyInformation: false,
-                    otherItemId: creditAddress,
-                  },
-                });
-              }
-            }
-            // update total interest
-            db.collection(collections.priviCredits).doc(creditAddress).update({ TotalInterest: totalInterest });
-          } else {
-            console.log(
-              'Error in controllers/priviCredit -> payInterest(): success = false for credit ',
-              creditAddress,
-              blockchainRes.message
-            );
-          }
-        }
-      }
-    }
-  } catch (err) {
-    console.log('Error in controllers/priviCredit -> payInterest()', err);
-  }
-});
+// exports.payInterest = cron.schedule('* * * * *', async () => {
+//   try {
+//     //console.log('******** Privi Credit payInterest ********');
+//     const creditsSnap = await db.collection(collections.priviCredits).get();
+//     const credits = creditsSnap.docs;
+//     for (let i = 0; i < credits.length; i++) {
+//       const creditAddress = credits[i].id;
+//       const data = credits[i].data();
+//       if (data) {
+//         const frequency = data.Frequency;
+//         const paymentDay = 1; // fixed for now, TODO: allow user to select
+//         if (isPaymentDay(frequency, paymentDay)) {
+//           const date = Date.now();
+//           const txnId = generateUniqueId();
+//           const blockchainRes = await priviCredit.payInterest(creditAddress, date, txnId, apiKey);
+//           if (blockchainRes && blockchainRes.success) {
+//             updateFirebase(blockchainRes);
+//             // notify user with the paid interest amount
+//             const transactions = blockchainRes.output.Transactions;
+//             let tid: string = '';
+//             let txnObj: any = null;
+//             let totalInterest = data.TotalInterest ?? 0;
+//             for ([tid, txnObj] of Object.entries(transactions)) {
+//               const from = txnObj.From;
+//               const to = txnObj.To;
+//               if (txnObj.Type && txnObj.Type == notificationTypes.priviCreditInterest && from && to == creditAddress) {
+//                 totalInterest += txnObj.Amount;
+//                 const priviCreditSnap = await db.collection(collections.priviCredits).doc(creditAddress).get();
+//                 const priviCreditData: any = priviCreditSnap.data();
+//                 await notificationsController.addNotification({
+//                   userId: from,
+//                   notification: {
+//                     type: 44,
+//                     typeItemId: 'user',
+//                     itemId: from,
+//                     follower: '',
+//                     pod: priviCreditData.CreditName,
+//                     comment: '',
+//                     token: '',
+//                     amount: totalInterest,
+//                     onlyInformation: false,
+//                     otherItemId: creditAddress,
+//                   },
+//                 });
+//               }
+//             }
+//             // update total interest
+//             db.collection(collections.priviCredits).doc(creditAddress).update({ TotalInterest: totalInterest });
+//           } else {
+//             console.log(
+//               'Error in controllers/priviCredit -> payInterest(): success = false for credit ',
+//               creditAddress,
+//               blockchainRes.message
+//             );
+//           }
+//         }
+//       }
+//     }
+//   } catch (err) {
+//     console.log('Error in controllers/priviCredit -> payInterest()', err);
+//   }
+// });
 
 // cron scheduled every day at 00:00, generates a doc for Deposited, Borrowed and Available history collections
 exports.manageHistory = cron.schedule('0 0 * * *', async () => {
