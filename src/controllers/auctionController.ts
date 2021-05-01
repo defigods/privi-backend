@@ -48,10 +48,10 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       
       const blockchainRes = await auction.placeBid(mediaSymbol, tokenSymbol, owner, address, amount, apiKey);
       if (blockchainRes && blockchainRes.success) {
-          updateFirebase(blockchainRes);
+          await updateFirebase(blockchainRes);
           saveTransactions(db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions), blockchainRes);
           // add bid to history
-          db.collection(collections.streaming).doc(mediaSymbol).collection(collections.bidHistory).add({
+          await db.collection(collections.streaming).doc(mediaSymbol).collection(collections.bidHistory).add({
               date: Date.now(),
               bidderAddress: address,
               price: amount,
@@ -78,8 +78,13 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       
       const blockchainRes = await auction.cancelAuction(mediaSymbol, tokenSymbol, owner, apiKey);
       if (blockchainRes && blockchainRes.success) {
-          updateFirebase(blockchainRes);
+          await updateFirebase(blockchainRes);
           saveTransactions(db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions), blockchainRes);
+          // remove auctions field from doc
+          const mediaSnap = await db.collection(collections.streaming).doc(mediaSymbol).get();
+          const mediaData:any = mediaSnap.data();
+          delete mediaData.Auctions;
+          await mediaSnap.ref.update(mediaData);
           res.send({success: true});
       }
       else {
@@ -112,6 +117,30 @@ export const placeBid = async (req: express.Request, res: express.Response) => {
       }
     } catch (err) {
       console.log('Error in controllers/auctionController -> withdrawAuction()', err);
+      res.send({ success: false });
+    }
+  };
+
+  export const getAuctionTransactions = async (req: express.Request, res: express.Response) => {
+    try {
+      const mediaSymbol:any = req.query.mediaSymbol;
+      if (!mediaSymbol) {
+        console.log('mediaSymbol empty');
+        res.send({success: false});
+      }
+      const retData:any[] = [];
+      const snap = await db.collection(collections.streaming).doc(mediaSymbol).collection(collections.transactions).get();
+      snap.forEach((doc) => {
+        const data:any = doc.data();
+        const txns = data.Transactions ?? [];
+        txns.forEach(txn => {
+          const type = txn.Type;
+          if (type.toLowerCase().includes('place-bid')) retData.push(txn);
+        });
+      });
+      res.send({success:true, data:retData});
+    } catch (err) {
+      console.log('Error in controllers/auctionController -> getAuctionTransactions()', err);
       res.send({ success: false });
     }
   };
