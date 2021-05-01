@@ -2293,24 +2293,27 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
 // get owned media
 const getOwnedMediaFunction = async (userAddress) => {
   const ownedMedias: any[] = [];
-  //const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
-  const blockchainRes = await coinBalance.getBalancesByType(userAddress, 'NFTMEDIA', 'PRIVI');
+  const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'NFTMEDIA');
+  const blockchainRes1 = await coinBalance.getBalancesByType(userAddress, 'NFTMEDIA', 'PRIVI');
 
-  if (blockchainRes && blockchainRes.success) {
-    const mediaNFT = blockchainRes.output;
+  if (blockchainRes && blockchainRes.success && blockchainRes1 && blockchainRes1.success) {
+    const mediaNFTUser = blockchainRes.output;
+    const mediaNFTAll = blockchainRes1.output;
+
     const promises: any[] = [];
-    var outputArray:any = Object.keys(mediaNFT).map((key) => {
-      return mediaNFT[key];
-    });
+
+    var outputArrayAll:any[] = Object.values(mediaNFTAll)
+    var outputArray = outputArrayAll.filter(media => mediaNFTUser.indexOf(media.Token) > -1);
+    
     outputArray.forEach((media) =>
       promises.push(db.collection(collections.streaming).doc(media.Token).get())
     );
     const responses = await Promise.all(promises);
-
-    responses.forEach((snap, index) => {
+    
+    responses.forEach((snap) => {
       if (snap.exists) {
         let data = snap.data()
-        data.Amount = outputArray[index].Amount
+        data.Amount = outputArrayAll.filter(media => media.Token === data.MediaSymbol)[0].Amount ?? 0;
         ownedMedias.push(data);
       }
     });
