@@ -1955,7 +1955,6 @@ exports.getCommunity = async (req: express.Request, res: express.Response) => {
 
 // get a single community counters
 
-
 const getCommunityCounters = async (data) => {
   try {
     let commentsCounter = 0;
@@ -2042,10 +2041,10 @@ const getCommunityCounters = async (data) => {
     });
 
     return {
-        commentsCounter: commentsCounter,
-        commentsMonthCounter: commentsMonthCounter,
-        conversationsMonthCounter: conversationsMonthCounter,
-    }
+      commentsCounter: commentsCounter,
+      commentsMonthCounter: commentsMonthCounter,
+      conversationsMonthCounter: conversationsMonthCounter,
+    };
   } catch (e) {
     console.log('Error in controllers/communitiesControllers -> getCommunityCounters()' + e);
   }
@@ -2152,7 +2151,7 @@ exports.getTrendingCommunities = async (req: express.Request, res: express.Respo
 
       const extraData = await getExtraData(communityData, rateOfChange);
       let arrayMembersId: any[] = await getArrayIdCommunityMembers(communityData);
-      const counters = await getCommunityCounters(communityData)
+      const counters = await getCommunityCounters(communityData);
       trendingCommunities.push({
         ...communityData,
         ...extraData,
@@ -3152,6 +3151,8 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
   try {
     const body = req.body;
 
+    console.log('**********************========================', body);
+
     if (body) {
       const communityObj: any = {
         HasPhoto: body.HasPhoto ?? false,
@@ -3269,32 +3270,34 @@ exports.saveCommunity = async (req: express.Request, res: express.Response) => {
             WIPType: 'Community',
           });
 
-        for (let offer of body.Offers) {
-          const userSnap = await db.collection(collections.user).doc(offer.userId).get();
-          const userData: any = userSnap.data();
-          chatController.createChatWIPFromUsers(
-            communityAddress,
-            body.Creator,
-            offer.userId,
-            creator.firstName,
-            userData.firstName
-          );
+        if (body.Offers) {
+          for (let offer of body.Offers) {
+            const userSnap = await db.collection(collections.user).doc(offer.userId).get();
+            const userData: any = userSnap.data();
+            chatController.createChatWIPFromUsers(
+              communityAddress,
+              body.Creator,
+              offer.userId,
+              creator.firstName,
+              userData.firstName
+            );
 
-          await notificationsController.addNotification({
-            userId: offer.userId,
-            notification: {
-              type: 94,
-              typeItemId: 'user',
-              itemId: body.Creator,
-              follower: creator.firstName,
-              pod: '',
-              comment: '',
-              token: offer.token,
-              amount: offer.amount,
-              onlyInformation: false,
-              otherItemId: communityAddress,
-            },
-          });
+            await notificationsController.addNotification({
+              userId: offer.userId,
+              notification: {
+                type: 94,
+                typeItemId: 'user',
+                itemId: body.Creator,
+                follower: creator.firstName,
+                pod: '',
+                comment: '',
+                token: offer.token,
+                amount: offer.amount,
+                onlyInformation: false,
+                otherItemId: communityAddress,
+              },
+            });
+          }
         }
       }
 

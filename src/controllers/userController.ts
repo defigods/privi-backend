@@ -988,6 +988,10 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
       let mySocialTokens: any[] = await getMySocialTokensFunction(userId, userAddress);
       let myCreditPools: any = await getMyCreditPools(userId);
       let myWorkInProgress: any[] = await getMyWorkInProgressFunction(userId);
+      const myPodOwnedMedia: any[] = await getOwnedDigitalPodFunction(userAddress);
+      const myPodCuratedMedia: any[] = await getCuratedDigitalPodFunction(userId);
+      const myPodLikedMedia: any[] = await getLikesDigitalPodFunction(userId);
+      const myPodsMedia: any[] = await mergePodsMedia(myPodCuratedMedia, myPodOwnedMedia, myPodLikedMedia);
       const ownedMedia: any[] = await getOwnedMediaFunction(userAddress);
       const curatedMedia: any[] = await getCuratedMedia(userId);
       const likedMedia: any[] = await getLikedMedia(userId);
@@ -1041,6 +1045,7 @@ const getAllInfoProfile = async (req: express.Request, res: express.Response) =>
         data: {
           badges: badges,
           myPods: myPodsAndInvested,
+          myPodsMedia: myPodsMedia,
           myCommunities: myCommunities,
           mySocialTokens: mySocialTokens,
           myCreditPools: myCreditPools,
@@ -2289,6 +2294,91 @@ const getMyMediaFunction = (userId): Promise<any[]> => {
     }
   });
 };
+
+// get curated media pods
+const getCuratedDigitalPodFunction = async (userId) => {
+  const curatedMedias: any[] = [];
+  const mediaPods = await db.collection(collections.mediaPods).where("Creator", "==", userId).get();
+
+  if (mediaPods && mediaPods.docs.length > 0) {
+    mediaPods.docs.forEach((snap) => {
+      if (snap.exists) {
+        let data = snap.data()
+        curatedMedias.push(data);
+      }
+    });
+  }
+  return curatedMedias;
+};
+
+// get owned media pods
+const getOwnedDigitalPodFunction = async (userAddress) => {
+  const ownedMedias: any[] = [];
+  const blockchainRes = await coinBalance.getTokensOfAddressByType(userAddress, 'MEDIAPOD');
+  const blockchainRes1 = await coinBalance.getBalancesByType(userAddress, 'MEDIAPOD', 'PRIVI');
+
+  if (blockchainRes && blockchainRes.success && blockchainRes1 && blockchainRes1.success) {
+    const mediaUser = blockchainRes.output;
+    const mediaAll = blockchainRes1.output;
+
+    const promises: any[] = [];
+
+    var outputArrayAll:any[] = Object.values(mediaAll)
+    var outputArray = outputArrayAll.filter(media => mediaUser.indexOf(media.Token) > -1);
+    
+    outputArray.forEach((media) =>
+      promises.push(db.collection(collections.mediaPods).doc(media.Token).get())
+    );
+    const responses = await Promise.all(promises);
+    
+    responses.forEach((snap) => {
+      if (snap.exists) {
+        let data = snap.data()
+        ownedMedias.push(data);
+      }
+    });
+  }
+  return ownedMedias;
+};
+
+// get likes media pods
+const getLikesDigitalPodFunction = async (userId) => {
+  const likesMedias: any[] = [];
+  const mediaPods = await db.collection(collections.mediaPods).get();
+
+  if (mediaPods && mediaPods.docs.length > 0) {
+    mediaPods.docs.forEach((snap) => {
+      if (snap.exists) {
+        let data = snap.data()
+        if (data.Likes && data.Likes.length > 0) {
+          for (let i = 0; i < data.Likes.length; i++) {
+            if (data.Likes[i].userId === userId) {
+              likesMedias.push(data);
+              break;
+            }
+          }
+        }
+      }
+    });
+  }
+  return likesMedias;
+};
+
+const mergePodsMedia = (ownedMedia, curatedMedia, likesMedia) => {
+  const myMedia = [...ownedMedia];
+  curatedMedia.forEach(element => {
+    if(!myMedia.find((item) => item.PodAddress === element.PodAddress)) {
+      myMedia.push(element);
+    }
+  });
+  likesMedia.forEach(element => {
+    if(!myMedia.find((item) => item.PodAddress === element.PodAddress)) {
+      myMedia.push(element);
+    }
+  });
+
+  return myMedia;
+}
 
 // get owned media
 const getOwnedMediaFunction = async (userAddress) => {
