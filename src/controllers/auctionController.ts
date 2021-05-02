@@ -140,7 +140,7 @@ export const withdrawAuction = async (req: express.Request, res: express.Respons
 
 export const getAuctionTransactions = async (req: express.Request, res: express.Response) => {
   try {
-    const mediaSymbol: any = req.query.mediaSymbol;
+    const mediaSymbol: any = req.params.mediaSymbol;
     if (!mediaSymbol) {
       console.log('mediaSymbol empty');
       res.send({ success: false });
@@ -162,6 +162,29 @@ export const getAuctionTransactions = async (req: express.Request, res: express.
     res.send({ success: true, data: retData });
   } catch (err) {
     console.log('Error in controllers/auctionController -> getAuctionTransactions()', err);
+    res.send({ success: false });
+  }
+};
+
+export const getBidHistory = async (req: express.Request, res: express.Response) => {
+  try {
+    const mediaSymbol: any = req.params.mediaSymbol;
+    if (!mediaSymbol) {
+      console.log('mediaSymbol empty');
+      res.send({ success: false });
+    }
+    const retData: any[] = [];
+    const snap = await db
+      .collection(collections.streaming)
+      .doc(mediaSymbol)
+      .collection(collections.bidHistory).orderBy('date', 'asc')
+      .get();
+    snap.forEach(doc => {
+      retData.push(doc.data());
+    });
+    res.send({ success: true, data: retData });
+  } catch (err) {
+    console.log('Error in controllers/auctionController -> getBidHistory()', err);
     res.send({ success: false });
   }
 };

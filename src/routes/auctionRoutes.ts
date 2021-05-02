@@ -10,6 +10,7 @@ router.post('/placeBid', authenticateJWT, auctionController.placeBid);
 router.post('/cancelAuction', authenticateJWT, auctionController.cancelAuction);
 router.post('/withdrawAuction', authenticateJWT, auctionController.withdrawAuction);
 
-router.get('/getAuctionTransactions', authenticateJWT, auctionController.getAuctionTransactions);
+router.get('/getAuctionTransactions/:mediaSymbol', authenticateJWT, auctionController.getAuctionTransactions);
+router.get('/getBidHistory/:mediaSymbol', authenticateJWT, auctionController.getBidHistory);
 
 module.exports = router;
