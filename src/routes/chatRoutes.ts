@@ -1,5 +1,6 @@
 import {authenticateJWT} from "../middlewares/jwtAuthMiddleware";
 import multer from "multer";
+import fs from 'fs'
 
 let express = require('express');
 let router = express.Router();
@@ -9,7 +10,9 @@ let chatController = require('../controllers/chatController');
 // CHAT 1-to-1
 let storage11 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/chat/one-to-one/' + req.params.room)
+    const path = 'uploads/chat/one-to-one/' + req.params.room;
+    fs.mkdirSync(path, { recursive: true });
+    cb(null, path);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -23,7 +26,9 @@ let upload11 = multer({
 
 let storage12 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/chat/one-to-one/' + req.params.room)
+    const path = 'uploads/chat/one-to-one/' + req.params.room;
+    fs.mkdirSync(path, { recursive: true });
+    cb(null, path);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -37,7 +42,9 @@ let upload12 = multer({
 
 let storage13 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/chat/one-to-one/' + req.params.room)
+    const path = 'uploads/chat/one-to-one/' + req.params.room;
+    fs.mkdirSync(path, { recursive: true });
+    cb(null, path);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -52,7 +59,9 @@ let upload13 = multer({
 // DISCORD
 let storage = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+    const path = 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId;
+    fs.mkdirSync(path, { recursive: true })
+    cb(null, path)
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -66,7 +75,9 @@ let upload = multer({
 
 let storage2 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+    const path = 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId;
+    fs.mkdirSync(path, { recursive: true });
+    cb(null, path);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
@@ -80,7 +91,9 @@ let upload2 = multer({
 
 let storage3 = multer.diskStorage({
   destination: function (req: any, file: any, cb: any) {
-    cb(null, 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId)
+    const path = 'uploads/chat/' + req.params.discordChatId + '/' + req.params.discordRoomId;
+    fs.mkdirSync(path, { recursive: true });
+    cb(null, path);
   },
   filename: function (req: any, file: any, cb: any) {
     console.log(file);
