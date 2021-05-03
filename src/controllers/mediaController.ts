@@ -3432,17 +3432,26 @@ const getNFTInformation = async (id, hostUrl) => {
           if (!doc.exists || !data) {
             continue;
           }
+
           if (blockchain === 'PRIVI') {
-            const type = data.Video ? 'Video' : 'Audio';
             const url = data.Video
               ? path.join('uploads', 'media', id + '.mp4')
               : path.join('uploads', 'media', id + '.mp3');
+            const userDoc = await db.collection(collections.user).doc(data.CreatorId).get();
+            const userData = userDoc.data();
             return {
               id,
-              type,
+              type: data.Type,
               url: `${hostUrl}/${url}`,
               price: data.Price ? data.Price : data.ViewConditions?.Price,
               paymentType: data.PaymentType ? data.PaymentType : data.ViewConditions?.ViewingType,
+              blockchain,
+              name: data.MediaName,
+              description: data.MediaDescription,
+              creator: userData?.firstName,
+              creatorId: data.CreatorId,
+              creatorAddress: data.CreatorAddress,
+              hashtags: data.Hashtags,
             };
           } else {
             return {
@@ -3451,6 +3460,11 @@ const getNFTInformation = async (id, hostUrl) => {
               url: data.url,
               price: data.price,
               paymentType: data.status ? data.status[0] : '',
+              blockchain,
+              name: data.title,
+              description: data.description,
+              creator: data.creator,
+              owner: data.owner,
             };
           }
         } catch (e) {}
