@@ -24,7 +24,8 @@ exports.getChats = async (req: express.Request, res: express.Response) => {
         allChats.push(data);
       }
     });
-    const chatUserToSnap = await db.collection(collections.chat).where('users.userTo.userId', '==', body.userId).get();
+    const chatUserToSnap = await db.collection(collections.chat)
+      .where('users.userTo.userId', '==', body.userId).get();
     chatUserToSnap.forEach((doc) => {
       let data = doc.data();
       if (data && (!data.wipId || data.wipId === '')) {
