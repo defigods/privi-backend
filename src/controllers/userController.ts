@@ -3021,6 +3021,7 @@ const createBadge = async (req: express.Request, res: express.Response) => {
         Description: description,
         Users: [],
         HasPhoto: false,
+        dimnensions: body.dimensions || '',
       });
       // add badge to user
       //  const userRef = db.collection(collections.user).doc(creator);

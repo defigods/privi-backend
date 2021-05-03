@@ -105,7 +105,6 @@ let storage6 = multer.diskStorage({
     cb(null, 'uploads/community');
   },
   filename: function (req: any, file: any, cb: any) {
-    console.log(file);
     cb(null, file.originalname + '.png');
   },
 });
@@ -197,6 +196,7 @@ router.get('/getUserPaymentData', authenticateJWT, communityController.getUserPa
 router.get('/getCommunityTransactions', authenticateJWT, communityController.getCommunityTransactions);
 router.get('/getPhoto/:communityId', communityController.getCommunityPhotoById);
 router.post('/changeCommunityPhoto', authenticateJWT, upload6.single('image'), communityController.changeCommunityPhoto);
+router.post('/updateCommunityPhotoDimensions', authenticateJWT, communityController.updateCommunityPhotoDimensions);
 router.post('/editCommunity', authenticateJWT, communityController.editCommunity);
 router.post('/editRules', authenticateJWT, communityController.editRules);
 router.post('/editLevels', authenticateJWT, communityController.editLevels);

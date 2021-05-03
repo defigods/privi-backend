@@ -345,6 +345,29 @@ exports.changeFTPodPhoto = async (req: express.Request, res: express.Response) =
     res.send({ success: false });
   }
 };
+
+exports.updateFTPodPhotoDimensions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const podRef = db.collection(collections.podsFT).doc(body.id);
+
+    await podRef.update({
+      dimensions: body.dimensions || '',
+    });
+
+    res.send({
+      success: true,
+      data: {
+        dimensions: body.dimensions || '',
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/podController -> updateFTPodPhotoDimensions()', err);
+    res.send({ success: false });
+  } 
+};
+
 exports.changeNFTPodPhoto = async (req: express.Request, res: express.Response) => {
   try {
     if (req.file) {
@@ -368,6 +391,28 @@ exports.changeNFTPodPhoto = async (req: express.Request, res: express.Response) 
     console.log('Error in controllers/podController -> changePodPhoto()', err);
     res.send({ success: false });
   }
+};
+
+exports.updateNFTPodPhotoDimensions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const podRef = db.collection(collections.podsNFT).doc(body.id);
+
+    await podRef.update({
+      dimensions: body.dimensions || '',
+    });
+
+    res.send({
+      success: true,
+      data: {
+        dimensions: body.dimensions || '',
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/podController -> updateNFTPodPhotoDimensions()', err);
+    res.send({ success: false });
+  } 
 };
 
 exports.changeWIPPhoto = async (req: express.Request, res: express.Response) => {
@@ -750,6 +795,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
     const creator = body.PodInfo.Creator;
     const fundingToken = body.PodInfo.FundingToken;
     const interestDue = body.InterestDue;
+    const dimensions = body.dimensions;
 
     let rateOfChangeBody: any = {};
     const rateOfChange = await getRateOfChangeAsMap();
@@ -802,6 +848,7 @@ exports.initiateFTPOD = async (req: express.Request, res: express.Response) => {
           DiscordId: discordChatCreation.id,
           Posts: [],
           PodReachInvestors: false,
+          dimensions: dimensions ||'',
         },
         { merge: true }
       );
@@ -1897,6 +1944,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
     const supply = body.Supply;
     const royalty = body.Royalty;
     const expirationDate = new Date(body.ExpirationDate);
+    const dimensions = body.dimensions;
 
     const hash = body.Hash;
     const signature = body.Signature;
@@ -1925,7 +1973,7 @@ exports.initiateNFTPod = async (req: express.Request, res: express.Response) => 
 
       // Update fields that only NFT Pods have
       const isDigital: boolean = body.IsDigital;
-      podDocRef.set({ IsDigital: isDigital }, { merge: true });
+      podDocRef.set({ IsDigital: isDigital,           dimensions: dimensions || ''}, { merge: true });
 
       const name = body.Name;
       const userSnap = await db.collection(collections.user).doc(creator).get();
@@ -2076,6 +2124,7 @@ exports.saveNFTMedia = async (req: express.Request, res: express.Response) => {
             Creator: body.Creator,
             Offers: body.Offers ?? [],
             WIPType: 'NFTMedia',
+            dimensions: body.dimensions ?? '',
           });
 
         for (let offer of body.Offers) {

@@ -28,6 +28,8 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
     const initialSupply = body.InitialSupply;
     const targetSupply = body.TargetSupply;
     const targetPrice = body.TargetPrice;
+    const hasPhoto = body.HasPhoto;
+    const dimensions = body.dimensions;
 
     const hash = body.Hash;
     const signature = body.Signature;
@@ -57,7 +59,8 @@ exports.createSocialToken = async (req: express.Request, res: express.Response) 
       const description = body.Description;
       db.collection(collections.socialPools).doc(socialAddress).set({
         Description: description,
-        HasPhoto: false,
+        HasPhoto: hasPhoto,
+        dimensions: dimensions || '',
       });
 
       await notificationsController.addNotification({

@@ -61,5 +61,6 @@ router.get('/getRegisteredTokensByType', authenticateJWT, walletController.getRe
 //token images
 router.get('/getTokenPhoto/:tokenSymbol', walletController.getTokenPhotoById);
 router.post('/changeTokenPhoto', authenticateJWT, upload.single('image'), walletController.changeTokenPhoto);
+router.post('/updateTokenPhotoDimensions', authenticateJWT, walletController.updateTokenPhotoDimensions);
 
 module.exports = router;

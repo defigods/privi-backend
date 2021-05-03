@@ -15,26 +15,28 @@ module.exports.createExchange = async (address, exchangeToken, initialAmount, of
     return blockchainRes.data;
 };
 
-module.exports.placeBuyingOffer = async (exchangeId, address, amount, price, caller) => {
+module.exports.placeBuyingOffer = async (exchangeId, address, amount, price, offerToken, caller) => {
     const blockchainRes = await axios.post(api.blockchainExchangeAPI + "/placeBuyingOffer", {
         Data: {
             ExchangeId: exchangeId,
             Address: address,
             Amount: amount,
-            Price: price
+            Price: price,
+            OfferToken: offerToken
         },
         Caller: caller,
     });
     return blockchainRes.data;
 };
 
-module.exports.placeSellingOffer = async (exchangeId, address, amount, price, caller) => {
+module.exports.placeSellingOffer = async (exchangeId, address, amount, price, offerToken, caller) => {
     const blockchainRes = await axios.post(api.blockchainExchangeAPI + "/placeSellingOffer", {
         Data: {
             ExchangeId: exchangeId,
             Address: address,
             Amount: amount,
-            Price: price
+            Price: price,
+            OfferToken: offerToken,
         },
         Caller: caller,
     });

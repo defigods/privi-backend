@@ -1455,6 +1455,28 @@ exports.changeTokenPhoto = async (req: express.Request, res: express.Response) =
   }
 };
 
+exports.updateTokenPhotoDimensions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const tokenRef = db.collection(collections.tokens).doc(body.id);
+
+    await tokenRef.update({
+      dimensions: body.dimensions || '',
+    });
+
+    res.send({
+      success: true,
+      data: {
+        dimensions: body.dimensions || '',
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/walletController -> updateTokenPhotoDimensions()', err);
+    res.send({ success: false });
+  } 
+};
+
 //get community photo
 exports.getTokenPhotoById = async (req: express.Request, res: express.Response) => {
   try {
