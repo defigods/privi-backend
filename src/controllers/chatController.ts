@@ -235,7 +235,7 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
           if (data && data.messages && data.messages.length > 0) {
             for (let i = 0; i < data.messages.length; i++) {
               const messageGet = await db.collection(collections.message).doc(data.messages[i]).get();
-              let msg : any = messageGet.data();
+              let msg: any = messageGet.data();
               msg.id = messageGet.id;
               messages.push(msg);
 
@@ -2396,5 +2396,25 @@ exports.getChatsPvP = async (req: express.Request, res: express.Response) => {
       success: false,
       error: 'Error in controllers/chatRoutes -> getChatsWIP()' + e,
     });
+  }
+};
+
+exports.getNumberOfMessages = async (req: express.Request, res: express.Response) => {
+  try {
+    const { userId } = req.params;
+    const messageQuery = await db
+      .collection(collections.message)
+      .where('to', '==', userId)
+      .where('seen', '==', false)
+      .get();
+    const numberMessages = !messageQuery.empty ? messageQuery.docs.length : 0;
+    res.send({
+      success: true,
+      numberMessages
+    });
+
+  } catch (e) {
+    console.log('Error in controllers/chatController -> getNumberOfMessages() ' + e);
+    res.send({ success: false, error: e });
   }
 };
