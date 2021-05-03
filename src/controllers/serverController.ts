@@ -38,6 +38,7 @@ const mediaPodRoutes = require('../routes/mediaPodRoutes');
 const mediaOnCommunityRoutes = require('../routes/mediaOnCommunityRoutes');
 const auctionRoutes = require('../routes/auctionRoutes');
 const exchangeRoutes = require('../routes/exchangeRoutes');
+const podDiscussionRoutes = require('../routes/podDiscussionsRoutes');
 
 const notificationsController = require('../controllers/notificationsController');
 
@@ -111,6 +112,7 @@ export const startServer = (env: Env) => {
   app.use('/mediaOnCommunity', mediaOnCommunityRoutes);
   app.use('/auction', auctionRoutes);
   app.use('/exchange', exchangeRoutes);
+  app.use('/podDiscussion', podDiscussionRoutes);
 
   // start all cron jobs
   // let name: string;

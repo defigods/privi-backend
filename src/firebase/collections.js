@@ -57,6 +57,8 @@ module.exports = {
   voting: 'Voting',
 
   // pods
+  podDiscussions: 'PodDiscussions',
+  topicRoom: 'TopicRoom',
   podsFT: 'PodsFT',
   trendingPodsFT: 'TrendingPodsFT',
   buyingOffers: 'BuyingOffers',
