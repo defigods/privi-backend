@@ -1,4 +1,4 @@
-import {authenticateJWT} from "../middlewares/jwtAuthMiddleware";
+import { authenticateJWT } from "../middlewares/jwtAuthMiddleware";
 import multer from "multer";
 import fs from 'fs'
 
@@ -106,6 +106,7 @@ let upload3 = multer({
 });
 
 
+router.get('/:userId/numberMessages', chatController.getNumberOfMessages);
 router.post('/getChats', authenticateJWT, chatController.getChats);
 router.post('/getChatsPvP', authenticateJWT, chatController.getChatsPvP);
 router.post('/getUsers', chatController.getUsers); // NOTE: It's used on public landing page hence authentication is removed

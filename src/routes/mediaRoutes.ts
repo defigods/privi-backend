@@ -195,7 +195,7 @@ router.post(
 
 router.post('/getMedias', mediaController.getMedias); // NOTE: It's used on public landing page hence authentication is removed
 router.get('/getMarketplaceMedias', mediaController.getMarketplaceMedias);
-router.post('/getNFTMedias', authenticateJWT, mediaController.getNFTMedias);
+router.post('/getNFTMedias',mediaController.getNFTMedias);
 router.post('/fractionalizeMedia/:mediaId', authenticateJWT, mediaController.fractionalizeMedia); // duplicated?
 router.post('/likeMedia/:mediaId', authenticateJWT, mediaController.likeMedia);
 router.post('/removeLikeMedia/:mediaId', authenticateJWT, mediaController.removeLikeMedia);
