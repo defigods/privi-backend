@@ -15,6 +15,7 @@ import fs from 'fs';
 import path from 'path';
 import mediaPod from '../blockchain/mediaPod';
 import { send } from 'process';
+import { UserDimensions } from 'firebase-functions/lib/providers/analytics';
 
 const notificationsController = require('./notificationsController');
 const chatController = require('./chatController');
@@ -61,7 +62,7 @@ exports.setTrendingMediaPods = cron.schedule('* * * * *', async () => {
   try {
     let allMediaPods: any[] = [];
     let podsMedia = await db.collection(collections.mediaPods).get();
-    podsMedia.docs.forEach((p) => {
+    podsMedia.docs.forEach(p => {
       let data = p.data();
       data.id = p.id;
       allMediaPods.push(data);
@@ -73,12 +74,12 @@ exports.setTrendingMediaPods = cron.schedule('* * * * *', async () => {
     await db
       .collection(collections.trendingMediaPods)
       .listDocuments()
-      .then((val) => {
-        val.map((val) => {
+      .then(val => {
+        val.map(val => {
           batch.delete(val);
         });
       });
-    await trendingMediaPods.forEach((doc) => {
+    await trendingMediaPods.forEach(doc => {
       let docRef = db.collection(collections.trendingMediaPods).doc();
       batch.set(docRef, { id: doc.id });
     });
@@ -106,7 +107,7 @@ exports.getOtherMediaPods = async (req: express.Request, res: express.Response) 
 
     let podsMediaSnap = await query.get();
     let podsMedia: any[] = [];
-    podsMediaSnap.docs.forEach((p) => {
+    podsMediaSnap.docs.forEach(p => {
       podsMedia.push(p.data());
     });
 
@@ -150,8 +151,7 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
           .startAfter(lastPodData.Date ?? 0)
           .get();
       } else communitiesSnap = await db.collection(collections.mediaPods).orderBy('Date').get();
-      communitiesSnap.forEach((doc) => {
-         
+      communitiesSnap.forEach(doc => {
         if (mediaPods.length < pageSize) {
           const data: any = doc.data();
           if (params && params.podStateSelection !== podStateOptions[0]) {
@@ -161,10 +161,14 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
             if (displayingPodsSelection) {
               switch (displayingPodsSelection) {
                 case podStateOptions[0]:
-                  addData = addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INVESTING' || data.Status == 'RELEASED');
+                  addData =
+                    addData &&
+                    data.Status &&
+                    (data.Status == 'FORMATION' || data.Status == 'INVESTING' || data.Status == 'RELEASED');
                   break;
                 case podStateOptions[1]:
-                  addData = addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INITIATED');
+                  addData =
+                    addData && data.Status && (data.Status == 'FORMATION' || data.Status == 'INITIATED');
                   break;
                 case podStateOptions[2]:
                   addData = addData && data.Status && data.Status == 'INVESTING';
@@ -223,21 +227,23 @@ exports.getMediaPods = async (req: express.Request, res: express.Response) => {
     // if no pagination and filters, just return all
     else {
       const mediasSnap = await db.collection(collections.mediaPods).get();
-      mediasSnap.forEach((doc) => mediaPods.push(doc.data()));
+      mediasSnap.forEach(doc => mediaPods.push(doc.data()));
     }
     // -- for each pod add media type list to be displayed in FE --
     // convert medias to map
     const mediaPodsMap = {};
-    mediaPods.forEach((pod) => (mediaPodsMap[pod.PodAddress] = { ...pod, MediasType: [] }));
+    mediaPods.forEach(pod => (mediaPodsMap[pod.PodAddress] = { ...pod, MediasType: [] }));
     const promises: any[] = [];
     // query medias in parallel
     for (let i = 0; i < mediaPods.length; i++) {
       const pod = mediaPods[i];
-      promises.push(db.collection(collections.mediaPods).doc(pod.PodAddress).collection(collections.medias).get());
+      promises.push(
+        db.collection(collections.mediaPods).doc(pod.PodAddress).collection(collections.medias).get()
+      );
     }
     const responses = await Promise.all(promises);
-    responses.forEach((mediasSnap) => {
-      mediasSnap.forEach((media) => {
+    responses.forEach(mediasSnap => {
+      mediasSnap.forEach(media => {
         const mediaData = media.data();
         if (mediaData.PodAddress && mediaPodsMap[mediaData.PodAddress])
           mediaPodsMap[mediaData.PodAddress].MediasType.push(mediaData.Type);
@@ -274,7 +280,7 @@ exports.getMediaPod = async (req: express.Request, res: express.Response) => {
       // add selling orders
       const medias: any[] = [];
       const mediasSnap = await mediaPodSnap.ref.collection(collections.medias).get();
-      mediasSnap.forEach((doc) => {
+      mediasSnap.forEach(doc => {
         let data = doc.data();
         data.id = doc.id;
         medias.push(data);
@@ -397,7 +403,7 @@ exports.getPriceHistory = async (req: express.Request, res: express.Response) =>
       .collection(collections.priceHistory)
       .orderBy('date', 'asc')
       .get();
-    podSnap.forEach((doc) => {
+    podSnap.forEach(doc => {
       retData.push(doc.data());
     });
     res.send({ success: true, data: retData });
@@ -417,7 +423,7 @@ exports.getSupplyHistory = async (req: express.Request, res: express.Response) =
       .collection(collections.supplyHistory)
       .orderBy('date', 'asc')
       .get();
-    podSnap.forEach((doc) => {
+    podSnap.forEach(doc => {
       retData.push(doc.data());
     });
     res.send({ success: true, data: retData });
@@ -436,7 +442,7 @@ exports.getMediaPodTransactions = async (req: express.Request, res: express.Resp
       .doc(podAddress)
       .collection(collections.transactions)
       .get();
-    podSnap.forEach((doc) => {
+    podSnap.forEach(doc => {
       const data: any = doc.data();
       if (data.Transactions) retData.push(data.Transactions);
     });
@@ -475,7 +481,10 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
           .set({ Transactions: txnArray });
       }
       // add initial data for graph
-      addZerosToHistory(db.collection(collections.mediaPods).doc(podId).collection(collections.priceHistory), 'price');
+      addZerosToHistory(
+        db.collection(collections.mediaPods).doc(podId).collection(collections.priceHistory),
+        'price'
+      );
       addZerosToHistory(
         db.collection(collections.mediaPods).doc(podId).collection(collections.supplyHistory),
         'supply'
@@ -519,6 +528,8 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         .doc(podId)
         .set(
           {
+            Creator: body.UserId,
+            CreatorAddress: body.Creator,
             HasPhoto: hasPhoto || false,
             Name: name || '',
             Description: description || '',
@@ -620,7 +631,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         IsRegistered: true,
         ReleaseDate: releaseDate,
         ExclusivePermissions: exclusivePermissions || false,
-        ExclusivePermissionsList: exclusivePermissionsList || []
+        ExclusivePermissionsList: exclusivePermissionsList || [],
       });
 
       if (body.IsUploaded) {
@@ -683,8 +694,11 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           bodySave.Rewards = '';
         }
 
-        await db.runTransaction(async (transaction) => {
-          transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
+        await db.runTransaction(async transaction => {
+          transaction.set(
+            db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')),
+            bodySave
+          );
         });
       }
 
@@ -759,7 +773,7 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           RecordCopies: media.RecordCopies,
           RecordRoyalty: media.RecordRoyalty,
           ExclusivePermissions: media.ExclusivePermissions || false,
-          ExclusivePermissionsList: media.ExclusivePermissionsList || []
+          ExclusivePermissionsList: media.ExclusivePermissionsList || [],
         };
 
         if (media.Type === 'LIVE_AUDIO_TYPE' || media === 'LIVE_VIDEO_TYPE') {
@@ -791,8 +805,11 @@ exports.uploadMedia = async (req: express.Request, res: express.Response) => {
           bodySave.EditorPages = media.editorPages ?? body.editorPages;
         }
 
-        await db.runTransaction(async (transaction) => {
-          transaction.set(db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')), bodySave);
+        await db.runTransaction(async transaction => {
+          transaction.set(
+            db.collection(collections.streaming).doc(body.MediaSymbol.replace(/\s/g, '')),
+            bodySave
+          );
         });
       }
 
@@ -864,7 +881,15 @@ exports.buyMediaToken = async (req: express.Request, res: express.Response) => {
     const amount = body.Amount;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await mediaPod.buyMediaToken(buyer, podAddress, mediaSymbol, amount, hash, signature, apiKey);
+    const blockchainRes = await mediaPod.buyMediaToken(
+      buyer,
+      podAddress,
+      mediaSymbol,
+      amount,
+      hash,
+      signature,
+      apiKey
+    );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       // add txns to pod
@@ -968,7 +993,14 @@ exports.updateCollabs = async (req: express.Request, res: express.Response) => {
     const collabs = body.Collabs;
     const hash = body.Hash;
     const signature = body.Signature;
-    const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
+    const blockchainRes = await mediaPod.updateCollabs(
+      podAddress,
+      mediaSymbol,
+      collabs,
+      hash,
+      signature,
+      apiKey
+    );
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       res.send({ success: true });
@@ -1015,7 +1047,7 @@ exports.storePriceHistory = cron.schedule('0 0 * * *', async () => {
     console.log('********* Media Pod storePriceHistory() cron job started *********');
     const currFormatedDate = getCurrentFormattedDate();
     const mediaPodSnaps = await db.collection(collections.mediaPods).get();
-    mediaPodSnaps.forEach((doc) => {
+    mediaPodSnaps.forEach(doc => {
       const podData: any = doc.data();
       const amm = podData.AMM;
       const status = podData.Status;
@@ -1045,7 +1077,7 @@ exports.storeSupplyHistory = cron.schedule('0 0 * * *', async () => {
     console.log('********* Media Pod storeSupplyHistory() cron job started *********');
     const currFormatedDate = getCurrentFormattedDate();
     const mediaPodSnaps = await db.collection(collections.mediaPods).get();
-    mediaPodSnaps.forEach((doc) => {
+    mediaPodSnaps.forEach(doc => {
       const podData: any = doc.data();
       const supply = podData.SupplyReleased ?? 0;
       doc.ref.collection(collections.supplyHistory).doc(currFormatedDate).set({
@@ -1074,7 +1106,7 @@ exports.like = async (req: express.Request, res: express.Response) => {
         userId: userAddress,
       });
     } else {
-      podLikes = podLikes.filter((item) => item.userId !== userAddress);
+      podLikes = podLikes.filter(item => item.userId !== userAddress);
     }
 
     podSnap.ref.update({
