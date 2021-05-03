@@ -1434,7 +1434,7 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
         res.send({
           success: true,
           data: {
-            followers: 0,
+            followers: [],
           },
         });
       } else {
@@ -1495,7 +1495,6 @@ const getFollowers = async (req: express.Request, res: express.Response) => {
 const getFollowing = async (req: express.Request, res: express.Response) => {
   let userId = req.params.userId;
   let ownUser = req.params.ownUser;
-
   try {
     const userRef = await db.collection(collections.user).doc(userId).get();
     const user: any = userRef.data();
@@ -1506,7 +1505,7 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
         res.send({
           success: true,
           data: {
-            followers: 0,
+            followers: [],
           },
         });
       } else {
@@ -1545,6 +1544,9 @@ const getFollowing = async (req: express.Request, res: express.Response) => {
           }
         });
       }
+    } else {
+      console.log('Error in controllers/profile -> getFollowing()', 'Error getting followings');
+      res.send({ success: false });
     }
   } catch (err) {
     console.log('Error in controllers/profile -> getFollowing()', err);
