@@ -338,7 +338,7 @@ export const startSocket = (env: Env) => {
     });
 
     socket.on('subscribeToYou', async (user) => {
-      socket.join(user._id);
+      socket.join(user.id);
     });
 
     socket.on('numberMessages', async (id) => {
