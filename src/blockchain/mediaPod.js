@@ -12,11 +12,12 @@ module.exports.initiatePod = async (podInfo, medias, hash, signature, caller) =>
     return blockchainRes.data;
 };
 
-module.exports.registerMedia = async (requester, podAddress, mediaSymbol, type, paymentType, copies, royalty, fundingToken,
+module.exports.registerMedia = async (requester, collabs, podAddress, mediaSymbol, type, paymentType, copies, royalty, fundingToken,
                                       releaseDate, pricePerSecond, price, isRecord, recordToken, recordPaymentType,
                                       recordPrice, recordPricePerSecond, recordCopies, recordRoyalty, hash, signature, caller) => {
     console.log({
         Requester: requester,
+        Collabs: collabs,
         PodAddress: podAddress,
         MediaSymbol: mediaSymbol,
         Type: type,
@@ -41,6 +42,7 @@ module.exports.registerMedia = async (requester, podAddress, mediaSymbol, type, 
 
     let blockchainRes = await axios.post(api.blockchainPodMediaAPI + "/registerMedia", {
         Requester: requester,
+        Collabs: collabs,
         PodAddress: podAddress,
         MediaSymbol: mediaSymbol,
         Type: type,

@@ -490,29 +490,35 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
         'supply'
       );
 
-      const userRef = db.collection(collections.user).doc(creator);
-      const userGet = await userRef.get();
-      const user: any = userGet.data();
+      const userQuery = await db.collection(collections.user).where('address', '==', creator).get();
+      let user : any = {};
 
-      const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Discussions',
-        creator,
-        user.firstName,
-        'general',
-        false,
-        []
-      );
-      await chatController.createDiscordRoom(
-        discordChatJarrCreation.id,
-        'Information',
-        creator,
-        user.firstName,
-        'announcements',
-        false,
-        []
-      );
+      if(!userQuery.empty) {
+        for (const doc of userQuery.docs) {
+          user = doc.data();
+          user.id = doc.id;
+
+          const discordChatJarrCreation: any = await chatController.createDiscordChat(creator, user.firstName);
+          await chatController.createDiscordRoom(
+            discordChatJarrCreation.id,
+            'Discussions',
+            creator,
+            user.firstName,
+            'general',
+            false,
+            []
+          );
+          await chatController.createDiscordRoom(
+            discordChatJarrCreation.id,
+            'Information',
+            creator,
+            user.firstName,
+            'announcements',
+            false,
+            []
+          );
+        }
+      }
 
       const name = body.Name;
       const description = body.Description;
@@ -523,13 +529,12 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
       const openAdvertising = body.OpenAdvertising;
       const dimensions = body.dimensions;
 
-      console.log(podId, body);
       await db
         .collection(collections.mediaPods)
         .doc(podId)
         .set(
           {
-            Creator: body.UserId,
+            Creator: user.id,
             CreatorAddress: body.Creator,
             HasPhoto: hasPhoto || false,
             Name: name || '',
@@ -573,6 +578,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const type = body.Type;
     const paymentType = body.PaymentType;
     const copies = body.Copies;
+    const collabs = body.Collabs;
     const royalty = body.Royalty;
     const fundingToken = body.FundingToken;
     const releaseDate = parseInt(body.ReleaseDate);
@@ -596,6 +602,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
 
     const blockchainRes = await mediaPod.registerMedia(
       requester,
+      collabs,
       podAddress,
       mediaSymbol,
       type,
