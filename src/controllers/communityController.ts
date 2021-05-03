@@ -272,7 +272,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
 
           MembersReached: false,
 
-          dimensions: dimensions || undefined,
+          dimensions: dimensions || '',
         });
 
       // send invitation email to admins, roles and users here
@@ -500,7 +500,7 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
       db.collection(collections.tokens)
         .doc(body.TokenSymbol)
         .update({
-          dimensions: dimensions || undefined,
+          dimensions: dimensions || '',
         });
 
       res.send({ success: true });
@@ -1322,13 +1322,13 @@ exports.updateCommunityPhotoDimensions = async (req: express.Request, res: expre
     const communityRef = db.collection(collections.community).doc(body.id);
 
     await communityRef.update({
-      dimensions: body.dimensions,
+      dimensions: body.dimensions || '',
     });
 
     res.send({
       success: true,
       data: {
-        dimensions: body.dimensions,
+        dimensions: body.dimensions || '',
       },
     });
   } catch (err) {

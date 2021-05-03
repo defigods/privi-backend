@@ -160,6 +160,7 @@ router.get('/FT/getAllPodsInfo/:pagination/:lastId', authenticateJWT, podControl
 router.post('/FT/checkPodInfo', authenticateJWT, podController.checkPodInfo);
 
 router.post('/changeFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeFTPodPhoto);
+router.post('/updateFTPodPhotoDimensions', authenticateJWT, podController.updateFTPodPhotoDimensions);
 
 // NFT
 router.post('/NFT/initiatePod', authenticateJWT, podController.initiateNFTPod);
@@ -179,6 +180,7 @@ router.get('/NFT/getTrendingPods', authenticateJWT, podController.getTrendingPod
 router.get('/NFT/getOtherPods/:userId', authenticateJWT, podController.getOtherPodsNFT);
 router.get('/NFT/getAllPodsInfo/:pagination/:lastId', authenticateJWT, podController.getAllNFTPodsInfo);
 router.post('/changeNFTPodPhoto', authenticateJWT, upload.single('image'), podController.changeNFTPodPhoto);
+router.post('/updateNFTPodPhotoDimensions', authenticateJWT, podController.updateNFTPodPhotoDimensions);
 
 router.post('/NFT/saveMediaPod', authenticateJWT, podController.saveNFTMedia);
 router.post('/NFT/addOffer', authenticateJWT, podController.addOffer);

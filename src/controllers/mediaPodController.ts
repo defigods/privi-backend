@@ -512,6 +512,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
       const hashtags = body.Hashtags;
       const hasPhoto = body.HasPhoto;
       const openAdvertising = body.OpenAdvertising;
+      const dimensions = body.dimensions;
 
       console.log(podId, body);
       await db
@@ -528,6 +529,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             OpenAdvertising: openAdvertising || false,
             JarrId: '',
             Date: new Date().getTime(),
+            dimensions: dimensions || '',
           },
           { merge: true }
         );
@@ -1005,6 +1007,28 @@ exports.changeMediaPodPhoto = async (req: express.Request, res: express.Response
     console.log('Error in controllers/mediaPodController -> changeMediaPodPhoto(): ', err);
     res.send({ success: false, error: err });
   }
+};
+
+exports.updateMediaPodPhotoDimensions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const podRef = db.collection(collections.mediaPods).doc(body.id);
+
+    await podRef.update({
+      dimensions: body.dimensions || '',
+    });
+
+    res.send({
+      success: true,
+      data: {
+        dimensions: body.dimensions || '',
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/podController -> updateMediaPodPhotoDimensions()', err);
+    res.send({ success: false });
+  } 
 };
 
 // -------------- CRON JOBS ---------------
