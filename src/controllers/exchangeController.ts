@@ -66,8 +66,9 @@ export const placeBuyingOffer = async (req: express.Request, res: express.Respon
     const address = data.Address;
     const amount = data.Amount;
     const price = data.Price;
+    const offerToken = data.OfferToken;
 
-    const blockchainRes = await exchange.placeBuyingOffer(exchangeId, address, amount, price, apiKey);
+    const blockchainRes = await exchange.placeBuyingOffer(exchangeId, address, amount, price, offerToken, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       saveTransactions(
@@ -93,8 +94,9 @@ export const placeSellingOffer = async (req: express.Request, res: express.Respo
     const address = data.Address;
     const amount = data.Amount;
     const price = data.Price;
+    const offerToken = data.OfferToken;
 
-    const blockchainRes = await exchange.placeSellingOffer(exchangeId, address, amount, price, apiKey);
+    const blockchainRes = await exchange.placeSellingOffer(exchangeId, address, amount, price, offerToken, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       saveTransactions(
