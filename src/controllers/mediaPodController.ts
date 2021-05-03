@@ -512,6 +512,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
       const hashtags = body.Hashtags;
       const hasPhoto = body.HasPhoto;
       const openAdvertising = body.OpenAdvertising;
+      const dimensions = body.dimensions;
 
       console.log(podId, body);
       await db
@@ -528,6 +529,7 @@ exports.initiatePod = async (req: express.Request, res: express.Response) => {
             OpenAdvertising: openAdvertising || false,
             JarrId: '',
             Date: new Date().getTime(),
+            dimensions: dimensions || '',
           },
           { merge: true }
         );
@@ -577,6 +579,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const rewards = body.Rewards ?? [];
     const hash = body.Hash;
     const signature = body.Signature;
+    const dimensions = body.dimensions ?? '';
 
     //console.log('register date', new Date(releaseDate), Date.now());
 
@@ -620,7 +623,8 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         IsRegistered: true,
         ReleaseDate: releaseDate,
         ExclusivePermissions: exclusivePermissions || false,
-        ExclusivePermissionsList: exclusivePermissionsList || []
+        ExclusivePermissionsList: exclusivePermissionsList || [],
+        dimensions: dimensions,
       });
 
       if (body.IsUploaded) {
@@ -650,6 +654,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           ExclusivePermissions: media.ExclusivePermissions || false,
           ExclusivePermissionsList: media.ExclusivePermissionsList || [],
           Rewards: rewards,
+          dimensions: dimensions,
         };
 
         if (media.Type === 'BLOG_TYPE' || media === 'BLOG_SNAP_TYPE') {
@@ -1005,6 +1010,28 @@ exports.changeMediaPodPhoto = async (req: express.Request, res: express.Response
     console.log('Error in controllers/mediaPodController -> changeMediaPodPhoto(): ', err);
     res.send({ success: false, error: err });
   }
+};
+
+exports.updateMediaPodPhotoDimensions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const podRef = db.collection(collections.mediaPods).doc(body.id);
+
+    await podRef.update({
+      dimensions: body.dimensions || '',
+    });
+
+    res.send({
+      success: true,
+      data: {
+        dimensions: body.dimensions || '',
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/podController -> updateMediaPodPhotoDimensions()', err);
+    res.send({ success: false });
+  } 
 };
 
 // -------------- CRON JOBS ---------------

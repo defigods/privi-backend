@@ -2421,6 +2421,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
           Hashtags,
           Content,  // only blog or blog snap
           Playlist  // only playlist
+          dimensions // media main image dimensions
         },
         Hash
       }
@@ -2459,6 +2460,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const pricingMethod = extraInfo.PricingMethod ?? 'Fixed'; // Fixed or Streaming
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
+    const dimensions = extraInfo.dimensions ?? '' 
 
     const EditorPages = body.EditorPages;
 
@@ -2511,7 +2513,8 @@ export const createMedia = async (req: express.Request, res: express.Response) =
           viewPrice,
           releaseDate,
           mediaSymbol,
-          EditorPages
+          EditorPages,
+          dimensions,
         );
       } else {
         console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
@@ -2540,7 +2543,8 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         viewPrice,
         releaseDate,
         mediaSymbol,
-        EditorPages
+        EditorPages,
+        dimensions,
       );
     }
 
@@ -2567,7 +2571,8 @@ const extraActionsCreateMedia = async (
   viewPrice,
   releaseDate,
   mediaSymbol,
-  EditorPages
+  EditorPages,
+  dimensions,
 ) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -2578,6 +2583,7 @@ const extraActionsCreateMedia = async (
         PricingMethod: pricingMethod,
         Hashtags: hashtags,
         CreatorId: creatorId,
+        dimensions: dimensions ?? ''
       };
       if (type === 'BLOG' || type === 'BLOG_SNAP') {
         extraData.Content = content;
