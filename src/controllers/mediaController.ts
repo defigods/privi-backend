@@ -3425,7 +3425,6 @@ const getNFTInformation = async (id, hostUrl) => {
           }
 
           if (blockchain === 'PRIVI') {
-            const type = data.Video ? 'Video' : 'Audio';
             const url = data.Video
               ? path.join('uploads', 'media', id + '.mp4')
               : path.join('uploads', 'media', id + '.mp3');
@@ -3433,7 +3432,7 @@ const getNFTInformation = async (id, hostUrl) => {
             const userData = userDoc.data();
             return {
               id,
-              type,
+              type: data.Type,
               url: `${hostUrl}/${url}`,
               price: data.Price ? data.Price : data.ViewConditions?.Price,
               paymentType: data.PaymentType ? data.PaymentType : data.ViewConditions?.ViewingType,
