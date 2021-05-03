@@ -2460,7 +2460,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const pricingMethod = extraInfo.PricingMethod ?? 'Fixed'; // Fixed or Streaming
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
-      const dimensions = extraInfo.dimensions ?? '' 
+    const dimensions = extraInfo.dimensions ?? '' 
 
     const EditorPages = body.EditorPages;
 
@@ -2513,7 +2513,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
           viewPrice,
           releaseDate,
           mediaSymbol,
-          EditorPages
+          EditorPages,
           dimensions,
         );
       } else {
