@@ -128,6 +128,7 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
       const TokenDecimals = body.TokenDecimals;
       const registeredOnBridge = false;
       const registeredOnSwapManager = false;
+      const dimensions = body.dimensions;
 
       const paymentsAllowed = body.PaymentsAllowed;
 
@@ -270,6 +271,8 @@ exports.createCommunity = async (req: express.Request, res: express.Response) =>
           Votings: [],
 
           MembersReached: false,
+
+          dimensions: dimensions || undefined,
         });
 
       // send invitation email to admins, roles and users here
@@ -491,6 +494,14 @@ exports.createCommunityToken = async (req: express.Request, res: express.Respons
           .doc(tid)
           .set({ Transactions: txnArray }); // add all because some of them dont have From or To (tokens are burned)
       }
+
+      const dimensions = body.dimensions;
+
+      db.collection(collections.tokens)
+        .doc(body.TokenSymbol)
+        .update({
+          dimensions: dimensions || undefined,
+        });
 
       res.send({ success: true });
     } else {
@@ -1303,6 +1314,29 @@ exports.changeCommunityPhoto = async (req: express.Request, res: express.Respons
     res.send({ success: false });
   }
 };
+
+exports.updateCommunityPhotoDimensions = async (req: express.Request, res: express.Response) => {
+  try {
+    let body = req.body;
+
+    const communityRef = db.collection(collections.community).doc(body.id);
+
+    await communityRef.update({
+      dimensions: body.dimensions,
+    });
+
+    res.send({
+      success: true,
+      data: {
+        dimensions: body.dimensions,
+      },
+    });
+  } catch (err) {
+    console.log('Error in controllers/communityController -> updateCommunityPhotoDimensions()', err);
+    res.send({ success: false });
+  } 
+};
+
 
 /////////////////////////// GETS /////////////////////////////
 
