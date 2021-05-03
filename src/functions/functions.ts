@@ -486,25 +486,26 @@ export async function updateFirebase(blockchainRes) {
                 transaction.set((db.collection(collections.socialPools).doc(address)), obj, { merge: true });
             }
         }
-        // // update exchange
-        // if (updateExchanges) {
-        //     let exchangeId: string = '';
-        //     let obj:any = {};
-        //     for ([exchangeId, obj] of Object.entries(updateExchanges)) {
-        //         if (exchangeId) transaction.set(db.collection(collections.exchange).doc(exchangeId), obj, { merge:true });
-        //     }
-        // }
-        // // update offers
-        // if (updateOffers) {
-        //     let offerId: string = '';
-        //     let obj:any = {};
-        //     for ([offerId, obj] of Object.entries(updateOffers)) {
-        //         const exchangeId = obj.ExchangeId;
-        //         const amount = obj.Amount;
-        //         if (offerId && exchangeId && amount > 0) transaction.set(db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).doc(offerId), obj, { merge:true });
-        //         else if (amount == 0) transaction.delete(db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).doc(offerId));
-        //     }
-        // }
+        // update exchange
+        if (updateExchanges) {
+            let exchangeId: string = '';
+            let obj:any = {};
+            for ([exchangeId, obj] of Object.entries(updateExchanges)) {
+                if (exchangeId) transaction.set(db.collection(collections.exchange).doc(exchangeId), obj, { merge:true });
+            }
+        }
+        // update offers
+        if (updateOffers) {
+            let offerId: string = '';
+            let obj:any = {};
+            for ([offerId, obj] of Object.entries(updateOffers)) {
+                const exchangeId = obj.ExchangeId;
+                const amount = obj.Amount;
+                if (offerId && exchangeId && amount > 0) transaction.set(db.collection(collections.exchange).doc(exchangeId).collection(collections.offers)
+                    .doc(offerId), {...obj, Date: Math.floor(Date.now()/1000)}, { merge:true });
+                else if (amount == 0) transaction.delete(db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).doc(offerId));
+            }
+        }
     });
 }
 

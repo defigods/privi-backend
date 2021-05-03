@@ -2,7 +2,7 @@ import express from 'express';
 import { db } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
-import collections, { buyingOffers, sellingOffers } from '../firebase/collections';
+import collections, { buyingOffers, exchange, medias, sellingOffers } from '../firebase/collections';
 import mediaPod from '../blockchain/mediaPod';
 import media from '../blockchain/media';
 import fractionaliseMedia from '../blockchain/fractionaliseMedia';
@@ -249,11 +249,20 @@ export const getMedia = async (req: express.Request, res: express.Response) => {
       const mediaSnap = await db.collection(mediaCollections[tag].collection).doc(mediaId).get();
       const bidHistory = await db.collection(mediaCollections[tag].collection).doc(mediaId).collection('BidHistory').get();
       if (mediaSnap.exists) {
-        let retData: any = {
+        const data:any = mediaSnap.data();
+        // get exchange data (media only have one exchange at maximum)
+        const exchangeAddressList = data.Exchange ?? [];
+        let exchangeData;
+        if (exchangeAddressList.length > 0) {
+          const exchangeSnap = await db.collection(collections.exchange).doc(exchangeAddressList[0]).get();
+          if (exchangeSnap.exists) exchangeData = exchangeSnap.data();
+        }
+        const retData: any = {
           ...mediaSnap.data(),
           id: mediaId,
           BidHistory: bidHistory ? bidHistory.docs.map((doc) => doc.data()) : [],
         };
+        if (exchangeData) retData.ExchangeData = exchangeData;
         res.send({ success: true, data: retData });
       } else {
         res.send({ success: false, error: 'Media not found' });

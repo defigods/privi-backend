@@ -3,6 +3,7 @@ import { updateFirebase, saveTransactions } from '../functions/functions';
 import exchange from '../blockchain/exchange';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
+import cron from "node-cron";
 
 const notificationsController = require('./notificationsController');
 const apiKey = 'PRIVI'; //process.env.API_KEY;
@@ -224,3 +225,67 @@ export const cancelSellingOffer = async (req: express.Request, res: express.Resp
     res.send({ success: false });
   }
 };
+
+export const getBuyingOffers = async (req: express.Request, res: express.Response) => {
+  try {
+    const exchangeId = req.params.exchangeId;
+    if (!exchangeId) {
+      console.log('No exchangeId provided');
+      res.send({success:false});
+    }
+    const retData:any[] = [];
+    const historySnap = await db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).get();
+    historySnap.forEach(doc => {
+      const data:any = doc.data();
+      if (data.Type == 'BUY') retData.push(data)
+    });
+    res.send({success: true, data: retData});
+  } catch (err) {
+    console.log('Error in controllers/exchangeController -> getPriceHistory()', err);
+    res.send({ success: false });
+  }
+};
+
+export const getPriceHistory = async (req: express.Request, res: express.Response) => {
+  try {
+    const exchangeId = req.params.exchangeId;
+    if (!exchangeId) {
+      console.log('No exchangeId provided');
+      res.send({success:false});
+    }
+    const retData:any[] = [];
+    const historySnap = await db.collection(collections.exchange).doc(exchangeId).collection(collections.priceHistory).get();
+    historySnap.forEach(doc => retData.push(doc.data()));
+    res.send({success: true, data: retData});
+  } catch (err) {
+    console.log('Error in controllers/exchangeController -> getPriceHistory()', err);
+    res.send({ success: false });
+  }
+};
+
+
+//////////////////////// CRONS ////////////////////////
+
+// save the highest price among the offers made in that day
+exports.storeDailyBuyOfferPrice = cron.schedule('0 0 * * *', async () => {
+  try {
+    console.log('********* Exchange Controller storeDailyBuyOfferPrice() cron job started *********');
+    const exchangesSnap = await db.collection(collections.exchange).get();
+    for (const exchangeDoc of exchangesSnap.docs) {
+      let highestPrice = 0;
+      const offersSnap = await exchangeDoc.ref.collection(collections.offers).get();
+      offersSnap.forEach(offerDoc => {
+        const offerData = offerDoc.data();
+        if (offerData && offerData.Type == 'BUY') {
+          const date = offerData.Date;  // sec
+          const currDate = Math.floor(Date.now()/1000);
+          const lastDayDate = currDate - (24*3600);
+          if (date <= currDate && date >= lastDayDate && date.Price > highestPrice) highestPrice = date.Price; 
+        }
+      });
+      exchangeDoc.ref.collection(collections.priceHistory).add({price: highestPrice, date: Date.now()});
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
