@@ -28,6 +28,7 @@ router.post('/buyPodTokens', authenticateJWT, mediaPodController.buyPodTokens);
 router.post('/sellPodTokens', authenticateJWT, mediaPodController.sellPodTokens);
 
 router.post('/changeMediaPodPhoto', authenticateJWT, upload.single('image'), mediaPodController.changeMediaPodPhoto);
+router.post('/updateMediaPodPhotoDimensions', authenticateJWT, mediaPodController.updateMediaPodPhotoDimensions);
 
 // GETS
 router.get('/getMyMediaPods/:userId', authenticateJWT, mediaPodController.getMyMediaPods);
