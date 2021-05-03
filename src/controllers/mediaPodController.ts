@@ -579,6 +579,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
     const rewards = body.Rewards ?? [];
     const hash = body.Hash;
     const signature = body.Signature;
+    const dimensions = body.dimensions ?? '';
 
     //console.log('register date', new Date(releaseDate), Date.now());
 
@@ -622,7 +623,8 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
         IsRegistered: true,
         ReleaseDate: releaseDate,
         ExclusivePermissions: exclusivePermissions || false,
-        ExclusivePermissionsList: exclusivePermissionsList || []
+        ExclusivePermissionsList: exclusivePermissionsList || [],
+        dimensions: dimensions,
       });
 
       if (body.IsUploaded) {
@@ -652,6 +654,7 @@ exports.registerMedia = async (req: express.Request, res: express.Response) => {
           ExclusivePermissions: media.ExclusivePermissions || false,
           ExclusivePermissionsList: media.ExclusivePermissionsList || [],
           Rewards: rewards,
+          dimensions: dimensions,
         };
 
         if (media.Type === 'BLOG_TYPE' || media === 'BLOG_SNAP_TYPE') {
