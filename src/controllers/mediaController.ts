@@ -81,7 +81,9 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       if (searchValue) {
         const lastChar = String.fromCharCode(searchValue.charCodeAt(searchValue.length - 1) + 1);
         const searchValueEnd = searchValue.replace(/.$/, lastChar);
-        priviMediaQuery = priviMediaQuery.where('MediaName', '>=', searchValue).where('MediaName', '<', searchValueEnd);
+        priviMediaQuery = priviMediaQuery
+          .where('MediaName', '>=', searchValue)
+          .where('MediaName', '<', searchValueEnd);
       }
       // 2. filter by media types
       if (mediaTypes.length < 7) {
@@ -94,13 +96,17 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
       for (let i = 0; i < docs.length && availableSize > 0; i++) {
         const doc = docs[i];
         const data = doc.data();
-        const bidHistory = await db.collection(collections.streaming).doc(doc.id).collection('BidHistory').get();
+        const bidHistory = await db
+          .collection(collections.streaming)
+          .doc(doc.id)
+          .collection('BidHistory')
+          .get();
 
         medias.push({
           id: doc.id,
           blockchain: 'PRIVI',
           ...data,
-          BidHistory: bidHistory ? bidHistory.docs.map((doc) => doc.data()) : [],
+          BidHistory: bidHistory ? bidHistory.docs.map(doc => doc.data()) : [],
         });
         // update availabeSize
         availableSize--;
@@ -108,7 +114,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
     }
     // -- ETH Medias --
     // convert blockchain list to lower case
-    const otherBlockchainsList = blockChains.filter((blockchain) => blockchain !== 'PRIVI');
+    const otherBlockchainsList = blockChains.filter(blockchain => blockchain !== 'PRIVI');
     // loop through otherBlockainsList and stop if available size runs out
     let i = 0;
     // loop until meet the last blockchain
@@ -178,7 +184,7 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
         // ethMediaQuery = ethMediaQuery.limit(availableSize);
         // 6. get data from query
         const ethSnap = await ethMediaQuery.get();
-        ethSnap.forEach((doc) => {
+        ethSnap.forEach(doc => {
           const data = doc.data();
           if (availableSize && data.url && data.url !== 'Error') {
             if (!status || data.status.includes(status)) {
@@ -226,15 +232,36 @@ export const getMedias = async (req: express.Request, res: express.Response) => 
 // return all medias with Auctions or Exchange
 export const getMarketplaceMedias = async (req: express.Request, res: express.Response) => {
   try {
-    const retData:any[] = [];
+    const retData: any[] = [];
     const snap = await db.collection(collections.streaming).get();
-    snap.forEach((doc) => {
-      const data = doc.data();
-      if (data && (data.Auctions || data.Exchange)) retData.push(data);
+    const allTasks: any[] = [];
+    snap.forEach(doc => {
+      let task = new Promise<void>(async (resolve, reject) => {
+        const data = doc.data();
+        const exchangeAddressList = data.Exchange ?? [];
+        let exchangeData: any;
+        if (exchangeAddressList.length > 0) {
+          const exchangeSnap = await db.collection(collections.exchange).doc(exchangeAddressList[0]).get();
+          if (exchangeSnap.exists) exchangeData = exchangeSnap.data();
+        }
+        if (data && (data.Auctions || data.Exchange))
+          retData.push({
+            ...data,
+            ExchangeData: exchangeData,
+          });
+        resolve();
+      });
+      allTasks.push(task);
     });
-    // TODO: add exchange data to the media with Exchange list field. Just return info needed for BE.
 
-    res.send({success: true, data:retData});
+    Promise.all(allTasks)
+      .then(() => {
+        res.send({ success: true, data: retData });
+      })
+      .catch(err => {
+        console.log('Error in controllers/mediaController -> getMarketplaceMedias()', err);
+        res.send({ success: false });
+      });
   } catch (err) {
     console.log('Error in controllers/mediaController -> getMarketplaceMedias()', err);
     res.send({ success: false });
@@ -247,9 +274,13 @@ export const getMedia = async (req: express.Request, res: express.Response) => {
     tag = tag ?? 'privi';
     if (mediaId) {
       const mediaSnap = await db.collection(mediaCollections[tag].collection).doc(mediaId).get();
-      const bidHistory = await db.collection(mediaCollections[tag].collection).doc(mediaId).collection('BidHistory').get();
+      const bidHistory = await db
+        .collection(mediaCollections[tag].collection)
+        .doc(mediaId)
+        .collection('BidHistory')
+        .get();
       if (mediaSnap.exists) {
-        const data : any = mediaSnap.data();
+        const data: any = mediaSnap.data();
         // get exchange data (media only have one exchange at maximum)
         const exchangeAddressList = data.Exchange ?? [];
         let exchangeData;
@@ -260,7 +291,7 @@ export const getMedia = async (req: express.Request, res: express.Response) => {
         const retData: any = {
           ...mediaSnap.data(),
           id: mediaId,
-          BidHistory: bidHistory ? bidHistory.docs.map((doc) => doc.data()) : [],
+          BidHistory: bidHistory ? bidHistory.docs.map(doc => doc.data()) : [],
         };
         if (exchangeData) retData.ExchangeData = exchangeData;
         res.send({ success: true, data: retData });
@@ -292,10 +323,10 @@ export const getFractionalisedMediaOffers = async (req: express.Request, res: ex
         .get();
       const buyingOffers: any[] = [];
       const sellingOffers: any[] = [];
-      buyingOfferSnap.forEach((doc) => {
+      buyingOfferSnap.forEach(doc => {
         buyingOffers.push(doc.data());
       });
-      sellingOfferSnap.forEach((doc) => {
+      sellingOfferSnap.forEach(doc => {
         sellingOffers.push(doc.data());
       });
       res.send({
@@ -324,12 +355,12 @@ export const getFractionalisedMediaTransactions = async (req: express.Request, r
         .collection(collections.transactions)
         .get();
       let transactions: any[] = [];
-      transactionSnap.forEach((doc) => {
+      transactionSnap.forEach(doc => {
         const data = doc.data();
         const txns = data.Transactions ?? [];
-        txns.forEach((txn) => transactions.push(txn));
+        txns.forEach(txn => transactions.push(txn));
       });
-      transactions = transactions.filter((txnObj) => txnObj.Type && txnObj.Type.includes('Fractionalise'));
+      transactions = transactions.filter(txnObj => txnObj.Type && txnObj.Type.includes('Fractionalise'));
       transactions = transactions.sort((a, b) => (a.Date > b.Date ? -1 : 1));
       res.send({ success: true, data: transactions });
     } else {
@@ -351,7 +382,7 @@ export const getFractionalisedMediaPriceHistory = async (req: express.Request, r
         .doc(mediaId)
         .collection(collections.fractionPriceHistory)
         .get();
-      snap.forEach((doc) => retData.push(doc.data()));
+      snap.forEach(doc => retData.push(doc.data()));
       res.send({ success: true, data: retData });
     } else {
       res.send({ success: false, error: 'Id not provided...' });
@@ -362,7 +393,10 @@ export const getFractionalisedMediaPriceHistory = async (req: express.Request, r
   }
 };
 
-export const getFractionalisedMediaSharedOwnershipHistory = async (req: express.Request, res: express.Response) => {
+export const getFractionalisedMediaSharedOwnershipHistory = async (
+  req: express.Request,
+  res: express.Response
+) => {
   try {
     const mediaId = req.params.mediaId;
     if (mediaId) {
@@ -372,7 +406,7 @@ export const getFractionalisedMediaSharedOwnershipHistory = async (req: express.
         .doc(mediaId)
         .collection(collections.fractionOwnershipHistory)
         .get();
-      snap.forEach((doc) => retData.push(doc.data()));
+      snap.forEach(doc => retData.push(doc.data()));
       res.send({ success: true, data: retData });
     } else {
       res.send({ success: false, error: 'Id not provided...' });
@@ -624,7 +658,11 @@ export const getMediaBlog = async (req: express.Request, res: express.Response) 
     let pagination = req.params.pagination;
 
     if (mediaId && mediaPod && pagination) {
-      const mediasRef = db.collection(collections.mediaPods).doc(mediaPod).collection(collections.medias).doc(mediaId);
+      const mediasRef = db
+        .collection(collections.mediaPods)
+        .doc(mediaPod)
+        .collection(collections.medias)
+        .doc(mediaId);
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
@@ -697,10 +735,13 @@ export const editMedia = async (req: express.Request, res: express.Response) => 
       const userGet = await userRef.get();
       const user: any = userGet.data();*/
 
-      const userQuery = await db.collection(collections.user).where('address', '==', body.media.Creator).get();
-      let user : any = {};
+      const userQuery = await db
+        .collection(collections.user)
+        .where('address', '==', body.media.Creator)
+        .get();
+      let user: any = {};
 
-      if(!userQuery.empty) {
+      if (!userQuery.empty) {
         for (const doc of userQuery.docs) {
           user = doc.data();
           user.id = doc.id;
@@ -722,7 +763,7 @@ export const editMedia = async (req: express.Request, res: express.Response) => 
             }
 
             for (let collab of newCollabs) {
-              if(collab.id !== user.id) {
+              if (collab.id !== user.id) {
                 await notificationsController.addNotification({
                   userId: collab.id,
                   notification: {
@@ -742,7 +783,7 @@ export const editMedia = async (req: express.Request, res: express.Response) => 
             }
           } else {
             for (let collab of body.media.SavedCollabs) {
-              if(collab.id !== user.id) {
+              if (collab.id !== user.id) {
                 await notificationsController.addNotification({
                   userId: collab.id,
                   notification: {
@@ -805,7 +846,14 @@ export const removeCollab = async (req: express.Request, res: express.Response) 
         const collabs = body.Collabs;
         const hash = body.Hash;
         const signature = body.Signature;
-        const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
+        const blockchainRes = await mediaPod.updateCollabs(
+          podAddress,
+          mediaSymbol,
+          collabs,
+          hash,
+          signature,
+          apiKey
+        );
         if (blockchainRes && blockchainRes.success) {
           updateFirebase(blockchainRes);
 
@@ -835,7 +883,7 @@ export const removeCollab = async (req: express.Request, res: express.Response) 
         const userCollab: any = userCollabGet.data();
 
         let notificationIndex = userCollab.notifications.findIndex(
-          (not) => not.type === 104 && not.pod === media.MediaSymbol
+          not => not.type === 104 && not.pod === media.MediaSymbol
         );
 
         if (notificationIndex !== -1) {
@@ -846,7 +894,7 @@ export const removeCollab = async (req: express.Request, res: express.Response) 
         }
       }
 
-      let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.RemovedCollab.id);
+      let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.RemovedCollab.id);
       media.SavedCollabs.splice(collabIndex, 1);
 
       let sumShare: number = 0;
@@ -857,7 +905,7 @@ export const removeCollab = async (req: express.Request, res: express.Response) 
       }
 
       if (sumShare < 100) {
-        let creatorIndex = media.SavedCollabs.findIndex((coll) => coll.id === body.Creator);
+        let creatorIndex = media.SavedCollabs.findIndex(coll => coll.id === body.Creator);
         let usr = {
           firstName: user.firstName,
           id: body.Creator,
@@ -889,7 +937,15 @@ export const refuseCollab = async (req: express.Request, res: express.Response) 
     let params = req.params;
     let body = req.body;
 
-    if (params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+    if (
+      params &&
+      body &&
+      params.mediaPod &&
+      params.mediaId &&
+      body.userId &&
+      body.creator &&
+      body.notificationId
+    ) {
       const mediasRef = db
         .collection(collections.mediaPods)
         .doc(params.mediaPod)
@@ -908,7 +964,7 @@ export const refuseCollab = async (req: express.Request, res: express.Response) 
       });
 
       if (media.SavedCollabs && media.SavedCollabs.length > 0) {
-        let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.userId);
+        let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.userId);
         if (media.SavedCollabs[collabIndex].status === 'Requested') {
           media.SavedCollabs.splice(collabIndex, 1);
           await mediasRef.update(media);
@@ -951,7 +1007,15 @@ export const acceptCollab = async (req: express.Request, res: express.Response) 
     let params = req.params;
     let body = req.body;
 
-    if (params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+    if (
+      params &&
+      body &&
+      params.mediaPod &&
+      params.mediaId &&
+      body.userId &&
+      body.creator &&
+      body.notificationId
+    ) {
       const mediasRef = db
         .collection(collections.mediaPods)
         .doc(params.mediaPod)
@@ -970,7 +1034,7 @@ export const acceptCollab = async (req: express.Request, res: express.Response) 
       });
 
       if (media.SavedCollabs && media.SavedCollabs.length > 0) {
-        let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.userId);
+        let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.userId);
         if (media.SavedCollabs[collabIndex].status === 'Requested') {
           let mediaCopy = { ...media };
           mediaCopy.SavedCollabs[collabIndex].status = 'Accepted';
@@ -993,7 +1057,10 @@ export const acceptCollab = async (req: express.Request, res: express.Response) 
           });
           res.send({ success: true, data: mediaCopy });
         } else {
-          console.log('Error in controllers/mediaController -> acceptCollab()', 'Collab status was not Requested');
+          console.log(
+            'Error in controllers/mediaController -> acceptCollab()',
+            'Collab status was not Requested'
+          );
           res.send({ success: false, error: 'Collab status was not Requested' });
         }
       }
@@ -1012,7 +1079,15 @@ export const signTransactionAcceptCollab = async (req: express.Request, res: exp
     let params = req.params;
     let body = req.body;
 
-    if (params && body && params.mediaPod && params.mediaId && body.userId && body.creator && body.notificationId) {
+    if (
+      params &&
+      body &&
+      params.mediaPod &&
+      params.mediaId &&
+      body.userId &&
+      body.creator &&
+      body.notificationId
+    ) {
       const mediasRef = db
         .collection(collections.mediaPods)
         .doc(params.mediaPod)
@@ -1021,7 +1096,7 @@ export const signTransactionAcceptCollab = async (req: express.Request, res: exp
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
-      let collabIndex = media.SavedCollabs.findIndex((collab) => collab.id === body.userId);
+      let collabIndex = media.SavedCollabs.findIndex(collab => collab.id === body.userId);
       if (media.SavedCollabs[collabIndex] && media.SavedCollabs[collabIndex].status === 'Accepted') {
         const podAddress = body.PodAddress;
         const mediaSymbol = body.MediaSymbol;
@@ -1029,7 +1104,14 @@ export const signTransactionAcceptCollab = async (req: express.Request, res: exp
         const collabs = body.Collabs;
         const hash = body.Hash;
         const signature = body.Signature;
-        const blockchainRes = await mediaPod.updateCollabs(podAddress, mediaSymbol, collabs, hash, signature, apiKey);
+        const blockchainRes = await mediaPod.updateCollabs(
+          podAddress,
+          mediaSymbol,
+          collabs,
+          hash,
+          signature,
+          apiKey
+        );
         if (blockchainRes && blockchainRes.success) {
           console.log(blockchainRes);
           updateFirebase(blockchainRes);
@@ -1045,7 +1127,10 @@ export const signTransactionAcceptCollab = async (req: express.Request, res: exp
           res.send({ success: false, error: blockchainRes.message });
         }
       } else {
-        console.log('Error in controllers/mediaController -> refuseCollab()', 'Collab status was not Accepted');
+        console.log(
+          'Error in controllers/mediaController -> refuseCollab()',
+          'Collab status was not Accepted'
+        );
         res.send({ success: false, error: 'Collab status was not Accepted' });
       }
     } else {
@@ -1336,12 +1421,12 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
         userLikes = [...user.Likes];
       }
 
-      let likeIndex = mediaLikes.find((user) => user === body.userId);
+      let likeIndex = mediaLikes.find(user => user === body.userId);
       if (!likeIndex) {
         mediaLikes.push(body.userId);
       }
 
-      likeIndex = userLikes.find((userLike) => userLike.type === 'media' && userLike.id === mediaId);
+      likeIndex = userLikes.find(userLike => userLike.type === 'media' && userLike.id === mediaId);
       if (!likeIndex) {
         userLikes.push({
           id: mediaId,
@@ -1369,14 +1454,14 @@ export const likeMedia = async (req: express.Request, res: express.Response) => 
           const mediaUser: any = mediaGet.data();
 
           let mediaCatalog = mediaUser.catalog;
-          let ethMedia = mediaCatalog.find((m) => (m.id && m.id === mediaId) || m.title === media.title);
+          let ethMedia = mediaCatalog.find(m => (m.id && m.id === mediaId) || m.title === media.title);
 
           if (ethMedia) {
             ethMedia.Likes = mediaLikes;
             ethMedia.NumLikes = mediaLikes.length;
 
             mediaCatalog.splice(
-              mediaCatalog.findIndex((m) => (m.id && m.id === mediaId) || m.title === media.title),
+              mediaCatalog.findIndex(m => (m.id && m.id === mediaId) || m.title === media.title),
               1,
               ethMedia
             );
@@ -1460,7 +1545,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      const userMediaLikes = [...(user.MediaLiked || [])].filter((media) => media.mediaID != mediaId);
+      const userMediaLikes = [...(user.MediaLiked || [])].filter(media => media.mediaID != mediaId);
       await userRef.update({
         MediaLiked: userMediaLikes,
       });
@@ -1469,7 +1554,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
 
       let likes: any[] = [];
       if (media.Likes && media.Likes.length > 0) {
-        likes = media.Likes.filter((user) => user != body.userId);
+        likes = media.Likes.filter(user => user != body.userId);
 
         await mediaRef.update({
           Likes: likes,
@@ -1485,14 +1570,14 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
             const mediaUser: any = mediaGet.data();
 
             let mediaCatalog = mediaUser.catalog;
-            let ethMedia = mediaCatalog.find((m) => (m.id && m.id === mediaId) || m.title === media.title);
+            let ethMedia = mediaCatalog.find(m => (m.id && m.id === mediaId) || m.title === media.title);
 
             if (ethMedia) {
               ethMedia.Likes = likes;
               ethMedia.NumLikes = likes.length;
 
               mediaCatalog.splice(
-                mediaCatalog.findIndex((m) => (m.id && m.id === mediaId) || m.title === media.title),
+                mediaCatalog.findIndex(m => (m.id && m.id === mediaId) || m.title === media.title),
                 1,
                 ethMedia
               );
@@ -1507,7 +1592,7 @@ export const removeLikeMedia = async (req: express.Request, res: express.Respons
 
       if (user.Likes && user.Likes.length > 0) {
         const updatedUserLikes = user.Likes.filter(
-          (userLike) => !(userLike.type === 'media' && userLike.id === mediaId)
+          userLike => !(userLike.type === 'media' && userLike.id === mediaId)
         );
 
         await userRef.update({
@@ -1556,13 +1641,13 @@ export const bookmarkMedia = async (req: express.Request, res: express.Response)
         userBookmarks = [...user.Bookmarks];
       }
 
-      let bookmarkIndex = mediaBookmarks.find((user) => user === body.userId);
+      let bookmarkIndex = mediaBookmarks.find(user => user === body.userId);
       if (!bookmarkIndex) {
         mediaBookmarks.push(body.userId);
       }
 
       bookmarkIndex = userBookmarks.find(
-        (userBookmark) => userBookmark.type === 'media' && userBookmark.id === mediaId
+        userBookmark => userBookmark.type === 'media' && userBookmark.id === mediaId
       );
       if (!bookmarkIndex) {
         userBookmarks.push({
@@ -1614,7 +1699,7 @@ export const removeBookmarkMedia = async (req: express.Request, res: express.Res
 
       let bookmarks: any[] = [];
       if (media.Bookmarks && media.Bookmarks.length > 0) {
-        bookmarks = media.Bookmarks.filter((bookmarkUser) => bookmarkUser != body.userId);
+        bookmarks = media.Bookmarks.filter(bookmarkUser => bookmarkUser != body.userId);
 
         await mediaRef.update({
           Bookmarks: bookmarks,
@@ -1624,7 +1709,7 @@ export const removeBookmarkMedia = async (req: express.Request, res: express.Res
 
       if (user.Bookmarks && user.Bookmarks.length > 0) {
         const updatedUserBookmarks = user.Bookmarks.filter(
-          (userBookmark) => !(userBookmark.type === 'media' && userBookmark.id === mediaId)
+          userBookmark => !(userBookmark.type === 'media' && userBookmark.id === mediaId)
         );
 
         await userRef.update({
@@ -1706,10 +1791,14 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
         }
         await shareMediaRef.update(sharedUser);
       } else {
-        await db.runTransaction(async (transaction) => {
+        await db.runTransaction(async transaction => {
           // userData - no check if firestore insert works? TODO
           transaction.set(
-            db.collection(collections.streaming).doc(mediaId).collection(collections.shareStreaming).doc(body.userId),
+            db
+              .collection(collections.streaming)
+              .doc(mediaId)
+              .collection(collections.shareStreaming)
+              .doc(body.userId),
             mappingShare
           );
         });
@@ -1872,7 +1961,7 @@ export const changeOffer = async (req: express.Request, res: express.Response) =
         const communitySnap = await db.collection(collections.community).doc(communityAddress).get();
         const data: any = communitySnap.data();
         const marketingMedia = data.MarketingMedia ?? [];
-        if (!marketingMedia.find((mediaObj) => mediaObj.MediaSymbol && mediaObj.MediaSymbol == mediaSymbol)) {
+        if (!marketingMedia.find(mediaObj => mediaObj.MediaSymbol && mediaObj.MediaSymbol == mediaSymbol)) {
           marketingMedia.push({
             PodAddress: podAddress,
             MediaSymbol: mediaSymbol,
@@ -1954,7 +2043,7 @@ export const createChatMarketingMediaCommunities = (mediaSymbol, communityId, me
       });
 
       if (creatorCommunityData.Admins && creatorCommunityData.Admins.length > 0) {
-        let arrayFiltered = creatorCommunityData.Admins.filter((admin) => admin.status === 'Accepted');
+        let arrayFiltered = creatorCommunityData.Admins.filter(admin => admin.status === 'Accepted');
         if (arrayFiltered && arrayFiltered.length > 0) {
           for (let communityAdmin of arrayFiltered) {
             const userSnap = await db.collection(collections.user).doc(communityAdmin.userId).get();
@@ -2014,7 +2103,7 @@ export const getChatsMediaMarketing = async (req: express.Request, res: express.
         .collection(collections.marketingMediaCommunityChat)
         .where('mediaId', '==', mediaId)
         .get();
-      marketingMediaCommunityChatSnap.forEach((doc) => {
+      marketingMediaCommunityChatSnap.forEach(doc => {
         let data = doc.data();
         data.id = doc.id;
         allChats.push(data);
@@ -2050,13 +2139,13 @@ const checkIfHasPermissions = (userId: string, mediaId: string): Promise<boolean
         userId,
         media.Requester === userId,
         media.MainStreamer === userId,
-        arrayCollabs.some((collab) => collab === userId)
+        arrayCollabs.some(collab => collab === userId)
       );
 
       if (
         media.Requester === userId ||
         media.MainStreamer === userId ||
-        arrayCollabs.some((collab) => collab === userId)
+        arrayCollabs.some(collab => collab === userId)
       ) {
         resolve(true);
       } else {
@@ -2078,7 +2167,7 @@ export const getChatsCommunityMarketing = async (req: express.Request, res: expr
       .collection(collections.marketingMediaCommunityChat)
       .where('communityId', '==', communityId)
       .get();
-    marketingMediaCommunityChatSnap.forEach((doc) => {
+    marketingMediaCommunityChatSnap.forEach(doc => {
       let data = doc.data();
       data.id = doc.id;
       allChats.push(data);
@@ -2109,7 +2198,7 @@ export const getMediaMarketing = async (req: express.Request, res: express.Respo
       .doc(mediaId)
       .collection(collections.communityMarketings)
       .get();
-    marketingMediaCommunitySnap.forEach((doc) => {
+    marketingMediaCommunitySnap.forEach(doc => {
       let data = doc.data();
       data.id = doc.id;
       allMarketing.push(data);
@@ -2136,7 +2225,7 @@ export const getCommunityMarketing = async (req: express.Request, res: express.R
       .collection(collections.marketingMediaCommunityChat)
       .where('communityId', '==', communityId)
       .get();
-    marketingMediaCommunityChatSnap.forEach((doc) => {
+    marketingMediaCommunityChatSnap.forEach(doc => {
       let data = doc.data();
       data.id = doc.id;
       allChats.push(data);
@@ -2241,7 +2330,7 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
         });
 
         if (communityData.Admins && communityData.Admins.length > 0) {
-          let admins = communityData.Admins.filter((admin) => admin.status === 'Accepted');
+          let admins = communityData.Admins.filter(admin => admin.status === 'Accepted');
 
           for (let admin of admins) {
             const userSnap = await db.collection(collections.user).doc(admin.userId).get();
@@ -2257,7 +2346,7 @@ export const createChatMediaMarketingFunction = (userId, mediaId, communityId) =
           }
         }
 
-        await db.runTransaction(async (transaction) => {
+        await db.runTransaction(async transaction => {
           // userData - no check if firestore insert works? TODO
           transaction.set(db.collection(collections.marketingMediaCommunityChat).doc(room), {
             users: users,
@@ -2330,7 +2419,8 @@ export const getMessagesMediaMarketing = async (req: express.Request, res: expre
       } else {
         res.status(200).send({
           success: false,
-          error: 'Error in controllers/mediaController -> getMessagesMediaMarketing(): Wrong Chat Room Provided',
+          error:
+            'Error in controllers/mediaController -> getMessagesMediaMarketing(): Wrong Chat Room Provided',
         });
       }
     } else {
@@ -2361,7 +2451,7 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
         let data: any = marketingMediaCommunitySnap.data();
 
         let users = [...data.users];
-        let userIndex = users.findIndex((usr) => usr.userId === body.userId);
+        let userIndex = users.findIndex(usr => usr.userId === body.userId);
         if (userIndex !== -1) {
           users[userIndex].lastView = Date.now();
           await db.collection(collections.marketingMediaCommunityChat).doc(body.room).update({
@@ -2380,7 +2470,7 @@ export const lastViewMediaMarketing = async (req: express.Request, res: express.
           let data = doc.data();
           let seenArray: any[] = [...data.seen] || [];
 
-          let notSaw = seenArray.findIndex((see) => see !== body.userId);
+          let notSaw = seenArray.findIndex(see => see !== body.userId);
           if (notSaw === -1) {
             seenArray.push(body.userId);
 
@@ -2477,7 +2567,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const pricingMethod = extraInfo.PricingMethod ?? 'Fixed'; // Fixed or Streaming
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
-    const dimensions = extraInfo.dimensions ?? ''
+    const dimensions = extraInfo.dimensions ?? '';
 
     const EditorPages = body.EditorPages;
 
@@ -2531,7 +2621,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
           releaseDate,
           mediaSymbol,
           EditorPages,
-          dimensions,
+          dimensions
         );
       } else {
         console.log('Error in controllers/mediaController -> createMedia()' + blockchainRes.message);
@@ -2561,7 +2651,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
         releaseDate,
         mediaSymbol,
         EditorPages,
-        dimensions,
+        dimensions
       );
     }
 
@@ -2589,7 +2679,7 @@ const extraActionsCreateMedia = async (
   releaseDate,
   mediaSymbol,
   EditorPages,
-  dimensions,
+  dimensions
 ) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -2600,7 +2690,7 @@ const extraActionsCreateMedia = async (
         PricingMethod: pricingMethod,
         Hashtags: hashtags,
         CreatorId: creatorId,
-        dimensions: dimensions ?? ''
+        dimensions: dimensions ?? '',
       };
       if (type === 'BLOG' || type === 'BLOG_SNAP') {
         extraData.Content = content;
@@ -2639,7 +2729,7 @@ const extraActionsCreateMedia = async (
             EditorPages: EditorPages || [],
           });
       } else {
-        await db.runTransaction(async (transaction) => {
+        await db.runTransaction(async transaction => {
           transaction.set(db.collection(collections.streaming).doc(mediaSymbol), {
             ...initialData,
             ...extraData,
@@ -2819,7 +2909,7 @@ export const rateMedia = async (req: express.Request, res: express.Response) => 
         if (media.Rating) {
           let isUpdated = false;
           ratings = [...media.Rating];
-          ratings = ratings.map((item) => {
+          ratings = ratings.map(item => {
             if (item.userId === userId) {
               isUpdated = true;
               let rateItem = { ...item };
@@ -3037,7 +3127,12 @@ export const deleteBuyOrder = async (req: express.Request, res: express.Response
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      await db.collection(collections.streaming).doc(tokenSymbol).collection(buyingOffers).doc(orderId).delete();
+      await db
+        .collection(collections.streaming)
+        .doc(tokenSymbol)
+        .collection(buyingOffers)
+        .doc(orderId)
+        .delete();
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> deleteBuyOrder()', blockchainRes.message);
@@ -3083,7 +3178,12 @@ export const deleteSellOrder = async (req: express.Request, res: express.Respons
           .doc(tid)
           .set({ Transactions: txnArray });
       }
-      await db.collection(collections.streaming).doc(tokenSymbol).collection(sellingOffers).doc(orderId).delete();
+      await db
+        .collection(collections.streaming)
+        .doc(tokenSymbol)
+        .collection(sellingOffers)
+        .doc(orderId)
+        .delete();
       res.send({ success: true });
     } else {
       console.log('Error in controllers/mediaController -> deleteSellOrder()', blockchainRes.message);
@@ -3414,7 +3514,17 @@ const getNFTInformation = async (id, hostUrl) => {
     if (!id) {
       return;
     }
-    const blockChains = ['PRIVI', 'WAX', 'Zora', 'Opensea', 'Mirror', 'Foundation', 'Topshot', 'Sorare', 'Showtime'];
+    const blockChains = [
+      'PRIVI',
+      'WAX',
+      'Zora',
+      'Opensea',
+      'Mirror',
+      'Foundation',
+      'Topshot',
+      'Sorare',
+      'Showtime',
+    ];
     for (let i = 0; i < blockChains.length; i++) {
       const blockchain = blockChains[i];
       // get the current mediaCollection
@@ -3501,8 +3611,8 @@ export const getNFTMedias = async (req: express.Request, res: express.Response) 
     const body = req.body; // filters
     const nftIds = body.nftIds;
     const hostUrl = req.protocol + '://' + req.get('host');
-    const resp = await Promise.all(nftIds.map((id) => getNFTInformation(id, hostUrl)));
-    const nftInfos = resp.filter((item) => item);
+    const resp = await Promise.all(nftIds.map(id => getNFTInformation(id, hostUrl)));
+    const nftInfos = resp.filter(item => item);
     return res.status(200).send({ success: true, data: nftInfos });
   } catch (e) {
     console.log(e);
@@ -3522,10 +3632,10 @@ export const getUserMedias = async (req: express.Request, res: express.Response)
     const retData: any[] = [];
     const podMediaSnap = await db.collection(collections.streaming).where('Requester', '==', userId).get();
     const simpleMediaSnap = await db.collection(collections.streaming).where('CreatorId', '==', userId).get();
-    podMediaSnap.forEach((doc) => {
+    podMediaSnap.forEach(doc => {
       retData.push(doc.data());
     });
-    simpleMediaSnap.forEach((doc) => {
+    simpleMediaSnap.forEach(doc => {
       retData.push(doc.data());
     });
     res.send({ success: true, data: retData });
@@ -3559,29 +3669,29 @@ export const getUserMediaStreaming = async (req: express.Request, res: express.R
       .where('CreatorId', '==', userId)
       .where('Type', 'in', liveTypes)
       .get();
-    podMediaSnap.forEach((doc) => {
+    podMediaSnap.forEach(doc => {
       const data: any = doc.data();
       if (data.MediaSymbol) userMedias.push(data.MediaSymbol);
     });
-    simpleMediaSnap.forEach((doc) => {
+    simpleMediaSnap.forEach(doc => {
       const data: any = doc.data();
       if (data.MediaSymbol) userMedias.push(data.MediaSymbol);
     });
     // get streamings
     const userStreamingResponses = await Promise.all(
-      userMedias.map((mediaSymbol) => coinBalance.getUserStreamings(userAddress, mediaSymbol, apiKey))
+      userMedias.map(mediaSymbol => coinBalance.getUserStreamings(userAddress, mediaSymbol, apiKey))
     );
     const promises: any[] = [];
-    userStreamingResponses.forEach((resp) => {
+    userStreamingResponses.forEach(resp => {
       if (resp && resp.success) {
         const output = resp.output;
-        output.forEach((out) => {
+        output.forEach(out => {
           if (out.Role == 'RECEIVER') promises.push(coinBalance.getStreaming(out.StreamingId, apiKey));
         });
       }
     });
     const mediaStreamingResponses = await Promise.all(promises);
-    mediaStreamingResponses.forEach((resp) => {
+    mediaStreamingResponses.forEach(resp => {
       if (resp.success) retData.push(resp.output);
     });
     res.send({ success: true, data: retData });
@@ -3611,7 +3721,7 @@ exports.storeFractionalisedMediaPrice = cron.schedule('0 0 * * *', async () => {
           lastPrice = priceHistorySnap.docs[priceHistorySnap.docs.length - 1].data().price;
         // check if any active sell offer
         const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
-        offerSnap.forEach((offerDoc) => {
+        offerSnap.forEach(offerDoc => {
           const offerData: any = offerDoc.data();
           let price = offerData.Price ?? 0;
           const amount = offerData.Amount ?? 1;
@@ -3647,9 +3757,10 @@ exports.storeFractionalisedMediaOwnership = cron.schedule('0 0 * * *', async () 
           sharedOwnership = Math.min(0, sharedOwnership - balance);
           // substract the amount that are in selling
           const offerSnap = await doc.ref.collection(collections.sellingOffers).get();
-          offerSnap.forEach((offerDoc) => {
+          offerSnap.forEach(offerDoc => {
             const offerData: any = offerDoc.data();
-            if (offerData.SAddress == ownerAddress) sharedOwnership = Math.min(0, sharedOwnership - offerData.Amount);
+            if (offerData.SAddress == ownerAddress)
+              sharedOwnership = Math.min(0, sharedOwnership - offerData.Amount);
           });
         }
         doc.ref.collection(collections.fractionOwnershipHistory).add({
