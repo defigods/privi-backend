@@ -233,7 +233,7 @@ export const getMarketplaceMedias = async (req: express.Request, res: express.Re
       if (data && (data.Auctions || data.Exchange)) retData.push(data);
     });
     // TODO: add exchange data to the media with Exchange list field. Just return info needed for BE.
-    
+
     res.send({success: true, data:retData});
   } catch (err) {
     console.log('Error in controllers/mediaController -> getMarketplaceMedias()', err);
@@ -249,7 +249,7 @@ export const getMedia = async (req: express.Request, res: express.Response) => {
       const mediaSnap = await db.collection(mediaCollections[tag].collection).doc(mediaId).get();
       const bidHistory = await db.collection(mediaCollections[tag].collection).doc(mediaId).collection('BidHistory').get();
       if (mediaSnap.exists) {
-        const data:any = mediaSnap.data();
+        const data : any = mediaSnap.data();
         // get exchange data (media only have one exchange at maximum)
         const exchangeAddressList = data.Exchange ?? [];
         let exchangeData;
@@ -693,66 +693,83 @@ export const editMedia = async (req: express.Request, res: express.Response) => 
       const mediasGet = await mediasRef.get();
       const media: any = mediasGet.data();
 
-      const userRef = db.collection(collections.user).doc(body.media.Creator);
+      /*const userRef = db.collection(collections.user).doc(body.media.Creator);
       const userGet = await userRef.get();
-      const user: any = userGet.data();
+      const user: any = userGet.data();*/
 
-      if (body.media.SavedCollabs && body.media.SavedCollabs.length > 0) {
-        if (media.SavedCollabs && media.SavedCollabs.length > 0) {
-          let newCollabs: any[] = [];
-          for (let bodyCollab of body.media.SavedCollabs) {
-            let isInBD: boolean = false;
-            for (let mediaCollab of media.SavedCollabs) {
-              if (bodyCollab.id === mediaCollab.id) {
-                isInBD = true;
+      const userQuery = await db.collection(collections.user).where('address', '==', body.media.Creator).get();
+      let user : any = {};
+
+      if(!userQuery.empty) {
+        for (const doc of userQuery.docs) {
+          user = doc.data();
+          user.id = doc.id;
+        }
+
+        if (body.media.SavedCollabs && body.media.SavedCollabs.length > 0) {
+          if (media.SavedCollabs && media.SavedCollabs.length > 0) {
+            let newCollabs: any[] = [];
+            for (let bodyCollab of body.media.SavedCollabs) {
+              let isInBD: boolean = false;
+              for (let mediaCollab of media.SavedCollabs) {
+                if (bodyCollab.id === mediaCollab.id) {
+                  isInBD = true;
+                }
+              }
+              if (!isInBD) {
+                newCollabs.push(bodyCollab);
               }
             }
-            if (!isInBD) {
-              newCollabs.push(bodyCollab);
+
+            for (let collab of newCollabs) {
+              if(collab.id !== user.id) {
+                await notificationsController.addNotification({
+                  userId: collab.id,
+                  notification: {
+                    type: 104,
+                    typeItemId: 'user',
+                    itemId: user.id,
+                    follower: user.firstName,
+                    pod: params.mediaPod,
+                    comment: '',
+                    token: params.mediaId,
+                    amount: '',
+                    onlyInformation: false,
+                    otherItemId: mediasGet.id,
+                  },
+                });
+              }
+            }
+          } else {
+            for (let collab of body.media.SavedCollabs) {
+              if(collab.id !== user.id) {
+                await notificationsController.addNotification({
+                  userId: collab.id,
+                  notification: {
+                    type: 104,
+                    typeItemId: 'user',
+                    itemId: user.id,
+                    follower: user.firstName,
+                    pod: params.mediaPod,
+                    comment: '',
+                    token: params.mediaId,
+                    amount: '',
+                    onlyInformation: false,
+                    otherItemId: mediasGet.id,
+                  },
+                });
+              }
             }
           }
-
-          for (let collab of newCollabs) {
-            await notificationsController.addNotification({
-              userId: collab.id,
-              notification: {
-                type: 104,
-                typeItemId: 'user',
-                itemId: body.media.Creator,
-                follower: user.firstName,
-                pod: params.mediaPod,
-                comment: '',
-                token: params.mediaId,
-                amount: '',
-                onlyInformation: false,
-                otherItemId: mediasGet.id,
-              },
-            });
-          }
-        } else {
-          for (let collab of body.media.SavedCollabs) {
-            await notificationsController.addNotification({
-              userId: collab.id,
-              notification: {
-                type: 104,
-                typeItemId: 'user',
-                itemId: body.media.Creator,
-                follower: user.firstName,
-                pod: params.mediaPod,
-                comment: '',
-                token: params.mediaId,
-                amount: '',
-                onlyInformation: false,
-                otherItemId: mediasGet.id,
-              },
-            });
-          }
         }
+
+        await mediasRef.update(body.media);
+
+        res.send({ success: true, data: body.media });
+      } else {
+        console.log('Error in controllers/mediaController -> editMedia()', 'User address not provided');
+        res.send({ success: false, error: 'User address not provided' });
       }
-
-      await mediasRef.update(body.media);
-
-      res.send({ success: true, data: body.media });
     } else {
       console.log('Error in controllers/mediaController -> editMedia()', 'Missing data');
       res.send({ success: false, error: 'Missing data' });
@@ -2460,7 +2477,7 @@ export const createMedia = async (req: express.Request, res: express.Response) =
     const pricingMethod = extraInfo.PricingMethod ?? 'Fixed'; // Fixed or Streaming
     const hashtags = extraInfo.Hashtags ?? [];
     const content = extraInfo.Content ?? ''; // only for Blog and Blog Snap type
-    const dimensions = extraInfo.dimensions ?? '' 
+    const dimensions = extraInfo.dimensions ?? ''
 
     const EditorPages = body.EditorPages;
 
