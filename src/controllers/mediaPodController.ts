@@ -287,7 +287,8 @@ exports.getMediaPod = async (req: express.Request, res: express.Response) => {
       });
 
       let mediaPod: any = mediaPodSnap.data();
-
+      
+      if(mediaPod){
       // add url if empty //
       if (!mediaPod.hasOwnProperty('urlSlug') || mediaPod.urlSlug == '') {
         await db
@@ -305,6 +306,11 @@ exports.getMediaPod = async (req: express.Request, res: express.Response) => {
           medias: medias,
         },
       });
+    }else{
+      console.log('Error in controllers/mediaPodController -> initiatePod(): Media Pod not found');
+      res.send({ success: false, error: 'Media Pod not found' });
+    }
+
     } else {
       console.log('Error in controllers/mediaPodController -> initiatePod(): Media Pod Id not provided');
       res.send({ success: false, error: 'Media Pod Id not provided' });
