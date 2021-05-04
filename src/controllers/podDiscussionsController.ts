@@ -1,9 +1,9 @@
 import express from 'express';
 import { db } from '../firebase/firebase';
 import collections, { podsFT } from '../firebase/collections';
-import { generateUniqueId } from '../functions/functions';
 import fs from 'fs';
 import path from 'path';
+import { rejects } from 'assert';
 
 exports.createChat = async (req: express.Request, res: express.Response) => {
     try {
@@ -17,29 +17,23 @@ exports.createChat = async (req: express.Request, res: express.Response) => {
         const podRef = await db.collection(collections.mediaPods).doc(podId);
         const podGet: any = await podRef.get();
 
-        const topicId = body.topicId ?? generateUniqueId();
-        const topicRef = await podRef.collection(collections.podDiscussions ).doc(topicId);
-        let topicGet = await topicRef.get();
-        if(!topicGet.exists) {
-            let users;
-            if(podGet.exists) {
-                const podData = podGet.data();
-                if(podData) users = [...(podData.Investors ?? []), ...(podData.Collabs ?? []), podData.Creator];
-            }
-            if(!users) users = [];
-            await topicRef.set({
-                        title,
-                        description,
-                        users,
-                        created: Date.now(),
-                        createdBy,
-                        lastMessage: null,
-                        lastMessageDate: null,
-                    });
+        // const topicId = body.topicId ?? generateUniqueId();
+        let users;
+        if(podGet.exists) {
+            const podData = podGet.data();
+            if(podData) users = [...(podData.Investors ?? []), ...(podData.Collabs ?? []), podData.Creator];
         }
-        topicGet = await topicRef.get();
-        const topicData = topicGet.data();
-        console.log('topicData', topicData);
+        if(!users) users = [];
+        const topicData = {
+            title,
+            description,
+            users,
+            created: Date.now(),
+            createdBy,
+            lastMessage: null,
+            lastMessageDate: null,
+        };
+        const { id: topicId } = await podRef.collection(collections.podDiscussions ).add(topicData);
         res.status(200).send({
             success: true,
             data: {
@@ -92,7 +86,39 @@ exports.getMessages = async (req: express.Request, res: express.Response) => {
 
     const messageRef = topicRef.collection(collections.podDiscussionMessage);
     const messageGet = await messageRef.get();
-    const messages: any = [];
+    let messages: any = [];
     messageGet.forEach(doc => messages.push(doc.data()));
+    console.log('messages', messages);
+    messages = [...messages.sort((a, b) => a.created - b.created)];
+    console.log('messages', messages);
     res.send({success: true, messages: messages});
+}
+
+exports.fileName = async (req: express.Request, res: express.Response) => {
+    if(req.file) {
+        res.send({
+            success: true,
+            file: req.file
+        })
+    }
+}
+
+exports.getFile = type => async (req: express.Request, res: express.Response) => {
+    const { podId, topicId, fileName } = req.params; 
+    if(podId && topicId && fileName) {
+        const dirPath = path.join('uploads', 'podDiscussions', podId, topicId, fileName)
+        return new Promise(async (resolve, reject) => {
+            try {
+                res.setHeader('Content-Type', type);
+                const raw = fs.createReadStream(dirPath);
+                raw.on('error', function (err) {
+                    console.log(err);
+                    res.sendStatus(400);
+                });
+                raw.pipe(res);
+            } catch (e) {
+                reject(e);
+            }
+        });
+    }
 }

@@ -800,8 +800,8 @@ export const startSocket = (env: Env) => {
       const userGet = await userRef.get();
       const user: any = userGet.data();
 
-      console.log('sending room post', message);
-      socket.to(message.topicId).emit('message-podDiscussion', {
+      console.log('sending room post', message.topicId);
+      socket.emit('message-podDiscussion', {
         topicId: message.topicId,
         message: message.message,
         from: message.from,
@@ -813,7 +813,7 @@ export const startSocket = (env: Env) => {
         },
         created: Date.now(),
         seen: [],
-        type: 'text',
+        type: message.type,
       });
     })
   });
