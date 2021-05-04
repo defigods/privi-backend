@@ -116,6 +116,10 @@ router.get('/getMediaMainPhoto/:mediaId', mediaController.getMediaMainPhoto);
 router.get('/getPlaylists', playlistController.getPlaylists);
 router.get('/getMyPlaylists/:userId', authenticateJWT, playlistController.getMyPlaylists);
 router.get('/getPlaylist/:playListId', authenticateJWT, playlistController.getPlaylist);
+router.post('/likePlaylist/:playlistId', authenticateJWT, playlistController.likePlaylist);
+router.post('/removeLikePlaylist/:playlistId', authenticateJWT, playlistController.removeLikePlaylist);
+
+
 
 router.get(
   '/marketingMediaCommunity/getMediaChats/:mediaId/:userId',
