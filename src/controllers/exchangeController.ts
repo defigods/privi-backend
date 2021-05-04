@@ -1,5 +1,5 @@
 import express from 'express';
-import { updateFirebase, saveTransactions } from '../functions/functions';
+import { updateFirebase, saveTransactions, addZerosToHistory, getRateOfChangeAsMap } from '../functions/functions';
 import exchange from '../blockchain/exchange';
 import { db } from '../firebase/firebase';
 import collections from '../firebase/collections';
@@ -33,6 +33,7 @@ export const createExchange = async (req: express.Request, res: express.Response
         await updateFirebase(blockchainRes);
         const output = blockchainRes.output;
         const exchangeId = Object.keys(output.Exchanges ?? {})[0] ?? '';
+        // save txns
         saveTransactions(
           db.collection(collections.exchange).doc(exchangeId).collection(collections.transactions),
           blockchainRes
@@ -42,7 +43,8 @@ export const createExchange = async (req: express.Request, res: express.Response
         const exchange = mediaData.Exchange ?? [];
         exchange.push(exchangeId);
         await mediaSnap.ref.update({ Exchange: exchange });
-
+        // add zeros to price history
+        addZerosToHistory(db.collection(collections.exchange).doc(exchangeId).collection(collections.priceHistory), 'price');
         res.send({ success: true });
       } else {
         console.log('Error in controllers/exchangeController -> createExchange()', blockchainRes.message);
@@ -67,7 +69,6 @@ export const placeBuyingOffer = async (req: express.Request, res: express.Respon
     const amount = data.Amount;
     const price = data.Price;
     const offerToken = data.OfferToken;
-
     const blockchainRes = await exchange.placeBuyingOffer(exchangeId, address, amount, price, offerToken, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
@@ -130,6 +131,8 @@ export const buyFromOffer = async (req: express.Request, res: express.Response) 
         db.collection(collections.exchange).doc(exchangeId).collection(collections.transactions),
         blockchainRes
       );
+      // user purchased media from sale page
+      if (offerId == exchangeId) db.collection(collections.exchange).doc(exchangeId).update({Status: 'Sold', NewOwnerAddress: address});
       res.send({ success: true });
     } else {
       console.log('Error in controllers/exchangeController -> buyFromOffer()', blockchainRes.message);
@@ -150,13 +153,20 @@ export const sellFromOffer = async (req: express.Request, res: express.Response)
     const address = data.Address;
     const amount = data.Amount;
 
-    const blockchainRes = await exchange.buyFromOffer(exchangeId, offerId, address, amount, apiKey);
+    let offerCreatorAddress;
+    const offerSnap = await db.collection(collections.exchange).doc(exchangeId).collection(collections.offers).doc(offerId).get();
+    const offerData = offerSnap.data();
+    if (offerData) offerCreatorAddress = offerData.CreatorAddress;
+
+    const blockchainRes = await exchange.sellFromOffer(exchangeId, offerId, address, amount, apiKey);
     if (blockchainRes && blockchainRes.success) {
       updateFirebase(blockchainRes);
       saveTransactions(
         db.collection(collections.exchange).doc(exchangeId).collection(collections.transactions),
         blockchainRes
       );
+      // creator sold media to buying offer
+      db.collection(collections.exchange).doc(exchangeId).update({Status: 'Sold', NewOwnerAddress: offerCreatorAddress ?? ''});
       res.send({ success: true });
     } else {
       console.log('Error in controllers/exchangeController -> sellFromOffer()', blockchainRes.message);
@@ -213,6 +223,8 @@ export const cancelSellingOffer = async (req: express.Request, res: express.Resp
         .collection(collections.offers)
         .doc(offerId)
         .delete();
+      // main selling offer cancelled (media sale cancelled)
+      if (offerId == exchangeId) db.collection(collections.exchange).doc(exchangeId).update({Status: 'Cancelled'});
       saveTransactions(
         db.collection(collections.exchange).doc(exchangeId).collection(collections.transactions),
         blockchainRes
@@ -273,8 +285,11 @@ exports.storeDailyBuyOfferPrice = cron.schedule('0 0 * * *', async () => {
   try {
     console.log('********* Exchange Controller storeDailyBuyOfferPrice() cron job started *********');
     const exchangesSnap = await db.collection(collections.exchange).get();
+    const rateOfChange = await getRateOfChangeAsMap();
     for (const exchangeDoc of exchangesSnap.docs) {
-      let highestPrice = 0;
+      let highestPrice = 0; // in initial selling offer token
+      const exchangeData:any = exchangeDoc.data();
+      const initialOfferToken = exchangeData.OfferToken;
       const offersSnap = await exchangeDoc.ref.collection(collections.offers).get();
       offersSnap.forEach(offerDoc => {
         const offerData = offerDoc.data();
@@ -282,7 +297,14 @@ exports.storeDailyBuyOfferPrice = cron.schedule('0 0 * * *', async () => {
           const date = offerData.Date;  // sec
           const currDate = Math.floor(Date.now()/1000);
           const lastDayDate = currDate - (24*3600);
-          if (date <= currDate && date >= lastDayDate && date.Price > highestPrice) highestPrice = date.Price; 
+          const offerPrice = offerData.Price ?? 0;
+          const offerToken = offerData.OfferToken;
+          let rate = 1;
+          if (offerToken && initialOfferToken && rateOfChange[initialOfferToken] && rateOfChange[offerToken]) rate = rateOfChange[offerToken]/rateOfChange[initialOfferToken];
+          if (date <= currDate && date >= lastDayDate) {
+            const offerConvertedPrice = offerPrice*rate;
+            highestPrice = Math.max(offerConvertedPrice, highestPrice); 
+          }
         }
       });
       exchangeDoc.ref.collection(collections.priceHistory).add({price: highestPrice, date: Date.now()});
