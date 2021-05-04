@@ -742,5 +742,79 @@ export const startSocket = (env: Env) => {
         type: 'text',
       });
     });
+
+    socket.on('subscribe-podDiscussion', async (communicationInfo) => {
+     const {podId, topicId, userId} = communicationInfo;
+     if(!podId || !topicId) {
+      console.log('Error subscribe-podDiscussion socket: PodId or TopicId is not provided', podId, topicId);
+      return;
+      }
+      const topicRef = db.collection(collections.mediaPods).doc(podId).collection(collections.podDiscussions).doc(topicId);
+      const topicGet = await topicRef.get(); 
+      if(!topicGet.exists) {
+        console.log('Error subscribe-podDiscussion socket: No PodId/TopicId!', podId, topicId);
+        return;
+      }
+      const topicData = topicGet.data();
+      let users;
+      if(topicData)
+        users = [...topicData.users];
+      else
+        users = [];
+      const userIndex = users.findIndex((user) => userId === user);
+      if(~userIndex) {
+        users[userIndex].lastView = Date.now();
+        users[userIndex].userConnected = true;
+      }
+      console.log('joining room', topicId);
+      socket.join(topicId);
+    })
+
+    socket.on('add-message-podDiscussion', async (message) => {
+      console.log('message', message);
+      const {podId, topicId} = message;
+      if(!podId || !topicId) {
+       console.log('Error subscribe-podDiscussion socket: PodId or TopicId is not provided', podId, topicId);
+       return;
+       }
+ 
+      const TopicRoomRef = db
+        .collection(collections.mediaPods)
+        .doc(podId)
+        .collection(collections.podDiscussions)
+        .doc(topicId);
+      const TopicRoomGet = await TopicRoomRef.get();
+      const TopicRoom: any = TopicRoomGet.data();
+      const res = TopicRoomRef.collection(collections.podDiscussionMessage).add({
+        message: message.message,
+        from: message.from,
+        created: Date.now(),
+        seen: [],
+        type: message.type,
+      })
+      await TopicRoomRef.update({
+        lastMessage: message.message,
+        lastMessageDate: Date.now(),
+      });
+      const userRef = db.collection(collections.user).doc(message.from);
+      const userGet = await userRef.get();
+      const user: any = userGet.data();
+
+      console.log('sending room post', message);
+      socket.to(message.topicId).emit('message-podDiscussion', {
+        topicId: message.topicId,
+        message: message.message,
+        from: message.from,
+        user: {
+          name: user.firstName,
+          level: user.level || 1,
+          cred: user.cred || 0,
+          salutes: user.salutes || 0,
+        },
+        created: Date.now(),
+        seen: [],
+        type: 'text',
+      });
+    })
   });
 };
