@@ -1,5 +1,5 @@
 import express from 'express';
-import { db } from '../firebase/firebase';
+import { db, firebase } from '../firebase/firebase';
 import path from 'path';
 import fs from 'fs';
 import collections, { buyingOffers, exchange, medias, sellingOffers } from '../firebase/collections';
@@ -1656,7 +1656,7 @@ export const shareMedia = async (req: express.Request, res: express.Response) =>
 
     if (mediaId && body.userId && body.Users) {
       const mediaRef = db.collection(collections.streaming).doc(mediaId);
-      mediaRef.update({ shareCount: FirebaseFirestore.FieldValue.increment(1) });
+      mediaRef.update({ shareCount: firebase.firestore.FieldValue.increment(1) });
       const mediaGet = await mediaRef.get();
       const media: any = mediaGet.data();
 
